@@ -1052,7 +1052,12 @@ class DGPTM_Zoho_Plugin {
                     $client_id = get_option('dgptm_zoho_client_id','');
                     if ( ! empty($client_id) ) {
                         $redirect_uri = admin_url('options-general.php?page=dgptm-zoho-api-settings');
-                        $scope = 'ZohoCRM.functions.execute.READ,ZohoCRM.functions.execute.CREATE';
+                        // Extended scopes for:
+                        // - functions.execute: Custom CRM functions (existing)
+                        // - modules.READ: Direct access to CRM modules like Contacts, Accounts (for daten-bearbeiten)
+                        // - modules.ALL: Full module access including update operations
+                        // - files.READ/CREATE: File upload operations (for student certificates)
+                        $scope = 'ZohoCRM.functions.execute.READ,ZohoCRM.functions.execute.CREATE,ZohoCRM.modules.READ,ZohoCRM.modules.ALL,ZohoCRM.files.READ,ZohoCRM.files.CREATE';
                         $auth_url = 'https://accounts.zoho.eu/oauth/v2/auth?scope=' . urlencode($scope) . '&client_id=' . urlencode($client_id) . '&response_type=code&access_type=offline&redirect_uri=' . urlencode($redirect_uri);
                         echo '<p><a class="button" href="' . esc_url($auth_url) . '">' . esc_html__('Mit Zoho verbinden','dgptm-zoho') . '</a></p>';
                     } else {

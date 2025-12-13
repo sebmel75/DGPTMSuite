@@ -69,6 +69,8 @@ final class Bummern_Code_Scanner {
             'log_enabled'       => 1,
             'log_max'           => 500,
             'timeout'           => 8,
+            // NEU: Direkte CRM-Abfrage (schneller als Webhook)
+            'use_crm'           => 1,
         ];
         $merged = wp_parse_args($opt, $defaults);
         if ($merged !== $opt) update_option(self::OPT_KEY, $merged, false);
@@ -113,6 +115,7 @@ final class Bummern_Code_Scanner {
         $clean['log_enabled']       = !empty($input['log_enabled']) ? 1 : 0;
         $clean['log_max']           = isset($input['log_max']) ? max(10, intval($input['log_max'])) : 500;
         $clean['timeout']           = isset($input['timeout']) ? max(3, intval($input['timeout'])) : 8;
+        $clean['use_crm']           = !empty($input['use_crm']) ? 1 : 0;
         return $clean;
     }
 
@@ -217,6 +220,12 @@ final class Bummern_Code_Scanner {
                         <label><input type="checkbox" name="<?php echo self::OPT_KEY; ?>[log_enabled]" value="1" <?php checked(!empty($opt['log_enabled'])); ?> /> Logging aktivieren</label>
                         &nbsp;Max. Einträge: <input type="number" name="<?php echo self::OPT_KEY; ?>[log_max]" value="<?php echo esc_attr($opt['log_max']??500); ?>" min="10" max="5000" style="max-width:120px" />
                         <p class="description">Speichert Hash des Codes, Webhook-Status, Event-ID, Meldungen, HTTP-Status und Client-IP.</p>
+                    </td></tr>
+
+                <tr><th scope="row">Direkte CRM-Abfrage</th>
+                    <td>
+                        <label><input type="checkbox" name="<?php echo self::OPT_KEY; ?>[use_crm]" value="1" <?php checked(!empty($opt['use_crm'])); ?> /> Direkte CRM-Abfrage aktivieren (schneller)</label>
+                        <p class="description">Fragt Zoho CRM Tickets-Modul direkt ab (~200ms) statt über externen Webhook (~2-3s). Webhook wird trotzdem im Hintergrund getriggert.</p>
                     </td></tr>
             </table>
             <?php submit_button(); ?>
@@ -612,11 +621,35 @@ final class Bummern_Code_Scanner {
         $code = isset($_POST['code']) ? sanitize_text_field(wp_unslash($_POST['code'])) : '';
         $expected = isset($_POST['expected']) ? sanitize_text_field(wp_unslash($_POST['expected'])) : ($opt['expected_event']??'');
 
-        $resp = $this->call_webhook($opt['webhook_url'] ?? '', $code, intval($opt['timeout'] ?? 8));
-        $http = $resp['http'] ?? null;
+        $data = [];
+        $http = null;
+        $used_crm = false;
 
-        // Payload normalisieren (unterstützt Zoho-formatiertes JSON)
-        $data = $this->normalize_webhook_payload($resp['json'] ?? []);
+        // NEU: Direkte CRM-Abfrage (wenn aktiviert)
+        if (!empty($opt['use_crm'])) {
+            $token = $this->get_crm_oauth_token();
+            if ($token) {
+                $ticket = $this->fetch_ticket_from_crm($code, $token);
+                if ($ticket) {
+                    $data = $this->evaluate_ticket_for_scanner($ticket);
+                    // Alle Ticket-Felder für Template-Platzhalter hinzufügen
+                    $data = array_merge($this->flatten_array($ticket), $data);
+                    $http = 200;
+                    $used_crm = true;
+                }
+            }
+
+            // Webhook trotzdem async triggern (für CRM-Aktionen)
+            $this->trigger_webhook_async($opt['webhook_url'] ?? '', $code);
+        }
+
+        // Fallback: Webhook direkt aufrufen (wenn CRM deaktiviert oder fehlgeschlagen)
+        if (!$used_crm) {
+            $resp = $this->call_webhook($opt['webhook_url'] ?? '', $code, intval($opt['timeout'] ?? 8));
+            $http = $resp['http'] ?? null;
+            // Payload normalisieren (unterstützt Zoho-formatiertes JSON)
+            $data = $this->normalize_webhook_payload($resp['json'] ?? []);
+        }
 
         $eid = isset($data['eid']) ? (string) $data['eid'] : '';
         $crm = isset($data['crm_message']) ? (string)$data['crm_message'] : '';
@@ -786,6 +819,199 @@ final class Bummern_Code_Scanner {
             }
         }
         return '';
+    }
+
+    /* ========================================================
+     * Direkte CRM-Ticket-Abfrage (schneller als Webhook)
+     * ======================================================== */
+
+    /**
+     * Holt OAuth-Token vom crm-abruf Modul
+     */
+    private function get_crm_oauth_token() {
+        if (class_exists('DGPTM_Zoho_CRM_Hardened')) {
+            $crm = \DGPTM_Zoho_CRM_Hardened::get_instance();
+            if (method_exists($crm, 'get_oauth_token')) {
+                $token = $crm->get_oauth_token();
+                if ($token && !is_wp_error($token)) {
+                    return $token;
+                }
+            }
+        }
+
+        if (class_exists('DGPTM_Zoho_Plugin')) {
+            $zoho = \DGPTM_Zoho_Plugin::get_instance();
+            if (method_exists($zoho, 'get_oauth_token')) {
+                $token = $zoho->get_oauth_token();
+                if ($token && !is_wp_error($token)) {
+                    return $token;
+                }
+            }
+        }
+
+        if (class_exists('DGPTM_Mitgliedsantrag')) {
+            $ma = \DGPTM_Mitgliedsantrag::get_instance();
+            if (method_exists($ma, 'get_access_token')) {
+                $token = $ma->get_access_token();
+                if ($token) {
+                    return $token;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Sucht Ticket im Zoho CRM anhand des Codes
+     */
+    private function fetch_ticket_from_crm($scan, $token) {
+        // Suche im Tickets-Modul nach dem Namen (Barcode) oder Subject
+        $url = 'https://www.zohoapis.eu/crm/v2/Tickets/search?criteria=((Name:equals:' . urlencode($scan) . ')or(Subject:contains:' . urlencode($scan) . '))';
+
+        $response = wp_remote_get($url, [
+            'headers' => [
+                'Authorization' => 'Zoho-oauthtoken ' . $token,
+            ],
+            'timeout' => 10
+        ]);
+
+        if (is_wp_error($response)) {
+            return null;
+        }
+
+        $http_code = wp_remote_retrieve_response_code($response);
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+
+        // 204 = No Content (keine Ergebnisse)
+        if ($http_code === 204) {
+            // Fallback: Direkte ID-Abfrage falls scan eine Zoho-ID ist
+            if (preg_match('/^\d{15,}$/', $scan)) {
+                return $this->fetch_ticket_by_id($scan, $token);
+            }
+            return null;
+        }
+
+        if ($http_code !== 200 || !isset($data['data'][0])) {
+            return null;
+        }
+
+        return $data['data'][0];
+    }
+
+    /**
+     * Holt Ticket direkt per ID
+     */
+    private function fetch_ticket_by_id($ticket_id, $token) {
+        $url = 'https://www.zohoapis.eu/crm/v2/Tickets/' . $ticket_id;
+
+        $response = wp_remote_get($url, [
+            'headers' => [
+                'Authorization' => 'Zoho-oauthtoken ' . $token,
+            ],
+            'timeout' => 10
+        ]);
+
+        if (is_wp_error($response)) {
+            return null;
+        }
+
+        $http_code = wp_remote_retrieve_response_code($response);
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+
+        if ($http_code !== 200 || !isset($data['data'][0])) {
+            return null;
+        }
+
+        return $data['data'][0];
+    }
+
+    /**
+     * Wertet den Ticket-Status aus
+     */
+    private function evaluate_ticket_for_scanner($ticket) {
+        $name = '';
+        $email = '';
+        $status = 'error';
+        $eid = '';
+
+        // Contact-Daten extrahieren
+        if (!empty($ticket['Contact_Name'])) {
+            if (is_array($ticket['Contact_Name'])) {
+                $name = $ticket['Contact_Name']['name'] ?? '';
+            } else {
+                $name = (string)$ticket['Contact_Name'];
+            }
+        }
+
+        // Fallback: Subject als Name
+        if (empty($name) && !empty($ticket['Subject'])) {
+            $name = (string)$ticket['Subject'];
+        }
+
+        // E-Mail
+        if (!empty($ticket['Email'])) {
+            $email = (string)$ticket['Email'];
+        }
+
+        // Event-ID aus Ticket (falls vorhanden)
+        if (!empty($ticket['Veranstaltungen_id'])) {
+            $eid = (string)$ticket['Veranstaltungen_id'];
+        } elseif (!empty($ticket['Event_ID'])) {
+            $eid = (string)$ticket['Event_ID'];
+        }
+
+        // Status auswerten
+        $ticket_status = strtolower($ticket['Status'] ?? '');
+
+        // Grün: Ticket ist gültig/aktiv
+        $green_statuses = ['open', 'offen', 'gültig', 'valid', 'aktiv', 'active', 'approved', 'confirmed', 'bestätigt', 'ok'];
+        // Gelb: Teilweise gültig
+        $yellow_statuses = ['pending', 'ausstehend', 'in progress', 'in bearbeitung'];
+
+        if (in_array($ticket_status, $green_statuses, true)) {
+            $status = 'ok';
+        } elseif (in_array($ticket_status, $yellow_statuses, true)) {
+            $status = 'pending';
+        } else {
+            // Prüfe benutzerdefinierte Felder
+            if (!empty($ticket['Mitgliedsstatus']) || !empty($ticket['Member_Status'])) {
+                $member_status = strtolower($ticket['Mitgliedsstatus'] ?? $ticket['Member_Status'] ?? '');
+                if (strpos($member_status, 'aktiv') !== false || strpos($member_status, 'active') !== false) {
+                    $status = 'ok';
+                }
+            }
+        }
+
+        return [
+            'status' => $status,
+            'name' => $name,
+            'email' => $email,
+            'eid' => $eid,
+            'ticket_id' => $ticket['id'] ?? '',
+            'ticket_status' => $ticket['Status'] ?? ''
+        ];
+    }
+
+    /**
+     * Triggert den Webhook asynchron im Hintergrund
+     */
+    private function trigger_webhook_async($webhook_url, $code) {
+        if (empty($webhook_url)) return;
+
+        $sep = (strpos($webhook_url, '?') !== false) ? '&' : '?';
+        $url = $webhook_url . $sep . 'code=' . rawurlencode($code);
+
+        // Non-blocking Request (fire and forget)
+        wp_remote_get($url, [
+            'timeout' => 0.01,
+            'blocking' => false,
+            'headers' => [
+                'Accept' => 'application/json'
+            ]
+        ]);
     }
 }
 

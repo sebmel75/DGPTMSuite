@@ -106,6 +106,8 @@ class DGPTM_Central_Settings_Registry {
      * CRM Abruf (Zoho API) Settings
      */
     private function register_crm_abruf_settings() {
+        // Hinweis: Die vollstaendige Zoho API Konfiguration (OAuth, Endpunkte) ist unter
+        // Einstellungen > Zoho API verfuegbar. Diese zentrale Seite zeigt nur Basis-Einstellungen.
         dgptm_register_module_settings([
             'id' => 'crm-abruf',
             'title' => 'Zoho CRM API',
@@ -113,22 +115,11 @@ class DGPTM_Central_Settings_Registry {
             'icon' => 'dashicons-cloud',
             'priority' => 5,
             'sections' => [
-                ['id' => 'oauth', 'title' => 'OAuth-Konfiguration', 'description' => 'Zoho API Zugangsdaten fuer die CRM-Integration.'],
-                ['id' => 'endpoints', 'title' => 'API-Endpunkte', 'description' => 'Konfiguration der REST-Endpunkte.']
+                ['id' => 'info', 'title' => 'Zoho API Konfiguration', 'description' => '<strong>Wichtig:</strong> Die vollstaendige Konfiguration (OAuth-Verbindung, REST-API-Endpunkte) finden Sie unter <a href="' . admin_url('options-general.php?page=dgptm-zoho-api-settings') . '">Einstellungen &rarr; Zoho API</a>.'],
+                ['id' => 'status', 'title' => 'Verbindungsstatus', 'description' => 'Aktuelle OAuth-Verbindungsinformationen.']
             ],
             'fields' => [
-                ['id' => 'api_url', 'section' => 'endpoints', 'title' => 'API URL', 'type' => 'url', 'description' => 'Zoho CRM API Endpunkt URL'],
-                ['id' => 'client_id', 'section' => 'oauth', 'title' => 'Client ID', 'type' => 'text', 'required' => true],
-                ['id' => 'client_secret', 'section' => 'oauth', 'title' => 'Client Secret', 'type' => 'password', 'required' => true],
-                ['id' => 'refresh_token', 'section' => 'oauth', 'title' => 'Refresh Token', 'type' => 'password', 'description' => 'Wird automatisch bei OAuth-Verbindung gesetzt'],
-                ['id' => 'data_center', 'section' => 'oauth', 'title' => 'Data Center', 'type' => 'select', 'options' => [
-                    'eu' => 'EU (zoho.eu)',
-                    'com' => 'US (zoho.com)',
-                    'in' => 'India (zoho.in)',
-                    'au' => 'Australia (zoho.com.au)'
-                ], 'default' => 'eu'],
-                ['id' => 'cache_ttl', 'section' => 'endpoints', 'title' => 'Cache-Dauer (Sekunden)', 'type' => 'number', 'default' => 300, 'min' => 60, 'max' => 3600],
-                ['id' => 'enable_logging', 'section' => 'endpoints', 'title' => 'API-Logging aktivieren', 'type' => 'checkbox', 'default' => false]
+                ['id' => 'enable_logging', 'section' => 'status', 'title' => 'API-Logging aktivieren', 'type' => 'checkbox', 'default' => false, 'description' => 'Protokolliert alle API-Aufrufe fuer Debugging']
             ]
         ]);
 
@@ -955,6 +946,7 @@ class DGPTM_Central_Settings_Registry {
             'icon' => 'dashicons-edit',
             'priority' => 82,
             'sections' => [
+                ['id' => 'info', 'title' => 'Abhaengigkeiten', 'description' => '<strong>Hinweis:</strong> Dieses Modul benoetigt eine aktive Zoho CRM Verbindung. Konfigurieren Sie diese unter <a href="' . admin_url('options-general.php?page=dgptm-zoho-api-settings') . '">Einstellungen &rarr; Zoho API</a>.'],
                 ['id' => 'gocardless', 'title' => 'GoCardless API', 'description' => 'GoCardless API-Zugangsdaten fuer SEPA-Lastschriften.']
             ],
             'fields' => [

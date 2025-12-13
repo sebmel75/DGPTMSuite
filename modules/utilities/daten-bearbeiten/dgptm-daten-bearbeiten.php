@@ -570,30 +570,46 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
 
         /**
          * Fetch contact from Zoho CRM
+         * Tries Contacts first, then Leads if not found
          */
         private function fetch_contact_from_crm($zoho_id, $token) {
-            $response = wp_remote_get(
-                'https://www.zohoapis.eu/crm/v2/Contacts/' . $zoho_id,
-                [
+            // Try Contacts module first
+            $modules = ['Contacts', 'Leads'];
+
+            foreach ($modules as $module) {
+                $url = 'https://www.zohoapis.eu/crm/v2/' . $module . '/' . $zoho_id;
+                $this->log("Trying to fetch from {$module}: {$url}");
+
+                $response = wp_remote_get($url, [
                     'headers' => [
                         'Authorization' => 'Zoho-oauthtoken ' . $token,
                     ],
                     'timeout' => 30
-                ]
-            );
+                ]);
 
-            if (is_wp_error($response)) {
-                $this->log('ERROR: Failed to fetch contact: ' . $response->get_error_message());
-                return false;
+                if (is_wp_error($response)) {
+                    $this->log("ERROR: Failed to fetch from {$module}: " . $response->get_error_message());
+                    continue;
+                }
+
+                $http_code = wp_remote_retrieve_response_code($response);
+                $body_raw = wp_remote_retrieve_body($response);
+                $body = json_decode($body_raw, true);
+
+                $this->log("Response from {$module} - HTTP {$http_code}");
+
+                if ($http_code === 200 && isset($body['data'][0])) {
+                    $this->log("Found record in {$module}");
+                    return $body['data'][0];
+                }
+
+                // Log the error response for debugging
+                if ($http_code !== 200) {
+                    $this->log("Response body: " . substr($body_raw, 0, 500));
+                }
             }
 
-            $http_code = wp_remote_retrieve_response_code($response);
-            $body = json_decode(wp_remote_retrieve_body($response), true);
-
-            if ($http_code === 200 && isset($body['data'][0])) {
-                return $body['data'][0];
-            }
-
+            $this->log("ERROR: Record not found in any module for ID: {$zoho_id}");
             return false;
         }
 

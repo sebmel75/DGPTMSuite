@@ -117,9 +117,10 @@ class DGPTM_Central_Settings_Registry {
                 ['id' => 'endpoints', 'title' => 'API-Endpunkte', 'description' => 'Konfiguration der REST-Endpunkte.']
             ],
             'fields' => [
+                ['id' => 'api_url', 'section' => 'endpoints', 'title' => 'API URL', 'type' => 'url', 'description' => 'Zoho CRM API Endpunkt URL'],
                 ['id' => 'client_id', 'section' => 'oauth', 'title' => 'Client ID', 'type' => 'text', 'required' => true],
                 ['id' => 'client_secret', 'section' => 'oauth', 'title' => 'Client Secret', 'type' => 'password', 'required' => true],
-                ['id' => 'refresh_token', 'section' => 'oauth', 'title' => 'Refresh Token', 'type' => 'password'],
+                ['id' => 'refresh_token', 'section' => 'oauth', 'title' => 'Refresh Token', 'type' => 'password', 'description' => 'Wird automatisch bei OAuth-Verbindung gesetzt'],
                 ['id' => 'data_center', 'section' => 'oauth', 'title' => 'Data Center', 'type' => 'select', 'options' => [
                     'eu' => 'EU (zoho.eu)',
                     'com' => 'US (zoho.com)',
@@ -135,19 +136,32 @@ class DGPTM_Central_Settings_Registry {
     }
 
     private function migrate_crm_abruf_settings() {
-        if (get_option('dgptm_crm_abruf_migrated')) return;
+        // Immer pruefen ob neue Werte aus alten Options uebernommen werden koennen
+        $current_settings = get_option('dgptm_module_settings_crm-abruf', []);
 
-        $new_settings = [];
-        $old_keys = ['zoho_client_id' => 'client_id', 'zoho_client_secret' => 'client_secret', 'zoho_refresh_token' => 'refresh_token'];
+        // Die tatsaechlichen Option-Namen mit dgptm_ Prefix
+        $old_keys = [
+            'dgptm_zoho_client_id' => 'client_id',
+            'dgptm_zoho_client_secret' => 'client_secret',
+            'dgptm_zoho_refresh_token' => 'refresh_token',
+            'dgptm_zoho_api_url' => 'api_url'
+        ];
+
+        $updated = false;
         foreach ($old_keys as $old => $new) {
-            $val = get_option($old);
-            if ($val) $new_settings[$new] = $val;
+            // Nur migrieren wenn zentrale Einstellung leer ist
+            if (empty($current_settings[$new])) {
+                $val = get_option($old);
+                if ($val) {
+                    $current_settings[$new] = $val;
+                    $updated = true;
+                }
+            }
         }
 
-        if (!empty($new_settings)) {
-            update_option('dgptm_module_settings_crm-abruf', $new_settings);
+        if ($updated) {
+            update_option('dgptm_module_settings_crm-abruf', $current_settings);
         }
-        update_option('dgptm_crm_abruf_migrated', true);
     }
 
     /**
@@ -913,20 +927,21 @@ class DGPTM_Central_Settings_Registry {
     }
 
     private function migrate_github_sync_settings() {
-        if (get_option('dgptm_github_sync_migrated')) return;
-
+        $current_settings = get_option('dgptm_module_settings_github-sync', []);
         $old_options = get_option('dgptm_github_sync_options', []);
-        if (!empty($old_options)) {
-            $new_settings = [];
-            if (isset($old_options['webhook_secret'])) $new_settings['webhook_secret'] = $old_options['webhook_secret'];
-            if (isset($old_options['auto_backup'])) $new_settings['auto_backup'] = $old_options['auto_backup'];
-            if (isset($old_options['backup_retention'])) $new_settings['backup_retention'] = $old_options['backup_retention'];
 
-            if (!empty($new_settings)) {
-                update_option('dgptm_module_settings_github-sync', $new_settings);
+        $updated = false;
+        $keys = ['webhook_secret', 'auto_backup', 'backup_retention'];
+        foreach ($keys as $key) {
+            if (empty($current_settings[$key]) && isset($old_options[$key])) {
+                $current_settings[$key] = $old_options[$key];
+                $updated = true;
             }
         }
-        update_option('dgptm_github_sync_migrated', true);
+
+        if ($updated) {
+            update_option('dgptm_module_settings_github-sync', $current_settings);
+        }
     }
 
     /**
@@ -951,18 +966,13 @@ class DGPTM_Central_Settings_Registry {
     }
 
     private function migrate_daten_bearbeiten_settings() {
-        if (get_option('dgptm_daten_bearbeiten_migrated')) return;
-
+        $current_settings = get_option('dgptm_module_settings_daten-bearbeiten', []);
         $old_options = get_option('dgptm_daten_bearbeiten_options', []);
-        if (!empty($old_options)) {
-            $new_settings = [];
-            if (isset($old_options['gocardless_token'])) $new_settings['gocardless_token'] = $old_options['gocardless_token'];
 
-            if (!empty($new_settings)) {
-                update_option('dgptm_module_settings_daten-bearbeiten', $new_settings);
-            }
+        if (empty($current_settings['gocardless_token']) && isset($old_options['gocardless_token'])) {
+            $current_settings['gocardless_token'] = $old_options['gocardless_token'];
+            update_option('dgptm_module_settings_daten-bearbeiten', $current_settings);
         }
-        update_option('dgptm_daten_bearbeiten_migrated', true);
     }
 
     /**
@@ -1002,33 +1012,31 @@ class DGPTM_Central_Settings_Registry {
     }
 
     private function migrate_abstimmen_addon_settings() {
-        if (get_option('dgptm_abstimmen_addon_migrated')) return;
-
+        $current_settings = get_option('dgptm_module_settings_abstimmen-addon', []);
         $old_options = get_option('dgptm_vote_settings', []);
-        if (!empty($old_options)) {
-            $new_settings = [];
-            $mapping = [
-                'default_question_type' => 'default_question_type',
-                'results_visible' => 'results_visible',
-                'zoom_account_id' => 'zoom_account_id',
-                'zoom_client_id' => 'zoom_client_id',
-                'zoom_client_secret' => 'zoom_client_secret',
-                'zoom_webhook_secret' => 'zoom_webhook_secret',
-                'send_email_on_vote' => 'send_email_on_vote',
-                'admin_email' => 'admin_email'
-            ];
 
-            foreach ($mapping as $old => $new) {
-                if (isset($old_options[$old])) {
-                    $new_settings[$new] = $old_options[$old];
-                }
-            }
+        $mapping = [
+            'default_question_type' => 'default_question_type',
+            'results_visible' => 'results_visible',
+            'zoom_account_id' => 'zoom_account_id',
+            'zoom_client_id' => 'zoom_client_id',
+            'zoom_client_secret' => 'zoom_client_secret',
+            'zoom_webhook_secret' => 'zoom_webhook_secret',
+            'send_email_on_vote' => 'send_email_on_vote',
+            'admin_email' => 'admin_email'
+        ];
 
-            if (!empty($new_settings)) {
-                update_option('dgptm_module_settings_abstimmen-addon', $new_settings);
+        $updated = false;
+        foreach ($mapping as $old => $new) {
+            if (empty($current_settings[$new]) && isset($old_options[$old])) {
+                $current_settings[$new] = $old_options[$old];
+                $updated = true;
             }
         }
-        update_option('dgptm_abstimmen_addon_migrated', true);
+
+        if ($updated) {
+            update_option('dgptm_module_settings_abstimmen-addon', $current_settings);
+        }
     }
 }
 

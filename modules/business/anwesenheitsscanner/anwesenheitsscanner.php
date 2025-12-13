@@ -1228,17 +1228,18 @@ jQuery(function($){
 		}
 	});
 
-	/* ---------- Präsenz-Scanner: Enter → Webhook GET + REST speichern ---------- */
+	/* ---------- Präsenz-Scanner: Enter → Direkte CRM-Abfrage (schnell) + Webhook async ---------- */
 	$(document).on("keydown",".dgptm-presence .scan-input", function(ev){
 		if(ev.key !== "Enter") return;
 		ev.preventDefault();
 		const box = $(this).closest(".dgptm-presence");
 		const code = $(this).val().trim();
 		if(!code){ return; }
-		const url  = box.data("webhook");
+		const webhookUrl = box.data("webhook");
 		const kind = box.data("kind") || "auto";
 		const mid  = String(box.data("meeting") || "");
 		const saveOn = String(box.data("saveon")||"green,yellow").split(",").map(s=>s.trim());
+		const useCrm = String(box.data("usecrm")||"1") === "1";
 
 		function flash(color, name, status){
 			const f = box.find(".flash");
@@ -1273,18 +1274,39 @@ jQuery(function($){
 
 		(async ()=>{
 			try{
-				const hook = url ? (
-					url.indexOf("{scan}")>=0 ? url.replace("{scan}", encodeURIComponent(code)) :
-					url.indexOf("{code}")>=0 ? url.replace("{code}", encodeURIComponent(code)) :
-					url + (url.indexOf("?")>=0?"&":"?") + "scan=" + encodeURIComponent(code)
-				) : "";
-
 				let resNorm = {ok:false, result:"red", name:"", status:"", email:""};
-				if(hook){
+
+				// NEU: Direkte CRM-Abfrage (schneller als externer Webhook)
+				if(useCrm && dgptm_vote.rest_ticket_check){
+					// CRM-Endpoint aufrufen - dieser triggert den Webhook automatisch async im Hintergrund
+					const crmUrl = dgptm_vote.rest_ticket_check + "?scan=" + encodeURIComponent(code) + "&webhook=1";
+					try{
+						const r = await fetch(crmUrl, {
+							method: "GET",
+							headers: {"Accept":"application/json", "X-WP-Nonce": dgptm_vote.rest_nonce},
+							credentials: "same-origin"
+						});
+						if(r.ok){
+							const raw = await r.json();
+							resNorm = raw || resNorm;
+							console.log("[Scanner] CRM response:", resNorm);
+						}
+					}catch(crmErr){
+						console.warn("[Scanner] CRM-Abfrage fehlgeschlagen, Fallback zu Webhook:", crmErr);
+					}
+				}
+
+				// Fallback: Nur wenn CRM deaktiviert oder fehlgeschlagen und Webhook-URL vorhanden
+				if(!resNorm.ok && webhookUrl && !useCrm){
+					const hook = webhookUrl.indexOf("{scan}")>=0 ? webhookUrl.replace("{scan}", encodeURIComponent(code)) :
+						webhookUrl.indexOf("{code}")>=0 ? webhookUrl.replace("{code}", encodeURIComponent(code)) :
+						webhookUrl + (webhookUrl.indexOf("?")>=0?"&":"?") + "scan=" + encodeURIComponent(code);
+
 					const r = await fetch(hook, {method:"GET", mode:"cors", credentials:"omit", headers:{"Accept":"application/json"}});
-					if(!r.ok){ throw new Error("HTTP "+r.status); }
-					const raw = await r.json();
-					resNorm = normalizeWebhookResponse(raw) || resNorm;
+					if(r.ok){
+						const raw = await r.json();
+						resNorm = normalizeWebhookResponse(raw) || resNorm;
+					}
 				}
 
 				const result = (resNorm && typeof resNorm.result==="string") ? resNorm.result.toLowerCase() : "red";
@@ -1297,11 +1319,12 @@ jQuery(function($){
 						id: mid, kind: kind, name: resNorm.name||"", email: resNorm.email||"", status: resNorm.status||"", result: result, ts: Date.now()
 					});
 				}
-				
+
 				// Zur Anwesenheitsliste hinzufügen (ohne manuelle Markierung)
 				addToAttendanceList(resNorm, false);
-				
+
 			}catch(e){
+				console.error("[Scanner] Error:", e);
 				flash("red","", "Fehler / keine Antwort"); beep(false);
 			}finally{
 				$(ev.target).val("");
@@ -1427,6 +1450,8 @@ jQuery(function($){
 		'rest_presence_list'   => esc_url_raw( rest_url( 'dgptm-zoom/v1/presence-list' ) ),
 		'rest_presence_delete' => esc_url_raw( rest_url( 'dgptm-zoom/v1/presence-delete' ) ),
 		'rest_presence_pdf'    => esc_url_raw( rest_url( 'dgptm-zoom/v1/presence-pdf' ) ),
+		// Direkte CRM-Ticket-Abfrage (schneller als externer Webhook)
+		'rest_ticket_check'    => esc_url_raw( rest_url( 'dgptm-zoom/v1/ticket-check' ) ),
 		'rest_nonce'           => wp_create_nonce('wp_rest'),
 	] );
 	wp_add_inline_script( 'dgptm-vote-js', $js );
@@ -2868,6 +2893,13 @@ register_rest_route(self::REST_NS_ZOOM, '/presence-list', [
 		'callback' => [ $this, 'rest_presence_pdf' ],
 		'permission_callback' => function(){ return is_user_logged_in(); }
 	]);
+
+	// Neuer Endpoint: Direkte CRM-Ticket-Abfrage (schneller als Webhook)
+	register_rest_route(self::REST_NS_ZOOM, '/ticket-check', [
+		'methods'  => 'GET',
+		'callback' => [ $this, 'rest_ticket_check' ],
+		'permission_callback' => '__return_true',
+	]);
 }
 
 public function rest_presence_list( \WP_REST_Request $req ){
@@ -3487,7 +3519,289 @@ if (!empty($body['manual'])) {
     readfile($tmp); @unlink($tmp); exit;
 }
 
-	
+/**
+ * Direkte CRM-Ticket-Abfrage für schnellere Scanner-Antwort
+ *
+ * Sucht im Zoho CRM Tickets-Modul nach dem gescannten Code.
+ * Triggert optional den alten Webhook im Hintergrund für zusätzliche CRM-Aktionen.
+ *
+ * @param \WP_REST_Request $req Request mit 'scan' Parameter (Ticket-Code/Barcode)
+ * @return \WP_REST_Response JSON mit {ok, result, name, status, email}
+ */
+public function rest_ticket_check(\WP_REST_Request $req) {
+	$scan = sanitize_text_field($req->get_param('scan') ?? '');
+	$trigger_webhook = (bool)($req->get_param('webhook') ?? true);
+
+	$this->dbg('ticket_check', ['scan' => $scan, 'trigger_webhook' => $trigger_webhook]);
+
+	if (empty($scan)) {
+		return new \WP_REST_Response([
+			'ok' => false,
+			'result' => 'red',
+			'name' => '',
+			'status' => 'Kein Code übermittelt',
+			'email' => ''
+		], 200);
+	}
+
+	// OAuth-Token vom crm-abruf Modul holen
+	$token = $this->get_crm_oauth_token();
+
+	if (!$token) {
+		$this->dbg('ticket_check', 'No OAuth token available');
+		return new \WP_REST_Response([
+			'ok' => false,
+			'result' => 'red',
+			'name' => '',
+			'status' => 'CRM nicht verbunden',
+			'email' => ''
+		], 200);
+	}
+
+	// Direkte CRM-Abfrage: Ticket nach Name (Barcode) suchen
+	$ticket = $this->fetch_ticket_from_crm($scan, $token);
+
+	// Webhook im Hintergrund triggern (für CRM-Aktionen wie Anwesenheitsmarkierung)
+	if ($trigger_webhook) {
+		$opts = get_option(self::OPT_KEY, $this->defaults());
+		$webhook_url = $opts['presence_webhook_url'] ?? '';
+		if (!empty($webhook_url)) {
+			$this->trigger_webhook_async($webhook_url, $scan);
+		}
+	}
+
+	if (!$ticket) {
+		$this->dbg('ticket_check', 'Ticket not found for scan: ' . $scan);
+		return new \WP_REST_Response([
+			'ok' => false,
+			'result' => 'red',
+			'name' => '',
+			'status' => 'Ticket nicht gefunden',
+			'email' => ''
+		], 200);
+	}
+
+	// Ticket gefunden - Status auswerten
+	$result = $this->evaluate_ticket_status($ticket);
+
+	$this->dbg('ticket_check', [
+		'scan' => $scan,
+		'result' => $result['result'],
+		'name' => $result['name'],
+		'status' => $result['status']
+	]);
+
+	return new \WP_REST_Response($result, 200);
+}
+
+/**
+ * Holt OAuth-Token vom crm-abruf Modul
+ */
+private function get_crm_oauth_token(): ?string {
+	// Versuche verschiedene Klassen
+	if (class_exists('DGPTM_Zoho_CRM_Hardened')) {
+		$crm = \DGPTM_Zoho_CRM_Hardened::get_instance();
+		if (method_exists($crm, 'get_oauth_token')) {
+			$token = $crm->get_oauth_token();
+			if ($token && !is_wp_error($token)) {
+				return $token;
+			}
+		}
+	}
+
+	if (class_exists('DGPTM_Zoho_Plugin')) {
+		$zoho = \DGPTM_Zoho_Plugin::get_instance();
+		if (method_exists($zoho, 'get_oauth_token')) {
+			$token = $zoho->get_oauth_token();
+			if ($token && !is_wp_error($token)) {
+				return $token;
+			}
+		}
+	}
+
+	if (class_exists('DGPTM_Mitgliedsantrag')) {
+		$ma = \DGPTM_Mitgliedsantrag::get_instance();
+		if (method_exists($ma, 'get_access_token')) {
+			$token = $ma->get_access_token();
+			if ($token) {
+				return $token;
+			}
+		}
+	}
+
+	return null;
+}
+
+/**
+ * Sucht Ticket im Zoho CRM anhand des Namens (Barcode/Scan-Code)
+ *
+ * @param string $scan Der gescannte Code (wird als Ticket-Name gesucht)
+ * @param string $token OAuth-Token
+ * @return array|null Ticket-Daten oder null wenn nicht gefunden
+ */
+private function fetch_ticket_from_crm(string $scan, string $token): ?array {
+	// Suche im Tickets-Modul nach dem Namen (Barcode)
+	// Criteria: Name equals scan OR Ticket_Subject contains scan
+	$url = 'https://www.zohoapis.eu/crm/v2/Tickets/search?criteria=((Name:equals:' . urlencode($scan) . ')or(Subject:contains:' . urlencode($scan) . '))';
+
+	$this->dbg('fetch_ticket_from_crm', ['url' => $url]);
+
+	$response = wp_remote_get($url, [
+		'headers' => [
+			'Authorization' => 'Zoho-oauthtoken ' . $token,
+		],
+		'timeout' => 10
+	]);
+
+	if (is_wp_error($response)) {
+		$this->dbg('fetch_ticket_from_crm', 'HTTP Error: ' . $response->get_error_message());
+		return null;
+	}
+
+	$http_code = wp_remote_retrieve_response_code($response);
+	$body = wp_remote_retrieve_body($response);
+	$data = json_decode($body, true);
+
+	$this->dbg('fetch_ticket_from_crm', ['http_code' => $http_code, 'response' => substr($body, 0, 500)]);
+
+	// 204 = No Content (keine Ergebnisse)
+	if ($http_code === 204) {
+		// Fallback: Direkte ID-Abfrage falls scan eine Zoho-ID ist
+		if (preg_match('/^\d{15,}$/', $scan)) {
+			return $this->fetch_ticket_by_id($scan, $token);
+		}
+		return null;
+	}
+
+	if ($http_code !== 200 || !isset($data['data'][0])) {
+		return null;
+	}
+
+	return $data['data'][0];
+}
+
+/**
+ * Holt Ticket direkt per ID
+ */
+private function fetch_ticket_by_id(string $ticket_id, string $token): ?array {
+	$url = 'https://www.zohoapis.eu/crm/v2/Tickets/' . $ticket_id;
+
+	$response = wp_remote_get($url, [
+		'headers' => [
+			'Authorization' => 'Zoho-oauthtoken ' . $token,
+		],
+		'timeout' => 10
+	]);
+
+	if (is_wp_error($response)) {
+		return null;
+	}
+
+	$http_code = wp_remote_retrieve_response_code($response);
+	$body = wp_remote_retrieve_body($response);
+	$data = json_decode($body, true);
+
+	if ($http_code !== 200 || !isset($data['data'][0])) {
+		return null;
+	}
+
+	return $data['data'][0];
+}
+
+/**
+ * Wertet den Ticket-Status aus und gibt das Ergebnis zurück
+ */
+private function evaluate_ticket_status(array $ticket): array {
+	// Standard-Felder aus Zoho Tickets
+	$name = '';
+	$email = '';
+	$status = '';
+	$result = 'red';
+
+	// Contact-Daten aus dem Ticket extrahieren
+	if (!empty($ticket['Contact_Name'])) {
+		if (is_array($ticket['Contact_Name'])) {
+			$name = $ticket['Contact_Name']['name'] ?? '';
+		} else {
+			$name = (string)$ticket['Contact_Name'];
+		}
+	}
+
+	// Fallback: Subject als Name
+	if (empty($name) && !empty($ticket['Subject'])) {
+		$name = (string)$ticket['Subject'];
+	}
+
+	// E-Mail aus Contact oder direkt
+	if (!empty($ticket['Email'])) {
+		$email = (string)$ticket['Email'];
+	}
+
+	// Status auswerten
+	$ticket_status = strtolower($ticket['Status'] ?? '');
+	$this->dbg('evaluate_ticket_status', ['ticket_status' => $ticket_status, 'ticket' => $ticket]);
+
+	// Grün: Ticket ist gültig/aktiv
+	$green_statuses = ['open', 'offen', 'gültig', 'valid', 'aktiv', 'active', 'approved', 'confirmed', 'bestätigt'];
+	// Gelb: Teilweise gültig oder Warnung
+	$yellow_statuses = ['pending', 'ausstehend', 'in progress', 'in bearbeitung', 'warnung', 'warning'];
+
+	if (in_array($ticket_status, $green_statuses, true)) {
+		$result = 'green';
+		$status = 'Gültig';
+	} elseif (in_array($ticket_status, $yellow_statuses, true)) {
+		$result = 'yellow';
+		$status = 'Ausstehend';
+	} else {
+		// Prüfe auf benutzerdefinierte Felder für Mitgliedsstatus
+		if (!empty($ticket['Mitgliedsstatus']) || !empty($ticket['Member_Status'])) {
+			$member_status = strtolower($ticket['Mitgliedsstatus'] ?? $ticket['Member_Status'] ?? '');
+			if (strpos($member_status, 'aktiv') !== false || strpos($member_status, 'active') !== false) {
+				$result = 'green';
+				$status = $ticket['Mitgliedsstatus'] ?? $ticket['Member_Status'] ?? 'Aktiv';
+			}
+		}
+
+		// Fallback Status-Text
+		if ($result === 'red') {
+			$status = !empty($ticket['Status']) ? $ticket['Status'] : 'Ungültig';
+		}
+	}
+
+	return [
+		'ok' => ($result !== 'red'),
+		'result' => $result,
+		'name' => $name,
+		'status' => $status,
+		'email' => $email,
+		'ticket_id' => $ticket['id'] ?? ''
+	];
+}
+
+/**
+ * Triggert den alten Webhook asynchron im Hintergrund
+ */
+private function trigger_webhook_async(string $webhook_url, string $scan): void {
+	// URL mit Scan-Parameter erstellen
+	if (strpos($webhook_url, '{scan}') !== false) {
+		$url = str_replace('{scan}', urlencode($scan), $webhook_url);
+	} elseif (strpos($webhook_url, '{code}') !== false) {
+		$url = str_replace('{code}', urlencode($scan), $webhook_url);
+	} else {
+		$url = $webhook_url . (strpos($webhook_url, '?') !== false ? '&' : '?') . 'scan=' . urlencode($scan);
+	}
+
+	$this->dbg('trigger_webhook_async', ['url' => $url]);
+
+	// Non-blocking Request (timeout=0.01 = fire and forget)
+	wp_remote_get($url, [
+		'timeout' => 0.01,
+		'blocking' => false,
+		'headers' => [
+			'Accept' => 'application/json'
+		]
+	]);
+}
 
 public function shortcode_presence_scanner( $atts ) {
 	$opts = get_option( self::OPT_KEY, $this->defaults() );
@@ -3495,20 +3809,22 @@ public function shortcode_presence_scanner( $atts ) {
 		'webhook'        => $opts['presence_webhook_url'] ?? '',
 		'meeting_number' => $opts['zoom_meeting_number'] ?? '',
 		'kind'           => $opts['zoom_kind'] ?? 'auto',
-		'save_on'        => 'green,yellow'
+		'save_on'        => 'green,yellow',
+		'use_crm'        => '1',  // NEU: Direkte CRM-Abfrage (schneller), Webhook läuft async im Hintergrund
 	], $atts, 'dgptm_presence_scanner');
 
 	$mid  = preg_replace('/\D/','', (string)$a['meeting_number']);
 	$kind = strtolower((string)$a['kind']);
 	if (!in_array($kind,['auto','meeting','webinar'],true)) $kind='auto';
 	$webhook = esc_url_raw($a['webhook']);
+	$use_crm = ($a['use_crm'] === '1' || $a['use_crm'] === 'true' || $a['use_crm'] === true) ? '1' : '0';
 
 	ob_start(); ?>
 <div class="hint">
  <h2 style="text-align: center;"><img class="alignnone size-medium wp-image-37698" src="https://perfusiologie.de/wp-content/uploads/2025/08/DGPTM_Logo_rgb_300_240911-300x65.png" alt="" width="300" height="65" /></h2>
 <h2 style="text-align: center;">Mitgliedervollversammlung der DGPTM 2025</h2>
   </div>
-<div class="dgptm-presence" data-webhook="<?php echo esc_attr($webhook); ?>" data-meeting="<?php echo esc_attr($mid); ?>" data-kind="<?php echo esc_attr($kind); ?>" data-saveon="<?php echo esc_attr($a['save_on']); ?>">
+<div class="dgptm-presence" data-webhook="<?php echo esc_attr($webhook); ?>" data-meeting="<?php echo esc_attr($mid); ?>" data-kind="<?php echo esc_attr($kind); ?>" data-saveon="<?php echo esc_attr($a['save_on']); ?>" data-usecrm="<?php echo esc_attr($use_crm); ?>">
   <div class="flash"></div>
   <input type="text" class="scan-input" placeholder="Code scannen &amp; Enter" autofocus />
   <div class="info" aria-live="polite"></div>

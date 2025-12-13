@@ -4,6 +4,20 @@ on:
   push:
     branches: [main]
   workflow_dispatch:  # Manueller Trigger
+    inputs:
+      confirm_deploy:
+        description: 'Deployment bestätigen (yes/no)'
+        required: true
+        default: 'yes'
+        type: choice
+        options:
+          - 'yes'
+          - 'no'
+
+# Sicherheit: Minimale Berechtigungen
+permissions:
+  contents: read
+  actions: read
 
 env:
   PLUGIN_NAME: dgptm-plugin-suite
@@ -45,6 +59,12 @@ jobs:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: test  # Nur nach erfolgreichen Tests
+    environment:
+      name: production
+      url: https://perfusiologie.de
+
+    # Abbrechen wenn manuell "no" gewählt wurde
+    if: ${{ github.event.inputs.confirm_deploy != 'no' }}
 
     steps:
       - name: Checkout Code
@@ -107,18 +127,45 @@ jobs:
                fi"
         continue-on-error: true
 
+      - name: Check Target Directory
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          echo "Checking target directory..."
+          sshpass -e ssh -o StrictHostKeyChecking=no \
+              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+              "echo 'Home directory:' && pwd && \
+               echo '' && \
+               echo 'Checking WP_PATH: ${{ secrets.WP_PATH }}' && \
+               ls -la ${{ secrets.WP_PATH }}/ 2>&1 | head -10 && \
+               echo '' && \
+               echo 'Checking plugins directory:' && \
+               ls -la ${{ secrets.WP_PATH }}/wp-content/plugins/ 2>&1 | head -10 || \
+               echo 'Creating plugins directory...' && \
+               mkdir -p ${{ secrets.WP_PATH }}/wp-content/plugins/"
+
       - name: Deploy via rsync
         env:
           SSHPASS: ${{ secrets.SSH_PASSWORD }}
         run: |
           echo "Deploying to production..."
+          echo "Target: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.WP_PATH }}/wp-content/plugins/${{ env.PLUGIN_NAME }}/"
           sshpass -e rsync -avz --delete \
                 --exclude='exports/' \
                 --exclude='*.log' \
                 -e "ssh -o StrictHostKeyChecking=no" \
                 ./deploy-package/ \
-                ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.WP_PATH }}/wp-content/plugins/${{ env.PLUGIN_NAME }}/
-          echo "Deployment completed"
+                ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.WP_PATH }}/wp-content/plugins/${{ env.PLUGIN_NAME }}/ || {
+            echo "❌ rsync failed!"
+            echo "Trying alternative with full path from home..."
+            sshpass -e rsync -avz --delete \
+                  --exclude='exports/' \
+                  --exclude='*.log' \
+                  -e "ssh -o StrictHostKeyChecking=no" \
+                  ./deploy-package/ \
+                  ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/httpdocs/wp-content/plugins/${{ env.PLUGIN_NAME }}/
+          }
+          echo "✅ Deployment completed"
 
       - name: Verify Deployment
         env:

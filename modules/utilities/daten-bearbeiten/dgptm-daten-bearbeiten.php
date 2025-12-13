@@ -13,11 +13,6 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// GoCardless API Token - aus wp-config.php oder direkt hier
-if (!defined('DGPTM_GOCARDLESS_TOKEN')) {
-    define('DGPTM_GOCARDLESS_TOKEN', 'REMOVED_TOKEN_CONFIGURE_IN_SETTINGS');
-}
-
 // Prevent class redeclaration
 if (!class_exists('DGPTM_Daten_Bearbeiten')) {
 
@@ -78,6 +73,129 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
             add_shortcode('dgptm-daten-bearbeiten', [$this, 'render_edit_form']);
             add_shortcode('dgptm-studistatus', [$this, 'render_student_status_form']);
             add_shortcode('dgptm-studistatus-banner', [$this, 'render_student_status_banner']);
+
+            // Admin settings
+            add_action('admin_menu', [$this, 'add_admin_menu']);
+            add_action('admin_init', [$this, 'register_settings']);
+        }
+
+        /**
+         * Add admin menu page
+         */
+        public function add_admin_menu() {
+            add_options_page(
+                'Daten bearbeiten - Einstellungen',
+                'Daten bearbeiten',
+                'manage_options',
+                'dgptm-daten-bearbeiten',
+                [$this, 'render_settings_page']
+            );
+        }
+
+        /**
+         * Register settings
+         */
+        public function register_settings() {
+            register_setting(
+                'dgptm_daten_bearbeiten_settings',
+                'dgptm_daten_bearbeiten_options',
+                [$this, 'sanitize_settings']
+            );
+
+            add_settings_section(
+                'dgptm_gocardless_section',
+                'GoCardless API Einstellungen',
+                [$this, 'render_gocardless_section'],
+                'dgptm-daten-bearbeiten'
+            );
+
+            add_settings_field(
+                'gocardless_token',
+                'GoCardless API Token',
+                [$this, 'render_token_field'],
+                'dgptm-daten-bearbeiten',
+                'dgptm_gocardless_section'
+            );
+        }
+
+        /**
+         * Sanitize settings before saving
+         */
+        public function sanitize_settings($input) {
+            $sanitized = [];
+            if (isset($input['gocardless_token'])) {
+                $sanitized['gocardless_token'] = sanitize_text_field($input['gocardless_token']);
+            }
+            return $sanitized;
+        }
+
+        /**
+         * Render section description
+         */
+        public function render_gocardless_section() {
+            echo '<p>Geben Sie hier Ihren GoCardless API Token ein. Der Token wird sicher in der Datenbank gespeichert.</p>';
+            echo '<p><strong>Wichtig:</strong> Verwenden Sie den Live-Token nur in Produktionsumgebungen.</p>';
+        }
+
+        /**
+         * Render token input field
+         */
+        public function render_token_field() {
+            $options = get_option('dgptm_daten_bearbeiten_options', []);
+            $token = $options['gocardless_token'] ?? '';
+            $masked = !empty($token) ? str_repeat('*', strlen($token) - 4) . substr($token, -4) : '';
+            ?>
+            <input type="password"
+                   id="gocardless_token"
+                   name="dgptm_daten_bearbeiten_options[gocardless_token]"
+                   value="<?php echo esc_attr($token); ?>"
+                   class="regular-text"
+                   autocomplete="off" />
+            <p class="description">
+                <?php if (!empty($token)): ?>
+                    Aktueller Token: <code><?php echo esc_html($masked); ?></code>
+                <?php else: ?>
+                    Kein Token konfiguriert.
+                <?php endif; ?>
+            </p>
+            <p class="description">Format: <code>live_xxx...</code> (Live) oder <code>sandbox_xxx...</code> (Sandbox)</p>
+            <?php
+        }
+
+        /**
+         * Render settings page
+         */
+        public function render_settings_page() {
+            if (!current_user_can('manage_options')) {
+                return;
+            }
+            ?>
+            <div class="wrap">
+                <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
+                <form action="options.php" method="post">
+                    <?php
+                    settings_fields('dgptm_daten_bearbeiten_settings');
+                    do_settings_sections('dgptm-daten-bearbeiten');
+                    submit_button('Einstellungen speichern');
+                    ?>
+                </form>
+            </div>
+            <?php
+        }
+
+        /**
+         * Get GoCardless token securely
+         * Priority: 1. wp-config.php constant, 2. Database option
+         */
+        private function get_gocardless_token() {
+            // First check if defined in wp-config.php (for advanced users)
+            if (defined('DGPTM_GOCARDLESS_TOKEN') && !empty(DGPTM_GOCARDLESS_TOKEN)) {
+                return DGPTM_GOCARDLESS_TOKEN;
+            }
+
+            // Otherwise get from database
+            $options = get_option('dgptm_daten_bearbeiten_options', []);
+            return $options['gocardless_token'] ?? '';
         }
 
         /**
@@ -845,10 +963,10 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
          * Cancel GoCardless mandate
          */
         private function cancel_gocardless_mandate($customer_id) {
-            $token = DGPTM_GOCARDLESS_TOKEN;
+            $token = $this->get_gocardless_token();
 
             if (empty($token)) {
-                $this->log('ERROR: GoCardless Token nicht konfiguriert');
+                $this->log('ERROR: GoCardless Token nicht konfiguriert. Bitte unter Einstellungen > Daten bearbeiten konfigurieren.');
                 return false;
             }
 

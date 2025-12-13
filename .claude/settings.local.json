@@ -7,7 +7,16 @@
       "Bash(git --version:*)",
       "Bash(git init:*)",
       "Bash(git remote add:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(git stash:*)",
+      "Bash(git reflog:*)",
+      "Bash(git gc:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\ndocs: Update README with comprehensive module overview\n\n- Updated version to 3.0.0\n- Added complete module listing (50+ modules)\n- Organized modules by category with descriptions:\n  - Core Infrastructure (7)\n  - Business & Events (6)\n  - Fortbildung & Training (5)\n  - Content Management (11)\n  - Media & Video (3)\n  - Payment & Finance (3)\n  - ACF Tools (4)\n  - Utilities (11)\n- Added module-specific requirements table\n- Updated directory structure documentation\n- Added GitHub repository link\n- German language for DGPTM audience\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit:*)",
+      "Bash(gh run view:*)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": [],
     "ask": []

@@ -1,0 +1,857 @@
+/* Vimeo Stream Manager Multi - Frontend Styles */
+
+.vsm-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Banner */
+.vsm-banner {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px 30px;
+    margin-bottom: 25px;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 600;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.vsm-banner strong {
+    font-weight: 700;
+    font-size: 1.1em;
+}
+
+.vsm-banner p {
+    margin: 0.5em 0;
+}
+
+.vsm-banner a {
+    color: white;
+    text-decoration: underline;
+}
+
+/* Stream-Wrapper */
+.vsm-streams-wrapper {
+    position: relative;
+    margin-bottom: 25px;
+}
+
+/* Grid-Layout */
+.vsm-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Obere Streams Container */
+.vsm-top-streams {
+    display: grid;
+    gap: 15px;
+}
+
+.vsm-top-streams[data-columns="2"] {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.vsm-top-streams[data-columns="3"] {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.vsm-top-streams[data-columns="4"] {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+/* Stream-Box Basis */
+.vsm-stream {
+    position: relative;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Kleine Streams oben */
+.vsm-small-stream {
+    height: var(--vsm-top-height, 250px);
+    cursor: pointer;
+    position: relative;
+}
+
+.vsm-small-stream:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Mute-Indikator für kleine Streams */
+.vsm-small-stream .vsm-mute-indicator {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    z-index: 10;
+    pointer-events: none;
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+}
+
+/* Event/Livestream-Indikator */
+.vsm-small-stream.is-event::before {
+    content: '🔴 LIVE';
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background: rgba(255, 0, 0, 0.9);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    z-index: 10;
+    animation: pulse 2s infinite;
+}
+
+.vsm-main-stream.is-event::before {
+    content: '🔴 LIVE';
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(255, 0, 0, 0.9);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: bold;
+    z-index: 10;
+    animation: pulse 2s infinite;
+}
+
+.vsm-small-stream:hover .vsm-mute-indicator {
+    opacity: 1;
+}
+
+/* Switch-Indikator beim Hover */
+.vsm-small-stream .vsm-switch-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 15;
+}
+
+.vsm-small-stream:hover .vsm-switch-indicator {
+    opacity: 1;
+}
+
+/* Hauptstream unten */
+.vsm-main-stream {
+    height: var(--vsm-bottom-height, 500px);
+    position: relative;
+}
+
+/* Desktop: Extra Platz für Vimeo-Controls */
+@media (min-width: 769px) {
+    .vsm-main-stream {
+        padding-bottom: 60px; /* Platz für Vimeo-Steuerleiste */
+    }
+    
+    .vsm-main-stream .vsm-video-container {
+        height: calc(100% - 60px); /* Container-Höhe reduzieren */
+    }
+}
+
+.vsm-main-stream:hover {
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* Sound-Indikator für Hauptstream */
+.vsm-main-stream .vsm-sound-indicator {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #4CAF50;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    z-index: 10;
+    pointer-events: none;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* Video-Container */
+.vsm-video-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.vsm-video-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+/* Platzhalter */
+.vsm-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+}
+
+.vsm-placeholder-content {
+    text-align: center;
+    color: #666;
+}
+
+.vsm-placeholder-content .dashicons {
+    font-size: 48px;
+    display: block;
+    margin: 0 auto 10px;
+}
+
+.vsm-placeholder-content p {
+    margin: 0;
+    font-size: 14px;
+    color: #888;
+}
+
+/* Stream-Beschriftungen */
+.vsm-stream-caption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+    color: white;
+    padding: 15px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 5;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.vsm-stream.has-caption .vsm-stream-caption {
+    opacity: 1;
+}
+
+.vsm-main-stream .vsm-stream-caption {
+    font-size: 18px;
+    padding: 20px 25px;
+    font-weight: 700;
+}
+
+/* Tag-Auswahl */
+.vsm-day-selector {
+    text-align: center;
+    padding-top: 20px;
+    border-top: 2px solid #f0f0f0;
+}
+
+.vsm-day-button {
+    display: inline-block;
+    padding: 12px 24px;
+    margin: 5px;
+    background: #f0f0f0;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    color: #333;
+    border: none;
+}
+
+.vsm-day-button:hover {
+    background: #e0e0e0;
+    transform: translateY(-2px);
+}
+
+.vsm-day-button.active {
+    background: #0073aa;
+    color: white;
+}
+
+/* Lade-Animation */
+.vsm-loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.vsm-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    z-index: 20;
+}
+
+@keyframes spin {
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Switching-Animation */
+.vsm-switching {
+    animation: switchPulse 0.5s ease;
+}
+
+@keyframes switchPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Passwort-Container */
+.vsm-password-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+    padding: 40px 20px;
+}
+
+.vsm-password-box {
+    background: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+}
+
+.vsm-password-box h2 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 24px;
+}
+
+.vsm-password-box p {
+    margin: 0 0 25px 0;
+    color: #666;
+}
+
+.vsm-password-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.vsm-password-input {
+    flex: 1;
+    padding: 12px 15px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 16px;
+}
+
+.vsm-password-input:focus {
+    outline: none;
+    border-color: #0073aa;
+}
+
+.vsm-password-submit {
+    padding: 12px 24px;
+    background: #0073aa;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.vsm-password-submit:hover {
+    background: #005a87;
+}
+
+.vsm-password-error {
+    background: #ffd9dc;
+    color: #b32d2e;
+    padding: 12px;
+    border-radius: 6px;
+    border-left: 4px solid #d63638;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .vsm-container {
+        padding: 10px;
+    }
+    
+    /* Mobile: Alle Streams gleichberechtigt */
+    .vsm-top-streams {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .vsm-small-stream,
+    .vsm-main-stream {
+        height: 200px !important; /* Einheitliche Höhe für alle Streams */
+        cursor: pointer;
+        padding-bottom: 0 !important; /* Kein extra Padding auf Mobile */
+    }
+    
+    /* Mobile: Hauptstream auch als normaler Stream behandeln */
+    .vsm-main-stream .vsm-video-container {
+        height: 100% !important;
+    }
+    
+    /* Mobile: Mute-Indikator für alle Streams standardmäßig */
+    .vsm-stream .vsm-mute-indicator {
+        display: block !important;
+    }
+    
+    /* Mobile: Sound-Indikator nur für aktiven Stream */
+    .vsm-stream.active-sound .vsm-mute-indicator {
+        display: none !important;
+    }
+    
+    .vsm-stream.active-sound .vsm-sound-indicator {
+        display: flex !important;
+    }
+    
+    .vsm-day-button {
+        padding: 10px 20px;
+        font-size: 14px;
+        margin: 3px;
+    }
+    
+    .vsm-banner {
+        padding: 15px;
+        font-size: 14px;
+    }
+    
+    /* Mobile-spezifische Indikatoren kleiner */
+    .vsm-mute-indicator,
+    .vsm-sound-indicator {
+        width: 30px;
+        height: 30px;
+        font-size: 14px;
+    }
+    
+    /* Switch-Indikator auf Mobile ausblenden */
+    .vsm-small-stream .vsm-switch-indicator {
+        display: none !important;
+    }
+    
+    /* Loading-Spinner kleiner */
+    .vsm-loading::after {
+        width: 30px;
+        height: 30px;
+        border-width: 3px;
+    }
+}
+
+@media (max-width: 480px) {
+    .vsm-container {
+        padding: 5px;
+    }
+    
+    .vsm-small-stream {
+        height: 150px !important;
+    }
+    
+    .vsm-main-stream {
+        height: 220px !important;
+    }
+    
+    .vsm-banner {
+        padding: 12px;
+        font-size: 13px;
+        margin-bottom: 15px;
+    }
+    
+    .vsm-password-box {
+        padding: 20px;
+    }
+    
+    .vsm-password-form {
+        flex-direction: column;
+    }
+    
+    .vsm-day-button {
+        padding: 8px 15px;
+        font-size: 13px;
+        margin: 2px;
+    }
+    
+    /* Captions kleiner auf Mobile */
+    .vsm-stream-caption {
+        font-size: 12px;
+        padding: 8px 12px;
+    }
+    
+    .vsm-main-stream .vsm-stream-caption {
+        font-size: 14px;
+        padding: 12px 15px;
+    }
+}
+
+/* iOS-spezifische Fixes */
+@supports (-webkit-touch-callout: none) {
+    /* iOS Safari */
+    .vsm-video-container iframe {
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .vsm-small-stream {
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+    }
+}
+
+/* Landscape-Modus auf Mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+    .vsm-small-stream {
+        height: 140px !important;
+    }
+    
+    .vsm-main-stream {
+        height: 200px !important;
+    }
+    
+    .vsm-top-streams {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+    
+    /* Vollbild für aktiven Stream im Landscape */
+    .vsm-landscape-mode .vsm-stream.active-sound {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        z-index: 9999 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border-radius: 0 !important;
+    }
+    
+    .vsm-landscape-mode .vsm-stream.active-sound .vsm-video-container {
+        height: 100% !important;
+    }
+    
+    /* Andere Streams und Controls verstecken */
+    .vsm-landscape-mode .vsm-stream:not(.active-sound) {
+        display: none !important;
+    }
+    
+    .vsm-landscape-mode .vsm-banner,
+    .vsm-landscape-mode .vsm-day-selector {
+        display: none !important;
+    }
+}
+
+/* Fehler-Nachricht */
+.vsm-no-streams {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+    font-size: 16px;
+    background: #f5f5f5;
+    border-radius: 8px;
+}
+
+/* Fehler bei Stream-Laden */
+.vsm-error {
+    text-align: center;
+    padding: 20px;
+    color: #999;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+/* Mobile-Hinweis */
+.vsm-mobile-hint {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 15px 30px;
+    border-radius: 30px;
+    font-size: 16px;
+    font-weight: 600;
+    z-index: 25;
+    pointer-events: none;
+    animation: pulse 2s infinite;
+}
+
+/* ============================================================
+   HAUPTSTREAM MAXIMIEREN BUTTON (Externer Button)
+   ============================================================ */
+
+.vsm-fullscreen-controls {
+    display: none;
+    justify-content: center;
+    align-items: center;
+    padding: 15px 0;
+    gap: 10px;
+}
+
+/* Mobile: Controls anzeigen */
+@media (max-width: 768px) {
+    .vsm-fullscreen-controls {
+        display: flex;
+    }
+}
+
+.vsm-fullscreen-button {
+    background: linear-gradient(135deg, #D2691E 0%, #A0522D 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(210, 105, 30, 0.3);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.vsm-fullscreen-button:hover {
+    background: linear-gradient(135deg, #A0522D 0%, #8B4513 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(210, 105, 30, 0.4);
+}
+
+.vsm-fullscreen-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(210, 105, 30, 0.3);
+}
+
+.vsm-fullscreen-button::before {
+    content: '⛶';
+    font-size: 20px;
+}
+
+/* Fullscreen aktiv */
+.vsm-fullscreen-active .vsm-fullscreen-button::before {
+    content: '⛶';
+    transform: rotate(45deg);
+    display: inline-block;
+}
+
+.vsm-fullscreen-active .vsm-fullscreen-button {
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+}
+
+/* Hauptstream-Wrapper für Fullscreen */
+.vsm-bottom-stream {
+    position: relative;
+}
+
+/* Browser Fullscreen Mode */
+.vsm-bottom-stream:-webkit-full-screen {
+    width: 100vw;
+    height: 100vh;
+}
+
+.vsm-bottom-stream:-moz-full-screen {
+    width: 100vw;
+    height: 100vh;
+}
+
+.vsm-bottom-stream:fullscreen {
+    width: 100vw;
+    height: 100vh;
+}
+
+.vsm-bottom-stream:-webkit-full-screen .vsm-main-stream {
+    height: 100vh !important;
+}
+
+.vsm-bottom-stream:-moz-full-screen .vsm-main-stream {
+    height: 100vh !important;
+}
+
+.vsm-bottom-stream:fullscreen .vsm-main-stream {
+    height: 100vh !important;
+}
+
+.vsm-bottom-stream:-webkit-full-screen .vsm-video-container,
+.vsm-bottom-stream:-moz-full-screen .vsm-video-container,
+.vsm-bottom-stream:fullscreen .vsm-video-container {
+    height: 100% !important;
+}
+
+/* Fallback für Geräte ohne Fullscreen API */
+.vsm-manual-fullscreen {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 999999 !important;
+    background: #000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.vsm-manual-fullscreen .vsm-main-stream {
+    height: 100vh !important;
+}
+
+.vsm-manual-fullscreen .vsm-video-container {
+    height: 100% !important;
+}
+
+/* Body-Klasse wenn Fullscreen aktiv */
+body.vsm-fullscreen-active {
+    overflow: hidden;
+}
+
+/* Close-Button für manuellen Fullscreen */
+.vsm-fullscreen-close {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    font-size: 32px;
+    font-weight: 300;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 1000000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.vsm-fullscreen-close:hover {
+    background: rgba(0, 0, 0, 0.95);
+    border-color: rgba(255, 255, 255, 0.6);
+    transform: scale(1.1);
+}
+
+.vsm-fullscreen-close:active {
+    transform: scale(0.95);
+}
+
+.vsm-manual-fullscreen .vsm-fullscreen-close {
+    display: flex;
+}
+
+/* Responsive Anpassungen */
+@media (max-width: 480px) {
+    .vsm-fullscreen-button {
+        padding: 10px 20px;
+        font-size: 14px;
+    }
+
+    .vsm-fullscreen-controls {
+        padding: 10px 0;
+    }
+
+    .vsm-fullscreen-close {
+        width: 44px;
+        height: 44px;
+        font-size: 28px;
+        top: 15px;
+        right: 15px;
+    }
+}
+
+/* Landscape-spezifische Anpassungen */
+@media (max-width: 768px) and (orientation: landscape) {
+    .vsm-fullscreen-close {
+        top: 10px;
+        right: 10px;
+        width: 40px;
+        height: 40px;
+        font-size: 24px;
+    }
+}
+
+/* Touch-Feedback für Mobile */
+@media (hover: none) {
+    .vsm-small-stream {
+        -webkit-tap-highlight-color: rgba(0, 115, 170, 0.3);
+    }
+    
+    .vsm-small-stream:active {
+        transform: scale(0.98);
+    }
+    
+    .vsm-day-button {
+        -webkit-tap-highlight-color: rgba(0, 115, 170, 0.3);
+    }
+    
+    .vsm-day-button:active {
+        transform: scale(0.95);
+    }
+}
+
+/* Debug-Mode */
+.vsm-debug {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: monospace;
+    z-index: 9999;
+}

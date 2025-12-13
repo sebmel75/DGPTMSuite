@@ -1,0 +1,23 @@
+{
+    "title": "Microsoft Gruppen",
+    "description": "Microsoft 365 Gruppen-Management mit Graph API Integration.",
+    "content": "# Microsoft Gruppen\n\n## Übersicht\n\nUmfassendes Microsoft 365 Gruppen-Management mit Graph API, OAuth2-Authentifizierung und Benutzer-Synchronisation.\n\n## Hauptfunktionen\n\n- Microsoft 365 Graph API Integration\n- Gruppenverwaltung\n- Benutzer-Synchronisation\n- OAuth2-Authentifizierung\n- Mitgliedschaftsprüfung\n\n## Shortcodes\n\n### [ms365_group_manager]\nZeigt Gruppen-Manager Interface.\n\n**Verwendung:**\n```\n[ms365_group_manager]\n```\n\n### [ms365_has_any_group]\nPrüft, ob Benutzer in mindestens einer Gruppe ist.\n\n**Verwendung:**\n```\n[ms365_has_any_group]\n  Inhalt nur für Gruppenmitglieder\n[\/ms365_has_any_group]\n```\n\n## Admin-Interface\n\n**Menü:** Einstellungen → Microsoft 365\n\n### Konfiguration\n\n1. **OAuth-Konfiguration**\n   - Client ID\n   - Client Secret\n   - Tenant ID\n   - Redirect URI\n\n2. **Gruppen-Synchronisation**\n   - Automatische Synchronisation\n   - Synchronisations-Intervall\n   - Zu synchronisierende Gruppen\n\n3. **Berechtigungen**\n   - Graph API Scopes\n   - Erforderliche Permissions:\n     - `Group.Read.All`\n     - `User.Read.All`\n\n## Verwendung\n\n### Einrichtung\n\n1. Microsoft Azure Portal öffnen\n2. App-Registrierung erstellen\n3. Client ID und Secret kopieren\n4. In WordPress-Einstellungen eintragen\n5. OAuth-Flow durchlaufen\n\n### Synchronisation\n\n**Automatisch:**\n- Täglich via Cron-Job\n- Synchronisiert Gruppenmitgliedschaften\n- Aktualisiert Benutzer-Daten\n\n**Manuell:**\n1. Einstellungen → Microsoft 365\n2. \"Jetzt synchronisieren\" klicken\n3. Warten auf Bestätigung\n\n### Gruppenmitgliedschaft prüfen\n\n**Im Code:**\n```php\nif (dgptm_user_in_ms365_group($user_id, $group_id)) {\n    \/\/ Benutzer ist Mitglied\n}\n```\n\n**Per Shortcode:**\n```\n[ms365_has_any_group]\n  Exklusiver Inhalt\n[\/ms365_has_any_group]\n```\n\n## Graph API Endpunkte\n\nDas Modul nutzt folgende Microsoft Graph Endpunkte:\n- `\/v1.0\/groups` - Gruppen abrufen\n- `\/v1.0\/groups\/{id}\/members` - Mitglieder abrufen\n- `\/v1.0\/users` - Benutzer abrufen\n\n## Technische Details\n\n- OAuth2 Flow mit PKCE\n- Token-Caching für Performance\n- Automatische Token-Erneuerung\n- Rate-Limiting-Handling\n- Fehlerbehandlung und Logging\n\n## Tipps\n\n- Verwenden Sie Service Account für Synchronisation\n- Testen Sie OAuth-Flow zuerst\n- Prüfen Sie API-Permissions in Azure\n- Backup vor Synchronisation\n- Monitor Sync-Logs",
+    "features": [
+        "Microsoft 365 Graph API",
+        "Gruppenverwaltung",
+        "Benutzer-Synchronisation",
+        "OAuth2-Authentifizierung",
+        "Mitgliedschaftsprüfung"
+    ],
+    "keywords": [
+        "microsoft",
+        "365",
+        "groups",
+        "graph-api",
+        "oauth",
+        "sync",
+        "azure"
+    ],
+    "module_id": "microsoft-gruppen",
+    "last_updated": "2025-11-29 17:38:29"
+}

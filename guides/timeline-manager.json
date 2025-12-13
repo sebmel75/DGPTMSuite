@@ -1,0 +1,23 @@
+{
+    "title": "Timeline Manager",
+    "description": "Timeline-Verwaltungssystem mit Custom Post Type und Frontend-Editor.",
+    "content": "# Timeline Manager\n\n## Übersicht\n\nUmfassendes Timeline-Management für chronologische Darstellung von Ereignissen mit Frontend-Editor und Ajax-Funktionalität.\n\n## Hauptfunktionen\n\n- Custom Post Type \"Timeline\"\n- Frontend-Editor für berechtigte Benutzer\n- Chronologische Sortierung\n- Kategoriesystem\n- Ajax-basierte Interaktionen\n- Responsive Design\n- Filter und Suche\n\n## Shortcodes\n\n### [timeline_manager]\nZeigt Timeline-Manager Interface.\n\n**Verwendung:**\n```\n[timeline_manager]\n```\n\n### [timeline-manager]\nAlias für timeline_manager.\n\n**Verwendung:**\n```\n[timeline-manager]\n```\n\n## Admin-Interface\n\n**Menü:** Timelines\n\n### Custom Post Type\n\n1. **Timeline-Eintrag erstellen**\n   - Titel\n   - Beschreibung\n   - Datum\n   - Kategorie\n   - Medien (Bilder, Videos)\n\n2. **Kategorien**\n   - Ereignis-Kategorien\n   - Farbcodierung\n   - Icons\n\n3. **Einstellungen**\n   - Anzeigeoptionen\n   - Sortierung\n   - Berechtigungen\n\n## Frontend-Editor\n\nBerechtigte Benutzer können:\n- Timeline-Einträge erstellen\n- Eigene Einträge bearbeiten\n- Medien hochladen\n- Kategorien zuweisen\n\n## Verwendung\n\n### Timeline anzeigen\n\n```\n[timeline_manager]\n```\n\n### Timeline mit Filter\n\nNutzen Sie die integrierten Filter:\n- Nach Datum\n- Nach Kategorie\n- Nach Suchbegriff\n\n## Darstellung\n\nDie Timeline zeigt:\n- Chronologische Reihenfolge\n- Datum prominent\n- Titel und Beschreibung\n- Zugeordnete Medien\n- Kategorie-Badge\n\n## Technische Details\n\n- Custom Post Type: `timeline`\n- Taxonomie: `timeline_category`\n- Ajax für Filter und Suche\n- Responsive CSS-Grid-Layout\n- Meta-Felder für Datum\n\n## Tipps\n\n- Nutzen Sie aussagekräftige Titel\n- Kategorien helfen bei der Organisation\n- Bilder erhöhen Attraktivität\n- Regelmäßig aktualisieren",
+    "features": [
+        "Custom Post Type Timeline",
+        "Frontend-Editor",
+        "Chronologische Sortierung",
+        "Kategoriesystem",
+        "Ajax-Interaktionen",
+        "Responsive Design"
+    ],
+    "keywords": [
+        "timeline",
+        "chronology",
+        "events",
+        "frontend-editor",
+        "ajax",
+        "responsive"
+    ],
+    "module_id": "timeline-manager",
+    "last_updated": "2025-11-29 17:38:29"
+}

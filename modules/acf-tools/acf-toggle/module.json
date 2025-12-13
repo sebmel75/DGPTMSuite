@@ -1,0 +1,21 @@
+{
+    "id": "acf-toggle",
+    "name": "ACF Toggle Functions",
+    "description": "Toggle ACF field visibility and functionality",
+    "version": "1.0.0",
+    "author": "Sebastian Melzer",
+    "main_file": "einausblendenacf.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": [
+            "advanced-custom-fields"
+        ]
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "utilities",
+    "icon": "dashicons-visibility",
+    "active": false,
+    "can_export": true
+}

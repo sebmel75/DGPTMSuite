@@ -1,0 +1,23 @@
+{
+    "title": "ACF Field Display",
+    "description": "Sicherer Shortcode zur Anzeige von ACF-Feldern mit automatischer Typ-Erkennung und Security-Hardening.",
+    "content": "# ACF Field Display\n\n## Übersicht\n\nDer ACF Anzeiger ermöglicht die sichere Darstellung von Advanced Custom Fields per Shortcode mit automatischer Typ-Erkennung.\n\n## Hauptfunktionen\n\n- Auto-Typ-Erkennung für ACF-Felder\n- Unterstützte Typen: text, image, link, post_object, file, gallery\n- Bildgrößen, Lazy-Loading, Custom Wrapper\n- Security: KSES-Whitelist, Escaping\n- Elementor-kompatibel\n\n## Shortcode\n\n### [dgptm_acf]\n\n**Parameter:**\n- `field` (erforderlich): ACF-Feldname\n- `post_id`: Post-ID (Standard: aktuelle)\n- `size`: Bildgröße für image\/gallery\n- `wrapper`: HTML-Wrapper-Element\n- `class`: CSS-Klassen\n- `lazy`: Lazy-Loading (true\/false)\n\n**Beispiele:**\n\n```\n[dgptm_acf field=\"title\"]\n\n[dgptm_acf field=\"header_image\" size=\"large\" lazy=\"true\"]\n\n[dgptm_acf field=\"website_link\"]\n\n[dgptm_acf field=\"gallery\" size=\"medium\" wrapper=\"div\" class=\"image-grid\"]\n```\n\n## Unterstützte Feldtypen\n\n### Text\nGibt text direkt aus (escaped)\n\n### Image\n```\n[dgptm_acf field=\"logo\" size=\"thumbnail\"]\n```\n\n### Link\n```\n[dgptm_acf field=\"external_link\"]\n```\nAusgabe: `<a href=\"...\" target=\"...\">...<\/a>`\n\n### Post Object\n```\n[dgptm_acf field=\"related_post\"]\n```\nAusgabe: Link zum Post\n\n### File\n```\n[dgptm_acf field=\"pdf_download\"]\n```\nAusgabe: Download-Link\n\n### Gallery\n```\n[dgptm_acf field=\"images\" size=\"medium\"]\n```\nAusgabe: Liste von Bildern\n\n## Sicherheit\n\n- KSES-Whitelist für erlaubte HTML-Tags\n- Escaping aller Ausgaben\n- rel\/target-Attribute sicher\n- Keine direkte PHP-Ausführung\n\n## Elementor-Integration\n\nFunktioniert in:\n- Elementor Text-Editor\n- Elementor Shortcode-Widget\n- Elementor HTML-Widget",
+    "features": [
+        "Auto-Typ-Erkennung",
+        "Mehrere Feldtypen unterstützt",
+        "Bildgrößen-Steuerung",
+        "Lazy-Loading",
+        "Security-Hardening",
+        "Elementor-kompatibel"
+    ],
+    "keywords": [
+        "acf",
+        "fields",
+        "shortcode",
+        "display",
+        "custom-fields",
+        "elementor"
+    ],
+    "module_id": "acf-anzeiger",
+    "last_updated": "2025-11-29 18:24:19"
+}

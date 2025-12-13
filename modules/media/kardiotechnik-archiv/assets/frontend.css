@@ -1,0 +1,325 @@
+/* Kardiotechnik Archiv - Frontend Styles */
+
+.kta-archive-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+/* Suchbox */
+.kta-search-box {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 30px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.kta-search-box h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #2c3e50;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.kta-search-form {
+    display: block;
+}
+
+.kta-search-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.kta-search-field {
+    flex: 1;
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+}
+
+.kta-search-field.kta-search-full {
+    flex: 1 1 100%;
+}
+
+.kta-search-field label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #495057;
+    font-size: 14px;
+}
+
+.kta-search-field input[type="text"],
+.kta-search-field select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 16px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.kta-search-field input[type="text"]:focus,
+.kta-search-field select:focus {
+    outline: none;
+    border-color: #0056b3;
+    box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.1);
+}
+
+.kta-search-button {
+    background: #0056b3;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: auto;
+}
+
+.kta-search-button:hover {
+    background: #004494;
+    transform: translateY(-1px);
+}
+
+.kta-search-button:active {
+    transform: translateY(0);
+}
+
+.kta-search-button .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+/* Loading */
+.kta-loading {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.kta-spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #0056b3;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: kta-spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+@keyframes kta-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Ergebnisse Header */
+.kta-results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #dee2e6;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.kta-results-header h3 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.kta-results-sort {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.kta-results-sort label {
+    font-weight: 600;
+    color: #495057;
+    font-size: 14px;
+}
+
+.kta-results-sort select {
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+/* Artikel Cards */
+.kta-results-list {
+    display: grid;
+    gap: 20px;
+}
+
+.kta-article-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 25px;
+    transition: box-shadow 0.2s, transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.kta-article-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    transform: translateY(-2px);
+}
+
+.kta-article-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.kta-article-title {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 20px;
+    font-weight: 600;
+    flex: 1;
+    min-width: 250px;
+}
+
+.kta-article-year {
+    background: #0056b3;
+    color: white;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.kta-article-author {
+    margin: 0 0 12px;
+    color: #495057;
+    font-size: 15px;
+}
+
+.kta-article-author strong {
+    color: #2c3e50;
+}
+
+.kta-article-abstract {
+    margin: 0 0 15px;
+    color: #6c757d;
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+.kta-article-keywords {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.kta-keyword {
+    background: #e9ecef;
+    color: #495057;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.kta-article-meta {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.kta-article-pages {
+    color: #6c757d;
+    font-size: 14px;
+    font-style: italic;
+}
+
+.kta-article-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.kta-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.2s, transform 0.1s;
+    cursor: pointer;
+}
+
+.kta-button-primary {
+    background: #0056b3;
+    color: white;
+    border: none;
+}
+
+.kta-button-primary:hover {
+    background: #004494;
+    color: white;
+    transform: translateY(-1px);
+}
+
+.kta-button .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+/* Keine Ergebnisse */
+.kta-no-results {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6c757d;
+    font-size: 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .kta-search-row {
+        flex-direction: column;
+    }
+
+    .kta-search-field {
+        min-width: 100%;
+    }
+
+    .kta-results-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .kta-article-header {
+        flex-direction: column;
+    }
+
+    .kta-article-title {
+        min-width: 100%;
+    }
+}

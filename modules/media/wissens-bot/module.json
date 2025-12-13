@@ -1,0 +1,19 @@
+{
+    "id": "wissens-bot",
+    "name": "Wissens-Bot with Claude AI",
+    "description": "AI-powered knowledge bot with multi-database integration",
+    "version": "1.0.0",
+    "author": "Sebastian Melzer",
+    "main_file": "wissens-bot.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": []
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "content",
+    "icon": "dashicons-admin-comments",
+    "active": false,
+    "can_export": true
+}

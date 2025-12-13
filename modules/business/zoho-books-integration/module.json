@@ -1,0 +1,22 @@
+{
+    "id": "zoho-books-integration",
+    "name": "DGPTM - Zoho Books Integration",
+    "description": "Zeigt Rechnungen und Gutschriften aus Zoho Books basierend auf der Finance ID aus Zoho CRM. Inklusive sortierbare Liste und Banner für offene Beträge.",
+    "version": "1.0.0",
+    "author": "Sebastian Melzer",
+    "main_file": "dgptm-zoho-books.php",
+    "dependencies": [],
+    "optional_dependencies": [
+        "crm-abruf"
+    ],
+    "wp_dependencies": {
+        "plugins": []
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "payment",
+    "icon": "dashicons-money-alt",
+    "active": false,
+    "can_export": true,
+    "critical": false
+}

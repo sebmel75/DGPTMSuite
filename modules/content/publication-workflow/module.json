@@ -1,0 +1,22 @@
+{
+    "id": "publication-workflow",
+    "name": "Publication Workflow",
+    "description": "Publication management and workflow",
+    "version": "1.0.0",
+    "author": "Sebastian Melzer",
+    "main_file": "publication_workflow.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": []
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "content",
+    "icon": "dashicons-media-document",
+    "active": false,
+    "can_export": true,
+    "flags": [
+        "development"
+    ]
+}

@@ -1,0 +1,25 @@
+{
+    "title": "Abstimmen Addon",
+    "description": "Online-Abstimmungssystem mit Zoom-Integration und Anwesenheitstracking.",
+    "content": "# Abstimmen Addon\n\n## Übersicht\n\nUmfassendes Online-Abstimmungssystem mit Zoom-Meeting-Integration, Anwesenheitstracking und QR-Code-Scanner für Mitgliederversammlungen.\n\n## Hauptfunktionen\n\n- Online-Abstimmungen durchführen\n- Zoom-Meeting-Integration\n- Anwesenheitstracking (QR-Code + Zoom)\n- Manuelle Anwesenheit setzen\n- Echtzeit-Aktualisierung\n- Ergebnis-Export\n\n## Shortcodes\n\n### [dgptm_presence_scanner]\nQR-Code-Scanner für Anwesenheit.\n\n**Verwendung:**\n```\n[dgptm_presence_scanner]\n```\n\n## REST API Endpunkte\n\n### GET\/POST \/wp-json\/dgptm\/v1\/manual-flags\nManuelle Flags abrufen.\n\n### POST \/wp-json\/dgptm\/v1\/mark-manual\nBenutzer manuell als anwesend markieren.\n\n**Payload:**\n```json\n{\n  \"user_id\": 123\n}\n```\n\n## Admin-Interface\n\n**Menü:** Abstimmungen\n\n### Funktionen\n\n1. **Abstimmungs-Verwaltung**\n   - Abstimmungen erstellen\n   - Fragen definieren\n   - Antwortoptionen\n   - Zeitraum festlegen\n\n2. **Teilnehmer-Liste**\n   - Anwesende Teilnehmer\n   - Abstimmungsberechtigung\n   - Manuelle Markierung\n\n3. **Ergebnisse**\n   - Live-Anzeige\n   - Prozentuale Verteilung\n   - Export (PDF, CSV)\n\n4. **Zoom-Integration**\n   - Zoom-Meeting verknüpfen\n   - Auto-Anwesenheit via Zoom\n   - Webhook-Empfang\n\n## Verwendung\n\n### Abstimmung erstellen\n\n1. Abstimmungen → Neu hinzufügen\n2. Frage formulieren\n3. Antwortoptionen hinzufügen\n4. Zeitraum festlegen\n5. Zoom-Meeting verknüpfen (optional)\n6. Veröffentlichen\n\n### Anwesenheit erfassen\n\n**QR-Code:**\n1. Scanner auf Seite einbinden: `[dgptm_presence_scanner]`\n2. Teilnehmer scannen QR-Code\n3. Automatische Erfassung\n\n**Zoom:**\n- Automatisch via Zoom-Webhook\n- Teilnehmer in Zoom-Meeting = automatisch anwesend\n\n**Manuell:**\n1. Admin-Interface öffnen\n2. Teilnehmer-Liste\n3. Manuell markieren\n\n### Abstimmung durchführen\n\n1. Teilnehmer loggt sich ein\n2. Öffnet Abstimmungsseite\n3. Gibt Stimme ab\n4. Echtzeit-Aktualisierung der Ergebnisse\n\n## Zoom-Integration\n\n**Voraussetzungen:**\n- Zoom Account\n- Zoom App mit Webhooks\n- Webhook-URL in Zoom konfiguriert\n\n**Automatische Erfassung:**\n- Teilnehmer tritt Zoom-Meeting bei\n- Zoom sendet Webhook\n- System erfasst Anwesenheit automatisch\n\n## Technische Details\n\n- REST API für externe Integration\n- Webhook-Empfang von Zoom\n- QR-Code-Generierung\n- Echtzeit-Updates via Ajax\n- Export-Funktionen (PDF mit FPDF)\n\n## Tipps\n\n- Testen Sie Zoom-Integration vor wichtigen Meetings\n- QR-Codes groß genug darstellen\n- Manuelle Backup-Option vorsehen\n- Ergebnisse regelmäßig exportieren",
+    "features": [
+        "Online-Abstimmungen",
+        "Zoom-Meeting-Integration",
+        "Anwesenheitstracking",
+        "QR-Code-Scanner",
+        "Manuelle Anwesenheit",
+        "Echtzeit-Aktualisierung",
+        "Ergebnis-Export"
+    ],
+    "keywords": [
+        "voting",
+        "poll",
+        "zoom",
+        "presence",
+        "qr-code",
+        "attendance",
+        "meeting"
+    ],
+    "module_id": "abstimmen-addon",
+    "last_updated": "2025-11-29 18:24:19"
+}

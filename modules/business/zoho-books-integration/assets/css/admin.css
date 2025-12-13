@@ -1,0 +1,61 @@
+/* Zoho Books Integration - Admin Styles */
+
+.dgptm-zoho-books-admin {
+    max-width: 1200px;
+}
+
+.dgptm-zoho-books-admin .notice {
+    margin: 20px 0;
+}
+
+.dgptm-zoho-books-admin .form-table th {
+    width: 200px;
+    font-weight: 600;
+}
+
+.dgptm-zoho-books-admin .form-table td {
+    padding: 15px 10px;
+}
+
+.dgptm-zoho-books-admin .form-table input[type="text"],
+.dgptm-zoho-books-admin .form-table input[type="password"] {
+    width: 100%;
+    max-width: 500px;
+}
+
+.dgptm-zoho-books-admin .description {
+    color: #666;
+    font-size: 13px;
+    font-style: italic;
+    margin-top: 5px;
+}
+
+.dgptm-zoho-books-admin hr {
+    margin: 30px 0;
+    border: none;
+    border-top: 1px solid #ddd;
+}
+
+.dgptm-zoho-books-admin h2 {
+    margin-top: 30px;
+    color: #23282d;
+}
+
+.dgptm-zoho-books-admin h3 {
+    margin-top: 20px;
+    color: #444;
+}
+
+.dgptm-zoho-books-admin code {
+    background: #f4f4f4;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 13px;
+    color: #d63638;
+}
+
+.dgptm-zoho-books-admin .button-primary {
+    height: auto;
+    padding: 10px 20px;
+    font-size: 14px;
+}

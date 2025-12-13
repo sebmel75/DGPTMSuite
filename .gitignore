@@ -1,0 +1,35 @@
+# WordPress
+wp-config.php
+wp-content/uploads/
+
+# Environment
+.env
+*.log
+debug.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Dependencies
+node_modules/
+vendor/
+
+# Exports (generated files)
+exports/*.zip
+
+# Temporary files
+*.tmp
+*.temp
+~$*
+
+# Backups
+*.bak
+*.backup
+
+# Build artifacts
+.cache/

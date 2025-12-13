@@ -1,0 +1,24 @@
+{
+    "title": "ACF JetEngine Sync",
+    "description": "Bidirektionale Synchronisation zwischen JetEngine und ACF für Post-Types, Taxonomien und Felder.",
+    "content": "# ACF JetEngine Sync\n\n## Übersicht\n\nACF JetEngine Sync ermöglicht die bidirektionale Synchronisation zwischen JetEngine und Advanced Custom Fields inkl. komplexer Felder.\n\n## Hauptfunktionen\n\n- Bidirektionaler Sync JetEngine ↔ ACF\n- Post-Types Synchronisation\n- Taxonomien Synchronisation\n- Felder-Sync (inkl. komplexe Felder)\n- JSON Export\/Import\n- Backup-Funktionalität\n\n## Admin-Interface\n\n**Menü:** Tools → JetEngine ACF Sync\n\n### Synchronisations-Optionen\n\n1. **JetEngine → ACF**\n   - Liest JetEngine-Tabellen\n   - Erstellt\/aktualisiert ACF-Feldgruppen\n   - Unterstützt komplexe Felder\n\n2. **ACF → JetEngine**\n   - Liest ACF-Feldgruppen\n   - Erstellt JetEngine-Felder\n   - Migration von ACF zu JetEngine\n\n3. **JSON Export**\n   - Exportiert ACF-Feldgruppen als JSON\n   - Backup-Funktion\n   - Migration zwischen Sites\n\n4. **JSON Import**\n   - Importiert ACF-Feldgruppen\n   - Wiederherstellung von Backups\n\n## Verwendung\n\n### Sync JetEngine → ACF\n\n1. Tools → JetEngine ACF Sync\n2. Schaltfläche \"JetEngine → ACF synchronisieren\"\n3. Warten Sie auf Bestätigung\n4. Prüfen Sie ACF → Feldgruppen\n\n### JSON Backup erstellen\n\n1. Tools → JetEngine ACF Sync\n2. \"JSON Export\" klicken\n3. Datei herunterladen\n4. Sicher aufbewahren\n\n### JSON Import\n\n1. Backup-Datei vorbereiten\n2. \"JSON Import\" klicken\n3. Datei auswählen\n4. Importieren\n\n## Unterstützte Feldtypen\n\n- Text, Textarea\n- Number, Email, URL\n- True\/False, Select, Radio, Checkbox\n- Post Object, Relationship\n- Image, File, Gallery\n- Wysiwyg, Date, Color\n- Repeater (komplex)\n- Group (komplex)\n\n## Technische Details\n\n- Liest direkt aus JetEngine-DB-Tabellen\n- Verwendet ACF JSON-Format\n- Automatische Feldtyp-Zuordnung\n- Fehlerbehandlung und Logging\n\n## Tipps\n\n- Erstellen Sie vor Sync ein Backup\n- Testen Sie zuerst auf Staging\n- Prüfen Sie Feldgruppen nach Import\n- Behalten Sie JSON-Backups",
+    "features": [
+        "Bidirektionale Synchronisation",
+        "Post-Types & Taxonomien",
+        "Komplexe Felder",
+        "JSON Export\/Import",
+        "Backup-System",
+        "Fehlerbehandlung"
+    ],
+    "keywords": [
+        "acf",
+        "jetengine",
+        "sync",
+        "migration",
+        "fields",
+        "post-types",
+        "taxonomy"
+    ],
+    "module_id": "acf-jetsync",
+    "last_updated": "2025-11-29 17:38:29"
+}

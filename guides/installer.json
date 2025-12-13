@@ -1,0 +1,22 @@
+{
+    "title": "Installer",
+    "description": "Plugin-Installations-Helfer für Batch-Installation.",
+    "content": "# Installer\n\n## Übersicht\n\nPlugin-Installations-Helfer für Batch-Installation von Plugins mit Abhängigkeits-Prüfung.\n\n## Hauptfunktionen\n\n- Plugin-Batch-Installation\n- Abhängigkeits-Prüfung\n- ZIP-Upload\n- Automatische Aktivierung\n- Installations-Log\n- Fehlerbehandlung\n\n## Admin-Interface\n\n**Menü:** Tools → Plugin Installer\n\n### Funktionen\n\n1. **Plugin-Upload**\n   - ZIP-Dateien hochladen\n   - Mehrere Plugins gleichzeitig\n   - Drag & Drop\n\n2. **Batch-Installation**\n   - Alle Plugins installieren\n   - Automatisch aktivieren\n   - Fortschrittsanzeige\n\n3. **Abhängigkeits-Checker**\n   - Prüft erforderliche Plugins\n   - Zeigt fehlende Abhängigkeiten\n   - Installiert Abhängigkeiten zuerst\n\n## Verwendung\n\n### Einzelnes Plugin installieren\n\n1. Tools → Plugin Installer\n2. ZIP-Datei auswählen\n3. \"Hochladen & Installieren\"\n4. Optional: \"Aktivieren\"\n\n### Batch-Installation\n\n1. Mehrere ZIP-Dateien auswählen\n2. \"Alle hochladen\"\n3. \"Batch-Installation starten\"\n4. Warten auf Abschluss\n5. Installations-Log prüfen\n\n### Abhängigkeiten prüfen\n\n1. Plugin auswählen\n2. \"Abhängigkeiten prüfen\"\n3. Liste der erforderlichen Plugins\n4. Fehlende automatisch installieren\n\n## Abhängigkeits-System\n\n**Format (in plugin.php):**\n```php\n\/**\n * Requires Plugins: advanced-custom-fields, contact-form-7\n *\/\n```\n\n**Prüfung:**\n- Liest Plugin-Header\n- Prüft ob erforderliche Plugins installiert\n- Installiert fehlende Plugins\n- Aktiviert in korrekter Reihenfolge\n\n## Installations-Log\n\n**Zeigt:**\n- Erfolgreich installierte Plugins\n- Fehler bei Installation\n- Aktivierungs-Status\n- Abhängigkeits-Installationen\n\n**Export:**\n- Log als TXT herunterladen\n- Für Dokumentation\n- Fehleranalyse\n\n## Technische Details\n\n- WordPress Plugin-API\n- ZIP-Extraktion\n- Abhängigkeits-Graph\n- Topologische Sortierung für Installationsreihenfolge\n- Fehler-Rollback\n\n## Tipps\n\n- Prüfen Sie ZIP-Dateien vor Upload\n- Nutzen Sie Abhängigkeits-System\n- Log für Fehleranalyse\n- Backup vor Batch-Installation",
+    "features": [
+        "Batch-Installation",
+        "Abhängigkeits-Prüfung",
+        "ZIP-Upload",
+        "Automatische Aktivierung",
+        "Installations-Log"
+    ],
+    "keywords": [
+        "installer",
+        "plugins",
+        "batch",
+        "dependencies",
+        "upload",
+        "automation"
+    ],
+    "module_id": "installer",
+    "last_updated": "2025-11-29 17:38:29"
+}

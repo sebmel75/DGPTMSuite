@@ -1,0 +1,17 @@
+{
+  "id": "menu-control",
+  "name": "Menu Control",
+  "description": "Advanced menu visibility and control",
+  "version": "1.0.0",
+  "author": "Sebastian Melzer",
+  "main_file": "menucontrol.php",
+  "dependencies": [],
+  "optional_dependencies": [],
+  "wp_dependencies": {"plugins": []},
+  "requires_php": "7.4",
+  "requires_wp": "5.8",
+  "category": "core-infrastructure",
+  "icon": "dashicons-menu",
+  "active": true,
+  "can_export": true
+}

@@ -1,0 +1,26 @@
+{
+    "title": "Gehaltsstatistik",
+    "description": "Anonymisiertes Gehaltsbarometer mit Statistiken, Einladungssystem und Chart-Visualisierung.",
+    "content": "# Gehaltsstatistik\n\n## Übersicht\n\nAnonymisiertes Gehaltsbarometer-System mit statistischen Auswertungen, Chart-Visualisierung und Einladungs-Management.\n\n## Hauptfunktionen\n\n- Anonymisierte Gehaltserfassung\n- Statistische Auswertungen (Median, Durchschnitt, Quartile)\n- Chart-Visualisierung mit Chart.js\n- Einladungssystem\n- Export-Funktionen (CSV\/Excel)\n- Bedingte Shortcodes\n- Popup-Steuerung\n- Admin-Dashboard mit Filterung\n\n## Shortcodes\n\n### [gehaltsbarometer]\nGehalts-Eingabeformular.\n\n**Verwendung:**\n```\n[gehaltsbarometer]\n```\n\n### [gehaltsbarometer_statistik]\nStatistik-Anzeige mit Diagrammen.\n\n**Verwendung:**\n```\n[gehaltsbarometer_statistik]\n```\n\n### [gehaltsbarometer_einladung]\nEinladungssystem für Teilnahme.\n\n**Verwendung:**\n```\n[gehaltsbarometer_einladung]\n```\n\n### [gehaltsbarometer_chart]\nChart-Visualisierung.\n\n**Verwendung:**\n```\n[gehaltsbarometer_chart type=\"bar\"]\n```\n\n### [gehaltsbarometer_is]\nZeigt Inhalt wenn Benutzer teilgenommen hat.\n\n**Verwendung:**\n```\n[gehaltsbarometer_is value=\"participated\"]\n  Vielen Dank für Ihre Teilnahme!\n[\/gehaltsbarometer_is]\n```\n\n### [gehaltsbarometer_isnot]\nZeigt Inhalt wenn Benutzer nicht teilgenommen hat.\n\n**Verwendung:**\n```\n[gehaltsbarometer_isnot value=\"participated\"]\n  Bitte nehmen Sie teil!\n[\/gehaltsbarometer_isnot]\n```\n\n### [gehaltsbarometer_filled]\nPrüft ob Formular ausgefüllt wurde.\n\n**Verwendung:**\n```\n[gehaltsbarometer_filled]\n  Sie haben bereits teilgenommen.\n[\/gehaltsbarometer_filled]\n```\n\n### [gehaltsbarometer_popup_guard]\nPopup-Schutz (verhindert mehrfache Anzeige).\n\n**Verwendung:**\n```\n[gehaltsbarometer_popup_guard]\n  <!-- Popup-Inhalt -->\n[\/gehaltsbarometer_popup_guard]\n```\n\n## Admin-Interface\n\n**Menü:** Gehaltsbarometer\n\n### Funktionen\n\n1. **Admin-Dashboard**\n   - Gesamtstatistiken\n   - Teilnehmerzahlen\n   - Durchschnittswerte\n   - Verteilungsdiagramme\n\n2. **Statistik-Übersicht**\n   - Nach Fachgebiet\n   - Nach Berufserfahrung\n   - Nach Region\n   - Zeitlicher Verlauf\n\n3. **Export-Funktionen**\n   - CSV-Export (anonymisiert)\n   - Excel-Export\n   - PDF-Report\n\n4. **Einladungs-Management**\n   - E-Mail-Kampagnen\n   - Reminder versenden\n   - Teilnahme-Status\n\n## Verwendung\n\n### Eingabeformular einbinden\n\n```\n[gehaltsbarometer]\n```\n\nBenutzer kann eingeben:\n- Bruttogehalt\n- Fachgebiet\n- Berufserfahrung (Jahre)\n- Position\n- Bundesland\/Region\n\n### Statistiken anzeigen\n\n```\n[gehaltsbarometer_statistik]\n```\n\nZeigt:\n- Durchschnitt\n- Median\n- Quartile (25%, 75%)\n- Min\/Max (ohne Ausreißer)\n- Anzahl Teilnehmer\n\n### Bedingte Inhalte\n\n**Für Teilnehmer:**\n```\n[gehaltsbarometer_is value=\"participated\"]\n  Vielen Dank! Hier Ihre personalisierten Vergleichsdaten:\n  [gehaltsbarometer_chart]\n[\/gehaltsbarometer_is]\n```\n\n**Für Nicht-Teilnehmer:**\n```\n[gehaltsbarometer_isnot value=\"participated\"]\n  <a href=\"\/teilnahme\">Jetzt teilnehmen<\/a>\n[\/gehaltsbarometer_isnot]\n```\n\n## Chart-Typen\n\n- `bar` - Balkendiagramm (Gehaltsverteilung)\n- `line` - Liniendiagramm (zeitlicher Verlauf)\n- `pie` - Kreisdiagramm (Fachgebiete)\n- `box` - Box-Plot (Quartile)\n\n**Beispiel:**\n```\n[gehaltsbarometer_chart type=\"bar\" field=\"salary\"]\n```\n\n## Anonymisierung\n\n- Keine personenbezogenen Daten gespeichert\n- Nur aggregierte Statistiken\n- Minimum 5 Teilnehmer für Anzeige\n- Keine Rückverfolgbarkeit\n\n## Technische Details\n\n- Chart.js für Visualisierung\n- Statistische Berechnungen server-seitig\n- Ajax-basierte Formulare\n- Transients für Performance\n- Export via PhpSpreadsheet\n\n## Tipps\n\n- Mindestens 10 Teilnehmer für aussagekräftige Statistiken\n- Regelmäßige Reminder versenden\n- Anonymität betonen\n- Ergebnisse nur aggregiert zeigen",
+    "features": [
+        "Anonymisierte Gehaltserfassung",
+        "Statistische Auswertungen",
+        "Chart-Visualisierung",
+        "Einladungssystem",
+        "Export (CSV\/Excel\/PDF)",
+        "Bedingte Shortcodes",
+        "Popup-Steuerung",
+        "Admin-Dashboard"
+    ],
+    "keywords": [
+        "salary",
+        "statistics",
+        "survey",
+        "anonymous",
+        "charts",
+        "analytics",
+        "barometer"
+    ],
+    "module_id": "gehaltsstatistik",
+    "last_updated": "2025-11-29 17:38:29"
+}

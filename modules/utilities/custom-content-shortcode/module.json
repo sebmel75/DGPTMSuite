@@ -1,0 +1,19 @@
+{
+    "id": "custom-content-shortcode",
+    "name": "Custom Content Shortcode",
+    "description": "Display posts, pages, custom post types, custom fields, files, images, comments, attachments, menus, or widget areas",
+    "version": "4.0.2",
+    "author": "Eliot Akira",
+    "main_file": "custom-content-shortcode.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": []
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "utilities",
+    "icon": "dashicons-admin-plugins",
+    "active": false,
+    "can_export": true
+}

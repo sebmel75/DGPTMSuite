@@ -1,0 +1,27 @@
+{
+    "title": "Anwesenheitsscanner",
+    "description": "Umfassendes Anwesenheitstracking-System mit QR-Codes, Zoom-Integration und PDF-Export.",
+    "content": "# Anwesenheitsscanner\n\n## Übersicht\n\nVollständiges Anwesenheitstracking-System mit QR-Code-Scanning, Zoom-Integration, automatischen Webhooks und PDF-Teilnehmerlisten.\n\n## Hauptfunktionen\n\n- QR-Code-Generierung und -Scanning\n- Zoom-Meeting-Integration mit Webhooks\n- Anwesenheitstracking (manuell + automatisch)\n- PDF-Generierung (Teilnehmerlisten)\n- Barcode-Erstellung für Ausweise\n- Live-Status-Anzeige\n- REST API für externe Systeme\n\n## Shortcodes\n\n### [online_abstimmen_button]\nButton zum Einchecken.\n\n**Verwendung:**\n```\n[online_abstimmen_button]\n```\n\n### [dgptm_presence_table]\nAnwesenheitstabelle anzeigen.\n\n**Verwendung:**\n```\n[dgptm_presence_table]\n```\n\n### [online_abstimmen_liste]\nTeilnehmer-Liste.\n\n**Verwendung:**\n```\n[online_abstimmen_liste]\n```\n\n### [mitgliederversammlung_flag]\nZeigt MV-Flag des Benutzers.\n\n**Verwendung:**\n```\n[mitgliederversammlung_flag]\n```\n\n### [online_abstimmen_code]\nQR-Code für Benutzer generieren.\n\n**Verwendung:**\n```\n[online_abstimmen_code]\n```\n\n### [online_abstimmen_switch]\nToggle zum Setzen des MV-Flags.\n\n**Verwendung:**\n```\n[online_abstimmen_switch]\n```\n\n### [zoom_register_and_join]\nZoom-Registrierung und Beitritt.\n\n**Verwendung:**\n```\n[zoom_register_and_join meeting_id=\"123456789\"]\n```\n\n### [online_abstimmen_zoom_link]\nZoom-Link generieren.\n\n**Verwendung:**\n```\n[online_abstimmen_zoom_link]\n```\n\n### [zoom_live_state]\nZoom Live-Status.\n\n**Verwendung:**\n```\n[zoom_live_state]\n```\n\n### [dgptm_presence_scanner]\nPräsenzscanner (identisch mit online_abstimmen_code).\n\n**Verwendung:**\n```\n[dgptm_presence_scanner]\n```\n\n## REST API Endpunkte\n\n### GET\/POST \/wp-json\/dgptm\/v1\/zoom-test\nZoom API testen.\n\n### POST \/wp-json\/dgptm\/v1\/zoom-register\nZoom-Registrierung durchführen.\n\n**Payload:**\n```json\n{\n  \"meeting_id\": \"123456789\",\n  \"email\": \"user@example.com\",\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\"\n}\n```\n\n### GET \/wp-json\/zoom\/v1\/live\nLive-Meeting-Status abrufen.\n\n### GET\/POST \/wp-json\/zoom\/v1\/webhook\nZoom-Webhooks empfangen.\n\n### POST \/wp-json\/zoom\/v1\/presence\nPräsenz eintragen.\n\n**Payload:**\n```json\n{\n  \"user_id\": 123\n}\n```\n\n### GET \/wp-json\/zoom\/v1\/presence-list\nPräsenz-Liste abrufen.\n\n### POST \/wp-json\/zoom\/v1\/presence-delete\nPräsenz löschen.\n\n**Payload:**\n```json\n{\n  \"presence_id\": 456\n}\n```\n\n### GET \/wp-json\/zoom\/v1\/presence-pdf\nPDF-Teilnehmerliste generieren.\n\n## Verwendung\n\n### QR-Code-Check-in\n\n1. QR-Code auf Seite einbinden:\n```\n[online_abstimmen_code]\n```\n\n2. Benutzer scannt mit Smartphone\n3. Automatische Anwesenheitserfassung\n\n### Zoom-Integration\n\n**Setup:**\n1. Zoom Account mit JWT\/OAuth\n2. Webhook-URL in Zoom konfigurieren\n3. Meeting-ID in WordPress hinterlegen\n\n**Automatische Erfassung:**\n- Teilnehmer tritt Meeting bei → Webhook → Anwesenheit erfasst\n- Teilnehmer verlässt Meeting → Webhook → Status aktualisiert\n\n### Manuelle Anwesenheit\n\nAdmins können manuell Teilnehmer als anwesend markieren:\n1. Präsenz-Tabelle öffnen\n2. Benutzer suchen\n3. \"Als anwesend markieren\" klicken\n\n### PDF-Export\n\nTeilnehmerliste als PDF:\n```\nGET \/wp-json\/zoom\/v1\/presence-pdf?meeting_id=123\n```\n\n## Zoom-Webhooks\n\nDas Modul empfängt folgende Zoom-Events:\n- `meeting.participant_joined` - Teilnehmer beigetreten\n- `meeting.participant_left` - Teilnehmer gegangen\n- `meeting.started` - Meeting gestartet\n- `meeting.ended` - Meeting beendet\n\n## Technische Details\n\n- QR-Code-Library: phpqrcode\n- PDF-Generierung: FPDF\n- Barcode: Code128\n- Zoom API v2\n- Webhook-Verarbeitung mit Signature-Validation\n- Real-time Updates via Ajax\n\n## Tipps\n\n- Testen Sie Zoom-Webhooks vor Live-Events\n- QR-Codes groß darstellen (min. 200x200px)\n- PDF-Export für Dokumentation nutzen\n- Backup-Plan bei technischen Problemen",
+    "features": [
+        "QR-Code-Scanning",
+        "Zoom-Meeting-Integration",
+        "Webhook-Empfang",
+        "Anwesenheitstracking",
+        "PDF-Teilnehmerlisten",
+        "Barcode-Generierung",
+        "Live-Status",
+        "REST API"
+    ],
+    "keywords": [
+        "presence",
+        "attendance",
+        "qr-code",
+        "zoom",
+        "barcode",
+        "pdf",
+        "webhook",
+        "tracking"
+    ],
+    "module_id": "anwesenheitsscanner",
+    "last_updated": "2025-11-29 17:38:29"
+}

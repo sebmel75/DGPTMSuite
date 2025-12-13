@@ -1,0 +1,22 @@
+{
+    "id": "timeline-manager",
+    "name": "Timeline Plus",
+    "description": "Timeline management with custom post type and frontend editor",
+    "version": "1.6.7",
+    "author": "Sebastian Melzer",
+    "main_file": "timeline-plus.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": []
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "content",
+    "icon": "dashicons-clock",
+    "active": false,
+    "can_export": true,
+    "flags": [
+        "production"
+    ]
+}

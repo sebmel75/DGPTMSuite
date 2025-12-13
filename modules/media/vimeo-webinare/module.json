@@ -1,0 +1,20 @@
+{
+  "id": "vimeo-webinare",
+  "name": "DGPTM - Vimeo Webinare",
+  "description": "Vimeo Videos als Webinare mit dynamischen URLs (/wissen/webinar/{id}), automatischen Fortbildungspunkten, Zertifikaten und Frontend-Manager",
+  "version": "1.2.4",
+  "author": "Sebastian Melzer",
+  "main_file": "dgptm-vimeo-webinare.php",
+  "dependencies": [],
+  "optional_dependencies": [],
+  "wp_dependencies": {
+    "plugins": ["advanced-custom-fields"]
+  },
+  "requires_php": "7.4",
+  "requires_wp": "5.8",
+  "category": "media",
+  "icon": "dashicons-video-alt2",
+  "active": false,
+  "can_export": true,
+  "critical": false
+}

@@ -1,0 +1,21 @@
+{
+    "title": "Menu Control",
+    "description": "Ermöglicht rollenbasiertes Ein- und Ausblenden von Menüpunkten für eingeloggte und nicht-eingeloggte Benutzer.",
+    "content": "# Menu Control\n\n## Übersicht\n\nDas Menu Control Modul ermöglicht die fein-granulare Steuerung der Sichtbarkeit von WordPress-Menüpunkten basierend auf Benutzerrollen und Login-Status.\n\n## Hauptfunktionen\n\n- Rollenbasierte Menüsichtbarkeit\n- Separate Einstellungen für eingeloggte\/nicht-eingeloggte Benutzer\n- Multi-Select für mehrere Rollen\n- Automatische Integration in WordPress Menü-Editor\n\n## Einrichtung\n\n1. Navigieren Sie zu **Design → Menüs**\n2. Wählen Sie einen Menüpunkt aus\n3. Erweitern Sie die Menüpunkt-Optionen\n4. Finden Sie die \"Menu Control\" Einstellungen\n5. Wählen Sie:\n   - Sichtbarkeit für nicht-eingeloggte Benutzer\n   - Sichtbarkeit für eingeloggte Benutzer\n   - Spezifische Rollen (falls nur für bestimmte Rollen)\n\n## Verwendung\n\n### Beispiel 1: Nur für Mitglieder\n- **Für nicht-eingeloggt:** Ausblenden\n- **Für eingeloggt:** Nur für Rolle \"Mitglied\"\n\n### Beispiel 2: Nur für Nicht-Mitglieder\n- **Für nicht-eingeloggt:** Einblenden\n- **Für eingeloggt:** Ausblenden\n\n### Beispiel 3: Nur für Admins\n- **Für nicht-eingeloggt:** Ausblenden\n- **Für eingeloggt:** Nur für Rolle \"Administrator\"\n\n## Technische Details\n\n- Nutzt WordPress `wp_nav_menu_objects` Filter\n- CSS für bessere Admin-UI\n- Speichert Einstellungen in Post Meta\n\n## Tipps\n\n- Testen Sie Menüs als unterschiedliche Benutzerrollen\n- Verwenden Sie aussagekräftige Menünamen\n- Beachten Sie die Menü-Hierarchie",
+    "features": [
+        "Rollenbasierte Menü-Kontrolle",
+        "Login-Status-basierte Sichtbarkeit",
+        "Multi-Select Rollen-Auswahl",
+        "WordPress Menü-Editor Integration"
+    ],
+    "keywords": [
+        "menu",
+        "navigation",
+        "roles",
+        "permissions",
+        "visibility",
+        "access-control"
+    ],
+    "module_id": "menu-control",
+    "last_updated": "2025-11-29 17:38:29"
+}

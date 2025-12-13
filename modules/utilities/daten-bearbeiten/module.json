@@ -1,0 +1,20 @@
+{
+  "id": "daten-bearbeiten",
+  "name": "DGPTM - Daten bearbeiten",
+  "description": "Member data editing form with Zoho CRM synchronization and GoCardless payment integration",
+  "version": "1.1.0",
+  "author": "Sebastian Melzer",
+  "main_file": "dgptm-daten-bearbeiten.php",
+  "dependencies": [],
+  "optional_dependencies": ["crm-abruf", "mitgliedsantrag", "gocardless"],
+  "wp_dependencies": {
+    "plugins": []
+  },
+  "requires_php": "7.4",
+  "requires_wp": "5.8",
+  "category": "utilities",
+  "icon": "dashicons-edit",
+  "active": false,
+  "can_export": true,
+  "critical": false
+}

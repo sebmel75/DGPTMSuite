@@ -1,0 +1,25 @@
+{
+    "title": "Herzzentren Editor",
+    "description": "Herzzentrum-Verwaltung mit interaktiven Karten und Elementor-Widgets für Ausbildungszentren.",
+    "content": "# Herzzentren Editor\n\n## Übersicht\n\nSpezialisiertes Modul für die Verwaltung von Herzzentren und Ausbildungsstätten mit interaktiven Karten, Frontend-Editor und Elementor-Integration.\n\n## Hauptfunktionen\n\n- Custom Post Type \"Herzzentrum\"\n- Interaktive Google Maps \/ Leaflet\n- Elementor-Widgets\n- Frontend-Editor mit Berechtigungssystem\n- Ajax-Suche und Filter\n- Export-Funktionen\n\n## Shortcodes\n\n### [herzzentrum_karte]\nZeigt interaktive Karte mit allen oder gefilterten Herzzentren.\n\n**Parameter:**\n- `category` - Kategorie-Filter\n- `region` - Regions-Filter\n- `zoom` - Initial Zoom-Level\n\n**Verwendung:**\n```\n[herzzentrum_karte category=\"ausbildungszentrum\" zoom=\"7\"]\n```\n\n### [herzzentrum_liste]\nListet Herzzentren als Tabelle oder Grid.\n\n**Verwendung:**\n```\n[herzzentrum_liste]\n```\n\n## Elementor Widgets\n\n### Herzzentren Karte (Multi-Map)\nZeigt mehrere Zentren auf einer Karte.\n\n**Einstellungen:**\n- Kategorieauswahl\n- Kartentyp (Google Maps \/ Leaflet)\n- Marker-Styling\n- Popup-Template\n\n### Einzelnes Herzzentrum (Single-Map)\nDetail-Ansicht eines einzelnen Zentrums.\n\n**Einstellungen:**\n- Zentrum auswählen\n- Zusatzinfos anzeigen\n- Kontaktdaten\n- Bilder-Galerie\n\n## Admin-Interface\n\n**Menü:** Herzzentren\n\n### Funktionen\n\n1. **Herzzentrum hinzufügen\/bearbeiten**\n   - Name, Adresse, Kontakt\n   - Koordinaten (automatisch oder manuell)\n   - Kategorien zuweisen\n   - Bilder hochladen\n\n2. **Berechtigungsverwaltung**\n   - ACF-basiert\n   - Frontend-Editor-Zugriff\n   - Rollenabhängig\n\n3. **Karten-Einstellungen**\n   - API-Schlüssel (Google Maps)\n   - Standard-Zoom\n   - Marker-Icons\n   - Popup-Templates\n\n## ACF-Integration\n\nBenötigte Felder (automatisch erstellt):\n- Adresse (Text)\n- Stadt (Text)\n- PLZ (Text)\n- Land (Text)\n- Telefon (Text)\n- E-Mail (E-Mail)\n- Website (URL)\n- Latitude (Number)\n- Longitude (Number)\n- Kategorie (Taxonomy)\n- Beschreibung (Wysiwyg)\n\n## Frontend-Editor\n\nBerechtigte Benutzer können im Frontend:\n- Neue Zentren anlegen\n- Eigene Zentren bearbeiten\n- Bilder hochladen\n- Koordinaten setzen\n\n**Zugriff:**\n- ACF-Feld für Berechtigung\n- Rollenbasiert\n- Per Benutzer-ID\n\n## Verwendung\n\n### Karte auf Seite einbinden\n\n**Mit Shortcode:**\n```\n[herzzentrum_karte]\n```\n\n**Mit Elementor:**\n1. Elementor öffnen\n2. Widget \"Herzzentren Karte\" suchen\n3. Widget hinzufügen\n4. Einstellungen konfigurieren\n\n### Neues Herzzentrum anlegen\n\n**Backend:**\n1. Herzzentren → Neu hinzufügen\n2. Alle Felder ausfüllen\n3. Adresse eingeben (Koordinaten werden automatisch ermittelt)\n4. Veröffentlichen\n\n**Frontend:**\n1. Als berechtigter Benutzer einloggen\n2. Frontend-Editor aufrufen\n3. Formular ausfüllen\n4. Absenden\n\n## Technische Details\n\n- Custom Post Type: `herzzentrum`\n- Taxonomie: `herzzentrum_category`\n- Geocoding: Google Maps API\n- Alternative: Leaflet (OpenStreetMap)\n- Ajax-basierte Suche\n- Responsive Karten\n\n## Tipps\n\n- Tragen Sie Google Maps API-Schlüssel ein für Geocoding\n- Nutzen Sie Kategorien für bessere Organisation\n- Testen Sie Frontend-Editor als Nicht-Admin\n- Backup vor größeren Datenimporten",
+    "features": [
+        "Custom Post Type Herzzentrum",
+        "Interaktive Karten (Google Maps \/ Leaflet)",
+        "Elementor-Widgets",
+        "Frontend-Editor",
+        "Berechtigungssystem",
+        "Ajax-Suche",
+        "Export-Funktionen"
+    ],
+    "keywords": [
+        "map",
+        "herzzentrum",
+        "location",
+        "elementor",
+        "acf",
+        "frontend-editor",
+        "geocoding"
+    ],
+    "module_id": "herzzentren",
+    "last_updated": "2025-11-29 17:38:29"
+}

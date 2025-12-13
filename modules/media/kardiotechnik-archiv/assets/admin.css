@@ -1,0 +1,132 @@
+/* Kardiotechnik Archiv - Admin Styles */
+
+.kta-stats {
+    display: flex;
+    gap: 20px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+}
+
+.kta-stat-box {
+    background: white;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 20px;
+    min-width: 200px;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+}
+
+.kta-stat-box h3 {
+    margin: 0 0 5px 0;
+    font-size: 32px;
+    color: #0073aa;
+    font-weight: 600;
+}
+
+.kta-stat-box p {
+    margin: 0;
+    color: #646970;
+    font-size: 14px;
+}
+
+/* Modal Styles */
+#kta-edit-modal {
+    position: fixed;
+    z-index: 100000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.kta-modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 30px;
+    border: 1px solid #888;
+    border-radius: 4px;
+    width: 80%;
+    max-width: 800px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.kta-modal-close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    line-height: 20px;
+    cursor: pointer;
+}
+
+.kta-modal-close:hover,
+.kta-modal-close:focus {
+    color: #000;
+}
+
+/* Progress Bar */
+.kta-progress-bar {
+    width: 100%;
+    height: 30px;
+    background: #f0f0f1;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 20px 0;
+}
+
+.kta-progress-fill {
+    height: 100%;
+    background: #0073aa;
+    width: 0%;
+    transition: width 0.3s ease;
+    animation: kta-progress-animation 2s infinite;
+}
+
+@keyframes kta-progress-animation {
+    0% { width: 0%; }
+    50% { width: 100%; }
+    100% { width: 0%; }
+}
+
+/* Card Styles */
+.card {
+    margin-bottom: 20px;
+}
+
+/* Table Styles */
+.wp-list-table .kta-edit-article,
+.wp-list-table .kta-delete-article {
+    margin-left: 5px;
+}
+
+/* Import Form */
+#kta-import-form .form-table th {
+    width: 150px;
+}
+
+#kta-import-status {
+    font-weight: 600;
+    color: #0073aa;
+}
+
+#kta-import-result {
+    background: #d7f0ff;
+    border: 1px solid #0073aa;
+    border-radius: 4px;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+#kta-import-result h3 {
+    margin-top: 0;
+    color: #0073aa;
+}
+
+/* Search Field */
+#kta-search-articles {
+    width: 300px;
+    max-width: 100%;
+    margin-right: 10px;
+}

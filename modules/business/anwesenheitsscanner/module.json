@@ -1,0 +1,19 @@
+{
+    "id": "anwesenheitsscanner",
+    "name": "Attendance Scanner",
+    "description": "Attendance tracking with PDF and barcode generation",
+    "version": "2.0",
+    "author": "Sebastian Melzer",
+    "main_file": "anwesenheitsscanner.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": []
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "jahrestagung",
+    "icon": "dashicons-id",
+    "active": false,
+    "can_export": true
+}

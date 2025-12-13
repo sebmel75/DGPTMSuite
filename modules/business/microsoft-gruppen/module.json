@@ -1,0 +1,19 @@
+{
+    "id": "microsoft-gruppen",
+    "name": "Microsoft 365 Groups",
+    "description": "Microsoft 365 group management integration",
+    "version": "1.5.3",
+    "author": "Sebastian Melzer",
+    "main_file": "microsoftgruppen.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": []
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "utilities",
+    "icon": "dashicons-groups",
+    "active": false,
+    "can_export": true
+}

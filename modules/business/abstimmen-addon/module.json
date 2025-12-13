@@ -1,0 +1,31 @@
+{
+    "id": "abstimmen-addon",
+    "name": "DGPTM Abstimmen-Addon",
+    "description": "Umfassendes Voting-System mit Umfragen, Zoom-Integration, Anwesenheitserfassung, Präsenz-Scanner und Beamer-Ansicht",
+    "version": "4.0.0",
+    "author": "Sebastian Melzer",
+    "main_file": "abstimmen-addon.php",
+    "dependencies": [
+        "webhook-trigger"
+    ],
+    "optional_dependencies": [
+        "crm-abruf"
+    ],
+    "wp_dependencies": {
+        "plugins": []
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "fortbildung",
+    "icon": "dashicons-yes",
+    "active": false,
+    "can_export": true,
+    "flags": [
+        "production"
+    ],
+    "comment": {
+        "text": "Konsolidiert v4.0.0 - Alle Features vereint",
+        "timestamp": 1735500000,
+        "user_id": 1
+    }
+}

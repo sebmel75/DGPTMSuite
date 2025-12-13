@@ -1,0 +1,24 @@
+{
+    "title": "Wissens-Bot",
+    "description": "KI-gestützter Chatbot mit Claude AI und Multi-Datenbank-Integration.",
+    "content": "# Wissens-Bot\n\n## Übersicht\n\nKI-gestützter Chatbot powered by Claude AI (Anthropic) mit Multi-Datenbank-Zugriff und Kontext-Management.\n\n## Hauptfunktionen\n\n- Claude AI Integration (Anthropic)\n- Multi-Datenbank-Zugriff (WordPress, externe DBs)\n- Chat-Widget mit floating button\n- Kontext-Management\n- Verlaufs-Speicherung\n- Admin-Dashboard\n- Anpassbares Design\n\n## Shortcodes\n\n### [wissens_bot]\nZeigt Chat-Widget.\n\n**Verwendung:**\n```\n[wissens_bot]\n```\n\n## Admin-Interface\n\n**Menü:** Wissens-Bot\n\n### Konfiguration\n\n1. **Claude API**\n   - API-Schlüssel (Anthropic)\n   - Model-Auswahl (Claude 3.5 Sonnet, etc.)\n   - Max. Tokens\n   - Temperatur\n\n2. **Datenquellen-Verwaltung**\n   - WordPress-Datenbank (Posts, Pages, Custom Post Types)\n   - Externe Datenbanken\n   - API-Endpunkte\n   - Gewichtung der Quellen\n\n3. **Chat-Einstellungen**\n   - Widget-Position (rechts unten \/ links unten \/ eingebettet)\n   - Farben (primär, sekundär, text)\n   - Willkommensnachricht\n   - Platzhalter-Text\n\n4. **Verlaufs-Ansicht**\n   - Alle Conversations\n   - Nach Benutzer filtern\n   - Nach Datum filtern\n   - Exportieren\n\n## Verwendung\n\n### Setup\n\n1. Anthropic API-Schlüssel erhalten (console.anthropic.com)\n2. Wissens-Bot → Einstellungen\n3. API-Schlüssel eintragen\n4. Modell wählen (empfohlen: claude-3-5-sonnet-20241022)\n5. Datenquellen konfigurieren\n6. Speichern\n\n### Datenquellen hinzufügen\n\n**WordPress-Inhalte:**\n- Automatisch: Posts, Pages, Custom Post Types\n- Durchsuchbar: Titel, Inhalt, Meta-Felder\n\n**Externe Datenbank:**\n1. Datenquellen → Neue hinzufügen\n2. Typ: Datenbank\n3. Credentials eintragen\n4. Tabellen auswählen\n5. Speichern\n\n**API-Endpunkt:**\n1. Datenquellen → Neue hinzufügen\n2. Typ: API\n3. Endpoint-URL\n4. Authentifizierung\n5. Response-Mapping\n\n### Chat-Widget einbinden\n\n**Floating Button:**\nWidget erscheint automatisch auf allen Seiten (konfigurierbar in Einstellungen).\n\n**Eingebettet:**\n```\n[wissens_bot]\n```\n\n### Kontext-Management\n\nDer Bot nutzt:\n1. Aktuelle Seite als Kontext\n2. Benutzer-Profil (wenn eingeloggt)\n3. Conversation-History\n4. Konfigurierte Datenquellen\n\n## Claude AI Features\n\n**Verwendet:**\n- Claude 3.5 Sonnet (neuestes Modell)\n- 200k Token Context Window\n- Deutsch-Unterstützung\n- Streaming für Echtzeit-Antworten\n\n**Capabilities:**\n- Natürliche Konversation\n- Faktenwissen aus Datenquellen\n- Mehrsprachig\n- Code-Verständnis\n\n## Datenschutz\n\n- Conversations werden lokal gespeichert\n- Nur verschickt an Claude API (verschlüsselt)\n- DSGVO-konform mit Einwilligung\n- Löschung auf Anfrage\n\n## Technische Details\n\n- Anthropic Claude API\n- Server-Side-Rendering für Sicherheit\n- Streaming API für Echtzeit-Responses\n- Vector-Search für bessere Antworten (optional)\n- Caching für Performance\n\n## Tipps\n\n- Verwenden Sie klare Datenquellen-Namen\n- Testen Sie Bot mit typischen Fragen\n- Passen Sie Willkommensnachricht an\n- Monitor API-Kosten in Anthropic Console\n- Nutzen Sie Conversation-History für Verbesserungen",
+    "features": [
+        "Claude AI Integration",
+        "Multi-Datenbank-Zugriff",
+        "Chat-Widget",
+        "Kontext-Management",
+        "Verlaufs-Speicherung",
+        "Admin-Dashboard"
+    ],
+    "keywords": [
+        "ai",
+        "chatbot",
+        "claude",
+        "anthropic",
+        "chat",
+        "assistant",
+        "knowledge-base"
+    ],
+    "module_id": "wissens-bot",
+    "last_updated": "2025-11-29 17:38:29"
+}

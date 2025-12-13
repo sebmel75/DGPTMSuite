@@ -1,0 +1,21 @@
+{
+    "id": "acf-anzeiger",
+    "name": "ACF Field Display",
+    "description": "Display ACF fields with advanced formatting",
+    "version": "1.0.0",
+    "author": "Sebastian Melzer",
+    "main_file": "acf_anzeiger.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": [
+            "advanced-custom-fields"
+        ]
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "utilities",
+    "icon": "dashicons-admin-settings",
+    "active": false,
+    "can_export": true
+}

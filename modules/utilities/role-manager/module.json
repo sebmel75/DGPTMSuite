@@ -1,0 +1,23 @@
+{
+    "id": "role-manager",
+    "name": "DGPTM - Role Manager",
+    "description": "Backend-Zugriffskontrolle, Multiple Rollen und Toolbar-Management",
+    "version": "1.1.0",
+    "author": "Sebastian Melzer",
+    "main_file": "role-manager.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": []
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "core-infrastructure",
+    "icon": "dashicons-admin-users",
+    "active": false,
+    "critical": false,
+    "can_export": true,
+    "flags": [
+        "critical"
+    ]
+}

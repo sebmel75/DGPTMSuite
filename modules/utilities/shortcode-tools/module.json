@@ -1,0 +1,1 @@
+{"id":"shortcode-tools","name":"Shortcode Tools","description":"Shortcode editors and grid layouts","version":"1.0.0","author":"Sebastian Melzer","main_file":"shortcodeedit.php","dependencies":[],"optional_dependencies":[],"wp_dependencies":{"plugins":[]},"requires_php":"7.4","requires_wp":"5.8","category":"utilities","icon":"dashicons-shortcode","active":false,"can_export":true}

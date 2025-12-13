@@ -1,0 +1,24 @@
+{
+    "id": "kardiotechnik-archiv",
+    "name": "Archiv der Zeitschrift Kardiotechnink",
+    "description": "Ein Tool mit dem man das Archiv der Verbandszeitschrift durchsuchen kann.",
+    "version": "1.0.0",
+    "author": "Seb.",
+    "main_file": "kardiotechnik-archiv.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": [
+            ""
+        ]
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "content",
+    "icon": "dashicons-paperclip",
+    "active": false,
+    "can_export": true,
+    "flags": [
+        "development"
+    ]
+}

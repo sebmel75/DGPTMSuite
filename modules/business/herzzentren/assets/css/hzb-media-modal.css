@@ -1,0 +1,399 @@
+/**
+ * DGPTM Herzzentrum Editor - HZB Media Modal Styles
+ * Version: 4.0.0
+ * Optimized CSS with proper namespacing and reduced z-index conflicts
+ */
+
+/* ==========================================================================
+   Media Modal Overlay
+   ========================================================================== */
+
+#hzb-media-overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 99998; /* Reduziert zur Vermeidung von Konflikten */
+    backdrop-filter: blur(2px);
+}
+
+#hzb-media-overlay.is-active {
+    display: block;
+}
+
+/* ==========================================================================
+   Media Modal Container
+   ========================================================================== */
+
+#hzb-media-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(900px, 95vw);
+    max-height: 85vh;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 10px 50px rgba(0, 0, 0, 0.3);
+    display: none;
+    z-index: 99999; /* Höher als Overlay */
+    overflow: hidden;
+}
+
+#hzb-media-modal.is-active {
+    display: block;
+}
+
+/* ==========================================================================
+   Modal Header
+   ========================================================================== */
+
+#hzb-media-modal header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e5e5e5;
+    background: #fafafa;
+}
+
+#hzb-media-modal header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+/* Close Button in Header */
+#hzb-media-modal .hzb-modal-close {
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 4px 8px;
+    line-height: 1;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+#hzb-media-modal .hzb-modal-close:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+#hzb-media-modal .hzb-modal-close:focus {
+    outline: 2px solid #005792;
+    outline-offset: 2px;
+}
+
+/* ==========================================================================
+   Modal Body
+   ========================================================================== */
+
+#hzb-media-modal .hzb-modal-body {
+    padding: 12px 16px;
+    overflow: auto;
+    max-height: calc(85vh - 120px);
+}
+
+/* ==========================================================================
+   Tabs Navigation
+   ========================================================================== */
+
+#hzb-media-modal .hzb-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+#hzb-media-modal .hzb-tab {
+    padding: 8px 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: #f7f7f7;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+#hzb-media-modal .hzb-tab:hover {
+    background: #eeeeee;
+}
+
+#hzb-media-modal .hzb-tab.active {
+    background: #eaf3ff;
+    border-color: #bcd4ff;
+    color: #005792;
+    font-weight: 600;
+}
+
+#hzb-media-modal .hzb-tab:focus {
+    outline: 2px solid #005792;
+    outline-offset: 2px;
+}
+
+/* ==========================================================================
+   Grid Layout für Media Items
+   ========================================================================== */
+
+#hzb-media-modal .hzb-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+}
+
+#hzb-media-modal .hzb-card {
+    border: 1px solid #ececec;
+    border-radius: 8px;
+    padding: 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: #fff;
+}
+
+#hzb-media-modal .hzb-card:hover {
+    border-color: #bcd4ff;
+    background: #f8fbff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+#hzb-media-modal .hzb-card.selected {
+    border-color: #005792;
+    background: #eaf3ff;
+}
+
+#hzb-media-modal .hzb-card img {
+    max-width: 100%;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-bottom: 6px;
+}
+
+#hzb-media-modal .hzb-card-title {
+    font-size: 12px;
+    color: #555;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ==========================================================================
+   Drag & Drop Zone
+   ========================================================================== */
+
+#hzb-media-modal .hzb-drop {
+    border: 2px dashed #b3b3b3;
+    border-radius: 10px;
+    padding: 24px;
+    text-align: center;
+    margin: 8px 0;
+    background: #fafafa;
+    transition: all 0.2s ease;
+}
+
+#hzb-media-modal .hzb-drop.dragover {
+    background: #f2f8ff;
+    border-color: #7fb0ff;
+    border-style: solid;
+}
+
+#hzb-media-modal .hzb-drop-icon {
+    font-size: 48px;
+    color: #b3b3b3;
+    margin-bottom: 12px;
+}
+
+#hzb-media-modal .hzb-drop-text {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+/* ==========================================================================
+   Modal Footer
+   ========================================================================== */
+
+#hzb-media-modal footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid #e5e5e5;
+    background: #fafafa;
+}
+
+/* ==========================================================================
+   Buttons - Scoped to Modal
+   ========================================================================== */
+
+#hzb-media-modal .hzb-button {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    border: 1px solid #ddd;
+    background: #f7f7f7;
+    color: #333;
+    transition: all 0.2s ease;
+}
+
+#hzb-media-modal .hzb-button:hover {
+    background: #e7e7e7;
+}
+
+#hzb-media-modal .hzb-button-primary {
+    background: #0073aa;
+    border-color: #006799;
+    color: #fff;
+}
+
+#hzb-media-modal .hzb-button-primary:hover {
+    background: #005a87;
+}
+
+#hzb-media-modal .hzb-button-link {
+    background: transparent;
+    border: none;
+    color: #0073aa;
+    cursor: pointer;
+    padding: 8px 12px;
+}
+
+#hzb-media-modal .hzb-button-link:hover {
+    color: #005a87;
+    text-decoration: underline;
+}
+
+/* ==========================================================================
+   Toolbar
+   ========================================================================== */
+
+#hzb-media-modal .hzb-toolbar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+/* ==========================================================================
+   Utility Classes
+   ========================================================================== */
+
+#hzb-media-modal .hzb-hidden {
+    display: none;
+}
+
+#hzb-media-modal .hzb-error {
+    color: #b91c1c;
+    margin: 6px 0;
+    padding: 8px 12px;
+    background: #fee;
+    border-left: 4px solid #b91c1c;
+    border-radius: 4px;
+}
+
+#hzb-media-modal .hzb-loading {
+    display: inline-block;
+    padding: 20px;
+    text-align: center;
+    width: 100%;
+}
+
+#hzb-media-modal .hzb-loading::after {
+    content: "";
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #0073aa;
+    border-radius: 50%;
+    animation: hzb-modal-spin 1s linear infinite;
+    margin-left: 10px;
+    vertical-align: middle;
+}
+
+@keyframes hzb-modal-spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* ==========================================================================
+   Responsive Design
+   ========================================================================== */
+
+@media (max-width: 768px) {
+    #hzb-media-modal {
+        width: 95vw;
+        max-height: 90vh;
+    }
+    
+    #hzb-media-modal .hzb-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+    
+    #hzb-media-modal .hzb-tabs {
+        flex-direction: column;
+    }
+    
+    #hzb-media-modal .hzb-tab {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    #hzb-media-modal .hzb-grid {
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    }
+    
+    #hzb-media-modal footer {
+        flex-direction: column;
+    }
+    
+    #hzb-media-modal footer .hzb-button {
+        width: 100%;
+    }
+}
+
+/* ==========================================================================
+   Accessibility
+   ========================================================================== */
+
+#hzb-media-modal [tabindex]:focus,
+#hzb-media-modal button:focus,
+#hzb-media-modal a:focus {
+    outline: 2px solid #005792;
+    outline-offset: 2px;
+}
+
+/* Screen Reader Text */
+.hzb-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ==========================================================================
+   Print Styles
+   ========================================================================== */
+
+@media print {
+    #hzb-media-overlay,
+    #hzb-media-modal {
+        display: none;
+    }
+}

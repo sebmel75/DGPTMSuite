@@ -1,0 +1,23 @@
+{
+    "title": "Publication Workflow",
+    "description": "Publikations-Workflow-Management-System mit Status-Tracking und Freigabe-Prozess.",
+    "content": "# Publication Workflow\n\n## Übersicht\n\nUmfassendes Workflow-Management-System für Publikationen mit mehrstufigem Freigabe-Prozess und Status-Tracking.\n\n## Hauptfunktionen\n\n- Workflow-Management\n- Status-Tracking (Draft, Review, Approved, Published)\n- Freigabe-Prozess mit Rollen\n- Benachrichtigungen\n- Aufgaben-Zuweisung\n- Dashboard-Übersicht\n\n## Shortcodes\n\n### [publication_workflow]\nWorkflow-Interface anzeigen.\n\n**Verwendung:**\n```\n[publication_workflow]\n```\n\n## Admin-Interface\n\n**Menü:** Publikationen\n\n### Funktionen\n\n1. **Workflow-Status**\n   - Alle Publikationen nach Status\n   - Draft → Review → Approved → Published\n   - Abgelehnte Publikationen\n\n2. **Aufgaben-Verwaltung**\n   - Zugewiesene Aufgaben\n   - Pending Reviews\n   - Freigaben erforderlich\n\n3. **Freigabe-Prozess**\n   - Review-Anfrage stellen\n   - Freigabe erteilen\/ablehnen\n   - Kommentare hinzufügen\n   - Historie anzeigen\n\n## Verwendung\n\n### Publikation erstellen\n\n1. Publikationen → Neu hinzufügen\n2. Inhalt erstellen\n3. Status: Draft\n4. Zur Review einreichen\n\n### Review-Prozess\n\n**Autor:**\n1. Publikation fertigstellen\n2. \"Zur Review einreichen\"\n3. Reviewer wird benachrichtigt\n\n**Reviewer:**\n1. Benachrichtigung erhalten\n2. Publikationen → Pending Reviews\n3. Inhalt prüfen\n4. Freigeben oder Ablehnen (mit Kommentar)\n\n**Editor:**\n1. Genehmigte Publikationen → Approve\n2. Final freigeben\n3. Veröffentlichen\n\n### Status-Übersicht\n\n**Draft:**\n- Noch in Bearbeitung\n- Autor kann bearbeiten\n\n**Review:**\n- Wartet auf Reviewer\n- Autor kann nicht mehr bearbeiten\n\n**Approved:**\n- Von Reviewer freigegeben\n- Wartet auf finale Freigabe\n\n**Published:**\n- Veröffentlicht\n- Öffentlich sichtbar\n\n**Rejected:**\n- Abgelehnt\n- Zurück an Autor mit Kommentaren\n\n## Benachrichtigungen\n\n**E-Mail bei:**\n- Neue Review-Anfrage\n- Freigabe erteilt\n- Ablehnung\n- Veröffentlichung\n\n## Berechtigungen\n\n**Rollen:**\n- **Autor:** Erstellen, zur Review einreichen\n- **Reviewer:** Reviewen, Freigeben\/Ablehnen\n- **Editor:** Finale Freigabe, Veröffentlichen\n- **Administrator:** Alles\n\n## Dashboard\n\n**Zeigt:**\n- Meine Publikationen nach Status\n- Pending Reviews\n- Aufgaben\n- Statistiken\n\n## Technische Details\n\n- Custom Post Type: `publication`\n- Status als Post-Status oder Meta\n- E-Mail-Benachrichtigungen via wp_mail\n- ACL (Access Control List) für Berechtigungen\n\n## Tipps\n\n- Definieren Sie klare Review-Richtlinien\n- Nutzen Sie Kommentare für Feedback\n- Dashboard für Überblick\n- Benachrichtigungen aktivieren",
+    "features": [
+        "Workflow-Management",
+        "Status-Tracking",
+        "Freigabe-Prozess",
+        "Benachrichtigungen",
+        "Aufgaben-Zuweisung",
+        "Dashboard"
+    ],
+    "keywords": [
+        "workflow",
+        "publication",
+        "review",
+        "approval",
+        "status",
+        "editorial"
+    ],
+    "module_id": "publication-workflow",
+    "last_updated": "2025-11-29 17:38:29"
+}

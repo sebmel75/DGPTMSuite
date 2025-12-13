@@ -1,0 +1,22 @@
+{
+    "title": "Conditional Logic",
+    "description": "Bedingte Content-Anzeige mit flexibler Logik.",
+    "content": "# Conditional Logic\n\n## Übersicht\n\nFlexibles System für bedingte Content-Anzeige basierend auf User-Meta, Rollen, Custom-Fields und mehr.\n\n## Hauptfunktionen\n\n- Bedingte Shortcodes\n- Operatoren: =, !=, >, <, >=, <=, contains\n- Verschachtelbar\n- User-Meta-Zugriff\n- Custom Field Support\n- Rollen-Abfrage\n\n## Shortcodes\n\n### [ifdgptm]\nBedingter Shortcode.\n\n**Parameter:**\n- `condition` - Zu prüfende Bedingung\n- `value` - Erwarteter Wert\n- `operator` - Vergleichsoperator (Standard: =)\n\n**Verwendung:**\n```\n[ifdgptm condition=\"user_role\" value=\"subscriber\"]\n  Nur für Abonnenten sichtbar\n[\/ifdgptm]\n```\n\n## Operatoren\n\n**Vergleich:**\n- `=` - Gleich\n- `!=` - Ungleich\n- `>` - Größer als\n- `<` - Kleiner als\n- `>=` - Größer oder gleich\n- `<=` - Kleiner oder gleich\n\n**Spezial:**\n- `contains` - Enthält (für Strings)\n- `not_contains` - Enthält nicht\n\n## Verwendung\n\n### Rollenbasierte Anzeige\n\n```\n[ifdgptm condition=\"user_role\" value=\"administrator\"]\n  Admin-Inhalt\n[\/ifdgptm]\n```\n\n### User-Meta prüfen\n\n```\n[ifdgptm condition=\"user_meta:newsletter\" value=\"true\"]\n  Newsletter-Abonnenten-Content\n[\/ifdgptm]\n```\n\n### Custom-Field prüfen\n\n```\n[ifdgptm condition=\"meta:premium_member\" value=\"true\"]\n  Premium-Content\n[\/ifdgptm]\n```\n\n### Numerische Vergleiche\n\n```\n[ifdgptm condition=\"user_meta:login_count\" value=\"10\" operator=\">\"]\n  Für erfahrene Benutzer (mehr als 10 Logins)\n[\/ifdgptm]\n```\n\n### String-Vergleiche\n\n```\n[ifdgptm condition=\"user_meta:country\" value=\"Germany\" operator=\"contains\"]\n  Content für Deutschland\n[\/ifdgptm]\n```\n\n### Verschachtelte Bedingungen\n\n```\n[ifdgptm condition=\"user_role\" value=\"subscriber\"]\n  [ifdgptm condition=\"user_meta:verified\" value=\"true\"]\n    Nur für verifizierte Abonnenten\n  [\/ifdgptm]\n[\/ifdgptm]\n```\n\n## Verfügbare Conditions\n\n**user_role:**\n- Prüft WordPress-Benutzerrolle\n- Werte: administrator, editor, author, contributor, subscriber\n\n**user_meta:FELDNAME:**\n- Prüft beliebiges User-Meta-Feld\n- Z.B. `user_meta:newsletter`\n\n**meta:FELDNAME:**\n- Prüft Custom-Field des aktuellen Posts\n- Z.B. `meta:featured`\n\n**is_logged_in:**\n- Prüft ob Benutzer eingeloggt\n- Werte: true, false\n\n## Technische Details\n\n- Shortcode-basiert\n- Unterstützt Verschachtelung\n- PHP-Evaluierung\n- Sichere Operatoren-Verarbeitung\n\n## Tipps\n\n- Kombinieren Sie mit anderen Shortcodes\n- Testen Sie als unterschiedliche Benutzer\n- Nutzen Sie für Premium-Content\n- Verschachteln für komplexe Logik",
+    "features": [
+        "Bedingte Shortcodes",
+        "Operatoren (=, !=, >, <, contains)",
+        "Verschachtelbar",
+        "User-Meta-Zugriff",
+        "Custom Field Support"
+    ],
+    "keywords": [
+        "conditional",
+        "logic",
+        "shortcode",
+        "if",
+        "visibility",
+        "user-meta"
+    ],
+    "module_id": "conditional-logic",
+    "last_updated": "2025-11-29 17:38:29"
+}

@@ -1,0 +1,23 @@
+{
+    "title": "Zoho Role Manager",
+    "description": "Erweiterte Rollenverwaltung basierend auf Zoho CRM Daten.",
+    "content": "# Zoho Role Manager\n\n## Übersicht\n\nErweiterte WordPress-Rollenverwaltung basierend auf Zoho CRM Daten mit automatischer Synchronisation.\n\n## Hauptfunktionen\n\n- Rollensynchronisation mit Zoho CRM\n- Automatische Zuordnung basierend auf CRM-Feldern\n- Manueller Sync-Trigger\n- Logging von Rollenänderungen\n- Session-basierte Kontrolle\n- Cron-basierte Auto-Synchronisation\n\n## Shortcodes\n\n### [sync_mitglied_rolle]\nManuelle Rollensynchronisation für eingeloggten Benutzer.\n\n**Verwendung:**\n```\n[sync_mitglied_rolle]\n```\n\nZeigt Button \"Rolle synchronisieren\".\n\n## Admin-Interface\n\nNutzt CRM-Abruf Admin-Seite (Einstellungen → DGPTM Zoho).\n\n### Einstellungen\n\n1. **Zoho CRM Verbindung**\n   - Automatisch von CRM-Abruf-Modul\n\n2. **Rollen-Mapping**\n   - CRM-Feld → WordPress-Rolle\n   - Z.B. `aktives_mitglied` = true → Rolle \"Mitglied\"\n\n3. **Synchronisations-Einstellungen**\n   - Auto-Sync aktivieren\n   - Sync-Intervall (täglich, wöchentlich)\n   - Manueller Sync\n\n## Verwendung\n\n### Automatische Synchronisation\n\n**Trigger:**\n- Bei jedem Login\n- Täglich via Cron\n- Nach CRM-Update (Webhook)\n\n**Ablauf:**\n1. Benutzer loggt sich ein\n2. E-Mail wird in Zoho gesucht\n3. CRM-Felder werden gelesen\n4. WordPress-Rolle wird aktualisiert\n5. Logging in DB-Tabelle `wp_dgptm_role_changes`\n\n### Manuelle Synchronisation\n\n**Frontend:**\n1. Benutzer klickt Button: `[sync_mitglied_rolle]`\n2. Ajax-Request an Server\n3. Synchronisation wird durchgeführt\n4. Bestätigung\n\n**Admin:**\n1. Einstellungen → DGPTM Zoho\n2. \"Alle Rollen synchronisieren\" klicken\n3. Alle Benutzer werden synchronisiert\n\n### Rollen-Mapping\n\n**Beispiel:**\n```php\n\/\/ In Zoho CRM:\n\/\/ aktives_mitglied = true → WordPress Rolle: \"Mitglied\"\n\/\/ aktives_mitglied = false → WordPress Rolle: \"Subscriber\"\n\n\/\/ In WordPress:\nif ($zoho_data['aktives_mitglied'] == true) {\n    $user->set_role('mitglied');\n} else {\n    $user->set_role('subscriber');\n}\n```\n\n## Logging\n\n**Tabelle:** `wp_dgptm_role_changes`\n\n**Felder:**\n- user_id\n- old_role\n- new_role\n- changed_at\n- reason (auto_login, manual, cron, webhook)\n\n**Ansicht:**\n- Einstellungen → DGPTM Zoho → Rollenwechsel-Log\n- Zeigt alle Änderungen\n- Filterbar nach Benutzer, Datum\n\n## Cron-Job\n\n**Standardmäßig:**\n- Täglich um 3:00 Uhr\n- Synchronisiert alle Benutzer\n- Nur Änderungen werden geloggt\n\n**Anpassen:**\n```php\n\/\/ In wp-config.php oder Theme:\nadd_filter('dgptm_role_sync_schedule', function() {\n    return 'hourly'; \/\/ hourly, daily, weekly\n});\n```\n\n## Technische Details\n\n- Abhängigkeit: CRM-Abruf-Modul\n- Nutzt Zoho API via CRM-Abruf\n- Custom DB-Table für Logging\n- WordPress Cron API\n- Session-Control für Rate-Limiting\n\n## Tipps\n\n- Testen Sie Rollen-Mapping zuerst\n- Prüfen Sie Log nach Synchronisation\n- Nutzen Sie manuelle Sync für wichtige Änderungen\n- Backup vor Massen-Synchronisation",
+    "features": [
+        "Zoho-Rollensynchronisation",
+        "Automatische Zuordnung",
+        "Manueller Sync-Trigger",
+        "Logging",
+        "Session-Control",
+        "Cron-basiert"
+    ],
+    "keywords": [
+        "zoho",
+        "roles",
+        "sync",
+        "crm",
+        "automation",
+        "users"
+    ],
+    "module_id": "zoho-role-manager",
+    "last_updated": "2025-11-29 17:38:29"
+}

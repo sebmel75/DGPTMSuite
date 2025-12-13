@@ -1,0 +1,394 @@
+/**
+ * ACF Permissions Manager Admin Styles
+ */
+
+.apm-wrap {
+    margin: 20px 20px 20px 0;
+}
+
+.apm-wrap h1 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.apm-wrap h1 .dashicons {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+}
+
+/* Tabs */
+.apm-tabs {
+    margin: 20px 0;
+}
+
+.apm-tab-content {
+    display: none;
+}
+
+.apm-tab-content.active {
+    display: block;
+}
+
+/* Cards */
+.apm-card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+    border-radius: 4px;
+}
+
+.apm-card h2 {
+    margin-top: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+/* Statistics */
+.apm-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.stat-box {
+    background: #fff;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.stat-number {
+    display: block;
+    font-size: 36px;
+    font-weight: bold;
+    color: #2271b1;
+    line-height: 1;
+    margin-bottom: 8px;
+}
+
+.stat-label {
+    display: block;
+    font-size: 13px;
+    color: #646970;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Filter */
+.apm-filter {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+}
+
+.apm-filter label {
+    display: inline-block;
+    margin-right: 10px;
+}
+
+.apm-filter select {
+    margin-right: 10px;
+}
+
+/* Users list */
+.apm-users-list {
+    margin-top: 20px;
+}
+
+/* Toggle switch */
+.apm-toggle {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+
+.apm-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.apm-toggle .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .3s;
+    border-radius: 24px;
+}
+
+.apm-toggle .slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+}
+
+.apm-toggle input:checked + .slider {
+    background-color: #2271b1;
+}
+
+.apm-toggle input:checked + .slider:before {
+    transform: translateX(20px);
+}
+
+.apm-toggle input:disabled + .slider {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Users table */
+.apm-users-table {
+    width: 100%;
+}
+
+.apm-users-table .sticky-col {
+    position: sticky;
+    left: 0;
+    background: #fff;
+    z-index: 1;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.05);
+}
+
+.apm-users-table thead .sticky-col {
+    z-index: 2;
+}
+
+.apm-users-table th.rotate {
+    height: 150px;
+    white-space: nowrap;
+    vertical-align: bottom;
+    padding: 0;
+}
+
+.apm-users-table th.rotate > div {
+    transform: translate(0, 51px) rotate(315deg);
+    width: 30px;
+}
+
+.apm-users-table th.rotate > div > span {
+    padding: 5px 10px;
+}
+
+.apm-users-table .text-center {
+    text-align: center;
+}
+
+.apm-table-wrapper {
+    max-width: 100%;
+    overflow-x: auto;
+    margin-top: 20px;
+}
+
+/* Batch operations */
+.apm-batch-section {
+    margin: 30px 0;
+    padding: 20px;
+    background: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+}
+
+.apm-batch-section h3 {
+    margin-top: 0;
+}
+
+.apm-user-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    margin: 15px 0;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 10px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.apm-user-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background 0.2s;
+}
+
+.apm-user-checkbox:hover {
+    background: #f0f6fc;
+}
+
+.apm-user-checkbox input {
+    margin: 0;
+}
+
+.apm-batch-controls {
+    margin-top: 15px;
+    padding: 10px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.apm-batch-controls .button {
+    margin-right: 10px;
+}
+
+.apm-batch-controls .selected-count {
+    margin-left: 20px;
+    font-size: 14px;
+}
+
+.apm-batch-controls .selected-count strong {
+    font-size: 16px;
+    color: #2271b1;
+}
+
+/* Modal */
+.apm-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 100000;
+}
+
+.apm-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+}
+
+.apm-modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    border-radius: 4px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    max-width: 800px;
+    width: 90%;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.apm-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.apm-modal-header h2 {
+    margin: 0;
+}
+
+.apm-modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+    color: #646970;
+}
+
+.apm-modal-close:hover {
+    color: #000;
+}
+
+.apm-modal-body {
+    padding: 20px;
+    overflow-y: auto;
+}
+
+/* Buttons with icons */
+.button .dashicons {
+    vertical-align: middle;
+    margin-top: -3px;
+    margin-right: 3px;
+}
+
+.button-large .dashicons {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+}
+
+/* Responsive */
+@media screen and (max-width: 782px) {
+    .apm-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .apm-users-table th.rotate > div {
+        transform: translate(0, 41px) rotate(315deg);
+    }
+
+    .apm-user-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .apm-modal-content {
+        width: 95%;
+    }
+}
+
+@media screen and (max-width: 600px) {
+    .apm-stats {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Loading spinner inline */
+.spinner.is-active {
+    display: inline-block;
+    float: none;
+}
+
+/* Success/Error messages */
+.notice {
+    animation: slideDown 0.3s;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

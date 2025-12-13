@@ -1,0 +1,41 @@
+{
+    "id": "event-tracker",
+    "name": "Event Tracker v2.0",
+    "description": "Moderne Event-Management-Suite mit Webhook-Integration, Mail-System, mehrtägigen Events und PSR-4 Architektur",
+    "version": "2.0.0",
+    "author": "Sebastian Melzer",
+    "main_file": "event-tracker.php",
+    "dependencies": [
+        "webhook-trigger"
+    ],
+    "optional_dependencies": [
+        "crm-abruf"
+    ],
+    "wp_dependencies": {
+        "plugins": []
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "fortbildung",
+    "icon": "dashicons-calendar-alt",
+    "active": false,
+    "can_export": true,
+    "critical": false,
+    "features": [
+        "PSR-4 Autoloading",
+        "Namespace Organization",
+        "Multi-Day Events",
+        "Mail Draft System",
+        "Enhanced Logging",
+        "Webhook Integration",
+        "Iframe Support",
+        "Cron Jobs"
+    ],
+    "changelog": {
+        "2.0.0": "Komplette Neuschreibung mit moderner Architektur",
+        "1.16.2": "Letzte Legacy-Version (siehe eventtracker-backup.php)"
+    },
+    "flags": [
+        "production"
+    ]
+}

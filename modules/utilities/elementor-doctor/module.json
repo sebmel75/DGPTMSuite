@@ -1,0 +1,20 @@
+{
+  "id": "elementor-doctor",
+  "name": "DGPTM - Elementor Doctor",
+  "description": "Scannt und repariert fehlerhafte Elementor-Seiten mit sicherer Stapelverarbeitung",
+  "version": "1.0.0",
+  "author": "Sebastian Melzer",
+  "main_file": "dgptm-elementor-doctor.php",
+  "dependencies": [],
+  "optional_dependencies": [],
+  "wp_dependencies": {
+    "plugins": ["elementor"]
+  },
+  "requires_php": "7.4",
+  "requires_wp": "5.8",
+  "category": "utilities",
+  "icon": "dashicons-admin-tools",
+  "active": false,
+  "can_export": true,
+  "critical": false
+}

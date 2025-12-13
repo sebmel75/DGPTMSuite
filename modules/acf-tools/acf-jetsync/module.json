@@ -1,0 +1,22 @@
+{
+    "id": "acf-jetsync",
+    "name": "ACF JetEngine Sync",
+    "description": "Synchronize ACF fields with JetEngine",
+    "version": "1.0.0",
+    "author": "Sebastian Melzer",
+    "main_file": "acfjetsync.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": [
+            "advanced-custom-fields",
+            "jetengine"
+        ]
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "utilities",
+    "icon": "dashicons-update",
+    "active": false,
+    "can_export": true
+}

@@ -1,0 +1,1 @@
+{"id":"blaue-seiten","name":"Blaue Seiten","description":"Directory functionality (Blue Pages)","version":"1.0.0","author":"Sebastian Melzer","main_file":"blaueseiten.php","dependencies":[],"optional_dependencies":[],"wp_dependencies":{"plugins":[]},"requires_php":"7.4","requires_wp":"5.8","category":"utilities","icon":"dashicons-book","active":false,"can_export":true}

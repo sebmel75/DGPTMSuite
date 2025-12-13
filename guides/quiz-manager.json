@@ -1,0 +1,24 @@
+{
+    "title": "Quiz Manager",
+    "description": "Umfassende Quiz-Verwaltung mit Kategorien, Ergebnissen und Zoho-Integration.",
+    "content": "# Quiz Manager\n\n## Übersicht\n\nVollständiges Quiz-Management-System mit Kategoriesystem, Ergebnis-Tracking und Integration mit Zoho CRM für Fortbildungspunkte.\n\n## Hauptfunktionen\n\n- Quiz-Verwaltung mit Kategorien\n- Ergebnis-Tracking und Statistiken\n- Bestandene Quizze Frontend-Anzeige\n- Zoho CRM Integration\n- Punkte-System\n- Fortschritts-Tracking\n\n## Shortcodes\n\n### [quiz_manager]\nZeigt das Quiz-Manager-Interface an.\n\n**Verwendung:**\n```\n[quiz_manager]\n```\n\n### [dgptm-quiz-categories]\nZeigt Kategorie-Übersicht mit allen Quizzen.\n\n**Verwendung:**\n```\n[dgptm-quiz-categories]\n```\n\n### [passed_quizzes]\nListet alle bestandenen Quizze des aktuellen Benutzers.\n\n**Verwendung:**\n```\n[passed_quizzes]\n```\n\n## Admin-Interface\n\n**Menü:** Quizzes → Quiz Manager\n\n### Funktionen\n\n1. **Quiz-Übersicht**\n   - Alle Quizze verwalten\n   - Status anzeigen\n   - Teilnehmerzahlen\n\n2. **Kategorien-Verwaltung**\n   - Kategorien erstellen\/bearbeiten\n   - Quizze zuordnen\n   - Hierarchie definieren\n\n3. **Ergebnis-Tracking**\n   - Benutzer-Ergebnisse einsehen\n   - Statistiken anzeigen\n   - Export-Funktionen\n\n4. **Zoho-Synchronisation**\n   - Automatischer Datenabgleich\n   - Punkteübertragung\n   - Fortbildungszertifikate\n\n## Integration mit Quiz Maker Plugin\n\nDas Modul erweitert das Quiz Maker Plugin um:\n- Kategoriesystem\n- Zoho CRM Anbindung\n- Fortgeschrittenes Tracking\n- Frontend-Anzeige\n\n## Verwendung\n\n### Quiz erstellen\n\n1. Quiz Maker → Add New\n2. Quiz konfigurieren\n3. Kategorie zuweisen\n4. Shortcode auf Seite einbinden\n\n### Ergebnisse verwalten\n\n1. Quiz Manager → Ergebnisse\n2. Benutzer filtern\n3. Statistiken ansehen\n4. Bei Bedarf exportieren\n\n### Zoho-Synchronisation\n\nErfolgt automatisch:\n- Nach bestandenem Quiz\n- Punkte werden übertragen\n- Zertifikate werden ausgelöst\n\n## Technische Details\n\n- Nutzt Quiz Maker API\n- Custom Database Tables für Tracking\n- Cron-Jobs für Synchronisation\n- Ajax für Frontend-Updates\n\n## Tipps\n\n- Nutzen Sie aussagekräftige Kategorienamen\n- Definieren Sie klare Bestehens-Schwellen\n- Testen Sie Zoho-Integration vor Live-Betrieb\n- Backup vor größeren Änderungen",
+    "features": [
+        "Quiz-Verwaltung",
+        "Kategoriesystem",
+        "Ergebnis-Tracking",
+        "Bestandene Quizze Frontend",
+        "Zoho CRM Integration",
+        "Punkte-System"
+    ],
+    "keywords": [
+        "quiz",
+        "test",
+        "exam",
+        "categories",
+        "results",
+        "tracking",
+        "zoho"
+    ],
+    "module_id": "quiz-manager",
+    "last_updated": "2025-11-29 17:38:29"
+}

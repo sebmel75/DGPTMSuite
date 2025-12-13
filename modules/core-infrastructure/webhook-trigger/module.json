@@ -1,0 +1,19 @@
+{
+    "id": "webhook-trigger",
+    "name": "Webhook Trigger",
+    "description": "Webhook management and triggering system",
+    "version": "1.0.0",
+    "author": "Sebastian Melzer",
+    "main_file": "webhooktrigger.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": []
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "utilities",
+    "icon": "dashicons-networking",
+    "active": true,
+    "can_export": true
+}

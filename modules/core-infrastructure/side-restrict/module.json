@@ -1,0 +1,22 @@
+{
+    "id": "side-restrict",
+    "name": "Side Restrict",
+    "description": "Page and content access restrictions with dynamic ACF permissions",
+    "version": "2.3.0",
+    "author": "Sebastian Melzer",
+    "main_file": "siderestrict.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": []
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "core-infrastructure",
+    "icon": "dashicons-lock",
+    "active": true,
+    "can_export": true,
+    "flags": [
+        "critical"
+    ]
+}

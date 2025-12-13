@@ -1,0 +1,407 @@
+/* Zoho Books Integration - Frontend Styles */
+
+/* Outstanding Balance Banner - Dezent */
+.dgptm-zoho-books-outstanding-banner {
+    background: #fff9f0;
+    border: 1px solid #ffd699;
+    border-left: 4px solid #ff9800;
+    padding: 20px 25px;
+    margin: 20px 0;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.dgptm-zoho-books-outstanding-banner .banner-content {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.dgptm-zoho-books-outstanding-banner .banner-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.dgptm-zoho-books-outstanding-banner .banner-icon {
+    font-size: 22px;
+    color: #ff9800;
+}
+
+.dgptm-zoho-books-outstanding-banner .banner-text {
+    font-size: 16px;
+    color: #5d4037;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.dgptm-zoho-books-outstanding-banner .banner-text strong {
+    color: #e65100;
+    font-weight: 600;
+}
+
+.dgptm-zoho-books-outstanding-banner .banner-amount {
+    color: #d84315;
+    font-weight: 700;
+    font-size: 18px;
+}
+
+.dgptm-zoho-books-outstanding-banner .banner-invoices {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 5px;
+}
+
+.dgptm-zoho-books-outstanding-banner .outstanding-invoice-item {
+    background: #ffffff;
+    border: 1px solid #ffe0b2;
+    padding: 12px 15px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.2s;
+}
+
+.dgptm-zoho-books-outstanding-banner .outstanding-invoice-item:hover {
+    border-color: #ffb74d;
+    box-shadow: 0 2px 4px rgba(255, 152, 0, 0.1);
+}
+
+.dgptm-zoho-books-outstanding-banner .invoice-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex: 1;
+}
+
+.dgptm-zoho-books-outstanding-banner .invoice-number {
+    font-weight: 600;
+    color: #5d4037;
+    font-size: 14px;
+}
+
+.dgptm-zoho-books-outstanding-banner .invoice-amount {
+    color: #d84315;
+    font-weight: 600;
+    font-size: 15px;
+}
+
+.dgptm-zoho-books-outstanding-banner .invoice-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 16px;
+    background: #ff9800;
+    color: #ffffff;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+}
+
+.dgptm-zoho-books-outstanding-banner .invoice-button:hover {
+    background: #f57c00;
+    color: #ffffff;
+    text-decoration: none;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);
+}
+
+.dgptm-zoho-books-outstanding-banner .invoice-button::after {
+    content: '→';
+    font-size: 14px;
+}
+
+/* Transaction List Wrapper */
+.dgptm-zoho-books-wrapper {
+    margin: 20px 0;
+}
+
+/* Filters */
+.zoho-books-filters {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.zoho-books-filters label {
+    font-weight: 600;
+    color: #495057;
+    margin: 0;
+}
+
+.zoho-books-filters select {
+    padding: 8px 15px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+    background: #ffffff;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.zoho-books-filters select:hover,
+.zoho-books-filters select:focus {
+    border-color: #80bdff;
+    outline: none;
+}
+
+/* Transaction Table */
+.zoho-books-transactions {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Unpaid Invoice Rows - Red Highlight */
+.zoho-books-transactions tbody tr.unpaid-invoice {
+    background-color: #fee;
+    border-left: 4px solid #dc3545;
+}
+
+.zoho-books-transactions tbody tr.unpaid-invoice:hover {
+    background-color: #fdd;
+}
+
+.zoho-books-transactions thead {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: #ffffff;
+}
+
+.zoho-books-transactions thead th {
+    padding: 15px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.zoho-books-transactions thead th.sortable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    padding-right: 25px;
+    transition: background-color 0.2s;
+}
+
+.zoho-books-transactions thead th.sortable:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.zoho-books-transactions thead th.sortable::after {
+    content: '⇅';
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.5;
+    font-size: 12px;
+}
+
+.zoho-books-transactions thead th.sorted-asc::after {
+    content: '↑';
+    opacity: 1;
+}
+
+.zoho-books-transactions thead th.sorted-desc::after {
+    content: '↓';
+    opacity: 1;
+}
+
+.zoho-books-transactions tbody tr {
+    border-bottom: 1px solid #e9ecef;
+    transition: background-color 0.2s;
+}
+
+.zoho-books-transactions tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.zoho-books-transactions tbody tr.hidden {
+    display: none;
+}
+
+.zoho-books-transactions tbody td {
+    padding: 12px 15px;
+    font-size: 14px;
+    color: #495057;
+}
+
+/* Transaction Type Badge */
+.transaction-type {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.transaction-type.invoice {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.transaction-type.creditnote {
+    background: #e8f5e9;
+    color: #388e3c;
+}
+
+/* Transaction Status Badge */
+.transaction-status {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.transaction-status.status-paid {
+    background: #d4edda;
+    color: #155724;
+}
+
+.transaction-status.status-unpaid,
+.transaction-status.status-sent,
+.transaction-status.status-overdue {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.transaction-status.status-overdue {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.transaction-status.status-void,
+.transaction-status.status-draft {
+    background: #e2e3e5;
+    color: #383d41;
+}
+
+/* Outstanding Balance */
+.balance-outstanding {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+/* View Invoice Button */
+.button-view-invoice {
+    display: inline-block;
+    padding: 6px 15px;
+    background: #007bff;
+    color: #ffffff;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.button-view-invoice:hover {
+    background: #0056b3;
+    color: #ffffff;
+    text-decoration: none;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+    .zoho-books-transactions {
+        font-size: 12px;
+    }
+
+    .zoho-books-transactions thead th,
+    .zoho-books-transactions tbody td {
+        padding: 10px 8px;
+    }
+
+    /* Banner responsive */
+    .dgptm-zoho-books-outstanding-banner {
+        padding: 15px;
+    }
+
+    .dgptm-zoho-books-outstanding-banner .banner-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .dgptm-zoho-books-outstanding-banner .banner-text {
+        font-size: 14px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+
+    .dgptm-zoho-books-outstanding-banner .banner-amount {
+        font-size: 16px;
+    }
+
+    .dgptm-zoho-books-outstanding-banner .outstanding-invoice-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px;
+    }
+
+    .dgptm-zoho-books-outstanding-banner .invoice-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+        width: 100%;
+    }
+
+    .dgptm-zoho-books-outstanding-banner .invoice-button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .zoho-books-filters {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+/* Empty State */
+.zoho-books-transactions tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Loading State */
+.zoho-books-loading {
+    text-align: center;
+    padding: 40px;
+    color: #6c757d;
+}
+
+.zoho-books-loading::before {
+    content: '';
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

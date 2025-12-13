@@ -1,0 +1,22 @@
+{
+    "title": "Stellenanzeige",
+    "description": "Stellenanzeigen-Verwaltungssystem mit Frontend-Editor.",
+    "content": "# Stellenanzeige\n\n## Übersicht\n\nUmfassendes Stellenanzeigen-System mit Frontend-Editor, Berechtigungssystem und ACF-Integration.\n\n## Hauptfunktionen\n\n- Custom Post Type \"Stellenanzeige\"\n- Frontend-Editor\n- Berechtigungssystem (ACF: stellenanzeigen_anlegen)\n- Kategorien (Fachbereich)\n- Filterung\n- Bewerbungs-Formular\n\n## Shortcodes\n\n### [stellenanzeigen]\nStellenanzeigen-Liste.\n\n**Parameter:**\n- `category` - Kategorie-Filter\n- `limit` - Anzahl\n- `orderby` - Sortierung\n\n**Verwendung:**\n```\n[stellenanzeigen limit=\"10\"]\n[stellenanzeigen category=\"kardiologie\"]\n```\n\n### [stellenanzeigen_editor]\nFrontend-Editor für Stellenanzeigen.\n\n**Verwendung:**\n```\n[stellenanzeigen_editor]\n```\n\n### [stellenanzeige_bearbeiten]\nEinzelne Stellenanzeige bearbeiten.\n\n**Parameter:**\n- `id` - Stellenanzeigen-ID\n\n**Verwendung:**\n```\n[stellenanzeige_bearbeiten id=\"123\"]\n```\n\n## Admin-Interface\n\n**Menü:** Stellenanzeigen (Custom Post Type)\n\n### Funktionen\n\n1. **Stellenanzeigen-Verwaltung**\n   - Alle Stellenanzeigen\n   - Filtern nach Kategorie\n   - Status (aktiv\/abgelaufen)\n\n2. **Kategorien**\n   - Fachbereiche verwalten\n   - Z.B. Kardiologie, Chirurgie, Innere Medizin\n\n## Berechtigungssystem\n\n### ACF-Feld\n\n**stellenanzeigen_anlegen:**\n- Wert: true\/false\n- Berechtigung: Stellenanzeigen erstellen und eigene bearbeiten\n\n### Zugriff\n\n**Mit Berechtigung:**\n- Frontend-Editor zugänglich\n- Kann Stellenanzeigen erstellen\n- Kann eigene bearbeiten\/löschen\n\n**Ohne Berechtigung:**\n- Nur Anzeigen sehen\n- Kein Editor-Zugriff\n\n## Verwendung\n\n### Stellenanzeigen anzeigen\n\n```\n[stellenanzeigen limit=\"10\"]\n```\n\n### Stellenanzeige erstellen (Frontend)\n\n1. Benutzer mit `stellenanzeigen_anlegen` = true\n2. Seite mit `[stellenanzeigen_editor]` aufrufen\n3. Formular ausfüllen:\n   - Stellentitel\n   - Fachbereich\n   - Beschreibung\n   - Anforderungen\n   - Kontakt\n   - Bewerbungsfrist\n4. Veröffentlichen\n\n### Stellenanzeige bearbeiten\n\n1. Eigene Stellenanzeigen-Liste öffnen\n2. \"Bearbeiten\" klicken\n3. Änderungen vornehmen\n4. Speichern\n\n## Stellenanzeigen-Felder\n\n**Grunddaten:**\n- Stellentitel\n- Fachbereich\n- Standort\n- Arbeitszeit (Vollzeit\/Teilzeit)\n\n**Beschreibung:**\n- Aufgabenbeschreibung\n- Anforderungsprofil\n- Was wir bieten\n\n**Bewerbung:**\n- Kontaktperson\n- E-Mail\n- Telefon\n- Bewerbungsfrist\n\n## Kategorien\n\nBeispiele:\n- Kardiologie\n- Chirurgie\n- Innere Medizin\n- Pädiatrie\n- Verwaltung\n- Pflege\n\n## Technische Details\n\n- Custom Post Type: `stellenanzeige`\n- Taxonomie: `stellenanzeigen_kategorie`\n- ACF für Felder und Berechtigungen\n- Frontend-Editor mit Ajax\n- Responsive Design\n\n## Tipps\n\n- Klare Stellentitel\n- Vollständige Beschreibungen\n- Bewerbungsfristen setzen\n- Abgelaufene Anzeigen archivieren",
+    "features": [
+        "Custom Post Type Stellenanzeige",
+        "Frontend-Editor",
+        "ACF-Berechtigungen",
+        "Kategorien",
+        "Filterung"
+    ],
+    "keywords": [
+        "jobs",
+        "stellenanzeigen",
+        "career",
+        "frontend-editor",
+        "acf",
+        "categories"
+    ],
+    "module_id": "stellenanzeige",
+    "last_updated": "2025-11-29 17:38:29"
+}

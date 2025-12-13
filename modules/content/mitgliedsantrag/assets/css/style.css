@@ -1,0 +1,804 @@
+/**
+ * DGPTM Mitgliedsantrag - Frontend Styles
+ * Professional membership application form styling
+ */
+
+.dgptm-mitgliedsantrag-wrapper {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Progress Bar */
+.dgptm-mitgliedsantrag-progress {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 40px;
+    position: relative;
+}
+
+.dgptm-mitgliedsantrag-progress::before {
+    content: '';
+    position: absolute;
+    top: 25px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #e0e0e0;
+    z-index: 0;
+}
+
+.progress-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+    flex: 1;
+}
+
+.step-number {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #e0e0e0;
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 18px;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+}
+
+.step-title {
+    font-size: 14px;
+    color: #666;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.progress-step.active .step-number {
+    background: #0073aa;
+    color: #fff;
+    box-shadow: 0 0 0 4px rgba(0, 115, 170, 0.2);
+}
+
+.progress-step.active .step-title {
+    color: #0073aa;
+    font-weight: 600;
+}
+
+.progress-step.completed .step-number {
+    background: #46b450;
+    color: #fff;
+}
+
+.progress-step.completed .step-number::after {
+    content: '✓';
+}
+
+/* Form Styling */
+.dgptm-mitgliedsantrag-form {
+    background: #fff;
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.form-step {
+    display: none;
+}
+
+.form-step.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.form-step h3 {
+    margin: 0 0 20px 0;
+    font-size: 24px;
+    color: #333;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #0073aa;
+}
+
+.form-notice {
+    background: #e7f3f8;
+    border-left: 4px solid #0073aa;
+    padding: 15px;
+    margin-bottom: 25px;
+    border-radius: 4px;
+}
+
+/* Form Layout */
+.form-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.form-group {
+    flex: 1;
+    min-width: 0;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+}
+
+.form-group label small {
+    font-weight: normal;
+    color: #666;
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="tel"],
+.form-group input[type="date"],
+.form-group input[type="number"],
+.form-group input[type="file"],
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #0073aa;
+    box-shadow: 0 0 0 3px rgba(0, 115, 170, 0.1);
+}
+
+.form-group small {
+    display: block;
+    margin-top: 5px;
+    font-size: 12px;
+    color: #666;
+    font-style: italic;
+}
+
+/* Width Classes */
+.frm4 { flex: 0 0 calc(33.333% - 14px); }
+.frm6 { flex: 0 0 calc(50% - 10px); }
+.frm12 { flex: 0 0 100%; }
+.frm_sixth { flex: 0 0 calc(16.666% - 17px); }
+.frm_fourth { flex: 0 0 calc(25% - 15px); }
+.frm_two_thirds { flex: 0 0 calc(66.666% - 14px); }
+.frm_three_fourths { flex: 0 0 calc(75% - 15px); }
+.frm_first { margin-left: 0; }
+
+/* Radio Group */
+.radio-group {
+    display: flex;
+    gap: 20px;
+    margin-top: 10px;
+}
+
+.radio-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: normal;
+    cursor: pointer;
+}
+
+.radio-group input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+/* Membership Select */
+.membership-select {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.membership-prepend,
+.membership-append {
+    font-size: 14px;
+    color: #333;
+}
+
+.membership-select select {
+    flex: 0 0 200px;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    margin-top: 8px;
+}
+
+.toggle-switch input[type="checkbox"] {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-label {
+    display: block;
+    width: 60px;
+    height: 34px;
+    background-color: #ccc;
+    border-radius: 34px;
+    position: relative;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.toggle-switch-slider {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 26px;
+    height: 26px;
+    background-color: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+}
+
+.toggle-switch input[type="checkbox"]:checked + .toggle-label {
+    background-color: #46b450;
+}
+
+.toggle-switch input[type="checkbox"]:checked + .toggle-label .toggle-switch-slider {
+    transform: translateX(26px);
+}
+
+/* Guarantor Verification */
+.guarantor-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+
+.guarantor-section h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+}
+
+.guarantor-input-wrapper {
+    position: relative;
+}
+
+.guarantor-status {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 24px;
+}
+
+.guarantor-status.verifying::after {
+    content: '⏳';
+}
+
+.guarantor-status.verified::after {
+    content: '✓';
+    color: #46b450;
+}
+
+.guarantor-status.not-found::after {
+    content: '✗';
+    color: #dc3232;
+}
+
+.guarantor-status.not-member::after {
+    content: '⚠';
+    color: #f0ad4e;
+}
+
+.guarantor-info {
+    display: block;
+    margin-top: 8px;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.guarantor-info.success {
+    background: #d4edda;
+    color: #155724;
+}
+
+.guarantor-info.error {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.guarantor-info.warning {
+    background: #fff3cd;
+    color: #856404;
+}
+
+/* Validation Icons */
+.validation-icon {
+    display: inline-block;
+    margin-left: 5px;
+    font-size: 18px;
+}
+
+.validation-icon.valid::after {
+    content: '✓';
+    color: #46b450;
+}
+
+.validation-icon.invalid::after {
+    content: '✗';
+    color: #dc3232;
+}
+
+.validation-icon.checking::after {
+    content: '⏳';
+}
+
+/* DSGVO Box */
+.dsgvo-box {
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+}
+
+.dsgvo-box h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+}
+
+.dsgvo-text {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 15px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    font-weight: normal;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+/* Form Navigation */
+.form-navigation {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.btn-prev,
+.btn-next,
+.btn-submit {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-prev {
+    background: #f1f1f1;
+    color: #333;
+}
+
+.btn-prev:hover {
+    background: #e0e0e0;
+}
+
+.btn-next,
+.btn-submit {
+    background: #0073aa;
+    color: #fff;
+    margin-left: auto;
+}
+
+.btn-next:hover,
+.btn-submit:hover {
+    background: #005a87;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 115, 170, 0.3);
+}
+
+.btn-next:disabled,
+.btn-submit:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Success Message */
+.success-message {
+    text-align: center;
+    padding: 60px 40px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.success-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 20px;
+    background: #46b450;
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    animation: scaleIn 0.5s ease;
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0);
+    }
+    to {
+        transform: scale(1);
+    }
+}
+
+.success-message h3 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 28px;
+}
+
+.success-message p {
+    color: #666;
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+/* Error States */
+.form-group.error input,
+.form-group.error select {
+    border-color: #dc3232;
+}
+
+.form-group .error-message {
+    display: block;
+    margin-top: 5px;
+    color: #dc3232;
+    font-size: 12px;
+}
+
+/* Loading State */
+.dgptm-mitgliedsantrag-form.loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.dgptm-mitgliedsantrag-form.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 40px;
+    height: 40px;
+    margin: -20px 0 0 -20px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #0073aa;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .dgptm-mitgliedsantrag-wrapper {
+        padding: 10px;
+    }
+
+    .dgptm-mitgliedsantrag-form {
+        padding: 20px;
+    }
+
+    .dgptm-mitgliedsantrag-progress {
+        overflow-x: auto;
+    }
+
+    .step-title {
+        font-size: 12px;
+    }
+
+    .step-number {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+    }
+
+    .form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .form-group {
+        flex: 0 0 100% !important;
+        margin-bottom: 20px;
+    }
+
+    .membership-select {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .membership-select select {
+        flex: 0 0 100%;
+        width: 100%;
+    }
+
+    .form-navigation {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .btn-prev,
+    .btn-next,
+    .btn-submit {
+        width: 100%;
+    }
+
+    .btn-next,
+    .btn-submit {
+        margin-left: 0;
+    }
+}
+
+/* Info Boxes - Satzungskonforme Darstellung */
+.info-box {
+    background: #f0f6fc;
+    border-left: 4px solid #0073aa;
+    padding: 15px 20px;
+    margin: 15px 0;
+    border-radius: 4px;
+}
+
+.info-box p {
+    margin: 8px 0;
+    color: #333;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.info-box ul {
+    margin: 10px 0;
+    padding-left: 25px;
+}
+
+.info-box li {
+    margin: 5px 0;
+    color: #333;
+}
+
+.info-box strong {
+    color: #0073aa;
+}
+
+.info-box-important {
+    background: #f0fdf4;
+    border-left: 4px solid #46b450;
+    padding: 15px 20px;
+    margin: 15px 0;
+    border-radius: 4px;
+}
+
+.info-box-important p {
+    margin: 8px 0;
+    color: #333;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.info-box-important strong {
+    color: #46b450;
+}
+
+.info-box-optional {
+    background: #fffbeb;
+    border-left: 4px solid #f0b429;
+    padding: 15px 20px;
+    margin: 15px 0;
+    border-radius: 4px;
+}
+
+.info-box-optional p {
+    margin: 8px 0;
+    color: #333;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.info-box-optional strong {
+    color: #b57900;
+}
+
+/* Radio Button Group */
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 15px 0;
+}
+
+.radio-label {
+    display: flex;
+    align-items: flex-start;
+    cursor: pointer;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.radio-label:hover {
+    border-color: #0073aa;
+    background: #f9f9f9;
+}
+
+.radio-label input[type="radio"] {
+    margin: 3px 12px 0 0;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.radio-label input[type="radio"]:checked {
+    accent-color: #0073aa;
+}
+
+.radio-label span {
+    flex: 1;
+    color: #333;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.radio-label input[type="radio"]:checked + span {
+    font-weight: 600;
+    color: #0073aa;
+}
+
+/* Qualification Section */
+#qualification-section {
+    margin-top: 25px;
+    padding-top: 25px;
+    border-top: 1px solid #e0e0e0;
+}
+
+#qualification-upload,
+#no-qualification-info {
+    margin-top: 20px;
+}
+
+/* Guarantor Section Adjustments */
+#guarantor-intro-text {
+    margin-bottom: 25px;
+}
+
+#guarantor-intro-text p {
+    font-size: 15px;
+    color: #333;
+    line-height: 1.6;
+}
+
+#guarantor1-section,
+#guarantor2-section {
+    transition: all 0.3s ease;
+}
+
+/* Confirmation Sections - Step 5 */
+.confirmation-section {
+    background: #fafafa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.confirmation-section h4 {
+    margin: 0 0 12px 0;
+    color: #333;
+    font-size: 1.1em;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 8px;
+}
+
+.confirmation-section .info-text {
+    font-size: 14px;
+    color: #555;
+    line-height: 1.6;
+    margin-bottom: 15px;
+}
+
+.confirmation-section .info-text a {
+    color: #0073aa;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.confirmation-section .info-text a:hover {
+    text-decoration: underline;
+}
+
+/* Beitrag Table */
+.beitrag-tabelle {
+    width: 100%;
+    max-width: 400px;
+    margin: 12px 0;
+    border-collapse: collapse;
+}
+
+.beitrag-tabelle td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #eee;
+}
+
+.beitrag-tabelle td:first-child {
+    color: #666;
+}
+
+.beitrag-tabelle td:last-child {
+    text-align: right;
+}
+
+.small-info {
+    font-size: 0.85em;
+    color: #888;
+    margin-top: 8px;
+}

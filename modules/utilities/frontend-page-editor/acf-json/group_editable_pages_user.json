@@ -1,0 +1,63 @@
+{
+    "key": "group_editable_pages_user",
+    "title": "Bearbeitbare Seiten",
+    "fields": [
+        {
+            "key": "field_editable_pages",
+            "label": "Bearbeitbare Seiten",
+            "name": "editable_pages",
+            "aria-label": "",
+            "type": "post_object",
+            "instructions": "Wählen Sie die Seiten aus, die dieser Benutzer mit Elementor bearbeiten darf. Administratoren, Editoren und Moderatoren haben automatisch Zugriff auf alle Seiten.",
+            "required": 0,
+            "conditional_logic": [
+                [
+                    {
+                        "field": "field_user_is_admin_check",
+                        "operator": "!=",
+                        "value": "1"
+                    }
+                ]
+            ],
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "post_type": [
+                "page"
+            ],
+            "post_status": "",
+            "taxonomy": "",
+            "return_format": "id",
+            "multiple": 1,
+            "allow_null": 1,
+            "bidirectional": 0,
+            "ui": 1,
+            "bidirectional_target": []
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "user_form",
+                "operator": "==",
+                "value": "all"
+            },
+            {
+                "param": "current_user_role",
+                "operator": "==",
+                "value": "administrator"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "Seitenzuweisung für Frontend-Bearbeitung mit Elementor",
+    "show_in_rest": 0
+}

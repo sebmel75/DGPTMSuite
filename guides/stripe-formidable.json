@@ -1,0 +1,25 @@
+{
+    "title": "Stripe Formidable",
+    "description": "Stripe-Integration für Formidable Forms mit SEPA und Kartenzahlung.",
+    "content": "# Stripe Formidable\n\n## Übersicht\n\nVollständige Stripe-Integration für Formidable Forms mit Unterstützung für SEPA-Lastschrift und Kreditkartenzahlungen.\n\n## Hauptfunktionen\n\n- SEPA-Lastschrift-Zahlungen\n- Kreditkartenzahlungen\n- Formidable Forms Integration\n- Stripe Elements UI\n- Webhook-Handling für Zahlungsstatus\n- Test\/Live-Modus\n- Zahlungsstatus-Tracking\n\n## Shortcodes\n\n### [stripe_formidable]\nZeigt Stripe-Zahlungsformular.\n\n**Parameter:**\n- `form_id` - Formidable Form ID\n- `mode` - `test` oder `live`\n\n**Verwendung:**\n```\n[stripe_formidable form_id=\"5\" mode=\"live\"]\n```\n\n## Admin-Interface\n\n**Menü:** Formidable → Stripe Settings\n\n### Einstellungen\n\n1. **API-Schlüssel**\n   - Live Publishable Key\n   - Live Secret Key\n   - Test Publishable Key\n   - Test Secret Key\n\n2. **Webhook-Konfiguration**\n   - Webhook-URL anzeigen\n   - Webhook-Secret\n   - Event-Types konfigurieren\n\n3. **Zahlungseinstellungen**\n   - Akzeptierte Zahlungsmethoden\n   - Währung\n   - Standard-Beschreibung\n\n## Verwendung\n\n### Setup\n\n1. Stripe Account erstellen\n2. API-Schlüssel abrufen\n3. In WordPress-Einstellungen eintragen\n4. Webhook in Stripe konfigurieren\n\n### Formular erstellen\n\n1. Formidable → Formulare → Neu\n2. Formularfelder hinzufügen\n3. Stripe-Zahlungsfeld hinzufügen\n4. Betrag festlegen (fest oder Feld-basiert)\n5. Veröffentlichen\n\n### Shortcode einbinden\n\n```\n[stripe_formidable form_id=\"5\" mode=\"live\"]\n```\n\n## Zahlungsmethoden\n\n### SEPA-Lastschrift\n\n**Erforderliche Felder:**\n- Name\n- E-Mail\n- IBAN\n- SEPA-Mandat (Checkbox)\n\n**Flow:**\n1. Benutzer gibt IBAN ein\n2. SEPA-Mandat akzeptieren\n3. Zahlung wird initiiert\n4. Bestätigung nach Verarbeitung\n\n### Kreditkarte\n\n**Erforderliche Felder:**\n- Kartennummer\n- Ablaufdatum\n- CVC\n- Name auf Karte\n\n**Flow:**\n1. Stripe Elements lädt\n2. Kartendet als eingeben\n3. Zahlung wird sofort verarbeitet\n4. Bestätigung\n\n## Webhook-Events\n\nDas Modul verarbeitet folgende Stripe-Events:\n- `payment_intent.succeeded` - Zahlung erfolgreich\n- `payment_intent.payment_failed` - Zahlung fehlgeschlagen\n- `charge.refunded` - Rückerstattung\n- `customer.created` - Kunde erstellt\n\n## Technische Details\n\n- Stripe API v2023-10-16\n- Stripe Elements für sichere Karteneingabe\n- PCI-DSS-konform (Stripe hosted)\n- Webhook-Signatur-Validierung\n- Formidable Forms Entry-Verknüpfung\n\n## Tipps\n\n- Testen Sie im Test-Modus zuerst\n- Verwenden Sie Stripe Test-Karten\n- Webhook-Signatur validieren\n- Fehlerbehandlung implementieren\n- Benutzer über Status informieren",
+    "features": [
+        "SEPA-Lastschrift",
+        "Kreditkartenzahlung",
+        "Formidable Forms Integration",
+        "Stripe Elements",
+        "Webhook-Handling",
+        "Test\/Live-Modus",
+        "Zahlungsstatus-Tracking"
+    ],
+    "keywords": [
+        "stripe",
+        "payment",
+        "sepa",
+        "credit-card",
+        "formidable",
+        "checkout",
+        "webhook"
+    ],
+    "module_id": "stripe-formidable",
+    "last_updated": "2025-11-29 17:38:29"
+}

@@ -1,0 +1,1 @@
+{"id":"conditional-logic","name":"Conditional Logic","description":"Conditional content display","version":"1.0.0","author":"Sebastian Melzer","main_file":"if.php","dependencies":[],"optional_dependencies":[],"wp_dependencies":{"plugins":[]},"requires_php":"7.4","requires_wp":"5.8","category":"utilities","icon":"dashicons-randomize","active":false,"can_export":true}

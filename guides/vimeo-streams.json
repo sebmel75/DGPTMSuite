@@ -1,0 +1,24 @@
+{
+    "title": "Vimeo Streams",
+    "description": "Multi-Stream Vimeo-Video-Management mit Playlist-Unterstützung.",
+    "content": "# Vimeo Streams\n\n## Übersicht\n\nUmfassendes Vimeo-Video-Management mit Multi-Stream-Unterstützung, Playlist-Funktionen und Zugriffskontrolle.\n\n## Hauptfunktionen\n\n- Vimeo API Integration\n- Multi-Stream-Unterstützung\n- Playlist-Management\n- Responsive Player\n- Zugriffskontrolle (ACF\/Rollen)\n- Statistik-Tracking\n- Video-Kategorien\n\n## Shortcodes\n\n### [vimeo_stream]\nEinzelnes Vimeo-Video einbetten.\n\n**Parameter:**\n- `id` - Vimeo Video-ID\n- `width` - Breite (optional)\n- `height` - Höhe (optional)\n\n**Verwendung:**\n```\n[vimeo_stream id=\"123456789\"]\n[vimeo_stream id=\"123456789\" width=\"800\" height=\"450\"]\n```\n\n### [vimeo_playlist]\nVimeo-Playlist anzeigen.\n\n**Parameter:**\n- `ids` - Komma-getrennte Video-IDs\n\n**Verwendung:**\n```\n[vimeo_playlist ids=\"123456789,987654321,456789123\"]\n```\n\n## Admin-Interface\n\n**Menü:** Vimeo Streams\n\n### Funktionen\n\n1. **Video-Verwaltung**\n   - Videos hinzufügen (per Vimeo-ID)\n   - Titel und Beschreibung\n   - Kategorien zuweisen\n   - Zugriffskontrolle setzen\n\n2. **Playlist-Editor**\n   - Playlists erstellen\n   - Videos sortieren (Drag & Drop)\n   - Playlist-Titel und Beschreibung\n   - Shortcode generieren\n\n3. **API-Konfiguration**\n   - Vimeo Access Token\n   - Client ID\n   - Client Secret\n   - Sandbox-Modus\n\n## Verwendung\n\n### Vimeo API konfigurieren\n\n1. Vimeo-Developer-Account erstellen\n2. App erstellen auf developer.vimeo.com\n3. Access Token generieren\n4. In WordPress eintragen (Vimeo Streams → Einstellungen)\n\n### Video hinzufügen\n\n1. Vimeo Streams → Neu hinzufügen\n2. Vimeo-ID eintragen (z.B. 123456789)\n3. Video wird automatisch geladen (Titel, Thumbnail)\n4. Optional: Beschreibung ergänzen\n5. Kategorie wählen\n6. Zugriffskontrolle (öffentlich \/ Rollen \/ ACF)\n7. Veröffentlichen\n\n### Playlist erstellen\n\n1. Vimeo Streams → Playlists → Neu\n2. Titel eingeben\n3. Videos hinzufügen (Mehrfachauswahl)\n4. Videos sortieren\n5. Shortcode kopieren\n6. Auf Seite einbinden\n\n### Zugriffskontrolle\n\n**Optionen:**\n- **Öffentlich:** Alle können sehen\n- **Nur eingeloggt:** Nur angemeldete Benutzer\n- **Rollen:** Nur bestimmte Rollen\n- **ACF-Feld:** Basierend auf User-Meta-Feld\n\n**Beispiel:**\n```\nZugriff: Nur für Rolle \"Mitglied\"\n```\n\n## Responsive Player\n\nPlayer passt sich automatisch an:\n- Desktop: Volle Breite\n- Tablet: 100% Container\n- Mobile: Responsiv mit Aspect Ratio\n\n## Statistik-Tracking\n\n**Erfasst:**\n- Aufrufe\n- Wiedergabezeit\n- Abschlussrate\n- Benutzer-Aktivität\n\n**Ansicht:**\n- Admin-Dashboard\n- Pro Video\n- Gesamt-Statistiken\n\n## Technische Details\n\n- Vimeo API v3.4\n- Vimeo Player SDK\n- Responsive Embed mit CSS\n- Access Token Caching\n- Rate Limiting\n\n## Tipps\n\n- Nutzen Sie Vimeo Pro für bessere Features\n- Kategorien für Organisation\n- Playlists für Kursstrukturen\n- Zugriffskontrolle für Premium-Content",
+    "features": [
+        "Vimeo API Integration",
+        "Multi-Stream",
+        "Playlist-Management",
+        "Responsive Player",
+        "Zugriffskontrolle",
+        "Statistik-Tracking"
+    ],
+    "keywords": [
+        "vimeo",
+        "video",
+        "streaming",
+        "playlist",
+        "player",
+        "embed",
+        "api"
+    ],
+    "module_id": "vimeo-streams",
+    "last_updated": "2025-11-29 17:38:29"
+}

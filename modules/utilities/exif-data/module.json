@@ -1,0 +1,1 @@
+{"id":"exif-data","name":"EXIF Data Manager","description":"Image EXIF metadata management","version":"1.0.0","author":"Sebastian Melzer","main_file":"exifdata.php","dependencies":[],"optional_dependencies":[],"wp_dependencies":{"plugins":[]},"requires_php":"7.4","requires_wp":"5.8","category":"utilities","icon":"dashicons-camera","active":false,"can_export":true}

@@ -1,0 +1,21 @@
+{
+    "title": "Shortcode Tools",
+    "description": "Shortcode-Editoren und Grid-Layouts.",
+    "content": "# Shortcode Tools\n\n## Übersicht\n\nSammlung von Shortcode-Tools für Grid-Layouts, Editoren und Content-Strukturierung.\n\n## Hauptfunktionen\n\n- Shortcode-Generator\n- Grid-Layout-System\n- News-Editor\n- Responsive Layouts\n- Flexible Column-Systeme\n\n## Shortcodes\n\n### [news-edit-form]\nNews-Editor-Formular.\n\n**Verwendung:**\n```\n[news-edit-form]\n```\n\n### [grid_layout]\nGrid-Layout für Content.\n\n**Parameter:**\n- `columns` - Anzahl Spalten (2, 3, 4)\n\n**Verwendung:**\n```\n[grid_layout columns=\"3\"]\n  <div>Inhalt Spalte 1<\/div>\n  <div>Inhalt Spalte 2<\/div>\n  <div>Inhalt Spalte 3<\/div>\n[\/grid_layout]\n```\n\n## Verwendung\n\n### Grid-Layout\n\n**2 Spalten:**\n```\n[grid_layout columns=\"2\"]\n  <div>Linke Spalte<\/div>\n  <div>Rechte Spalte<\/div>\n[\/grid_layout]\n```\n\n**3 Spalten:**\n```\n[grid_layout columns=\"3\"]\n  <div>Spalte 1<\/div>\n  <div>Spalte 2<\/div>\n  <div>Spalte 3<\/div>\n[\/grid_layout]\n```\n\n**4 Spalten:**\n```\n[grid_layout columns=\"4\"]\n  <div>Box 1<\/div>\n  <div>Box 2<\/div>\n  <div>Box 3<\/div>\n  <div>Box 4<\/div>\n[\/grid_layout]\n```\n\n### Responsive Verhalten\n\n- **Desktop:** Volle Spaltenanzahl\n- **Tablet:** 2 Spalten\n- **Mobile:** 1 Spalte (gestapelt)\n\n## Kombinationen\n\n**Mit anderen Shortcodes:**\n```\n[grid_layout columns=\"2\"]\n  <div>[vimeo_stream id=\"123\"]<\/div>\n  <div>[news-list limit=\"5\"]<\/div>\n[\/grid_layout]\n```\n\n## Technische Details\n\n- CSS Grid für Layout\n- Flexbox-Fallback\n- Responsive Breakpoints\n- No JavaScript required\n\n## Tipps\n\n- Nutzen Sie Grid für konsistente Layouts\n- Kombinieren Sie mit anderen Shortcodes\n- Testen Sie Responsive-Verhalten\n- Verwenden Sie div-Container für jeden Grid-Item",
+    "features": [
+        "Shortcode-Generator",
+        "Grid-Layout-System",
+        "News-Editor",
+        "Responsive Layouts"
+    ],
+    "keywords": [
+        "shortcode",
+        "grid",
+        "layout",
+        "editor",
+        "columns",
+        "responsive"
+    ],
+    "module_id": "shortcode-tools",
+    "last_updated": "2025-11-29 17:38:29"
+}

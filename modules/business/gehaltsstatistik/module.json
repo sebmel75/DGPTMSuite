@@ -1,0 +1,19 @@
+{
+    "id": "gehaltsstatistik",
+    "name": "Salary Statistics",
+    "description": "Salary data analysis and statistics",
+    "version": "1.0.0",
+    "author": "Sebastian Melzer",
+    "main_file": "gehaltsstatistik.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": []
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "statistics",
+    "icon": "dashicons-chart-bar",
+    "active": false,
+    "can_export": true
+}

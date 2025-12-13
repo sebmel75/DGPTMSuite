@@ -1,0 +1,24 @@
+{
+    "id": "stellenanzeige",
+    "name": "Stellenanzeigen Manager",
+    "description": "Stellenanzeigen-Verwaltungssystem mit Frontend-Editor und ACF-Integration",
+    "version": "2.0.0",
+    "author": "Sebastian Melzer",
+    "main_file": "stellenanzeige.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": [
+            "advanced-custom-fields"
+        ]
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "content",
+    "icon": "dashicons-businessman",
+    "active": false,
+    "can_export": true,
+    "flags": [
+        "production"
+    ]
+}

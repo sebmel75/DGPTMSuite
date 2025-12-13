@@ -1,0 +1,202 @@
+/* =============================
+   1) Overlay => fixed, 
+      Desktop: zentriert
+============================= */
+\12147483000;
+
+  /* Desktop => voll zentriert */
+  justify-content: center;
+  align-items: center;
+
+  /* Falls du Seiten mit horizontalem Scroll hast: */
+  overflow-x: hidden; 
+}
+
+/* =============================
+   2) Modal-Inhalt
+============================= */
+.cnp-modal-content {
+  background: #fff;
+  border-radius: 8px;
+  max-width: 600px;  /* Desktop-Limit */
+  width: 90%;        /* Ansonsten 90% */
+  padding: 20px;
+  position: relative;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+
+  /* Scrollen bei zu viel Inhalt */
+  max-height: 80vh; 
+  overflow-y: auto;
+  box-sizing: border-box; /* Sicherheitsmaßnahme gegen Layout-Probleme */
+}
+
+/* Schließen-Button */
+.cnp-close-modal {
+  position: absolute;
+  top: 10px; 
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #333;
+}
+
+/* =============================
+   3) Ab 768px ABWÄRTS => 
+      Absetzen vom oberen Rand
+============================= */
+@media (max-width: 768px) {
+
+  /* Overlay: statt zentriert => flex-start,
+     damit wir oben + unten padding haben */
+  .cnp-modal-overlay {
+    align-items: flex-start;
+    padding-top: 2rem; 
+    padding-bottom: 2rem; 
+  }
+
+  /* Modal => max. Höhe - 4rem (oben/unten) */
+  .cnp-modal-content {
+    max-height: calc(100vh - 4rem);
+  }
+}
+
+/* =============================
+   4) Ab 480px => 
+      nochmal anpassen (Handy)
+============================= */
+@media (max-width: 480px) {
+  .cnp-modal-content {
+    width: 95%; 
+    padding: 15px;
+  }
+  .cnp-close-modal {
+    font-size: 20px;
+    top: 5px;
+    right: 5px;
+  }
+}
+
+/* optional: 
+   Thumbnails, links, etc. 
+   anpassen oder weglassen 
+*/
+.cnp-modal-thumb {
+  max-width: 250px; 
+  height: auto;     
+  margin-right: 10px;
+}
+
+.cnp-open-modal {
+  cursor: pointer;
+}
+
+
+/* Webhook CSS*/
+
+.webhook-message {
+    padding: 10px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+}
+
+.webhook-message.success {
+    background-color: #d7ffd7; 
+    color: #005500; 
+    border: 1px solid #99dd99;
+}
+
+.webhook-message.error {
+    background-color: #ffe0e0; 
+    color: #900;
+    border: 1px solid #ffaaaa;
+}
+
+.webhook-message.info {
+    background-color: #e0f0ff; 
+    color: #006; 
+    border: 1px solid #99ccff;
+}
+
+
+
+/* ================= Overrides: type="news" (breiter, lesbar, kein Überlaufen) ================= */
+.dgptm__container--news-doublewide .dgptm__news-item {
+  /* Zielbreite Desktop: ca. 600px (≈doppelt), nie kleiner als 300px */
+  flex: 1 1 50% !important;
+  min-width: 300px !important;
+  max-width: 100%;
+  width: auto !important; /* überschreibt width:100% aus Basis */
+}
+
+@media (max-width: 1139.98px) {
+  .dgptm__container--news-doublewide .dgptm__news-item {
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+}
+
+/* Headline sicher einkürzen, keine Überläufe */
+.dgptm__container--news-doublewide .dgptm__news-item-headline {
+  line-height: 24px;
+  height: auto !important;
+  max-height: 72px;             /* 3 Zeilen */
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+/* Body kleiner & mit Ellipsis; keine Kollision mit Buttons */
+.dgptm__container--news-doublewide .dgptm__news-item-body {
+  font-size: 16px !important;
+  line-height: 24px !important;
+  height: auto !important;
+  max-height: 144px;            /* 6 Zeilen */
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  word-break: break-word;
+  hyphens: auto;
+  margin-bottom: 8px;
+}
+
+/* Platz für Buttons bleibt frei (rechts unten) */
+.dgptm__news-item-inner {
+  position: relative;
+  padding-bottom: 120px; /* bereits vorhanden, behalten */
+}
+
+/* PDF-Button links (spiegelverkehrt) */
+.dgptm__news-item-pdfbutton {
+  position: absolute;
+  left: 10px;
+  bottom: 40px;
+  z-index: 2;
+}
+.dgptm__news-item-pdfbutton a {
+  font-family: "Titillium Web", sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 20px;
+  height: 44px;
+  padding: 6px 24px;
+  background-color: #fff;
+  color: rgb(36, 146, 186);
+  border-bottom-right-radius: 20px;
+  border-top-right-radius: 20px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Modal ganz nach vorn & scrollbar begrenzt */
+\12147483000 !important; }
+.cnp-modal-content  { z-index: 2147483500 !important; max-height: 80vh; overflow-y: auto; }
+
+.cnp-modal-below-link { margin-top: 8px; text-align: center; }
+.cnp-modal-below-link a { text-decoration: underline; }

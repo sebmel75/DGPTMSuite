@@ -1,0 +1,98 @@
+{
+  "categories": {
+    "core-infrastructure": {
+      "name": "Kern-Infrastruktur",
+      "description": "Zentrale Services und APIs",
+      "icon": "dashicons-networking",
+      "color": "#2271b1",
+      "order": 1
+    },
+    "business": {
+      "name": "Business-Logik",
+      "description": "Geschäftsprozesse und Fachlogik",
+      "icon": "dashicons-chart-bar",
+      "color": "#00a32a",
+      "order": 2
+    },
+    "payment": {
+      "name": "Zahlungen",
+      "description": "Payment-Integrationen",
+      "icon": "dashicons-money-alt",
+      "color": "#dba617",
+      "order": 3
+    },
+    "auth": {
+      "name": "Authentifizierung",
+      "description": "Login und Benutzerverwaltung",
+      "icon": "dashicons-lock",
+      "color": "#d63638",
+      "order": 4
+    },
+    "media": {
+      "name": "Medien",
+      "description": "Video, Audio und Content-Management",
+      "icon": "dashicons-video-alt3",
+      "color": "#826eb4",
+      "order": 5
+    },
+    "content": {
+      "name": "Content-Management",
+      "description": "News, Publikationen und Inhalte",
+      "icon": "dashicons-edit-page",
+      "color": "#50575e",
+      "order": 6
+    },
+    "acf-tools": {
+      "name": "ACF-Tools",
+      "description": "Advanced Custom Fields Utilities",
+      "icon": "dashicons-admin-generic",
+      "color": "#00a0d2",
+      "order": 7
+    },
+    "utilities": {
+      "name": "Utilities",
+      "description": "Verschiedene Werkzeuge und Hilfsfunktionen",
+      "icon": "dashicons-admin-tools",
+      "color": "#646970",
+      "order": 8
+    }
+  },
+  "flags": {
+    "testing": {
+      "label": "Testing",
+      "description": "Modul wird getestet",
+      "color": "#2271b1",
+      "icon": "dashicons-flag"
+    },
+    "deprecated": {
+      "label": "Veraltet",
+      "description": "Modul ist veraltet und sollte nicht mehr verwendet werden",
+      "color": "#d63638",
+      "icon": "dashicons-warning"
+    },
+    "important": {
+      "label": "Wichtig",
+      "description": "Kritisches Modul",
+      "color": "#dba617",
+      "icon": "dashicons-star-filled"
+    },
+    "development": {
+      "label": "In Entwicklung",
+      "description": "Modul wird entwickelt",
+      "color": "#00a32a",
+      "icon": "dashicons-hammer"
+    },
+    "production": {
+      "label": "Produktiv",
+      "description": "Produktiv im Einsatz",
+      "color": "#826eb4",
+      "icon": "dashicons-yes-alt"
+    },
+    "beta": {
+      "label": "Beta",
+      "description": "Beta-Version",
+      "color": "#00a0d2",
+      "icon": "dashicons-info"
+    }
+  }
+}

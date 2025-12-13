@@ -1,0 +1,25 @@
+{
+    "id": "herzzentren",
+    "name": "DGPTM - Herzzentrum Editor",
+    "description": "Heart center management with maps and Elementor widgets",
+    "version": "4.0.1",
+    "author": "Sebastian Melzer",
+    "main_file": "dgptm-herzzentrum-editor.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": [
+            "elementor",
+            "advanced-custom-fields"
+        ]
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "content",
+    "icon": "dashicons-location",
+    "active": false,
+    "can_export": true,
+    "flags": [
+        "production"
+    ]
+}

@@ -1,0 +1,19 @@
+{
+    "id": "ebcp-guidelines",
+    "name": "EBCP Guidelines Viewer & Translator",
+    "description": "Zeigt die EBCP-Guidelines mehrsprachig als filterbare Tabelle mit Suche, Bearbeitungsfunktion, PDF-Export und integriertem Übersetzungs-Editor mit Auto-Translate (DeepL/LibreTranslate)",
+    "version": "1.5.3",
+    "author": "Sebastian Melzer",
+    "main_file": "ebcp.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": []
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "content",
+    "icon": "dashicons-translation",
+    "active": false,
+    "can_export": true
+}

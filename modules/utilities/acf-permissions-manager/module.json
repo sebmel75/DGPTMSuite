@@ -1,0 +1,20 @@
+{
+  "id": "acf-permissions-manager",
+  "name": "DGPTM - ACF Permissions Manager",
+  "description": "Verwaltet und überwacht ACF-Berechtigungen für Benutzer mit Batch-Zuweisung",
+  "version": "1.0.0",
+  "author": "Sebastian Melzer",
+  "main_file": "dgptm-acf-permissions-manager.php",
+  "dependencies": [],
+  "optional_dependencies": [],
+  "wp_dependencies": {
+    "plugins": ["advanced-custom-fields"]
+  },
+  "requires_php": "7.4",
+  "requires_wp": "5.8",
+  "category": "utilities",
+  "icon": "dashicons-admin-users",
+  "active": false,
+  "can_export": true,
+  "critical": false
+}

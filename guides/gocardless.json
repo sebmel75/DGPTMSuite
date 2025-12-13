@@ -1,0 +1,24 @@
+{
+    "title": "GoCardless Direct Debit",
+    "description": "GoCardless SEPA-Lastschrift-Integration mit Mandatsverwaltung.",
+    "content": "# GoCardless Direct Debit Manager\n\n## Übersicht\n\nUmfassende GoCardless-Integration für SEPA-Lastschriftzahlungen mit Mandatsverwaltung und Formidable Forms-Anbindung.\n\n## Hauptfunktionen\n\n- SEPA-Lastschrift via GoCardless\n- Mandatsverwaltung\n- Formidable Forms Integration\n- Zahlungs-Tracking\n- Webhook-Verarbeitung\n- Mandats-PDF-Generierung\n\n## Shortcodes\n\n### [gcl_formidable]\nGoCardless-Zahlungsformular.\n\n**Parameter:**\n- `form_id` - Formidable Form ID\n\n**Verwendung:**\n```\n[gcl_formidable form_id=\"7\"]\n```\n\n## Admin-Interface\n\n**Menü:** Formidable → GoCardless\n\n### Funktionen\n\n1. **API-Konfiguration**\n   - Access Token\n   - Sandbox\/Live-Modus\n   - Webhook-Secret\n\n2. **Mandats-Verwaltung**\n   - Aktive Mandate anzeigen\n   - Status prüfen\n   - Mandate stornieren\n\n3. **Zahlungs-Übersicht**\n   - Alle Zahlungen\n   - Status (pending, confirmed, failed)\n   - Filter und Suche\n\n## Verwendung\n\n### Setup\n\n1. GoCardless Account erstellen\n2. Access Token generieren\n3. In WordPress-Einstellungen eintragen\n4. Webhook-URL in GoCardless konfigurieren\n\n### Lastschrift-Formular erstellen\n\n1. Formidable → Formulare → Neu\n2. Felder hinzufügen:\n   - Name\n   - E-Mail\n   - Adresse\n   - IBAN (optional - GoCardless UI)\n3. GoCardless-Feld hinzufügen\n4. Betrag definieren\n5. Veröffentlichen\n\n### Flow\n\n1. Benutzer füllt Formular aus\n2. Klick auf \"Zahlung einrichten\"\n3. Weiterleitung zu GoCardless\n4. IBAN eingeben + Mandat akzeptieren\n5. Redirect zurück zu WordPress\n6. Zahlung wird erstellt\n\n## Mandats-Verwaltung\n\n**Mandatsstatus:**\n- `pending_customer_approval` - Wartet auf Kunde\n- `pending_submission` - Wartet auf Einreichung\n- `submitted` - Bei Bank eingereicht\n- `active` - Aktiv\n- `failed` - Fehlgeschlagen\n- `cancelled` - Storniert\n\n**Aktionen:**\n- Mandat anzeigen\n- Mandat stornieren\n- PDF generieren\n\n## Zahlungs-Tracking\n\n**Status:**\n- `pending_submission` - Wartet auf Einreichung\n- `submitted` - Eingereicht\n- `confirmed` - Bestätigt\n- `paid_out` - Ausgezahlt\n- `failed` - Fehlgeschlagen\n- `cancelled` - Storniert\n\n## Webhooks\n\nVerarbeitete Events:\n- `mandates` - Mandats-Updates\n- `payments` - Zahlungs-Updates\n- `payouts` - Auszahlungs-Updates\n\n## PDF-Generierung\n\nAutomatische Generierung von:\n- Mandatsbestätigung\n- Zahlungsquittungen\n- Übersichten\n\n## Technische Details\n\n- GoCardless API v2015-07-06\n- Webhook-Signatur-Validierung\n- FPDF für PDF-Generierung\n- Formidable Entry-Verknüpfung\n- Cron für Status-Updates\n\n## Tipps\n\n- Sandbox-Modus für Tests nutzen\n- Webhooks immer validieren\n- Status regelmäßig synchronisieren\n- Mandate vor Zahlungen prüfen",
+    "features": [
+        "SEPA-Lastschrift",
+        "Mandatsverwaltung",
+        "Formidable Forms Integration",
+        "Zahlungs-Tracking",
+        "Webhook-Verarbeitung",
+        "Mandats-PDF"
+    ],
+    "keywords": [
+        "gocardless",
+        "sepa",
+        "direct-debit",
+        "mandate",
+        "payment",
+        "formidable",
+        "webhook"
+    ],
+    "module_id": "gocardless",
+    "last_updated": "2025-11-29 17:38:29"
+}

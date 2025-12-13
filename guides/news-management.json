@@ -1,0 +1,23 @@
+{
+    "title": "News Management",
+    "description": "News-Verwaltungssystem mit Frontend-Editor und Berechtigungen.",
+    "content": "# News Management\n\n## Übersicht\n\nUmfassendes News-Verwaltungssystem mit Frontend-Editor, Berechtigungssystem und ACF-Integration.\n\n## Hauptfunktionen\n\n- Custom Post Type \"News\"\n- Frontend-Editor\n- Berechtigungssystem (ACF: news_schreiben, news_alle)\n- Kategorien und Tags\n- Datum-Filter\n- Autor-Filter\n- Responsive Design\n\n## Shortcodes\n\n### [news-list]\nNews-Liste anzeigen.\n\n**Parameter:**\n- `category` - Kategorie-Filter\n- `limit` - Anzahl (Standard: 10)\n- `author` - Autor-ID\n- `orderby` - Sortierung (date, title)\n- `order` - ASC\/DESC\n\n**Verwendung:**\n```\n[news-list limit=\"5\" category=\"aktuelles\"]\n[news-list author=\"3\" orderby=\"date\" order=\"DESC\"]\n```\n\n### [news-edit-form]\nFrontend News-Editor.\n\n**Verwendung:**\n```\n[news-edit-form]\n```\n\n## Admin-Interface\n\n**Menü:** News (Custom Post Type)\n\n### Funktionen\n\n1. **News-Verwaltung**\n   - Alle News anzeigen\n   - Filtern nach Kategorie, Autor, Datum\n   - Bulk-Aktionen\n\n2. **Kategorien**\n   - News-Kategorien verwalten\n   - Hierarchie\n\n3. **Tags**\n   - Schlagwörter zuweisen\n\n## Berechtigungssystem\n\n### ACF-Felder (User Meta)\n\n**news_schreiben:**\n- Wert: true\/false\n- Berechtigung: News erstellen und eigene bearbeiten\n\n**news_alle:**\n- Wert: true\/false\n- Berechtigung: Alle News bearbeiten und löschen\n\n### Frontend-Editor-Zugriff\n\n**Nur news_schreiben = true:**\n- Sieht nur eigene News\n- Kann nur eigene bearbeiten\n\n**news_alle = true:**\n- Sieht alle News\n- Kann alle bearbeiten und löschen\n\n## Verwendung\n\n### News-Liste anzeigen\n\n```\n[news-list limit=\"10\"]\n```\n\n### Frontend-Editor\n\n1. Benutzer mit `news_schreiben` = true\n2. Seite mit `[news-edit-form]` aufrufen\n3. Formular zum Erstellen\/Bearbeiten erscheint\n4. News erstellen\n5. Speichern → Status: Pending (wenn nicht news_alle)\n6. Admin muss veröffentlichen (oder auto-publish wenn news_alle)\n\n### News-Kategorien\n\n1. News → Kategorien\n2. Neue Kategorie erstellen\n3. In News zuweisen\n4. In Liste filtern: `[news-list category=\"slug\"]`\n\n## Frontend-Editor Features\n\n**Felder:**\n- Titel\n- Inhalt (Wysiwyg)\n- Ausschnitt\/Excerpt\n- Kategorien (Mehrfachauswahl)\n- Tags\n- Featured Image\n\n**Buttons:**\n- Speichern als Draft\n- Veröffentlichen (wenn berechtigt)\n- Vorschau\n- Löschen (nur eigene)\n\n## Technische Details\n\n- Custom Post Type: `news`\n- Taxonomien: `news_category`, `news_tag`\n- ACF für Berechtigungen\n- Frontend-Editor mit Ajax\n- Responsive CSS\n\n## Tipps\n\n- Nutzen Sie Kategorien für Organisation\n- Tags für bessere Suche\n- Frontend-Editor für Autoren ohne Backend-Zugriff\n- news_alle nur für vertrauenswürdige Redakteure",
+    "features": [
+        "Custom Post Type News",
+        "Frontend-Editor",
+        "ACF-Berechtigungen (news_schreiben, news_alle)",
+        "Kategorien und Tags",
+        "Datum-Filter",
+        "Autor-Filter"
+    ],
+    "keywords": [
+        "news",
+        "posts",
+        "frontend-editor",
+        "acf",
+        "permissions",
+        "categories"
+    ],
+    "module_id": "news-management",
+    "last_updated": "2025-11-29 17:38:29"
+}

@@ -1,0 +1,19 @@
+{
+    "id": "frontend-page-editor",
+    "name": "Frontend Seiteneditor",
+    "description": "Ermöglicht Benutzern ohne Admin-Rechte die Bearbeitung zugewiesener Seiten mit Elementor oder WordPress Editor (User Meta + ACF Fallback) - v4.1.0: CRITICAL Security Fix",
+    "version": "4.1.0",
+    "author": "Sebastian Melzer",
+    "main_file": "frontend-page-editor.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": ["elementor", "advanced-custom-fields"]
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "utilities",
+    "icon": "dashicons-edit-page",
+    "active": false,
+    "can_export": true
+}

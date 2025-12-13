@@ -1,0 +1,367 @@
+/**
+ * Event Tracker Frontend Styles
+ * Version: 2.0.0
+ */
+
+/* Panels Container */
+.et-panels {
+	margin: 16px 0;
+}
+
+.et-panel-controls {
+	display: flex;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+	margin-bottom: 12px;
+}
+
+.et-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	border: 1px solid #e5e7eb;
+	border-radius: 8px;
+	padding: 0.5rem 0.8rem;
+	background: #f9fafb;
+	cursor: pointer;
+	font-size: 0.95rem;
+	transition: all 0.2s;
+}
+
+.et-btn:hover {
+	background: #f3f4f6;
+	border-color: #d1d5db;
+}
+
+.et-btn.primary {
+	background: #2563eb;
+	color: #fff;
+	border-color: #2563eb;
+}
+
+.et-btn.primary:hover {
+	background: #1d4ed8;
+}
+
+.et-btn[disabled] {
+	opacity: 0.6;
+	pointer-events: none;
+	cursor: not-allowed;
+}
+
+.et-panel {
+	margin-top: 12px;
+	border: 1px solid #e5e7eb;
+	border-radius: 12px;
+	padding: 12px;
+	background: #fff;
+}
+
+.et-hidden {
+	display: none !important;
+}
+
+.et-msg {
+	margin-top: 8px;
+	padding: 10px;
+	font-size: 0.9rem;
+	border-radius: 6px;
+}
+
+.et-msg.success {
+	background: #d1fae5;
+	color: #065f46;
+}
+
+.et-msg.error {
+	background: #fee2e2;
+	color: #7f1d1d;
+}
+
+/* Event List Table */
+.et-event-list {
+	width: 100%;
+	border-collapse: collapse;
+	margin-top: 12px;
+}
+
+.et-event-list th,
+.et-event-list td {
+	padding: 10px;
+	text-align: left;
+	border-bottom: 1px solid #e5e7eb;
+}
+
+.et-event-list th {
+	background: #f9fafb;
+	font-weight: 600;
+}
+
+.et-badge {
+	display: inline-block;
+	padding: 4px 8px;
+	border-radius: 6px;
+	font-size: 0.85rem;
+	font-weight: 500;
+}
+
+.et-badge.active {
+	background: #d1fae5;
+	color: #065f46;
+}
+
+.et-badge.upcoming {
+	background: #fef3c7;
+	color: #92400e;
+}
+
+.et-badge.expired {
+	background: #fee2e2;
+	color: #991b1b;
+}
+
+.et-actions {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.et-actions a,
+.et-actions button {
+	padding: 6px 12px;
+	border-radius: 6px;
+	border: 1px solid #e5e7eb;
+	background: #fff;
+	cursor: pointer;
+	text-decoration: none;
+	color: #374151;
+	font-size: 0.9rem;
+}
+
+.et-actions button:hover,
+.et-actions a:hover {
+	background: #f3f4f6;
+}
+
+/* Event Form */
+.et-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 16px;
+	margin-top: 12px;
+}
+
+.et-grid .full {
+	grid-column: 1 / -1;
+}
+
+.et-grid label {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 4px;
+}
+
+.et-grid input[type="text"],
+.et-grid input[type="url"],
+.et-grid input[type="datetime-local"] {
+	width: 100%;
+	padding: 8px;
+	border: 1px solid #d1d5db;
+	border-radius: 6px;
+}
+
+.et-grid input[type="checkbox"] {
+	margin-right: 6px;
+}
+
+.et-help {
+	font-size: 12px;
+	color: #666;
+	margin-top: 4px;
+}
+
+.et-additional-dates {
+	margin-top: 8px;
+}
+
+.et-date-range {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	margin-bottom: 8px;
+}
+
+.et-date-range input {
+	flex: 1;
+}
+
+.et-remove-date {
+	padding: 4px 8px;
+	cursor: pointer;
+	background: #dc3232;
+	color: #fff;
+	border: none;
+	border-radius: 3px;
+}
+
+.et-remove-date:hover {
+	background: #b32d2e;
+}
+
+.et-add-date {
+	margin-top: 8px;
+	padding: 6px 12px;
+	background: #2271b1;
+	color: #fff;
+	border: none;
+	border-radius: 3px;
+	cursor: pointer;
+}
+
+.et-add-date:hover {
+	background: #135e96;
+}
+
+/* Mailer Section */
+.et-mailer {
+	margin-top: 24px;
+	padding: 16px;
+	border: 2px solid #e5e7eb;
+	border-radius: 12px;
+	background: #f9fafb;
+}
+
+.et-mailer h3 {
+	margin-top: 0;
+}
+
+.et-form-row {
+	margin-bottom: 16px;
+}
+
+.et-form-row label {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 6px;
+}
+
+.et-form-row input[type="text"],
+.et-form-row input[type="email"],
+.et-form-row input[type="datetime-local"],
+.et-form-row select {
+	width: 100%;
+	padding: 8px;
+	border: 1px solid #d1d5db;
+	border-radius: 6px;
+}
+
+.et-form-actions {
+	display: flex;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+.et-schedule-opts {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.et-schedule-opts label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.et-schedule-extra {
+	margin-left: 24px;
+	margin-top: 8px;
+}
+
+.et-mail-log {
+	width: 100%;
+	border-collapse: collapse;
+	margin-top: 16px;
+}
+
+.et-mail-log th,
+.et-mail-log td {
+	padding: 8px;
+	text-align: left;
+	border-bottom: 1px solid #e5e7eb;
+}
+
+.et-mail-log th {
+	background: #f3f4f6;
+	font-weight: 600;
+}
+
+.et-status-badge {
+	display: inline-block;
+	padding: 3px 8px;
+	border-radius: 4px;
+	font-size: 0.8rem;
+	font-weight: 500;
+}
+
+.et-status-badge.sent {
+	background: #d1fae5;
+	color: #065f46;
+}
+
+.et-status-badge.queued {
+	background: #dbeafe;
+	color: #1e40af;
+}
+
+.et-status-badge.recurring {
+	background: #fef3c7;
+	color: #92400e;
+}
+
+.et-status-badge.error {
+	background: #fee2e2;
+	color: #991b1b;
+}
+
+.et-status-badge.stopped {
+	background: #e5e7eb;
+	color: #4b5563;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+	.et-event-list thead {
+		display: none;
+	}
+
+	.et-event-list tr {
+		display: block;
+		margin-bottom: 16px;
+		border: 1px solid #e5e7eb;
+		border-radius: 8px;
+		padding: 12px;
+	}
+
+	.et-event-list td {
+		display: block;
+		text-align: left;
+		border: none;
+		padding: 6px 0;
+	}
+
+	.et-event-list td::before {
+		content: attr(data-label);
+		font-weight: 600;
+		display: inline-block;
+		width: 120px;
+	}
+
+	.et-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.et-actions {
+		flex-direction: column;
+	}
+}

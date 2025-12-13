@@ -1,0 +1,338 @@
+/**
+ * DGPTM Abstimmen-Addon - Admin Styles
+ * Version: 4.0.0
+ */
+
+/* ===== Poll Management Table ===== */
+.poll-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+}
+
+.poll-table th,
+.poll-table td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: left;
+}
+
+.poll-header {
+    background: #f9f9f9;
+}
+
+/* ===== Toggle Switch ===== */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 46px;
+    height: 24px;
+    vertical-align: middle;
+}
+
+.switch input {
+    display: none;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #ccc;
+    transition: .2s;
+    border-radius: 24px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background: #fff;
+    transition: .2s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background: #4CAF50;
+}
+
+input:checked + .slider:before {
+    transform: translateX(22px);
+}
+
+/* ===== Buttons ===== */
+.btn {
+    display: inline-block;
+    padding: 8px 12px;
+    border: 1px solid #666;
+    border-radius: 8px;
+    background: #2d6cdf;
+    color: #fff;
+    cursor: pointer;
+    margin: 2px 0;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.btn:hover {
+    filter: brightness(1.05);
+}
+
+.btn.primary {
+    background: #2563eb;
+    border-color: #2563eb;
+}
+
+.btn.danger {
+    background: #ef4444;
+    border-color: #ef4444;
+}
+
+.btn.secondary {
+    background: #6b7280;
+    border-color: #6b7280;
+}
+
+.btn[disabled] {
+    opacity: .6;
+    pointer-events: none;
+}
+
+/* ===== Utilities ===== */
+.muted {
+    opacity: .8;
+}
+
+/* ===== QR Code ===== */
+.qrcode-canvas {
+    border: 1px dashed #ccc;
+    padding: 10px;
+    border-radius: 6px;
+    background: #fff;
+}
+
+/* ===== Modal ===== */
+.dgptm-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+}
+
+.dgptm-modal-backdrop.show {
+    display: flex;
+}
+
+.dgptm-modal {
+    background: #fff;
+    max-width: 920px;
+    width: 95%;
+    max-height: 85vh;
+    overflow: auto;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
+}
+
+.dgptm-modal header {
+    position: sticky;
+    top: 0;
+    background: #fafafa;
+    border-bottom: 1px solid #ddd;
+    padding: 10px 14px;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.dgptm-modal .content {
+    padding: 14px;
+}
+
+.dgptm-x {
+    border: 0;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+}
+
+.dgptm-x:hover {
+    background: #f0f0f0;
+}
+
+/* ===== Zoom Settings ===== */
+.dgptm-zoom-settings {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 16px 0;
+}
+
+.dgptm-zoom-settings h3 {
+    margin-top: 0;
+}
+
+.dgptm-zoom-log {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 12px;
+    border-radius: 6px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 12px;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.dgptm-zoom-log .log-entry {
+    padding: 4px 0;
+    border-bottom: 1px solid #333;
+}
+
+.dgptm-zoom-log .log-entry:last-child {
+    border-bottom: none;
+}
+
+.dgptm-zoom-log .log-timestamp {
+    color: #858585;
+}
+
+.dgptm-zoom-log .log-error {
+    color: #f48771;
+}
+
+.dgptm-zoom-log .log-success {
+    color: #89d185;
+}
+
+.dgptm-zoom-log .log-warning {
+    color: #e5c07b;
+}
+
+/* ===== Attendance Table ===== */
+.dgptm-attendance-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+}
+
+.dgptm-attendance-table th,
+.dgptm-attendance-table td {
+    border: 1px solid #e5e7eb;
+    padding: 10px;
+    text-align: left;
+}
+
+.dgptm-attendance-table th {
+    background: #f9fafb;
+    font-weight: 600;
+}
+
+.dgptm-attendance-table tbody tr:hover {
+    background: #f9fafb;
+}
+
+.dgptm-manual-cell {
+    text-align: center;
+    font-weight: bold;
+    color: #856404;
+}
+
+/* ===== Form Fields ===== */
+.dgptm-field-group {
+    margin-bottom: 16px;
+}
+
+.dgptm-field-group label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 500;
+}
+
+.dgptm-field-group input[type="text"],
+.dgptm-field-group input[type="url"],
+.dgptm-field-group input[type="email"],
+.dgptm-field-group input[type="number"],
+.dgptm-field-group textarea,
+.dgptm-field-group select {
+    width: 100%;
+    max-width: 500px;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+}
+
+.dgptm-field-group textarea {
+    min-height: 100px;
+    font-family: inherit;
+}
+
+.dgptm-field-help {
+    font-size: 0.9em;
+    color: #6b7280;
+    margin-top: 4px;
+}
+
+/* ===== Tabs ===== */
+.dgptm-tabs {
+    border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 16px;
+}
+
+.dgptm-tabs button {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #6b7280;
+}
+
+.dgptm-tabs button:hover {
+    color: #111827;
+}
+
+.dgptm-tabs button.active {
+    color: #2563eb;
+    border-bottom-color: #2563eb;
+}
+
+.dgptm-tab-content {
+    display: none;
+}
+
+.dgptm-tab-content.active {
+    display: block;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 800px) {
+    .dgptm-modal {
+        width: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+
+    .poll-table {
+        font-size: 14px;
+    }
+
+    .poll-table th,
+    .poll-table td {
+        padding: 6px;
+    }
+}

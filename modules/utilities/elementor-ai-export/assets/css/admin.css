@@ -1,0 +1,434 @@
+.elementor-ai-export-wrap {
+    max-width: 1400px;
+    margin: 20px auto;
+}
+
+.elementor-ai-export-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.elementor-ai-export-container .staging-section {
+    grid-column: 1 / -1;
+}
+
+.elementor-ai-export-container .card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+    padding: 20px;
+}
+
+.elementor-ai-export-container h2 {
+    margin-top: 0;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #2271b1;
+}
+
+/* Export Section */
+.export-controls,
+.import-controls {
+    margin: 20px 0;
+}
+
+.control-group {
+    margin-bottom: 15px;
+}
+
+.control-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.control-group select,
+.control-group textarea {
+    width: 100%;
+}
+
+#export-btn,
+#import-btn {
+    margin-top: 10px;
+}
+
+#export-btn .dashicons,
+#import-btn .dashicons {
+    line-height: 30px;
+}
+
+/* Export Result */
+.export-result {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #ddd;
+}
+
+.export-result h3 {
+    color: #46b450;
+    margin-top: 0;
+}
+
+.export-preview {
+    margin: 15px 0;
+}
+
+#export-content {
+    width: 100%;
+    height: 300px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    background: #f9f9f9;
+    resize: vertical;
+}
+
+.export-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.export-actions .dashicons {
+    line-height: 30px;
+}
+
+/* Import Section */
+.import-warning {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 4px;
+    padding: 12px;
+    margin: 15px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.import-warning .dashicons {
+    color: #ff9800;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+}
+
+.import-result {
+    margin-top: 15px;
+    padding: 15px;
+    border-radius: 4px;
+}
+
+.import-result.success {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.import-result.error {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+/* Staging Section */
+.staging-section #staging-list {
+    margin-top: 15px;
+}
+
+.staging-section .wp-list-table {
+    margin-top: 0;
+}
+
+.staging-section .wp-list-table th,
+.staging-section .wp-list-table td {
+    padding: 12px;
+}
+
+.staging-section .wp-list-table td .button {
+    margin-right: 5px;
+}
+
+/* Instructions Section */
+.instructions-section {
+    grid-column: 1 / -1;
+}
+
+.instruction-steps {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.step {
+    display: flex;
+    gap: 15px;
+}
+
+.step-number {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    background: #2271b1;
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.step-content h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.step-content p {
+    margin: 0 0 10px;
+}
+
+.step-content ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.tips {
+    background: #f0f6fc;
+    border: 1px solid #2271b1;
+    border-radius: 4px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.tips h3 {
+    margin-top: 0;
+    color: #2271b1;
+}
+
+.tips ul {
+    margin: 10px 0 0;
+}
+
+.tips li {
+    margin-bottom: 8px;
+}
+
+.tips strong {
+    color: #2271b1;
+}
+
+/* Loading state */
+.button.loading {
+    position: relative;
+    color: transparent;
+}
+
+.button.loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin-left: -8px;
+    margin-top: -8px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spinner 0.6s linear infinite;
+}
+
+@keyframes spinner {
+    to { transform: rotate(360deg); }
+}
+
+/* API Status */
+.api-status {
+    display: inline-block;
+    margin-left: 15px;
+    padding: 4px 12px;
+    border-radius: 3px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.api-configured {
+    background: #d4edda;
+    color: #155724;
+}
+
+.api-not-configured {
+    background: #fff3cd;
+    color: #856404;
+}
+
+/* Tab Navigation */
+.nav-tab-wrapper {
+    margin: 20px 0;
+}
+
+.tab-content {
+    margin-top: 20px;
+}
+
+/* Auto Redesign */
+.auto-redesign-container {
+    max-width: 100%;
+}
+
+.auto-controls {
+    margin: 20px 0;
+}
+
+.button-hero {
+    font-size: 16px !important;
+    height: auto !important;
+    line-height: 1 !important;
+    padding: 15px 30px !important;
+}
+
+.button-hero .dashicons {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    line-height: 40px;
+}
+
+/* Progress Bar */
+.auto-progress {
+    margin: 20px 0;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 30px;
+    background: #f0f0f0;
+    border-radius: 15px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #2271b1, #50a7e1);
+    width: 0%;
+    transition: width 0.3s ease;
+    border-radius: 15px;
+}
+
+.progress-text {
+    text-align: center;
+    margin-top: 10px;
+    font-weight: 600;
+    color: #2271b1;
+}
+
+/* Auto Result */
+.auto-result {
+    margin-top: 20px;
+    padding: 20px;
+    border-radius: 4px;
+}
+
+.auto-result.success {
+    background: #d4edda;
+    border: 2px solid #c3e6cb;
+}
+
+.auto-result.error {
+    background: #f8d7da;
+    border: 2px solid #f5c6cb;
+}
+
+.auto-result h3 {
+    margin-top: 0;
+}
+
+.auto-result-actions {
+    margin: 20px 0;
+}
+
+.auto-result-actions .button {
+    margin-right: 10px;
+}
+
+/* Workflow Steps */
+.workflow-steps {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.workflow-step {
+    display: flex;
+    gap: 15px;
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    border-left: 4px solid #2271b1;
+}
+
+.step-icon {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    background: #2271b1;
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.step-content h3 {
+    margin: 0 0 8px;
+    font-size: 16px;
+}
+
+.step-content p {
+    margin: 0;
+    color: #666;
+}
+
+/* Tips Box */
+.tips-box {
+    background: #f0f6fc;
+    border: 1px solid #2271b1;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.tips-box h3 {
+    margin-top: 0;
+    color: #2271b1;
+}
+
+.tips-box ul {
+    margin: 10px 0 0;
+    padding-left: 20px;
+}
+
+.tips-box li {
+    margin-bottom: 10px;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .elementor-ai-export-container {
+        grid-template-columns: 1fr;
+    }
+
+    .instruction-steps {
+        grid-template-columns: 1fr;
+    }
+
+    .workflow-steps {
+        grid-template-columns: 1fr;
+    }
+}

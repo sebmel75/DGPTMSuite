@@ -1,0 +1,19 @@
+{
+    "id": "dgptm-session-display",
+    "name": "DGPTM Session Display",
+    "description": "Dynamische Anzeige von Jahrestagung-Sessions und Vorträgen via Zoho Backstage API",
+    "version": "1.0.0",
+    "author": "Sebastian Melzer \/ DGPTM",
+    "main_file": "session-display.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": []
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "utilities",
+    "icon": "dashicons-admin-plugins",
+    "active": false,
+    "can_export": true
+}

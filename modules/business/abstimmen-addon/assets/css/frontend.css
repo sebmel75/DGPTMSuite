@@ -1,0 +1,388 @@
+/**
+ * DGPTM Abstimmen-Addon - Frontend Styles
+ * Version: 4.0.0
+ */
+
+/* ===== Voting Interface ===== */
+.dgptm-vote-container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.dgptm-vote-question {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+}
+
+.dgptm-vote-question h3 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    color: #111827;
+}
+
+.dgptm-vote-choices {
+    margin: 16px 0;
+}
+
+.dgptm-vote-choice {
+    display: block;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    background: #fff;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.dgptm-vote-choice:hover {
+    border-color: #2563eb;
+    background: #eff6ff;
+}
+
+.dgptm-vote-choice input[type="radio"],
+.dgptm-vote-choice input[type="checkbox"] {
+    margin-right: 10px;
+}
+
+.dgptm-vote-submit {
+    margin-top: 16px;
+}
+
+/* ===== Toggle Button ===== */
+.dgptm-toggle-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 24px;
+    border: 2px solid;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.dgptm-toggle-button.on {
+    background: #10b981;
+    border-color: #059669;
+    color: #fff;
+}
+
+.dgptm-toggle-button.on:hover {
+    background: #059669;
+}
+
+.dgptm-toggle-button.off {
+    background: #ef4444;
+    border-color: #dc2626;
+    color: #fff;
+}
+
+.dgptm-toggle-button.off:hover {
+    background: #dc2626;
+}
+
+.dgptm-toggle-button[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ===== Code Display ===== */
+.dgptm-code-display {
+    background: #1e293b;
+    color: #f1f5f9;
+    padding: 16px 24px;
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+    letter-spacing: 4px;
+    margin: 16px 0;
+}
+
+/* ===== Presence Scanner ===== */
+.dgptm-presence {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.dgptm-presence .flash {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 255, 0, 0.3);
+    display: none;
+    pointer-events: none;
+    z-index: 9998;
+}
+
+.dgptm-presence .flash.show {
+    display: block;
+    animation: flash 0.3s ease-out;
+}
+
+@keyframes flash {
+    0% { opacity: 0; }
+    50% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+.dgptm-presence .scan-input {
+    width: 100%;
+    max-width: 500px;
+    padding: 12px 16px;
+    font-size: 16px;
+    border: 2px solid #d1d5db;
+    border-radius: 8px;
+}
+
+.dgptm-presence .scan-input:focus {
+    outline: none;
+    border-color: #2563eb;
+}
+
+.dgptm-presence .info {
+    margin-top: 16px;
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.dgptm-presence .info.success {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+}
+
+.dgptm-presence .info.error {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
+
+.dgptm-presence .hint {
+    text-align: center;
+    margin-top: 12px;
+    color: #6b7280;
+    font-size: 14px;
+}
+
+/* ===== Presence Entries ===== */
+.dgptm-entry {
+    padding: 10px;
+    margin-top: 8px;
+    border: 1px dashed #ccc;
+    border-radius: 6px;
+    background: #f9fafb;
+}
+
+.dgptm-entry-header {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.dgptm-entry-time {
+    font-size: 12px;
+    opacity: 0.75;
+    margin-left: 8px;
+}
+
+.dgptm-entry-details {
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.dgptm-manual-entry {
+    border-color: #fbbf24;
+    background: #fef3c7;
+}
+
+/* ===== Search Modal ===== */
+.dgptm-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dgptm-modal-content {
+    background: #fff;
+    margin: 5vh auto;
+    max-width: 900px;
+    width: 95%;
+    padding: 20px;
+    border-radius: 8px;
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+.dgptm-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.dgptm-modal-close {
+    font-size: 28px;
+    font-weight: bold;
+    color: #6b7280;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.dgptm-modal-close:hover {
+    color: #111827;
+}
+
+.dgptm-search-result-item {
+    padding: 10px;
+    border: 1px solid #ddd;
+    margin: 5px 0;
+    cursor: pointer;
+    background: #f9f9f9;
+    border-radius: 6px;
+}
+
+.dgptm-search-result-item:hover {
+    background: #e0f7fa;
+}
+
+.dgptm-search-result-item.selected {
+    background: #4CAF50;
+    color: #fff;
+}
+
+.dgptm-row {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 0.25rem 0.5rem;
+    font-size: 0.92em;
+}
+
+.dgptm-row b {
+    opacity: 0.8;
+}
+
+/* ===== Presence Table ===== */
+.dgptm-presence-ui {
+    margin: 20px 0;
+}
+
+.dgptm-presence-ui table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.dgptm-presence-ui th,
+.dgptm-presence-ui td {
+    border: 1px solid #e5e7eb;
+    padding: 8px;
+    text-align: left;
+}
+
+.dgptm-presence-ui th {
+    background: #f9fafb;
+    font-weight: 600;
+}
+
+.dgptm-presence-ui tbody tr:hover {
+    background: #f9fafb;
+}
+
+/* ===== Beamer View ===== */
+.dgptm-beamer-view {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    padding: 40px;
+}
+
+.dgptm-beamer-question {
+    max-width: 1200px;
+    width: 100%;
+    text-align: center;
+}
+
+.dgptm-beamer-question h1 {
+    font-size: 3rem;
+    margin-bottom: 40px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.dgptm-beamer-chart {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    padding: 40px;
+    margin: 20px auto;
+    max-width: 800px;
+}
+
+.dgptm-beamer-logo {
+    max-width: 200px;
+    margin-bottom: 30px;
+}
+
+/* ===== Loading Spinner ===== */
+.dgptm-spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-left-color: #2563eb;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+    .dgptm-vote-container,
+    .dgptm-presence {
+        padding: 12px;
+    }
+
+    .dgptm-beamer-question h1 {
+        font-size: 2rem;
+    }
+
+    .dgptm-modal-content {
+        width: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+
+    .dgptm-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ===== Print Styles ===== */
+@media print {
+    .dgptm-presence .scan-input,
+    .dgptm-presence button,
+    .dgptm-modal {
+        display: none !important;
+    }
+}

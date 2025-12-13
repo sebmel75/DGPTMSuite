@@ -1,0 +1,47 @@
+{
+    "name": "dgptm/herzzentren-editor-unified",
+    "description": "Unified WordPress plugin for managing Herzzentren with interactive maps",
+    "version": "4.0.0",
+    "type": "wordpress-plugin",
+    "keywords": [
+        "wordpress",
+        "plugin",
+        "elementor",
+        "maps",
+        "leaflet",
+        "herzzentren",
+        "dgptm"
+    ],
+    "authors": [
+        {
+            "name": "Sebastian Melzer",
+            "role": "Developer"
+        },
+        {
+            "name": "Jan Hintelmann",
+            "role": "Original Developer (GRT Agentur)"
+        }
+    ],
+    "require": {
+        "php": ">=7.4"
+    },
+    "require-dev": {
+        "squizlabs/php_codesniffer": "^3.7",
+        "phpstan/phpstan": "^1.10",
+        "wp-coding-standards/wpcs": "^3.0"
+    },
+    "scripts": {
+        "phpcs": "phpcs --standard=WordPress .",
+        "phpcbf": "phpcbf --standard=WordPress .",
+        "phpstan": "phpstan analyse --level=8 .",
+        "test": [
+            "@phpcs",
+            "@phpstan"
+        ]
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    }
+}

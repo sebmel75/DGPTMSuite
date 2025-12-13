@@ -1,0 +1,21 @@
+{
+    "title": "Blaue Seiten",
+    "description": "Verzeichnis-Funktionalität (Blaue Seiten \/ Yellow Pages).",
+    "content": "# Blaue Seiten\n\n## Übersicht\n\nVerzeichnis-System analog zu \"Gelben Seiten\" für Mitglieder, Firmen oder Organisationen.\n\n## Hauptfunktionen\n\n- Verzeichnis-Anzeige\n- Filterung nach Kategorie\n- Suche\n- Kategoriesystem\n- Alphabetische Sortierung\n- Detail-Ansichten\n\n## Shortcodes\n\n### [custom_posts_page]\nZeigt Custom-Post-Seite.\n\n**Parameter:**\n- `post_type` - Custom Post Type\n- `category` - Kategorie-Filter\n- `orderby` - Sortierung\n\n**Verwendung:**\n```\n[custom_posts_page post_type=\"verzeichnis\"]\n```\n\n### [list_blaue_seiten]\nZeigt Blaue-Seiten-Liste.\n\n**Verwendung:**\n```\n[list_blaue_seiten]\n```\n\n## Verwendung\n\n### Verzeichnis anzeigen\n\n```\n[list_blaue_seiten]\n```\n\n**Features:**\n- Alphabetische Tabs (A-Z)\n- Kategorien-Filter\n- Suchfeld\n- Detail-Links\n\n### Verzeichnis-Eintrag erstellen\n\n1. Backend: Blaue Seiten → Neu\n2. Firmenname, Adresse, Kontakt\n3. Kategorie zuweisen\n4. Beschreibung\n5. Logo\/Bild hochladen\n6. Veröffentlichen\n\n### Kategorien\n\nBeispiel-Kategorien:\n- Kliniken\n- Niedergelassene Ärzte\n- Apotheken\n- Sanitätshäuser\n- Labore\n\n## Darstellung\n\n**Liste:**\n- Firmenname (groß)\n- Kategorie (Badge)\n- Kurzinfo\n- \"Mehr Info\" Button\n\n**Detail-Ansicht:**\n- Vollständige Informationen\n- Kontaktdaten\n- Karte (wenn Adresse)\n- Logo\n- Beschreibung\n\n## Technische Details\n\n- Custom Post Type: `blaue_seiten` oder `verzeichnis`\n- Taxonomie: `verzeichnis_kategorie`\n- Responsive CSS-Grid\n- Ajax für Filter\n\n## Tipps\n\n- Aussagekräftige Kategorien\n- Vollständige Kontaktdaten\n- Logo für Wiedererkennungswert\n- Regelmäßig aktualisieren",
+    "features": [
+        "Verzeichnis-Anzeige",
+        "Filterung",
+        "Suche",
+        "Kategorien",
+        "Alphabetische Sortierung"
+    ],
+    "keywords": [
+        "directory",
+        "yellow-pages",
+        "listing",
+        "verzeichnis",
+        "companies"
+    ],
+    "module_id": "blaue-seiten",
+    "last_updated": "2025-11-29 17:38:29"
+}

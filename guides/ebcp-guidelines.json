@@ -1,0 +1,26 @@
+{
+    "title": "EBCP Guidelines",
+    "description": "EBCP-Richtlinien-Viewer mit Multi-Language, Filter und Auto-Translate.",
+    "content": "# EBCP Guidelines\n\n## Übersicht\n\nMehrsprachiger EBCP-Richtlinien-Viewer mit Filter, Suche, Übersetzungs-Editor und Auto-Translate via DeepL\/LibreTranslate.\n\n## Hauptfunktionen\n\n- Mehrsprachige Richtlinien (DE, EN, FR, ES, IT)\n- Filterbare Tabelle\n- Suchfunktion\n- Bearbeitungsfunktion\n- PDF-Export\n- Übersetzungs-Editor mit Auto-Translate\n- DeepL API Integration\n- LibreTranslate Fallback\n- Kategorien-Filter\n- Responsive Design\n\n## Shortcodes\n\n### [ebcpdgptm_guidelines]\nRichtlinien-Tabelle anzeigen.\n\n**Parameter:**\n- `lang` - Sprache (de, en, fr, es, it)\n- `category` - Kategorie-Filter\n\n**Verwendung:**\n```\n[ebcpdgptm_guidelines lang=\"de\"]\n[ebcpdgptm_guidelines lang=\"en\" category=\"cardiovascular\"]\n```\n\n## REST API Endpunkte\n\n### GET \/wp-json\/ebcp\/v1\/guidelines\nAlle Richtlinien abrufen.\n\n**Query-Parameter:**\n- `lang` - Sprache\n- `category` - Kategorie\n- `search` - Suchbegriff\n\n### POST \/wp-json\/ebcp\/v1\/translate\nAuto-Translate mit DeepL oder LibreTranslate.\n\n**Payload:**\n```json\n{\n  \"text\": \"Zu übersetzender Text\",\n  \"source_lang\": \"DE\",\n  \"target_lang\": \"EN\",\n  \"engine\": \"deepl\"\n}\n```\n\n**Response:**\n```json\n{\n  \"translation\": \"Translated text\",\n  \"engine\": \"deepl\",\n  \"source_lang\": \"DE\",\n  \"target_lang\": \"EN\"\n}\n```\n\n### GET \/wp-json\/ebcp\/v1\/translation-info\nÜbersetzungsstatus abrufen.\n\n**Response:**\n```json\n{\n  \"total_guidelines\": 150,\n  \"translations\": {\n    \"de\": 150,\n    \"en\": 145,\n    \"fr\": 120,\n    \"es\": 100,\n    \"it\": 90\n  },\n  \"missing\": {\n    \"en\": 5,\n    \"fr\": 30,\n    \"es\": 50,\n    \"it\": 60\n  }\n}\n```\n\n## Admin-Interface\n\n**Menü:** EBCP Guidelines\n\n### Tabs\n\n1. **Richtlinien-Editor**\n   - Alle Richtlinien\n   - Hinzufügen\/Bearbeiten\n   - Löschen\n   - Kategorien zuweisen\n\n2. **Übersetzungs-Editor**\n   - Fehlende Übersetzungen anzeigen\n   - DeepL\/LibreTranslate Auto-Translate\n   - Manuelle Übersetzung\n   - Übersetzungsstatus\n\n3. **DeepL\/LibreTranslate Integration**\n   - DeepL API-Schlüssel\n   - LibreTranslate Server-URL\n   - Fallback-Engine\n   - Test-Funktion\n\n4. **PDF-Export-Einstellungen**\n   - Logo\n   - Header\/Footer\n   - Schriftarten\n   - Layout\n\n## Verwendung\n\n### Richtlinien anzeigen\n\n```\n[ebcpdgptm_guidelines lang=\"de\"]\n```\n\n**Features:**\n- Filterbare Tabelle (Kategorie, Suchbegriff)\n- Sortierbar (Titel, Kategorie, Datum)\n- Paginierung\n- Responsive\n\n### Übersetzungs-Workflow\n\n**Auto-Translate:**\n1. EBCP Guidelines → Übersetzungs-Editor\n2. Fehlende Übersetzungen werden angezeigt\n3. \"Auto-Translate\" klicken\n4. DeepL übersetzt automatisch\n5. Bei Fehler: LibreTranslate Fallback\n6. Übersetzung prüfen und ggf. anpassen\n7. Speichern\n\n**Manuelle Übersetzung:**\n1. Richtlinie auswählen\n2. Sprache wählen\n3. Übersetzung eingeben\n4. Speichern\n\n### PDF-Export\n\n**Für Benutzer:**\n- Richtlinien-Tabelle anzeigen\n- \"Als PDF exportieren\" klicken\n- PDF wird generiert\n\n**Admin-Konfiguration:**\n1. EBCP Guidelines → PDF-Export\n2. Logo hochladen\n3. Header\/Footer-Text\n4. Schriftgröße\n5. Layout wählen\n\n## DeepL Integration\n\n**Setup:**\n1. DeepL API-Schlüssel erhalten (deepl.com)\n2. EBCP Guidelines → DeepL Integration\n3. API-Schlüssel eintragen\n4. Test-Funktion nutzen\n5. Speichern\n\n**Unterstützte Sprachen:**\n- DE ↔ EN, FR, ES, IT\n- EN ↔ DE, FR, ES, IT\n- Alle Kombinationen\n\n**Limits:**\n- Free: 500.000 Zeichen\/Monat\n- Pro: Unbegrenzt (kostenpflichtig)\n\n## LibreTranslate Fallback\n\n**Setup:**\n1. LibreTranslate Server-URL\n2. (Optional) API-Schlüssel\n3. Test-Funktion\n4. Als Fallback aktivieren\n\n**Vorteile:**\n- Open Source\n- Selbst-gehostet möglich\n- Kostenlos\n- DSGVO-konform\n\n## Kategorien\n\nVordefinierte Kategorien:\n- Cardiovascular\n- Oncology\n- Neurology\n- Diabetes\n- Respiratory\n- Custom\n\n## Technische Details\n\n- Custom Database Table: `wp_ebcp_guidelines`\n- DeepL API v2\n- LibreTranslate API\n- FPDF für PDF-Export\n- DataTables.js für Tabelle\n- REST API für Frontend\n\n## Tipps\n\n- Nutzen Sie DeepL für beste Qualität\n- LibreTranslate als DSGVO-konforme Alternative\n- Prüfen Sie Auto-Übersetzungen\n- PDF-Export für Offline-Nutzung\n- Kategorien für Organisation",
+    "features": [
+        "Mehrsprachig (DE, EN, FR, ES, IT)",
+        "Filterbare Tabelle",
+        "Suchfunktion",
+        "PDF-Export",
+        "Übersetzungs-Editor",
+        "DeepL Auto-Translate",
+        "LibreTranslate Fallback",
+        "Kategorien"
+    ],
+    "keywords": [
+        "guidelines",
+        "ebcp",
+        "multilingual",
+        "translation",
+        "deepl",
+        "pdf",
+        "medical"
+    ],
+    "module_id": "ebcp-guidelines",
+    "last_updated": "2025-11-29 17:38:29"
+}

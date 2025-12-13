@@ -1,0 +1,27 @@
+{
+    "title": "OTP Login",
+    "description": "Sicheres OTP-basiertes Login-System mit Rate Limiting und Multisite-Support.",
+    "content": "# OTP Login\n\n## Übersicht\n\nSicheres One-Time-Password (OTP) Login-System mit E-Mail-Versand, Rate Limiting, Multisite-Support und rotierendem Preloader.\n\n## Hauptfunktionen\n\n- OTP-basierte Authentifizierung (kein Passwort)\n- E-Mail-Versand von 6-stelligen Codes\n- Rate Limiting (IP + E-Mail)\n- Brute-Force-Schutz\n- Multisite-Support\n- Rotierender Logo-Preloader\n- SMTP-Konfiguration\n- Session-Management\n\n## Shortcodes\n\n### [dgptm_otp_login]\nZeigt OTP-Login-Formular.\n\n**Parameter:**\n- `redirect` - Redirect-URL nach Login\n- `title` - Formular-Titel\n- `subtitle` - Untertitel\n\n**Verwendung:**\n```\n[dgptm_otp_login redirect=\"\/dashboard\" title=\"Anmelden\"]\n```\n\n### [dgptm_logout_link]\nLogout-Link.\n\n**Parameter:**\n- `text` - Link-Text\n- `class` - CSS-Klasse\n- `redirect` - Redirect nach Logout\n\n**Verwendung:**\n```\n[dgptm_logout_link text=\"Abmelden\" redirect=\"\/\"]\n```\n\n### [dgptm_logout_url]\nGibt Logout-URL zurück.\n\n**Verwendung:**\n```\n<a href=\"[dgptm_logout_url]\">Abmelden<\/a>\n```\n\n## Admin-Interface\n\n**Menü:** DGPTM → OTP Login\n\n### Tabs\n\n1. **E-Mail & Sicherheit**\n   - SMTP-Server\n   - SMTP-Port\n   - SMTP-Benutzername\n   - SMTP-Passwort\n   - Absender-E-Mail\n   - Absender-Name\n   - Rate Limiting:\n     - Max. Anfragen pro IP\n     - Max. Anfragen pro E-Mail\n     - Zeitfenster (Minuten)\n     - Cooldown (Sekunden)\n\n2. **Preloader**\n   - Logo hochladen\n   - Hintergrundfarbe\n   - Spinner-Farbe\n   - Rotation-Geschwindigkeit\n   - Vorschau\n\n3. **Anleitung**\n   - Setup-Dokumentation\n   - Code-Beispiele\n   - Troubleshooting\n\n## Verwendung\n\n### Login-Flow\n\n1. Benutzer gibt E-Mail ein\n2. OTP wird generiert und per E-Mail versendet\n3. Benutzer gibt 6-stelligen Code ein\n4. Bei korrektem Code: Login\n5. Bei falschem Code: Fehler (3 Versuche)\n\n### SMTP konfigurieren\n\n1. DGPTM → OTP Login → E-Mail & Sicherheit\n2. SMTP-Server eintragen (z.B. smtp.gmail.com)\n3. SMTP-Port (587 für TLS, 465 für SSL)\n4. Credentials eintragen\n5. Test-E-Mail senden\n\n### Preloader anpassen\n\n1. DGPTM → OTP Login → Preloader\n2. Logo hochladen (PNG, transparent empfohlen)\n3. Farben anpassen\n4. Geschwindigkeit einstellen\n5. Vorschau ansehen\n6. Speichern\n\n## Sicherheitsfeatures\n\n### Rate Limiting\n\n**IP-basiert:**\n- Max. 5 OTP-Anfragen pro 15 Minuten\n- Nach Überschreitung: Cooldown 30 Minuten\n\n**E-Mail-basiert:**\n- Max. 3 OTP-Anfragen pro 15 Minuten\n- Verhindert E-Mail-Spam\n\n### Brute-Force-Schutz\n\n- Max. 3 Versuche pro OTP\n- OTP-Ablauf nach 10 Minuten\n- IP-Tracking\n\n### Code-Generierung\n\n- 6-stelliger numerischer Code\n- Kryptographisch sicher (random_int)\n- Einmalige Verwendung\n\n## Multisite-Support\n\n- Funktioniert auf Haupt-Site und Sub-Sites\n- Site-spezifische Einstellungen\n- Netzwerk-weite Konfiguration möglich\n\n## Technische Details\n\n- Session-basierte OTP-Speicherung\n- Transients für Rate Limiting\n- PHPMailer für E-Mail-Versand\n- CSS3-Animationen für Preloader\n- AJAX für nahtlose UX\n\n## Tipps\n\n- SMTP statt wp_mail() nutzen\n- Rate Limits je nach Benutzeranzahl anpassen\n- Logo als PNG mit transparentem Hintergrund\n- Redirect nach Login konfigurieren\n- Test-E-Mails regelmäßig prüfen",
+    "features": [
+        "OTP-Authentifizierung",
+        "E-Mail-Code-Versand",
+        "Rate Limiting",
+        "Multisite-Support",
+        "Rotierender Preloader",
+        "SMTP-Konfiguration",
+        "Session-Management",
+        "Brute-Force-Schutz"
+    ],
+    "keywords": [
+        "otp",
+        "login",
+        "authentication",
+        "email",
+        "security",
+        "rate-limiting",
+        "smtp",
+        "preloader"
+    ],
+    "module_id": "otp-login",
+    "last_updated": "2025-11-29 17:38:29"
+}

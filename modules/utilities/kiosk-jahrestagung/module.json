@@ -1,0 +1,22 @@
+{
+    "id": "kiosk-jahrestagung",
+    "name": "Kiosk Mode",
+    "description": "Kiosk mode for annual conferences",
+    "version": "1.0.0",
+    "author": "Sebastian Melzer",
+    "main_file": "kioskjahrestagung.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": []
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "jahrestagung",
+    "icon": "dashicons-desktop",
+    "active": false,
+    "can_export": true,
+    "flags": [
+        "production"
+    ]
+}

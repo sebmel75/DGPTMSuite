@@ -1,0 +1,949 @@
+/* DGPTM Daten bearbeiten - Styles */
+
+.dgptm-daten-bearbeiten-wrapper {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Loading Message */
+.loading-message {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.loading-message .spinner {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #0073aa;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-message p {
+    font-size: 16px;
+    color: #666;
+}
+
+/* Form Sections */
+.form-section {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 25px;
+    margin-bottom: 25px;
+}
+
+.form-section legend {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    padding: 0 10px;
+    margin-bottom: 20px;
+}
+
+/* Form Rows and Fields */
+.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.form-row:last-child {
+    margin-bottom: 0;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-field label {
+    font-weight: 500;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.form-field input[type="text"],
+.form-field input[type="email"],
+.form-field input[type="tel"],
+.form-field select {
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+.form-field input[type="text"]:focus,
+.form-field input[type="email"]:focus,
+.form-field input[type="tel"]:focus,
+.form-field select:focus {
+    outline: none;
+    border-color: #0073aa;
+}
+
+.form-field input[readonly],
+.form-field input[disabled],
+.form-field select[disabled] {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+}
+
+.form-field .description,
+.form-field small {
+    font-size: 12px;
+    color: #666;
+    margin-top: 5px;
+}
+
+.info-box {
+    display: block;
+    background-color: #e7f3ff;
+    border-left: 4px solid #0073aa;
+    padding: 12px 15px;
+    margin: 10px 0;
+    font-size: 13px;
+    color: #333;
+    line-height: 1.6;
+}
+
+/* DGPTM Account Info Box */
+.dgptm-account-info {
+    font-size: 14px !important;
+    border-left: 4px solid #0073aa;
+}
+
+.dgptm-account-info a {
+    color: #0073aa;
+    text-decoration: none;
+    font-size: inherit !important;
+}
+
+.dgptm-account-info a:hover {
+    text-decoration: underline;
+}
+
+.dgptm-account-info strong {
+    font-weight: 600;
+    font-size: inherit !important;
+}
+
+.required {
+    color: #d63638;
+}
+
+/* Field Widths (Formidable-style) */
+.frm_first {
+    margin-left: 0 !important;
+}
+
+.frm12 {
+    flex: 1 1 100%;
+    width: 100%;
+}
+
+.frm_half {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 200px;
+}
+
+.frm_third {
+    flex: 1 1 calc(33.333% - 10px);
+    min-width: 150px;
+}
+
+.frm_two_thirds {
+    flex: 1 1 calc(66.666% - 8px);
+    min-width: 300px;
+}
+
+.frm4 {
+    flex: 1 1 calc(33.333% - 10px);
+    min-width: 150px;
+}
+
+.frm6 {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 200px;
+}
+
+.frm_sixth {
+    flex: 1 1 calc(16.666% - 13px);
+    min-width: 100px;
+}
+
+/* Toggle Switch */
+.toggle-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 10px;
+    background: #f9f9f9;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.toggle-label:hover {
+    background: #f0f0f0;
+}
+
+.toggle-label input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+}
+
+.toggle-slider {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+    background-color: #ccc;
+    border-radius: 24px;
+    margin-right: 12px;
+    transition: background-color 0.3s;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 3px;
+    top: 3px;
+    background-color: white;
+    border-radius: 50%;
+    transition: transform 0.3s;
+}
+
+.toggle-label input[type="checkbox"]:checked + .toggle-slider {
+    background-color: #0073aa;
+}
+
+.toggle-label input[type="checkbox"]:checked + .toggle-slider::before {
+    transform: translateX(26px);
+}
+
+/* Form Actions */
+.form-actions {
+    text-align: center;
+    padding: 30px 0;
+}
+
+.btn-submit {
+    background-color: #0073aa;
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-submit:hover:not(:disabled) {
+    background-color: #005a87;
+}
+
+.btn-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Messages */
+.form-messages {
+    margin-top: 20px;
+}
+
+.error-message {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+    padding: 12px 20px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.error-box {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+    padding: 30px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.error-box h3 {
+    color: #721c24;
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.error-box p {
+    margin-bottom: 10px;
+}
+
+.error-box small {
+    color: #856404;
+}
+
+.success-message {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.success-icon {
+    display: inline-block;
+    width: 80px;
+    height: 80px;
+    line-height: 80px;
+    background-color: #d1e7dd;
+    color: #0f5132;
+    border-radius: 50%;
+    font-size: 48px;
+    margin-bottom: 20px;
+}
+
+.success-message h3 {
+    color: #0f5132;
+    margin-bottom: 10px;
+}
+
+.success-message p {
+    color: #666;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .form-row {
+        flex-direction: column;
+    }
+
+    .frm_half,
+    .frm_third,
+    .frm_two_thirds,
+    .frm4,
+    .frm6,
+    .frm_sixth {
+        flex: 1 1 100%;
+        min-width: 100%;
+    }
+
+    .form-section {
+        padding: 20px 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .dgptm-daten-bearbeiten-wrapper {
+        padding: 10px;
+    }
+
+    .form-section legend {
+        font-size: 16px;
+    }
+
+    .btn-submit {
+        width: 100%;
+    }
+}
+
+/* GoCardless Payment Section */
+.gcl-section {
+    margin: 0;
+}
+
+.gcl-bank-info {
+    font-size: 0.9em;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #f9f9f9;
+    line-height: 1.8;
+}
+
+.gcl-bank-info div {
+    margin-bottom: 5px;
+}
+
+.gcl-bank-info strong {
+    color: #333;
+    font-weight: 600;
+}
+
+#payment-section {
+    background: #fff;
+}
+
+/* Bank Change Section */
+#bank_change_section {
+    padding: 15px;
+    background: #fffbf0;
+    border: 1px solid #ffc107;
+    border-radius: 4px;
+    margin-top: 10px;
+}
+
+#bank_iban {
+    text-transform: uppercase;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+}
+
+/* ============================================
+   Student Status Form Styles
+   ============================================ */
+
+.dgptm-student-status-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Status Display */
+.dgptm-student-status-display {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 25px;
+    margin-bottom: 20px;
+}
+
+.status-loading {
+    text-align: center;
+    padding: 30px;
+    color: #666;
+}
+
+.status-content {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    background: #f9f9f9;
+    border-radius: 6px;
+    border-left: 4px solid #ddd;
+}
+
+.status-item strong {
+    margin-right: 10px;
+    color: #333;
+}
+
+.status-item.status-active {
+    background: #e8f5e9;
+    border-left-color: #4caf50;
+}
+
+.status-item.status-inactive {
+    background: #fff3e0;
+    border-left-color: #ff9800;
+}
+
+.status-item.status-in-review {
+    background: #e3f2fd;
+    border-left-color: #2196f3;
+}
+
+.status-error {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 20px;
+    border-radius: 6px;
+    border: 1px solid #f5c6cb;
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.active {
+    background: #4caf50;
+    color: white;
+}
+
+.status-badge.inactive {
+    background: #ff9800;
+    color: white;
+}
+
+.status-badge.in-review {
+    background: #2196f3;
+    color: white;
+}
+
+.status-badge.uploaded {
+    background: #2196f3;
+    color: white;
+}
+
+.status-badge.not-uploaded {
+    background: #9e9e9e;
+    color: white;
+}
+
+/* Student Button */
+.dgptm-student-btn {
+    display: inline-block;
+    background: #0073aa;
+    color: white;
+    border: none;
+    padding: 14px 28px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.dgptm-student-btn:hover {
+    background: #005a87;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+}
+
+.dgptm-student-btn:active {
+    transform: translateY(0);
+}
+
+/* Modal Styles */
+.dgptm-modal {
+    display: none;
+    position: fixed;
+    z-index: 999999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.6);
+    animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.dgptm-modal-content {
+    background-color: #fff;
+    margin: 5% auto;
+    padding: 0;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    animation: slideDown 0.3s;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.dgptm-modal-content h2 {
+    margin: 0;
+    padding: 25px 30px;
+    background: linear-gradient(135deg, #0073aa 0%, #005a87 100%);
+    color: white;
+    border-radius: 10px 10px 0 0;
+    font-size: 22px;
+}
+
+.dgptm-close-modal {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    color: white;
+    font-size: 32px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s;
+    line-height: 1;
+}
+
+.dgptm-close-modal:hover,
+.dgptm-close-modal:focus {
+    color: #ddd;
+}
+
+.dgptm-modal-body {
+    padding: 30px;
+}
+
+.dgptm-modal-body p {
+    margin-top: 0;
+    color: #666;
+    line-height: 1.6;
+}
+
+/* Form Styles inside Modal */
+.dgptm-modal-body .form-group {
+    margin-bottom: 20px;
+}
+
+.dgptm-modal-body .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+}
+
+.dgptm-modal-body input[type="number"],
+.dgptm-modal-body input[type="file"] {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+.dgptm-modal-body input[type="number"]:focus,
+.dgptm-modal-body input[type="file"]:focus {
+    outline: none;
+    border-color: #0073aa;
+    box-shadow: 0 0 0 3px rgba(0, 115, 170, 0.1);
+}
+
+.dgptm-modal-body small {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #666;
+}
+
+/* Modal Form Actions */
+.dgptm-modal-body .form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 25px;
+    padding-top: 25px;
+    border-top: 1px solid #eee;
+}
+
+.dgptm-btn-primary,
+.dgptm-btn-secondary {
+    flex: 1;
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.dgptm-btn-primary {
+    background: #0073aa;
+    color: white;
+}
+
+.dgptm-btn-primary:hover:not(:disabled) {
+    background: #005a87;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 115, 170, 0.3);
+}
+
+.dgptm-btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.dgptm-btn-secondary {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.dgptm-btn-secondary:hover {
+    background: #e0e0e0;
+}
+
+/* Upload Response Messages */
+.upload-response {
+    margin-top: 15px;
+}
+
+.upload-message {
+    padding: 12px 15px;
+    border-radius: 6px;
+    font-size: 14px;
+    margin-top: 10px;
+}
+
+.upload-message.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.upload-message.success {
+    background: #d1e7dd;
+    color: #0f5132;
+    border: 1px solid #badbcc;
+}
+
+.upload-message.info {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+/* Responsive Modal */
+@media (max-width: 768px) {
+    .dgptm-modal-content {
+        width: 95%;
+        margin: 10% auto;
+    }
+
+    .dgptm-modal-content h2 {
+        font-size: 18px;
+        padding: 20px 25px;
+    }
+
+    .dgptm-modal-body {
+        padding: 20px;
+    }
+
+    .dgptm-modal-body .form-actions {
+        flex-direction: column;
+    }
+
+    .dgptm-btn-primary,
+    .dgptm-btn-secondary {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .dgptm-student-status-container {
+        padding: 10px;
+    }
+
+    .dgptm-student-btn {
+        width: 100%;
+        text-align: center;
+    }
+
+    .status-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+}
+
+/* ============================================
+   Expiring Status Styles (Q4)
+   ============================================ */
+
+.status-item.status-expiring {
+    background: #ffebee !important;
+    border-left-color: #d32f2f !important;
+}
+
+.status-badge.expiring {
+    background: #d32f2f !important;
+    animation: pulse 2s infinite;
+}
+
+.text-expiring {
+    color: #d32f2f;
+    font-weight: 700;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+/* Status Info Text */
+.status-info-text {
+    margin-top: 10px;
+    padding: 12px 15px;
+    background: #e3f2fd;
+    border-left: 4px solid #2196f3;
+    border-radius: 4px;
+}
+
+.status-info-text p {
+    margin: 0;
+    color: #333;
+    line-height: 1.6;
+}
+
+/* ============================================
+   Student Status Banner (Q4 Warning)
+   ============================================ */
+
+.dgptm-student-status-banner {
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+    border: 2px solid #ff9800;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 4px 10px rgba(255, 152, 0, 0.2);
+    animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.banner-content {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.banner-icon {
+    font-size: 48px;
+    flex-shrink: 0;
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-10px);
+    }
+    60% {
+        transform: translateY(-5px);
+    }
+}
+
+.banner-message {
+    flex: 1;
+}
+
+.banner-message strong {
+    display: block;
+    font-size: 18px;
+    color: #e65100;
+    margin-bottom: 5px;
+}
+
+.banner-message p {
+    margin: 0;
+    color: #333;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.banner-action {
+    flex-shrink: 0;
+}
+
+.dgptm-banner-btn {
+    display: inline-block;
+    background: #ff9800;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    white-space: nowrap;
+}
+
+.dgptm-banner-btn:hover {
+    background: #f57c00;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dgptm-banner-btn:active {
+    transform: translateY(0);
+}
+
+/* Banner Responsive */
+@media (max-width: 768px) {
+    .banner-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 15px;
+    }
+
+    .banner-icon {
+        font-size: 36px;
+    }
+
+    .banner-message strong {
+        font-size: 16px;
+    }
+
+    .banner-action {
+        width: 100%;
+    }
+
+    .dgptm-banner-btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .dgptm-student-status-banner {
+        padding: 15px;
+    }
+
+    .banner-icon {
+        font-size: 28px;
+    }
+
+    .banner-message strong {
+        font-size: 15px;
+    }
+
+    .banner-message p {
+        font-size: 13px;
+    }
+
+    .dgptm-banner-btn {
+        padding: 10px 20px;
+        font-size: 14px;
+    }
+}

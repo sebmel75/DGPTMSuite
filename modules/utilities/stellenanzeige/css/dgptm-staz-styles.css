@@ -1,0 +1,455 @@
+/**
+ * DGPTM Stellenanzeigen Manager - Modern Styles
+ * Version: 2.0
+ */
+
+/* ============================================
+   VARIABLES & ROOT SETTINGS
+   ============================================ */
+:root {
+    --staz-primary: #2492BA;
+    --staz-primary-hover: #005792;
+    --staz-accent: #BD1722;
+    --staz-text: #333333;
+    --staz-text-light: #666666;
+    --staz-border: #e0e0e0;
+    --staz-bg-light: #f8f9fa;
+    --staz-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --staz-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.15);
+    --staz-radius: 8px;
+    --staz-transition: all 0.3s ease;
+}
+
+/* ============================================
+   STELLENANZEIGEN LIST (FRONTEND)
+   ============================================ */
+.dgptm-staz-stellenanzeigen-list {
+    max-width: 1140px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.dgptm-staz-stellenanzeige-item {
+    background: #ffffff;
+    border-radius: var(--staz-radius);
+    box-shadow: var(--staz-shadow);
+    margin-bottom: 30px;
+    overflow: hidden;
+    transition: var(--staz-transition);
+}
+
+.dgptm-staz-stellenanzeige-item:hover {
+    box-shadow: var(--staz-shadow-hover);
+    transform: translateY(-2px);
+}
+
+.dgptm-staz-content {
+    padding: 30px;
+}
+
+.dgptm-staz-title {
+    color: var(--staz-primary);
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 20px 0;
+    line-height: 1.3;
+}
+
+.dgptm-staz-thumbnail {
+    width: 100%;
+    margin: 20px 0;
+    border-radius: var(--staz-radius);
+    overflow: hidden;
+}
+
+.dgptm-staz-thumbnail img {
+    width: 100%;
+    height: auto;
+    display: block;
+    transition: var(--staz-transition);
+}
+
+.dgptm-staz-stellenanzeige-item:hover .dgptm-staz-thumbnail img {
+    transform: scale(1.02);
+}
+
+.dgptm-staz-job-description {
+    color: var(--staz-text);
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 20px 0;
+}
+
+.dgptm-staz-job-description p {
+    margin-bottom: 15px;
+}
+
+.dgptm-staz-arbeitgeber {
+    background: var(--staz-bg-light);
+    padding: 12px 20px;
+    border-radius: var(--staz-radius);
+    color: var(--staz-text);
+    font-size: 14px;
+    font-weight: 600;
+    margin: 20px 0;
+    display: inline-block;
+}
+
+.dgptm-staz-button {
+    display: inline-block;
+    background: var(--staz-primary);
+    color: #ffffff !important;
+    padding: 14px 32px;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 16px;
+    transition: var(--staz-transition);
+    border: none;
+    cursor: pointer;
+    margin: 20px 0;
+}
+
+.dgptm-staz-button:hover {
+    background: var(--staz-primary-hover);
+    transform: translateX(5px);
+    box-shadow: var(--staz-shadow);
+}
+
+.dgptm-staz-footer {
+    color: var(--staz-text-light);
+    font-size: 14px;
+    padding-top: 20px;
+    border-top: 1px solid var(--staz-border);
+    margin-top: 20px;
+}
+
+.dgptm-staz-separator {
+    border: none;
+    height: 1px;
+    background: var(--staz-border);
+    margin: 40px 0;
+}
+
+/* ============================================
+   EDITOR CONTAINER (BACKEND/FRONTEND)
+   ============================================ */
+.dgptm-staz-editor-container {
+    max-width: 1140px;
+    margin: 40px auto;
+    padding: 30px;
+    background: #ffffff;
+    border-radius: var(--staz-radius);
+    box-shadow: var(--staz-shadow);
+}
+
+.dgptm-staz-editor-container h2 {
+    color: var(--staz-primary);
+    font-size: 28px;
+    margin: 0 0 30px 0;
+    padding-bottom: 15px;
+    border-bottom: 3px solid var(--staz-primary);
+}
+
+.dgptm-staz-editor-container h3 {
+    color: var(--staz-text);
+    font-size: 22px;
+    margin: 30px 0 20px 0;
+}
+
+.dgptm-staz-editor-container form {
+    margin: 20px 0;
+}
+
+.dgptm-staz-editor-container label {
+    display: block;
+    color: var(--staz-text);
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.dgptm-staz-editor-container input[type="text"],
+.dgptm-staz-editor-container input[type="url"],
+.dgptm-staz-editor-container input[type="date"],
+.dgptm-staz-editor-container textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--staz-border);
+    border-radius: var(--staz-radius);
+    font-size: 15px;
+    transition: var(--staz-transition);
+    box-sizing: border-box;
+}
+
+.dgptm-staz-editor-container input[type="text"]:focus,
+.dgptm-staz-editor-container input[type="url"]:focus,
+.dgptm-staz-editor-container input[type="date"]:focus,
+.dgptm-staz-editor-container textarea:focus {
+    border-color: var(--staz-primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(36, 146, 186, 0.1);
+}
+
+.dgptm-staz-editor-container input[type="file"] {
+    padding: 10px 0;
+}
+
+.dgptm-staz-editor-container button[type="submit"],
+.dgptm-staz-editor-container button {
+    background: var(--staz-primary);
+    color: #ffffff;
+    padding: 12px 28px;
+    border: none;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    transition: var(--staz-transition);
+    display: inline-block;
+    margin-right: 10px;
+}
+
+.dgptm-staz-editor-container button[type="submit"]:hover,
+.dgptm-staz-editor-container button:hover {
+    background: var(--staz-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--staz-shadow);
+}
+
+.dgptm-staz-editor-container button[style*="color:red"],
+.dgptm-staz-editor-container button[style*="color: red"] {
+    background: var(--staz-accent) !important;
+}
+
+.dgptm-staz-editor-container button[style*="color:red"]:hover,
+.dgptm-staz-editor-container button[style*="color: red"]:hover {
+    background: #9d1219 !important;
+}
+
+.dgptm-staz-editor-container hr {
+    border: none;
+    height: 1px;
+    background: var(--staz-border);
+    margin: 40px 0;
+}
+
+/* ============================================
+   TABLE STYLES
+   ============================================ */
+.dgptm-staz-editor-container table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 20px;
+    background: #ffffff;
+    border-radius: var(--staz-radius);
+    overflow: hidden;
+    box-shadow: var(--staz-shadow);
+}
+
+.dgptm-staz-editor-container table thead {
+    background: var(--staz-primary);
+}
+
+.dgptm-staz-editor-container table thead th {
+    color: #ffffff;
+    padding: 16px 12px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: none;
+}
+
+.dgptm-staz-editor-container table tbody tr {
+    transition: var(--staz-transition);
+}
+
+.dgptm-staz-editor-container table tbody tr:hover {
+    background: var(--staz-bg-light);
+}
+
+.dgptm-staz-editor-container table tbody td {
+    padding: 16px 12px;
+    border-bottom: 1px solid var(--staz-border);
+    color: var(--staz-text);
+    font-size: 14px;
+}
+
+.dgptm-staz-editor-container table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.dgptm-staz-editor-container table img {
+    max-width: 80px;
+    height: auto;
+    border-radius: 4px;
+}
+
+.dgptm-staz-editor-container table a {
+    color: var(--staz-primary);
+    text-decoration: none;
+    font-weight: 600;
+    transition: var(--staz-transition);
+}
+
+.dgptm-staz-editor-container table a:hover {
+    color: var(--staz-primary-hover);
+    text-decoration: underline;
+}
+
+/* ============================================
+   FORM SECTIONS
+   ============================================ */
+.dgptm-staz-editor-container p {
+    margin-bottom: 20px;
+}
+
+/* WordPress Editor Integration */
+.dgptm-staz-editor-container .wp-editor-container {
+    border: 2px solid var(--staz-border);
+    border-radius: var(--staz-radius);
+}
+
+.dgptm-staz-editor-container .wp-editor-container:focus-within {
+    border-color: var(--staz-primary);
+    box-shadow: 0 0 0 3px rgba(36, 146, 186, 0.1);
+}
+
+/* Success/Error Messages */
+.dgptm-staz-editor-container p[style*="color: green"],
+.dgptm-staz-editor-container p[style*="color:green"] {
+    background: #d4edda;
+    color: #155724 !important;
+    padding: 15px 20px;
+    border-radius: var(--staz-radius);
+    border-left: 4px solid #28a745;
+    margin: 20px 0;
+    font-weight: 600;
+}
+
+.dgptm-staz-editor-container p[style*="color: red"],
+.dgptm-staz-editor-container p[style*="color:red"] {
+    background: #f8d7da;
+    color: #721c24 !important;
+    padding: 15px 20px;
+    border-radius: var(--staz-radius);
+    border-left: 4px solid #dc3545;
+    margin: 20px 0;
+    font-weight: 600;
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+@media (max-width: 768px) {
+    .dgptm-staz-stellenanzeigen-list,
+    .dgptm-staz-editor-container {
+        padding: 20px 15px;
+    }
+
+    .dgptm-staz-content {
+        padding: 20px;
+    }
+
+    .dgptm-staz-title {
+        font-size: 20px;
+    }
+
+    .dgptm-staz-editor-container h2 {
+        font-size: 24px;
+    }
+
+    .dgptm-staz-editor-container h3 {
+        font-size: 18px;
+    }
+
+    .dgptm-staz-button {
+        width: 100%;
+        text-align: center;
+        margin: 10px 0;
+    }
+
+    .dgptm-staz-editor-container button {
+        width: 100%;
+        margin: 10px 0;
+    }
+
+    /* Table becomes scrollable on mobile */
+    .dgptm-staz-editor-container table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .dgptm-staz-editor-container table thead th,
+    .dgptm-staz-editor-container table tbody td {
+        padding: 12px 8px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    .dgptm-staz-title {
+        font-size: 18px;
+    }
+
+    .dgptm-staz-job-description {
+        font-size: 14px;
+    }
+
+    .dgptm-staz-button {
+        padding: 12px 24px;
+        font-size: 14px;
+    }
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+@media print {
+    .dgptm-staz-button,
+    .dgptm-staz-editor-container button,
+    .dgptm-staz-editor-container form {
+        display: none;
+    }
+
+    .dgptm-staz-stellenanzeige-item {
+        page-break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+.dgptm-staz-button:focus,
+.dgptm-staz-editor-container button:focus,
+.dgptm-staz-editor-container input:focus,
+.dgptm-staz-editor-container textarea:focus {
+    outline: 3px solid var(--staz-primary);
+    outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    :root {
+        --staz-border: #000000;
+    }
+
+    .dgptm-staz-stellenanzeige-item {
+        border: 2px solid #000000;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

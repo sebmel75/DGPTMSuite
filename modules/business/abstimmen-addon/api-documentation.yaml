@@ -1,0 +1,636 @@
+openapi: 3.0.3
+info:
+  title: DGPTM Abstimmen-Addon REST API
+  description: |
+    REST API für das DGPTM Abstimmen-Addon. Bietet Endpunkte für:
+    - Zoom-Integration (Meeting/Webinar-Registrierung)
+    - Anwesenheitserfassung (Webhook & Live-Status)
+    - Präsenz-Scanner (Manuelle Suche & Erfassung)
+    - Voting-System (Umfragen & Abstimmungen)
+  version: 4.0.0
+  contact:
+    name: DGPTM Support
+    email: support@dgptm.de
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://ihre-domain.de/wp-json
+    description: Produktions-Server
+  - url: http://localhost/wordpress/wp-json
+    description: Entwicklungs-Server
+
+tags:
+  - name: Zoom
+    description: Zoom Meeting/Webinar Integration
+  - name: Attendance
+    description: Anwesenheitserfassung
+  - name: Presence
+    description: Präsenz-Scanner
+  - name: Voting
+    description: Umfragen & Abstimmungen
+
+security:
+  - WordPressNonce: []
+  - CookieAuth: []
+
+paths:
+  # ===== ZOOM API =====
+  /dgptm-vote/v1/zoom-test:
+    get:
+      tags:
+        - Zoom
+      summary: Zoom-Verbindung testen
+      description: |
+        Testet die Zoom API-Verbindung mit den konfigurierten S2S OAuth Credentials.
+        Gibt Meeting/Webinar-Informationen zurück wenn erfolgreich.
+      operationId: testZoomConnection
+      security:
+        - WordPressNonce: []
+      responses:
+        '200':
+          description: Erfolgreicher Test
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  type:
+                    type: string
+                    enum: [meeting, webinar]
+                    example: "webinar"
+                  id:
+                    type: string
+                    example: "12345678901"
+                  topic:
+                    type: string
+                    example: "Mitgliederversammlung 2024"
+                  start_time:
+                    type: string
+                    format: date-time
+                  host_email:
+                    type: string
+                    example: "host@dgptm.de"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /dgptm-vote/v1/zoom-register:
+    post:
+      tags:
+        - Zoom
+      summary: Benutzer bei Zoom registrieren
+      description: |
+        Registriert einen WordPress-Benutzer bei einem Zoom Meeting/Webinar.
+        Gibt Join-URL zurück, die in User-Meta gespeichert wird.
+      operationId: registerUserZoom
+      security:
+        - WordPressNonce: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_id
+              properties:
+                user_id:
+                  type: integer
+                  description: WordPress User ID
+                  example: 42
+                first_name:
+                  type: string
+                  example: "Max"
+                last_name:
+                  type: string
+                  example: "Mustermann"
+                email:
+                  type: string
+                  format: email
+                  example: "max@example.com"
+      responses:
+        '200':
+          description: Erfolgreich registriert
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  join_url:
+                    type: string
+                    format: uri
+                    example: "https://zoom.us/w/123456?tk=xyz"
+                  registrant_id:
+                    type: string
+                    example: "abc123def456"
+                  status:
+                    type: string
+                    enum: [approved, pending]
+                    example: "approved"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ===== ATTENDANCE API =====
+  /dgptm-zoom/v1/webhook:
+    post:
+      tags:
+        - Attendance
+      summary: Zoom Webhook Empfänger
+      description: |
+        Empfängt Zoom Webhook-Events für:
+        - participant.joined / webinar.participant_joined
+        - participant.left / webinar.participant_left
+        Aktualisiert Anwesenheitsliste in Echtzeit.
+      operationId: receiveZoomWebhook
+      security:
+        - ZoomSignature: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event:
+                  type: string
+                  example: "meeting.participant_joined"
+                payload:
+                  type: object
+                  properties:
+                    object:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: Meeting/Webinar ID
+                        participant:
+                          type: object
+                          properties:
+                            user_id:
+                              type: string
+                            user_name:
+                              type: string
+                            email:
+                              type: string
+                            join_time:
+                              type: string
+                              format: date-time
+                            leave_time:
+                              type: string
+                              format: date-time
+      responses:
+        '200':
+          description: Webhook verarbeitet
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          description: Ungültige Signatur
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Invalid signature"
+
+  /dgptm-zoom/v1/live:
+    get:
+      tags:
+        - Attendance
+      summary: Live-Status abrufen
+      description: |
+        Gibt Live-Status des Meetings/Webinars zurück.
+        Zeigt aktuelle Teilnehmer und ob Meeting läuft.
+      operationId: getLiveStatus
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Meeting/Webinar ID
+        - in: query
+          name: kind
+          schema:
+            type: string
+            enum: [auto, meeting, webinar]
+            default: auto
+      responses:
+        '200':
+          description: Live-Status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  is_live:
+                    type: boolean
+                    example: true
+                  participant_count:
+                    type: integer
+                    example: 42
+                  current_participants:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        email:
+                          type: string
+                        joined_at:
+                          type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /dgptm-zoom/v1/presence:
+    post:
+      tags:
+        - Presence
+      summary: Präsenz erfassen (Scanner)
+      description: |
+        Erfasst Teilnehmer-Präsenz via QR-Code-Scanner oder manuell.
+        Speichert Eintrag in Anwesenheitsliste mit manual-Flag.
+      operationId: recordPresence
+      security:
+        - WordPressNonce: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+                - name
+              properties:
+                id:
+                  type: string
+                  description: Meeting/Webinar ID
+                  example: "12345678901"
+                kind:
+                  type: string
+                  enum: [auto, meeting, webinar]
+                  default: auto
+                name:
+                  type: string
+                  example: "Max Mustermann"
+                email:
+                  type: string
+                  format: email
+                  example: "max@example.com"
+                status:
+                  type: string
+                  description: Status = Mitgliedsart
+                  example: "Ordentliches Mitglied"
+                mitgliedsart:
+                  type: string
+                  example: "Ordentliches Mitglied"
+                mitgliedsnummer:
+                  type: string
+                  example: "M12345"
+                ts:
+                  type: integer
+                  description: Unix Timestamp
+                  example: 1735500000
+                manual:
+                  type: integer
+                  enum: [0, 1]
+                  description: 1 = manuell erfasst, 0 = gescannt
+                  example: 1
+      responses:
+        '200':
+          description: Präsenz erfasst
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Präsenz erfasst"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ===== PRESENCE SCANNER API =====
+  /dgptm/v1/mvvmanuell:
+    post:
+      tags:
+        - Presence
+      summary: Manuelle Namenssuche
+      description: |
+        Sucht Teilnehmer nach Namen in Zoho CRM.
+        Gibt Teilnehmerdaten zurück für manuelle Auswahl.
+      operationId: searchParticipant
+      security:
+        - WordPressNonce: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: "Max Mustermann"
+                query:
+                  type: string
+                  description: Alternative Suchbegriff
+                  example: "Mustermann"
+      responses:
+        '200':
+          description: Suchergebnisse
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Participant'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /dgptm-addon/v1/manual-flags:
+    get:
+      tags:
+        - Presence
+      summary: Manuelle Flags abrufen
+      description: |
+        Gibt Liste aller manuell erfassten Teilnehmer zurück.
+        Wird verwendet um "Manuell: X" in Tabelle anzuzeigen.
+      operationId: getManualFlags
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Meeting/Webinar ID
+        - in: query
+          name: kind
+          schema:
+            type: string
+            enum: [auto, meeting, webinar]
+            default: auto
+      responses:
+        '200':
+          description: Manuelle Flags
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  manual_pks:
+                    type: array
+                    description: Array von Primary Keys (email:xxx oder name:hash)
+                    items:
+                      type: string
+                      example: "mail:max@example.com"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /dgptm-addon/v1/mark-manual:
+    post:
+      tags:
+        - Presence
+      summary: Als manuell markieren
+      description: |
+        Markiert Teilnehmer als manuell erfasst.
+        Setzt manual-Flag in Anwesenheitsliste.
+      operationId: markAsManual
+      security:
+        - WordPressNonce: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+                - name
+              properties:
+                id:
+                  type: string
+                  description: Meeting/Webinar ID
+                kind:
+                  type: string
+                  enum: [auto, meeting, webinar]
+                  default: auto
+                name:
+                  type: string
+                email:
+                  type: string
+                status:
+                  type: string
+                mitgliedsart:
+                  type: string
+                mitgliedsnummer:
+                  type: string
+      responses:
+        '200':
+          description: Erfolgreich markiert
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+components:
+  securitySchemes:
+    WordPressNonce:
+      type: apiKey
+      in: header
+      name: X-WP-Nonce
+      description: WordPress REST API Nonce (für eingeloggte Benutzer)
+
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: wordpress_logged_in_*
+      description: WordPress Cookie-basierte Authentifizierung
+
+    ZoomSignature:
+      type: apiKey
+      in: header
+      name: x-zm-signature
+      description: Zoom Webhook Signature (HMAC SHA256)
+
+  schemas:
+    Participant:
+      type: object
+      properties:
+        fullname:
+          type: string
+          example: "Max Mustermann"
+        name:
+          type: string
+          description: Alternative zu fullname
+        email:
+          type: string
+          format: email
+          example: "max@example.com"
+        Email:
+          type: string
+          description: Alternative zu email (Großschreibung)
+        status:
+          type: string
+          example: "Ordentliches Mitglied"
+        Status:
+          type: string
+          description: Alternative zu status
+        mitgliedsart:
+          type: string
+          example: "Ordentliches Mitglied"
+        Mitgliedsart:
+          type: string
+          description: Alternative zu mitgliedsart
+        mitgliedsnummer:
+          type: string
+          example: "M12345"
+        Mitgliedsnummer:
+          type: string
+          description: Alternative zu mitgliedsnummer
+
+    Error:
+      type: object
+      required:
+        - ok
+        - error
+      properties:
+        ok:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "Invalid parameter"
+        code:
+          type: string
+          example: "invalid_param"
+
+  responses:
+    BadRequest:
+      description: Ungültige Anfrage
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            ok: false
+            error: "Missing required parameter: id"
+            code: "missing_param"
+
+    Unauthorized:
+      description: Nicht autorisiert
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            ok: false
+            error: "Authentication required"
+            code: "unauthorized"
+
+    InternalError:
+      description: Interner Serverfehler
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            ok: false
+            error: "Internal server error"
+            code: "server_error"
+
+  examples:
+    ZoomWebhookJoined:
+      summary: Teilnehmer ist beigetreten
+      value:
+        event: "meeting.participant_joined"
+        payload:
+          object:
+            id: "12345678901"
+            type: "meeting"
+            participant:
+              user_id: "abc123"
+              user_name: "Max Mustermann"
+              email: "max@example.com"
+              join_time: "2024-12-29T10:00:00Z"
+
+    ZoomWebhookLeft:
+      summary: Teilnehmer hat verlassen
+      value:
+        event: "meeting.participant_left"
+        payload:
+          object:
+            id: "12345678901"
+            participant:
+              user_id: "abc123"
+              user_name: "Max Mustermann"
+              leave_time: "2024-12-29T11:30:00Z"
+
+    ParticipantSearch:
+      summary: Suchergebnis mit mehreren Treffern
+      value:
+        ok: true
+        results:
+          - fullname: "Max Mustermann"
+            email: "max@example.com"
+            status: "Ordentliches Mitglied"
+            Mitgliedsart: "Ordentliches Mitglied"
+            Mitgliedsnummer: "M12345"
+          - fullname: "Maximilian Mustermann"
+            email: "maximilian@example.com"
+            status: "Fördermitglied"
+            Mitgliedsart: "Fördermitglied"
+            Mitgliedsnummer: "F67890"

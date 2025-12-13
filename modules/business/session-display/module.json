@@ -1,0 +1,25 @@
+{
+    "id": "session-display",
+    "name": "DGPTM Session Display",
+    "description": "Dynamische Anzeige von Jahrestagung-Sessions und Vorträgen via Zoho Backstage API mit Elementor-Integration, Vollbild-Modus, Debug-Zeit, Hintergrundbilder-Galerie, Pausen-Ankündigung und Vorträge-Rotation",
+    "version": "1.1.2",
+    "author": "Sebastian Melzer / DGPTM",
+    "main_file": "session-display.php",
+    "dependencies": [],
+    "optional_dependencies": [
+        "crm-abruf"
+    ],
+    "wp_dependencies": {
+        "plugins": []
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "business",
+    "icon": "dashicons-calendar-alt",
+    "active": false,
+    "can_export": true,
+    "notes": "v1.1.2: Vorträge-Rotation - zeigt Vorträge innerhalb einer Session im Wechsel. v1.1.1: Pausen-Ankündigung der nächsten Session mit Countdown. v1.1.0: Vollbild-Modus, Debug-Zeit, Hintergrundbilder-Galerie, optimierte Lesbarkeit, Venue-Filter",
+    "flags": [
+        "development"
+    ]
+}

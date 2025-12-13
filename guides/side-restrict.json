@@ -1,0 +1,23 @@
+{
+    "title": "Side Restrict",
+    "description": "Erweiterte Zugriffssteuerung für WordPress-Seiten basierend auf Rollen, ACF-Feldern und spezifischen Benutzern.",
+    "content": "# Side Restrict\n\n## Übersicht\n\nSide Restrict bietet erweiterte Zugriffskontrolle für WordPress-Seiten mit mehreren Kriterien die per ODER verknüpft werden.\n\n## Hauptfunktionen\n\n- Toggle für Seitenzugriff (öffentlich \/ nur angemeldet)\n- Rollenbasierte Zugriffskontrolle\n- ACF-Berechtigungsfelder (news_schreiben, timeline, etc.)\n- Spezifische Benutzer-Auswahl\n- Konfigurierbare Umleitungsseite\n\n## Einstellungen pro Seite\n\n### 1. Zugriffs-Toggle\n**Option:** Nur für angemeldete Benutzer\n- **AUS:** Seite ist öffentlich\n- **AN:** Seite nur für eingeloggte Benutzer + zusätzliche Kriterien\n\n### 2. Zusätzliche Kriterien (ODER-Verknüpfung)\n\n**Rollen:**\n- Benutzer mit bestimmter WordPress-Rolle\n- Multi-Select möglich\n\n**ACF-Felder:**\n- `news_schreiben`\n- `timeline`\n- Weitere benutzerdefinierte Felder\n\n**Spezifische Benutzer:**\n- Per Benutzer-ID oder Username\n\n### 3. Umleitung\n**Standard:** Login-Seite\n**Optional:** Benutzerdefinierte URL\n\n## Verwendung\n\n### Beispiel: Mitgliederbereich\n\n1. Seite bearbeiten\n2. Toggle aktivieren: \"Nur für angemeldete Benutzer\"\n3. Rolle auswählen: \"Mitglied\"\n4. Speichern\n\n→ Nur eingeloggte Benutzer MIT Rolle \"Mitglied\" können Seite sehen\n\n### Beispiel: News-Redakteure\n\n1. Toggle: AN\n2. ACF-Feld: `news_schreiben` = true\n3. ODER: Rolle \"Editor\"\n\n→ Benutzer mit `news_schreiben = true` ODER Rolle \"Editor\"\n\n## Technische Details\n\n- Hook: `template_redirect`\n- Prüfung: Vor Seiten-Rendering\n- Logik: ODER-Verknüpfung aller Kriterien\n- Speicherung: Post Meta\n\n## Tipps\n\n- Kombinieren Sie mehrere Kriterien für Flexibilität\n- Testen Sie als unterschiedliche Benutzer\n- Definieren Sie klare Umleitungsseiten",
+    "features": [
+        "Toggle-basierte Aktivierung",
+        "Rollenbasierte Zugriffskontrolle",
+        "ACF-Berechtigungsfelder",
+        "Benutzer-spezifische Zugriffe",
+        "ODER-verknüpfte Kriterien",
+        "Umleitungs-Konfiguration"
+    ],
+    "keywords": [
+        "access-control",
+        "permissions",
+        "roles",
+        "acf",
+        "restrictions",
+        "redirect"
+    ],
+    "module_id": "side-restrict",
+    "last_updated": "2025-11-29 17:38:29"
+}

@@ -1,0 +1,25 @@
+{
+    "id": "fortbildung",
+    "name": "DGPTM - Fortbildungsverwaltung",
+    "description": "Training management with quiz import and PDF certificates",
+    "version": "1.57",
+    "author": "Sebastian Melzer",
+    "main_file": "fortbildung-liste-plugin.php",
+    "dependencies": [
+        "quiz-manager"
+    ],
+    "optional_dependencies": [
+        "crm-abruf"
+    ],
+    "wp_dependencies": {
+        "plugins": [
+            "advanced-custom-fields"
+        ]
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "fortbildung",
+    "icon": "dashicons-welcome-learn-more",
+    "active": false,
+    "can_export": true
+}

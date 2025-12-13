@@ -1,0 +1,22 @@
+{
+    "title": "EXIF Data",
+    "description": "EXIF-Metadaten-Management für Bilder.",
+    "content": "# EXIF Data\n\n## Übersicht\n\nEXIF-Metadaten-Management für WordPress-Medien mit Anzeige und Bearbeitungsfunktionen.\n\n## Hauptfunktionen\n\n- EXIF-Daten auslesen\n- Metadaten anzeigen\n- GPS-Koordinaten extrahieren\n- Kamera-Informationen\n- Aufnahme-Parameter\n- Copyright-Management\n\n## Shortcodes\n\n### [exif_data]\nZeigt EXIF-Daten eines Bildes.\n\n**Parameter:**\n- `attachment_id` - WordPress Attachment-ID\n- `field` - Spezifisches EXIF-Feld (optional)\n\n**Verwendung:**\n```\n[exif_data attachment_id=\"123\"]\n[exif_data attachment_id=\"123\" field=\"Camera\"]\n```\n\n## Admin-Interface\n\n**Menü:** Medien → EXIF-Daten\n\n### Funktionen\n\n1. **EXIF-Anzeige**\n   - Alle EXIF-Daten eines Bildes\n   - Übersichtlich formatiert\n   - Gruppiert nach Kategorien\n\n2. **Metadaten-Editor**\n   - Copyright bearbeiten\n   - Beschreibung anpassen\n   - GPS-Daten entfernen (Datenschutz)\n\n## Verfügbare EXIF-Felder\n\n**Kamera:**\n- Hersteller (Make)\n- Modell (Model)\n- Seriennummer\n\n**Aufnahme-Parameter:**\n- Blende (FNumber)\n- Belichtungszeit (ExposureTime)\n- ISO (ISOSpeedRatings)\n- Brennweite (FocalLength)\n- Blitz (Flash)\n\n**Datum\/Zeit:**\n- Aufnahmedatum (DateTimeOriginal)\n- Digitalisierung (DateTimeDigitized)\n\n**GPS:**\n- Latitude (Breitengrad)\n- Longitude (Längengrad)\n- Altitude (Höhe)\n\n**Copyright:**\n- Copyright\n- Artist (Fotograf)\n\n**Software:**\n- Software (z.B. Adobe Lightroom)\n\n## Verwendung\n\n### EXIF-Daten anzeigen\n\n**Auf Seite\/Post:**\n```\n[exif_data attachment_id=\"123\"]\n```\n\n**Spezifisches Feld:**\n```\nAufgenommen mit: [exif_data attachment_id=\"123\" field=\"Camera\"]\n```\n\n### GPS-Daten entfernen\n\n1. Medien → EXIF-Daten\n2. Bild auswählen\n3. \"GPS-Daten entfernen\" klicken\n4. Bestätigen\n\n**Wichtig:** Aus Datenschutz-Gründen empfohlen!\n\n### Copyright setzen\n\n1. Medien → EXIF-Daten\n2. Bild auswählen\n3. Copyright-Feld ausfüllen\n4. Speichern\n\n## Datenschutz\n\n**GPS-Daten:**\n- Können Aufnahme-Ort verraten\n- Datenschutz-Problem bei Privatfotos\n- Tool zum Entfernen nutzen\n\n**DSGVO:**\n- EXIF-Daten können personenbezogen sein\n- Vor Upload prüfen und ggf. entfernen\n- WordPress entfernt EXIF standardmäßig NICHT\n\n## Technische Details\n\n- PHP EXIF-Extension erforderlich\n- Liest EXIF aus JPEG, TIFF\n- Unterstützt IPTC-Daten\n- GPS-Koordinaten-Konvertierung\n\n## Tipps\n\n- GPS-Daten vor Upload entfernen\n- Copyright immer setzen\n- EXIF für Fotografie-Portfolios nutzen\n- Prüfen Sie EXIF-Support in PHP",
+    "features": [
+        "EXIF-Daten auslesen",
+        "Metadaten anzeigen",
+        "GPS-Koordinaten",
+        "Kamera-Informationen",
+        "Copyright-Management"
+    ],
+    "keywords": [
+        "exif",
+        "metadata",
+        "images",
+        "gps",
+        "photography",
+        "copyright"
+    ],
+    "module_id": "exif-data",
+    "last_updated": "2025-11-29 17:38:29"
+}

@@ -1,0 +1,21 @@
+{
+    "title": "Kiosk Jahrestagung",
+    "description": "Kiosk-Modus für Jahrestagungen mit Vollbild und Auto-Reload.",
+    "content": "# Kiosk Jahrestagung\n\n## Übersicht\n\nKiosk-Modus für Jahrestagungen und Events mit Vollbild, Auto-Reload und Inaktivitäts-Detection.\n\n## Hauptfunktionen\n\n- Vollbild-Modus\n- Auto-Reload nach Inaktivität\n- Touch-Optimierung\n- Inaktivitäts-Detection\n- Custom Reload-Intervall\n- Zurück zur Startseite\n\n## Shortcodes\n\n### [kiosk_mode]\nAktiviert Kiosk-Modus für Seite.\n\n**Parameter:**\n- `interval` - Auto-Reload Intervall in Sekunden (Standard: 300)\n\n**Verwendung:**\n```\n[kiosk_mode]\n[kiosk_mode interval=\"600\"]\n```\n\n## Verwendung\n\n### Kiosk-Seite erstellen\n\n1. Neue Seite erstellen\n2. Inhalt hinzufügen (z.B. Programm, Sponsoren)\n3. Shortcode einfügen: `[kiosk_mode]`\n4. Veröffentlichen\n\n### Features\n\n**Vollbild:**\n- Automatisch beim Laden\n- F11 oder ESC zum Beenden\n- Browser-Vollbild-API\n\n**Auto-Reload:**\n- Nach Inaktivität (Standard: 5 Minuten)\n- Lädt Seite neu\n- Aktualisiert Inhalte\n\n**Touch-Optimierung:**\n- Touch-Events werden erkannt\n- Große Buttons\n- Swipe-Gesten\n\n**Inaktivitäts-Detection:**\n- Keine Maus-Bewegung\n- Keine Touch-Events\n- Keine Tastatur-Eingaben\n- → Reload nach Intervall\n\n## Konfiguration\n\n**Im Shortcode:**\n```\n[kiosk_mode interval=\"600\"]\n```\n→ Reload nach 10 Minuten Inaktivität\n\n**Standard:**\n```\n[kiosk_mode]\n```\n→ Reload nach 5 Minuten\n\n## Anwendungsfall\n\n**Jahrestagung:**\n- Kiosk-Terminal im Foyer\n- Zeigt Programm, Pläne, Sponsoren\n- Auto-Reload für aktuelle Infos\n- Vollbild für professionelle Darstellung\n\n**Messe:**\n- Info-Terminal\n- Produktkatalog\n- Interaktive Karte\n\n## Technische Details\n\n- JavaScript für Vollbild-API\n- setTimeout für Auto-Reload\n- Event-Listener für Activity-Detection\n- Touch-Events für Mobile\n\n## Tipps\n\n- Testen Sie Intervall im Vorfeld\n- Nutzen Sie große, gut lesbare Schrift\n- Touch-freundliche Navigation\n- Vollbild-Modus in Browser-Einstellungen erlauben",
+    "features": [
+        "Vollbild-Modus",
+        "Auto-Reload",
+        "Inaktivitäts-Detection",
+        "Touch-Optimierung"
+    ],
+    "keywords": [
+        "kiosk",
+        "fullscreen",
+        "auto-reload",
+        "event",
+        "conference",
+        "touch"
+    ],
+    "module_id": "kiosk-jahrestagung",
+    "last_updated": "2025-11-29 17:38:29"
+}

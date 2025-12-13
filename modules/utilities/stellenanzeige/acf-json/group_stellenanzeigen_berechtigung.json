@@ -1,0 +1,44 @@
+{
+    "key": "group_stellenanzeigen_user_berechtigung",
+    "title": "Stellenanzeigen - Berechtigung",
+    "fields": [
+        {
+            "key": "field_stellenanzeigen_anlegen",
+            "label": "Stellenanzeigen anlegen",
+            "name": "stellenanzeigen_anlegen",
+            "aria-label": "",
+            "type": "true_false",
+            "instructions": "Benutzer darf eigene Stellenanzeigen erstellen und verwalten",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "message": "Darf Stellenanzeigen anlegen",
+            "default_value": 0,
+            "ui": 1,
+            "ui_on_text": "Ja",
+            "ui_off_text": "Nein"
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "user_form",
+                "operator": "==",
+                "value": "all"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "Berechtigung für Stellenanzeigen-Verwaltung",
+    "show_in_rest": 0
+}

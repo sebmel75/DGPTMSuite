@@ -1,0 +1,20 @@
+{
+  "id": "mitgliedsantrag",
+  "name": "DGPTM - Mitgliedsantrag",
+  "description": "Professional membership application form with Zoho CRM integration, guarantor verification, address validation, and student certificate upload",
+  "version": "1.0.0",
+  "author": "Sebastian Melzer",
+  "main_file": "dgptm-mitgliedsantrag.php",
+  "dependencies": ["crm-abruf"],
+  "optional_dependencies": [],
+  "wp_dependencies": {
+    "plugins": []
+  },
+  "requires_php": "7.4",
+  "requires_wp": "5.8",
+  "category": "content",
+  "icon": "dashicons-id-alt",
+  "active": false,
+  "can_export": true,
+  "critical": false
+}

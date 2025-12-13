@@ -1,0 +1,473 @@
+/**
+ * Elementor Doctor Admin Styles
+ */
+
+.elementor-doctor-wrap {
+    margin: 20px 20px 20px 0;
+}
+
+.elementor-doctor-wrap h1 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.elementor-doctor-wrap h1 .dashicons {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+}
+
+/* Tabs */
+.elementor-doctor-tabs {
+    margin: 20px 0;
+}
+
+.elementor-doctor-tab-content {
+    display: none;
+    animation: fadeIn 0.3s;
+}
+
+.elementor-doctor-tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Cards */
+.elementor-doctor-card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+    border-radius: 4px;
+}
+
+.elementor-doctor-card h2 {
+    margin-top: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+/* Scan Controls */
+.scan-controls {
+    margin: 20px 0;
+}
+
+.scan-controls label {
+    display: block;
+    margin-bottom: 10px;
+}
+
+.scan-controls select {
+    display: block;
+    margin-bottom: 10px;
+    max-width: 500px;
+}
+
+.scan-controls .button .dashicons {
+    vertical-align: middle;
+    margin-top: -3px;
+}
+
+/* Batch Controls */
+.batch-controls {
+    margin: 20px 0;
+    text-align: center;
+}
+
+.batch-controls .button-hero {
+    margin: 0 10px;
+    padding: 10px 30px;
+    font-size: 16px;
+    height: auto;
+}
+
+.batch-controls .button-hero .dashicons {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    vertical-align: middle;
+    margin-top: -2px;
+    margin-right: 5px;
+}
+
+/* Progress Bar */
+.batch-progress {
+    margin: 30px 0;
+    padding: 20px;
+    background: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+}
+
+.progress-bar-wrapper {
+    position: relative;
+    margin-bottom: 10px;
+}
+
+.progress-bar {
+    height: 30px;
+    background: #f0f0f1;
+    border: 1px solid #ccd0d4;
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #2271b1 0%, #135e96 100%);
+    width: 0%;
+    transition: width 0.3s ease;
+    border-radius: 2px;
+}
+
+.progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-weight: bold;
+    color: #1d2327;
+    font-size: 14px;
+    z-index: 1;
+}
+
+.progress-status {
+    text-align: center;
+    font-size: 14px;
+    color: #646970;
+    margin-top: 10px;
+}
+
+/* Batch Stats */
+.batch-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin: 30px 0;
+}
+
+.stat-box {
+    background: #fff;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.stat-number {
+    display: block;
+    font-size: 36px;
+    font-weight: bold;
+    line-height: 1;
+    margin-bottom: 8px;
+}
+
+.stat-label {
+    display: block;
+    font-size: 13px;
+    color: #646970;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-total {
+    border-color: #2271b1;
+}
+
+.stat-total .stat-number {
+    color: #2271b1;
+}
+
+.stat-valid {
+    border-color: #00a32a;
+}
+
+.stat-valid .stat-number {
+    color: #00a32a;
+}
+
+.stat-errors {
+    border-color: #d63638;
+}
+
+.stat-errors .stat-number {
+    color: #d63638;
+}
+
+.stat-warnings {
+    border-color: #dba617;
+}
+
+.stat-warnings .stat-number {
+    color: #dba617;
+}
+
+/* Scan Results */
+.scan-results {
+    margin-top: 20px;
+}
+
+.result-header {
+    padding: 15px;
+    background: #f0f6fc;
+    border-left: 4px solid #2271b1;
+    margin-bottom: 15px;
+    border-radius: 4px;
+}
+
+.result-header.has-errors {
+    border-left-color: #d63638;
+    background: #fcf0f1;
+}
+
+.result-header h3 {
+    margin: 0 0 5px 0;
+    font-size: 18px;
+}
+
+.result-header p {
+    margin: 5px 0;
+    font-size: 14px;
+}
+
+.result-details {
+    margin-top: 15px;
+    padding: 15px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+}
+
+.result-details h4 {
+    margin-top: 20px;
+    margin-bottom: 10px;
+    font-size: 15px;
+}
+
+.result-details h4:first-child {
+    margin-top: 0;
+}
+
+/* Error/Warning/Info Lists */
+.error-list,
+.warning-list,
+.info-list {
+    list-style: none;
+    margin: 10px 0;
+    padding: 0;
+}
+
+.error-list li,
+.warning-list li,
+.info-list li {
+    padding: 10px 12px;
+    margin: 8px 0;
+    border-radius: 4px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.error-list li {
+    background: #fcf0f1;
+    border-left: 4px solid #d63638;
+    color: #50575e;
+}
+
+.warning-list li {
+    background: #fcf9e8;
+    border-left: 4px solid #dba617;
+    color: #50575e;
+}
+
+.info-list li {
+    background: #f0f6fc;
+    border-left: 4px solid #2271b1;
+    color: #50575e;
+}
+
+/* Result Actions */
+.result-actions {
+    margin-top: 15px;
+    padding: 15px;
+    background: #f9f9f9;
+    border-top: 1px solid #e0e0e0;
+    border-radius: 0 0 4px 4px;
+}
+
+.result-actions .button {
+    margin-right: 10px;
+}
+
+.result-actions .button .dashicons {
+    vertical-align: middle;
+    margin-top: -3px;
+    margin-right: 3px;
+}
+
+/* Batch Results Table */
+.batch-results {
+    margin-top: 30px;
+}
+
+.batch-results table {
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.batch-results .status-icon {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.batch-results .status-icon.valid {
+    color: #00a32a;
+}
+
+.batch-results .status-icon.error {
+    color: #d63638;
+}
+
+.batch-results .status-icon.warning {
+    color: #dba617;
+}
+
+.batch-results td {
+    vertical-align: middle;
+}
+
+.batch-results .details-row td {
+    background: #f9f9f9;
+    border-top: none !important;
+}
+
+.batch-results .details-row ul {
+    margin: 5px 0;
+    padding-left: 20px;
+}
+
+.batch-results .details-row li {
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 3px 0;
+}
+
+/* Backup List */
+#backup-list {
+    margin-top: 20px;
+}
+
+#backup-list table {
+    margin-top: 20px;
+}
+
+/* Help Tab */
+#help h3 {
+    margin-top: 25px;
+    margin-bottom: 10px;
+    color: #1d2327;
+}
+
+#help ul,
+#help ol {
+    margin: 15px 0;
+    padding-left: 30px;
+}
+
+#help li {
+    margin: 8px 0;
+    line-height: 1.6;
+}
+
+#help .notice {
+    margin: 20px 0;
+}
+
+/* Responsive */
+@media screen and (max-width: 782px) {
+    .batch-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .batch-controls .button-hero {
+        display: block;
+        margin: 10px auto;
+        width: 100%;
+        max-width: 300px;
+    }
+}
+
+@media screen and (max-width: 600px) {
+    .batch-stats {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Loading Spinner */
+.elementor-doctor-loading {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #2271b1;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    vertical-align: middle;
+    margin-left: 5px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Button States */
+.button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Tooltips */
+[data-tooltip] {
+    position: relative;
+    cursor: help;
+}
+
+[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 8px 12px;
+    background: #1d2327;
+    color: #fff;
+    font-size: 12px;
+    white-space: nowrap;
+    border-radius: 4px;
+    z-index: 1000;
+    margin-bottom: 5px;
+}
+
+[data-tooltip]:hover::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #1d2327;
+    z-index: 1000;
+}

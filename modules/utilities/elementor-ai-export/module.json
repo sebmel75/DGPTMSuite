@@ -1,0 +1,21 @@
+{
+  "id": "elementor-ai-export",
+  "name": "DGPTM - Elementor AI Export",
+  "description": "Exportiert Elementor-Seiten in ein Claude-freundliches Format für einfache Bearbeitung und Re-Import",
+  "version": "1.0.0",
+  "author": "Sebastian Melzer",
+  "main_file": "dgptm-elementor-ai-export.php",
+  "dependencies": [],
+  "optional_dependencies": [],
+  "wp_dependencies": {
+    "plugins": ["elementor"]
+  },
+  "requires_php": "7.4",
+  "requires_wp": "5.8",
+  "category": "utilities",
+  "icon": "dashicons-download",
+  "active": false,
+  "can_export": true,
+  "critical": false,
+  "flags": ["development"]
+}

@@ -1,0 +1,1036 @@
+/**
+ * DGPTM Session Display - Frontend Styles
+ */
+
+/* ===== Einzelraum-Display ===== */
+.dgptm-session-display {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #ffffff;
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    min-height: 600px;
+    display: flex;
+    flex-direction: column;
+}
+
+.session-display-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.room-name {
+    font-size: 72px; /* NEU v1.1.0: Verdoppelt für Lesbarkeit */
+    font-weight: 700;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.current-time {
+    font-size: 56px; /* NEU v1.1.0: Verdoppelt für Lesbarkeit */
+    font-weight: 300;
+    opacity: 0.9;
+}
+
+.session-display-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* NEU v1.1.0: Container für Session-Rotation */
+.current-sessions-container {
+    position: relative;
+    min-height: 400px;
+}
+
+/* Aktuelle Session */
+.current-session {
+    background: rgba(255, 255, 255, 0.95);
+    color: #333;
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    margin-bottom: 30px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* NEU v1.1.0: Session-Rotation */
+.current-sessions-container .current-session {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    opacity: 0;
+    transition: opacity 0.8s ease-in-out;
+    pointer-events: none;
+}
+
+.current-sessions-container .current-session.active {
+    opacity: 1;
+    pointer-events: auto;
+    position: relative;
+}
+
+.current-session::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 5px;
+    height: 100%;
+    background: linear-gradient(to bottom, #667eea, #764ba2);
+}
+
+.session-badge {
+    display: inline-block;
+    background: #667eea;
+    color: white;
+    padding: 16px 40px; /* NEU v1.1.0: Vergrößert */
+    border-radius: 20px;
+    font-size: 28px; /* NEU v1.1.0: Verdoppelt für Lesbarkeit */
+    font-weight: 600;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* NEU v1.1.0: Session-Counter für Rotation */
+.session-badge .session-counter {
+    font-size: 20px;
+    opacity: 0.8;
+    margin-left: 10px;
+}
+
+.session-time {
+    font-size: 48px; /* NEU v1.1.0: Verdoppelt für Lesbarkeit */
+    font-weight: 600;
+    color: #667eea;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.time-separator {
+    opacity: 0.5;
+}
+
+.session-title {
+    font-size: 84px; /* NEU v1.1.0: Verdoppelt für Lesbarkeit */
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0 0 30px 0;
+    color: #2d3748;
+}
+
+/* NEU v1.1.0: Haupttitel für aktuelle Session noch größer */
+.session-title-main {
+    font-size: 96px;
+    font-weight: 700;
+    line-height: 1.1;
+    margin: 20px 0 40px 0;
+    color: #2d3748;
+}
+
+.session-description {
+    font-size: 40px; /* NEU v1.1.0: Verdoppelt für Lesbarkeit */
+    line-height: 1.6;
+    color: #4a5568;
+    margin-bottom: 30px;
+}
+
+.session-speakers {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.speaker {
+    margin-bottom: 15px;
+}
+
+.speaker-name {
+    font-size: 44px; /* NEU v1.1.0: Verdoppelt für Lesbarkeit */
+    font-weight: 600;
+    color: #2d3748;
+    display: block;
+}
+
+/* NEU v1.1.0: Größere Sprecher-Namen für Hauptsession */
+.session-speakers-main .speaker-label {
+    font-size: 36px;
+    font-weight: 600;
+    color: #667eea;
+    margin-bottom: 20px;
+}
+
+.session-speakers-main .speaker-block {
+    margin-bottom: 30px;
+}
+
+.session-speakers-main .speaker-name-large {
+    font-size: 64px;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 10px;
+}
+
+.session-speakers-main .speaker-details {
+    font-size: 36px;
+    color: #718096;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.speaker-info {
+    font-size: 36px; /* NEU v1.1.0: Verdoppelt für Lesbarkeit */
+    color: #718096;
+    display: block;
+    margin-top: 5px;
+}
+
+.session-progress {
+    margin-top: 30px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(to right, #667eea, #764ba2);
+    transition: width 1s linear;
+}
+
+/* Nächste Session */
+.next-session {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 30px;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+}
+
+.next-session .session-badge {
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+}
+
+.next-session .session-time {
+    color: white;
+    font-size: 40px; /* NEU v1.1.0: Verdoppelt für Lesbarkeit */
+}
+
+.next-session .session-title {
+    font-size: 64px; /* NEU v1.1.0: Verdoppelt für Lesbarkeit */
+    color: white;
+}
+
+.time-until {
+    font-size: 56px; /* NEU v1.1.0: Verdoppelt für Lesbarkeit */
+    font-weight: 300;
+    margin-bottom: 15px;
+    opacity: 0.9;
+}
+
+/* Keine Session */
+.no-session {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+}
+
+.no-session .message {
+    text-align: center;
+    font-size: 24px;
+    opacity: 0.8;
+}
+
+/* Sponsoren-Display */
+.sponsors-display {
+    position: relative;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.sponsor-slide {
+    display: none;
+    animation: fadeInOut 10s ease-in-out;
+}
+
+.sponsor-slide:first-child {
+    display: block;
+}
+
+.sponsor-slide img {
+    max-width: 100%;
+    height: auto;
+    filter: brightness(0) invert(1);
+}
+
+@keyframes fadeInOut {
+    0%, 100% { opacity: 0; }
+    10%, 90% { opacity: 1; }
+}
+
+/* Footer */
+.session-display-footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 2px solid rgba(255, 255, 255, 0.3);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dgptm-logo {
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.last-update {
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+/* ===== Übersicht (Grid Layout) ===== */
+.dgptm-session-overview {
+    padding: 30px;
+}
+
+.overview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.overview-header h2 {
+    font-size: 32px;
+    margin: 0;
+    color: #2d3748;
+}
+
+.overview-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+}
+
+.layout-list .overview-content {
+    grid-template-columns: 1fr;
+}
+
+/* Raumkarte */
+.room-card {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-left: 5px solid #cbd5e0;
+}
+
+.room-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+}
+
+.room-card.status-active {
+    border-left-color: #48bb78;
+}
+
+.room-card.status-upcoming {
+    border-left-color: #ed8936;
+}
+
+.room-card.status-idle {
+    border-left-color: #cbd5e0;
+}
+
+.room-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.room-header h3 {
+    font-size: 22px;
+    margin: 0;
+    color: #2d3748;
+}
+
+.room-status-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-active .room-status-badge {
+    background: #c6f6d5;
+    color: #22543d;
+}
+
+.status-upcoming .room-status-badge {
+    background: #fed7d7;
+    color: #742a2a;
+}
+
+.status-idle .room-status-badge {
+    background: #e2e8f0;
+    color: #4a5568;
+}
+
+.room-content {
+    min-height: 120px;
+}
+
+.room-card .session-indicator {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    color: #667eea;
+}
+
+.room-card .session-time {
+    font-size: 16px;
+    font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 10px;
+}
+
+.room-card .session-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 10px;
+    line-height: 1.3;
+}
+
+.room-card .session-speakers {
+    font-size: 14px;
+    color: #718096;
+}
+
+.idle-session p {
+    color: #a0aec0;
+    font-style: italic;
+    margin: 0;
+}
+
+.overview-footer {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #e2e8f0;
+    text-align: center;
+    color: #718096;
+    font-size: 14px;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+    .dgptm-session-display {
+        padding: 20px;
+        min-height: 400px;
+    }
+
+    .room-name {
+        font-size: 24px;
+    }
+
+    .current-time {
+        font-size: 18px;
+    }
+
+    .session-title {
+        font-size: 28px;
+    }
+
+    .session-description {
+        font-size: 16px;
+    }
+
+    .overview-content {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ===== v1.1.0: Fullscreen Mode ===== */
+.dgptm-session-display.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 0;
+    z-index: 9999;
+}
+
+/* NEU v1.1.0: Optimierung für Vollbild */
+.dgptm-session-display {
+    position: relative;
+    overflow: hidden;
+}
+
+/* Automatischer Vollbild-Modus */
+body.dgptm-fullscreen-active {
+    overflow: hidden;
+}
+
+body.dgptm-fullscreen-active .dgptm-session-display {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+    z-index: 9999;
+    margin: 0;
+    padding: 3rem;
+}
+
+/* Vollbild-Hinweis */
+.fullscreen-hint {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    opacity: 0;
+    animation: fadeInOut 5s ease-in-out;
+    pointer-events: none;
+    z-index: 10000;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* NEU v1.1.0: Hintergrundbilder-Galerie */
+.session-display-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}
+
+.session-display-background .bg-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+}
+
+.session-display-background .bg-image.active {
+    opacity: 1;
+}
+
+.session-display-background .bg-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 1;
+}
+
+/* Inhalt über Hintergrund legen */
+.dgptm-session-display .session-display-header,
+.dgptm-session-display .session-display-content,
+.dgptm-session-display .session-display-footer {
+    position: relative;
+    z-index: 2;
+}
+
+/* ===== Error State ===== */
+.dgptm-session-display-error {
+    background: #fed7d7;
+    color: #742a2a;
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 4px solid #fc8181;
+    font-size: 16px;
+}
+
+/* ===== Loading State ===== */
+.dgptm-loading {
+    text-align: center;
+    padding: 40px;
+}
+
+.dgptm-loading::after {
+    content: '';
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ===== NEU v1.1.1: Pause mit Session-Ankündigung ===== */
+.pause-with-announcement {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    padding: 40px;
+}
+
+.pause-header {
+    text-align: center;
+    padding-bottom: 30px;
+    border-bottom: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.pause-badge {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    color: white;
+    padding: 20px 60px;
+    border-radius: 30px;
+    font-size: 48px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 30px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.time-until-next-large {
+    margin-top: 30px;
+}
+
+.countdown-label {
+    font-size: 36px;
+    font-weight: 300;
+    opacity: 0.9;
+    margin-bottom: 15px;
+}
+
+.countdown-value {
+    font-size: 72px;
+    font-weight: 700;
+    color: #ffd700;
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+.next-session-announcement {
+    background: rgba(255, 255, 255, 0.95);
+    color: #333;
+    padding: 50px;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.next-session-announcement::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 8px;
+    height: 100%;
+    background: linear-gradient(to bottom, #667eea, #764ba2);
+}
+
+.announcement-label {
+    font-size: 32px;
+    font-weight: 600;
+    color: #667eea;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+}
+
+.next-session-title-large {
+    font-size: 64px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0 0 30px 0;
+    color: #1a202c;
+}
+
+.next-session-time-large {
+    font-size: 42px;
+    font-weight: 500;
+    color: #667eea;
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.next-session-time-large .time-icon {
+    font-size: 48px;
+}
+
+.next-session-speakers-large {
+    margin: 30px 0;
+    padding: 30px;
+    background: rgba(102, 126, 234, 0.1);
+    border-radius: 15px;
+}
+
+.speaker-label-large {
+    font-size: 28px;
+    font-weight: 600;
+    color: #667eea;
+    margin-bottom: 20px;
+}
+
+.speaker-block-large {
+    margin-bottom: 20px;
+}
+
+.speaker-name-large {
+    font-size: 38px;
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 10px;
+}
+
+.speaker-details-large {
+    font-size: 28px;
+    color: #4a5568;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.speaker-details-large .speaker-title::after {
+    content: '•';
+    margin: 0 10px;
+    color: #cbd5e0;
+}
+
+.next-session-description {
+    font-size: 24px;
+    line-height: 1.6;
+    color: #4a5568;
+    margin-top: 30px;
+    padding-top: 30px;
+    border-top: 2px solid rgba(102, 126, 234, 0.2);
+}
+
+.sponsors-footer-section {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    padding: 30px;
+    border-radius: 15px;
+}
+
+.sponsors-footer-section .sponsors-label {
+    font-size: 28px;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 20px;
+    color: white;
+}
+
+.sponsors-footer-section .sponsors-display {
+    max-height: 150px;
+}
+
+.sponsors-footer-section .sponsor-logo {
+    max-height: 100px;
+}
+
+/* ===== NEU v1.1.1: Vorträge-Rotation innerhalb Session ===== */
+.session-title-header {
+    font-size: 42px;
+    font-weight: 600;
+    color: #667eea;
+    margin: 0 0 30px 0;
+    padding-bottom: 20px;
+    border-bottom: 2px solid rgba(102, 126, 234, 0.3);
+}
+
+.talks-rotation-container {
+    position: relative;
+    min-height: 400px;
+}
+
+.talk-slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+    pointer-events: none;
+}
+
+.talk-slide.active {
+    opacity: 1;
+    pointer-events: auto;
+    position: relative;
+}
+
+.talk-title-main {
+    font-size: 56px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0 0 25px 0;
+    color: #1a202c;
+}
+
+.talk-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+    font-size: 28px;
+    color: #4a5568;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: rgba(102, 126, 234, 0.08);
+    border-radius: 10px;
+}
+
+.talk-time,
+.talk-track {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.talk-duration {
+    opacity: 0.8;
+    font-size: 24px;
+}
+
+.talk-speakers-main {
+    margin: 30px 0;
+    padding: 30px;
+    background: rgba(102, 126, 234, 0.1);
+    border-radius: 15px;
+}
+
+.talk-speakers-main .speaker-label {
+    font-size: 28px;
+    font-weight: 600;
+    color: #667eea;
+    margin-bottom: 20px;
+}
+
+.talk-description {
+    font-size: 24px;
+    line-height: 1.6;
+    color: #4a5568;
+    margin: 25px 0;
+}
+
+.talk-progress {
+    margin-top: 30px;
+}
+
+.talk-counter {
+    text-align: center;
+    font-size: 24px;
+    color: #667eea;
+    font-weight: 600;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 2px solid rgba(102, 126, 234, 0.2);
+}
+
+/* ===== NEU v1.1.2: Pausen-Rotation (Session-Ankündigung + Sponsoren) ===== */
+.pause-content-rotation {
+    position: relative;
+    min-height: 500px;
+}
+
+.pause-slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    opacity: 0;
+    transition: opacity 1.5s ease-in-out;
+    pointer-events: none;
+}
+
+.pause-slide.active {
+    opacity: 1;
+    pointer-events: auto;
+    position: relative;
+}
+
+/* NEU v1.1.2: Sponsoren Vollbild-Ansicht (vereinfacht - je ein Sponsor pro Slide) */
+.sponsor-fullscreen-slide {
+    /* Wird vom .pause-slide geerbt */
+}
+
+.sponsor-fullscreen-container {
+    text-align: center;
+    padding: 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 600px;
+}
+
+.sponsor-logo-fullscreen {
+    background: white;
+    padding: 100px;
+    border-radius: 40px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+    margin-bottom: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 500px;
+    max-width: 1200px;
+    width: 100%;
+}
+
+.sponsor-logo-fullscreen img {
+    max-width: 100%;
+    max-height: 450px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+}
+
+.sponsor-name-fullscreen {
+    font-size: 56px;
+    font-weight: 700;
+    color: white;
+    text-shadow: 3px 3px 12px rgba(0, 0, 0, 0.4);
+    margin-top: 20px;
+}
+
+/* ===== NEU v1.1.2: Pause im gleichen Stil wie Sessions ===== */
+.pause-mode {
+    /* Verwendet die gleichen Basis-Styles wie .session-content */
+}
+
+.pause-rotation-container {
+    position: relative;
+    min-height: 600px;
+}
+
+.pause-slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    opacity: 0;
+    transition: opacity 1.5s ease-in-out;
+    pointer-events: none;
+    padding: 40px 60px;
+}
+
+.pause-slide.active {
+    opacity: 1;
+    pointer-events: auto;
+    position: relative;
+}
+
+/* Pause Status Badge */
+.pause-status-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    padding: 12px 30px;
+    border-radius: 50px;
+    font-size: 24px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    box-shadow: 0 8px 20px rgba(240, 147, 251, 0.4);
+    margin-bottom: 30px;
+}
+
+/* Countdown */
+.pause-countdown-wrapper {
+    background: rgba(102, 126, 234, 0.2);
+    padding: 20px 30px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.countdown-label {
+    font-size: 20px;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 10px;
+    font-weight: 300;
+}
+
+.countdown-display {
+    font-size: 48px;
+    font-weight: 700;
+    color: #ffd700;
+    text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.3);
+    animation: pausePulse 2s ease-in-out infinite;
+}
+
+@keyframes pausePulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.9;
+    }
+}
+
+/* Als Nächstes Label */
+.next-session-label {
+    font-size: 24px;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 300;
+}

@@ -1,0 +1,21 @@
+{
+    "id": "efn-manager",
+    "name": "DGPTM - EFN Manager",
+    "description": "Zentrales Management-System für die Einheitliche Fortbildungsnummer (EFN). Umfasst: JsBarcode-basierte Code128-Barcodes, A4-Aufkleberbogen-Generierung (7 Vorlagen mit FPDF), Self-Service-Kiosk mit Scanner-Integration, PrintNode Silent Printing, Benutzerprofil-Verwaltung, Zoho CRM-Integration, Webhook-Verarbeitung und präzise Druckkalibierung. Bietet 3 Shortcodes: [efn_barcode_js], [efn_label_sheet], [efn_kiosk].",
+    "version": "1.0.3",
+    "author": "Sebastian Melzer",
+    "main_file": "dgptm-efn-manager.php",
+    "dependencies": [
+        "crm-abruf"
+    ],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": []
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "fortbildung",
+    "icon": "dashicons-id-alt",
+    "active": false,
+    "can_export": true
+}

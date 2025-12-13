@@ -1,0 +1,19 @@
+{
+    "id": "quiz-manager",
+    "name": "Quiz Manager",
+    "description": "Verwalten von Quizzes, Fragen und Kategorien mit modernem Design. Öffentliche Anzeige, bestandene Quizze, Zoho-CRM Integration",
+    "version": "3.0.0",
+    "author": "Sebastian Melzer",
+    "main_file": "quizmanager.php",
+    "dependencies": [],
+    "optional_dependencies": ["crm-abruf"],
+    "wp_dependencies": {
+        "plugins": ["quiz-maker"]
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "business",
+    "icon": "dashicons-forms",
+    "active": false,
+    "can_export": true
+}

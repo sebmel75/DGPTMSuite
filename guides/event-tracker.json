@@ -1,0 +1,23 @@
+{
+    "title": "Event Tracker",
+    "description": "Event-Routing-System mit Webhooks und E-Mail-Benachrichtigungen.",
+    "content": "# Event Tracker\n\n## Übersicht\n\nLeistungsstarkes Event-Routing-System für automatische Webhooks und E-Mail-Benachrichtigungen basierend auf WordPress-Events.\n\n## Hauptfunktionen\n\n- Event-Routing mit Bedingungslogik\n- Webhook-Trigger\n- E-Mail-System mit Templates\n- Multiple Actions pro Event\n- Event-Logging\n- Template-System\n\n## Admin-Interface\n\n**Menü:** Einstellungen → Event Tracker\n\n### Konfiguration\n\n1. **Event-Routing-Regeln**\n   - WordPress-Event auswählen\n   - Bedingungen definieren\n   - Aktionen zuweisen\n\n2. **Webhook-Konfiguration**\n   - URL definieren\n   - Payload-Template\n   - Authentifizierung\n   - Retry-Logik\n\n3. **E-Mail-Templates**\n   - Template erstellen\n   - Platzhalter nutzen\n   - HTML\/Plain-Text\n   - Empfänger definieren\n\n4. **Event-Log**\n   - Triggered Events ansehen\n   - Fehler untersuchen\n   - Statistiken\n\n## Verwendung\n\n### Event-Regel erstellen\n\n1. Einstellungen → Event Tracker\n2. \"Neue Regel\" klicken\n3. WordPress-Event wählen (z.B. `user_register`)\n4. Bedingung definieren (optional)\n5. Aktion hinzufügen:\n   - Webhook senden\n   - E-Mail versenden\n   - Beide\n\n### Webhook konfigurieren\n\n**Beispiel: Benutzer-Registrierung**\n```\nEvent: user_register\nWebhook-URL: https:\/\/example.com\/api\/user-created\nPayload:\n{\n  \"email\": \"{user_email}\",\n  \"name\": \"{user_name}\",\n  \"id\": \"{user_id}\"\n}\n```\n\n### E-Mail-Template\n\n**Beispiel:**\n```\nBetreff: Neuer Benutzer registriert\n\nHallo Admin,\n\nein neuer Benutzer hat sich registriert:\nName: {user_name}\nE-Mail: {user_email}\nDatum: {registration_date}\n```\n\n## Unterstützte Events\n\n- `user_register` - Benutzerregistrierung\n- `profile_update` - Profil aktualisiert\n- `publish_post` - Beitrag veröffentlicht\n- `wp_login` - Benutzer eingeloggt\n- `comment_post` - Kommentar erstellt\n- Beliebige Custom Events\n\n## Bedingungslogik\n\nDefinieren Sie Bedingungen:\n- Feldwert = X\n- Rolle ist Y\n- Meta-Feld enthält Z\n\n**Beispiel:**\n```\nEvent: user_register\nBedingung: user_role == \"member\"\nAktion: Webhook + Willkommens-E-Mail\n```\n\n## Platzhalter\n\nVerfügbare Platzhalter:\n- `{user_id}` - Benutzer-ID\n- `{user_email}` - E-Mail\n- `{user_name}` - Name\n- `{post_title}` - Post-Titel\n- `{post_id}` - Post-ID\n- `{date}` - Aktuelles Datum\n- `{time}` - Aktuelle Zeit\n\n## Technische Details\n\n- Dynamische REST-Endpunkt-Registrierung\n- Webhook-Retry mit Exponential Backoff\n- Event-Logging in Custom DB-Table\n- Template-Engine für Platzhalter\n- HMAC-Signierung für Webhooks (optional)\n\n## Tipps\n\n- Testen Sie Webhooks mit RequestBin\n- Nutzen Sie Event-Log für Debugging\n- Aktivieren Sie Retry für kritische Webhooks\n- Templates sauber strukturieren\n- Bedingungen präzise formulieren",
+    "features": [
+        "Event-Routing",
+        "Webhook-Trigger",
+        "E-Mail-System",
+        "Bedingungslogik",
+        "Event-Logging",
+        "Template-System"
+    ],
+    "keywords": [
+        "events",
+        "webhooks",
+        "automation",
+        "email",
+        "routing",
+        "tracking"
+    ],
+    "module_id": "event-tracker",
+    "last_updated": "2025-11-29 17:38:29"
+}

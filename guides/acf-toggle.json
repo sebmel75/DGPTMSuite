@@ -1,0 +1,22 @@
+{
+    "title": "ACF Toggle Functions",
+    "description": "Erstellt Shortcodes zur bedingten Content-Anzeige basierend auf ACF Ja\/Nein-Feldern und Benutzerrollen.",
+    "content": "# ACF Toggle Functions\n\n## Übersicht\n\nACF Toggle ermöglicht bedingte Content-Anzeige basierend auf ACF User-Meta-Feldern (Ja\/Nein) und WordPress-Benutzerrollen.\n\n## Hauptfunktionen\n\n- Bedingte Content-Anzeige\n- ACF User-Meta Abfrage\n- Rollenbasierte Sichtbarkeit\n- Status-Rückgabe (true\/false)\n- Shortcode-basiert\n\n## Shortcodes\n\n### Bedingte Anzeige\n\nSyntax:\n```\n[acf_toggle_feldname]\n  Inhalt nur sichtbar wenn Feld = Ja\n[\/acf_toggle_feldname]\n```\n\n**Beispiel:**\n```\n[acf_toggle_newsletter]\n  <p>Sie haben den Newsletter abonniert!<\/p>\n[\/acf_toggle_newsletter]\n```\n\n### Status-Abfrage\n\n```\n[acf_status_feldname]\n```\n\nGibt zurück: `true` oder `false`\n\n## Verwendung\n\n### ACF-Feld erstellen\n\n1. ACF → Feldgruppe erstellen\n2. Feld hinzufügen: Typ = True\/False\n3. Feldname: z.B. `newsletter`\n4. Speicherort: Benutzer\n\n### Shortcode verwenden\n\n```\n[acf_toggle_newsletter]\n  <div class=\"newsletter-subscriber\">\n    Exklusive Inhalte für Newsletter-Abonnenten!\n  <\/div>\n[\/acf_toggle_newsletter]\n```\n\n### Rollen-Abfrage\n\nDas Modul kann auch Rollen prüfen (abhängig von Implementierung).\n\n## Technische Details\n\n- Liest `get_user_meta()` für ACF-Felder\n- Prüft auf `true` \/ `1` \/ `\"1\"`\n- Unterstützt verschachtelte Shortcodes\n\n## Tipps\n\n- Verwenden Sie aussagekräftige Feldnamen\n- Testen Sie als unterschiedliche Benutzer\n- Kombinieren Sie mit anderen bedingten Shortcodes",
+    "features": [
+        "Bedingte Content-Anzeige",
+        "ACF User-Meta Integration",
+        "Rollenbasierte Prüfung",
+        "Status-Rückgabe",
+        "Verschachtelte Shortcodes"
+    ],
+    "keywords": [
+        "acf",
+        "toggle",
+        "conditional",
+        "user-meta",
+        "roles",
+        "visibility"
+    ],
+    "module_id": "acf-toggle",
+    "last_updated": "2025-11-29 17:38:29"
+}

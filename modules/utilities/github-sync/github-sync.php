@@ -65,11 +65,27 @@ if (!class_exists('DGPTM_GitHub_Sync')) {
         }
 
         /**
+         * Get option with central settings fallback
+         */
+        private function get_option_value($key, $default = '') {
+            // Check central settings first (new system)
+            if (function_exists('dgptm_get_module_setting')) {
+                $value = dgptm_get_module_setting('github-sync', $key, null);
+                if ($value !== null) {
+                    return $value;
+                }
+            }
+
+            // Fallback: Legacy option
+            $options = get_option($this->option_name, []);
+            return $options[$key] ?? $default;
+        }
+
+        /**
          * Verify GitHub webhook signature
          */
         public function verify_webhook_signature($request) {
-            $options = get_option($this->option_name, []);
-            $secret = $options['webhook_secret'] ?? '';
+            $secret = $this->get_option_value('webhook_secret', '');
 
             if (empty($secret)) {
                 $this->log('Webhook secret not configured');

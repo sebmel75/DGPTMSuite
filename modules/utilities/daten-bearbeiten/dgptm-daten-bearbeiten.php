@@ -185,7 +185,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
 
         /**
          * Get GoCardless token securely
-         * Priority: 1. wp-config.php constant, 2. Database option
+         * Priority: 1. wp-config.php constant, 2. Central settings, 3. Legacy database option
          */
         private function get_gocardless_token() {
             // First check if defined in wp-config.php (for advanced users)
@@ -193,7 +193,15 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
                 return DGPTM_GOCARDLESS_TOKEN;
             }
 
-            // Otherwise get from database
+            // Check central settings (new system)
+            if (function_exists('dgptm_get_module_setting')) {
+                $token = dgptm_get_module_setting('daten-bearbeiten', 'gocardless_token', '');
+                if (!empty($token)) {
+                    return $token;
+                }
+            }
+
+            // Fallback: Legacy database option
             $options = get_option('dgptm_daten_bearbeiten_options', []);
             return $options['gocardless_token'] ?? '';
         }

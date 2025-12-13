@@ -105,14 +105,8 @@ class DGPTM_Plugin_Manager {
             [$this, 'render_dashboard']
         );
 
-        add_submenu_page(
-            'dgptm-suite',
-            __('Module Settings', 'dgptm-suite'),
-            __('Module Settings', 'dgptm-suite'),
-            'manage_options',
-            'dgptm-suite-settings',
-            [$this, 'render_settings']
-        );
+        // Module Settings wurde nach "Modul-Einstellungen" (dgptm-module-settings) migriert
+        // Siehe: DGPTM_Module_Settings_Manager in core/class-module-settings-manager.php
 
         add_submenu_page(
             'dgptm-suite',

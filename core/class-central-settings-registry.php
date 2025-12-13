@@ -68,6 +68,11 @@ class DGPTM_Central_Settings_Registry {
         $this->register_session_display_settings();
         $this->register_elementor_ai_export_settings();
         $this->register_acf_jetsync_settings();
+        $this->register_github_sync_settings();
+        $this->register_daten_bearbeiten_settings();
+
+        // Business (weitere)
+        $this->register_abstimmen_addon_settings();
     }
 
     /**
@@ -88,6 +93,9 @@ class DGPTM_Central_Settings_Registry {
 
         // OTP Login Submenu
         remove_submenu_page('options-general.php', 'dgptm-otp-settings');
+
+        // GitHub Sync, Daten bearbeiten
+        remove_submenu_page('options-general.php', 'dgptm-daten-bearbeiten');
     }
 
     // ============================================================
@@ -878,6 +886,149 @@ class DGPTM_Central_Settings_Registry {
                 ], 'default' => 'acf_to_jet']
             ]
         ]);
+    }
+
+    /**
+     * GitHub Sync Settings
+     */
+    private function register_github_sync_settings() {
+        dgptm_register_module_settings([
+            'id' => 'github-sync',
+            'title' => 'GitHub Sync',
+            'menu_title' => 'GitHub Sync',
+            'icon' => 'dashicons-update-alt',
+            'priority' => 81,
+            'sections' => [
+                ['id' => 'webhook', 'title' => 'Webhook-Konfiguration', 'description' => 'Einstellungen fuer die GitHub Webhook-Integration.'],
+                ['id' => 'backup', 'title' => 'Backup-Einstellungen', 'description' => 'Konfiguration der automatischen Backups.']
+            ],
+            'fields' => [
+                ['id' => 'webhook_secret', 'section' => 'webhook', 'title' => 'Webhook Secret', 'type' => 'password', 'required' => true, 'description' => 'Geheimer Schluessel zur Verifizierung von GitHub Webhooks'],
+                ['id' => 'auto_backup', 'section' => 'backup', 'title' => 'Auto-Backup vor Sync', 'type' => 'checkbox', 'default' => true, 'description' => 'Erstellt automatisch ein Backup vor jedem Sync'],
+                ['id' => 'backup_retention', 'section' => 'backup', 'title' => 'Backup-Aufbewahrung (Tage)', 'type' => 'number', 'default' => 7, 'min' => 1, 'max' => 30, 'description' => 'Wie lange Backups aufbewahrt werden']
+            ]
+        ]);
+
+        $this->migrate_github_sync_settings();
+    }
+
+    private function migrate_github_sync_settings() {
+        if (get_option('dgptm_github_sync_migrated')) return;
+
+        $old_options = get_option('dgptm_github_sync_options', []);
+        if (!empty($old_options)) {
+            $new_settings = [];
+            if (isset($old_options['webhook_secret'])) $new_settings['webhook_secret'] = $old_options['webhook_secret'];
+            if (isset($old_options['auto_backup'])) $new_settings['auto_backup'] = $old_options['auto_backup'];
+            if (isset($old_options['backup_retention'])) $new_settings['backup_retention'] = $old_options['backup_retention'];
+
+            if (!empty($new_settings)) {
+                update_option('dgptm_module_settings_github-sync', $new_settings);
+            }
+        }
+        update_option('dgptm_github_sync_migrated', true);
+    }
+
+    /**
+     * Daten bearbeiten Settings
+     */
+    private function register_daten_bearbeiten_settings() {
+        dgptm_register_module_settings([
+            'id' => 'daten-bearbeiten',
+            'title' => 'Daten bearbeiten',
+            'menu_title' => 'Daten bearbeiten',
+            'icon' => 'dashicons-edit',
+            'priority' => 82,
+            'sections' => [
+                ['id' => 'gocardless', 'title' => 'GoCardless API', 'description' => 'GoCardless API-Zugangsdaten fuer SEPA-Lastschriften.']
+            ],
+            'fields' => [
+                ['id' => 'gocardless_token', 'section' => 'gocardless', 'title' => 'GoCardless API Token', 'type' => 'password', 'required' => true, 'description' => 'Live- oder Sandbox-Token von GoCardless']
+            ]
+        ]);
+
+        $this->migrate_daten_bearbeiten_settings();
+    }
+
+    private function migrate_daten_bearbeiten_settings() {
+        if (get_option('dgptm_daten_bearbeiten_migrated')) return;
+
+        $old_options = get_option('dgptm_daten_bearbeiten_options', []);
+        if (!empty($old_options)) {
+            $new_settings = [];
+            if (isset($old_options['gocardless_token'])) $new_settings['gocardless_token'] = $old_options['gocardless_token'];
+
+            if (!empty($new_settings)) {
+                update_option('dgptm_module_settings_daten-bearbeiten', $new_settings);
+            }
+        }
+        update_option('dgptm_daten_bearbeiten_migrated', true);
+    }
+
+    /**
+     * Abstimmen-Addon Settings
+     */
+    private function register_abstimmen_addon_settings() {
+        dgptm_register_module_settings([
+            'id' => 'abstimmen-addon',
+            'title' => 'Abstimmungs-Tool',
+            'menu_title' => 'Abstimmen',
+            'icon' => 'dashicons-chart-pie',
+            'priority' => 25,
+            'sections' => [
+                ['id' => 'general', 'title' => 'Allgemein', 'description' => 'Grundeinstellungen fuer das Abstimmungs-Tool.'],
+                ['id' => 'zoom', 'title' => 'Zoom Integration', 'description' => 'Zoom Meeting/Webinar Integration (S2S OAuth).'],
+                ['id' => 'notifications', 'title' => 'Benachrichtigungen', 'description' => 'E-Mail-Einstellungen.']
+            ],
+            'fields' => [
+                // General
+                ['id' => 'default_question_type', 'section' => 'general', 'title' => 'Standard Fragetyp', 'type' => 'select', 'options' => [
+                    'single' => 'Einzelauswahl',
+                    'multi' => 'Mehrfachauswahl'
+                ], 'default' => 'single'],
+                ['id' => 'results_visible', 'section' => 'general', 'title' => 'Ergebnisse nach Abstimmung anzeigen', 'type' => 'checkbox', 'default' => true],
+                // Zoom
+                ['id' => 'zoom_account_id', 'section' => 'zoom', 'title' => 'Zoom Account ID', 'type' => 'text'],
+                ['id' => 'zoom_client_id', 'section' => 'zoom', 'title' => 'Zoom Client ID', 'type' => 'text'],
+                ['id' => 'zoom_client_secret', 'section' => 'zoom', 'title' => 'Zoom Client Secret', 'type' => 'password'],
+                ['id' => 'zoom_webhook_secret', 'section' => 'zoom', 'title' => 'Zoom Webhook Secret', 'type' => 'password'],
+                // Notifications
+                ['id' => 'send_email_on_vote', 'section' => 'notifications', 'title' => 'E-Mail bei Stimmabgabe', 'type' => 'checkbox', 'default' => false],
+                ['id' => 'admin_email', 'section' => 'notifications', 'title' => 'Admin E-Mail', 'type' => 'email', 'description' => 'E-Mail fuer Benachrichtigungen']
+            ]
+        ]);
+
+        $this->migrate_abstimmen_addon_settings();
+    }
+
+    private function migrate_abstimmen_addon_settings() {
+        if (get_option('dgptm_abstimmen_addon_migrated')) return;
+
+        $old_options = get_option('dgptm_vote_settings', []);
+        if (!empty($old_options)) {
+            $new_settings = [];
+            $mapping = [
+                'default_question_type' => 'default_question_type',
+                'results_visible' => 'results_visible',
+                'zoom_account_id' => 'zoom_account_id',
+                'zoom_client_id' => 'zoom_client_id',
+                'zoom_client_secret' => 'zoom_client_secret',
+                'zoom_webhook_secret' => 'zoom_webhook_secret',
+                'send_email_on_vote' => 'send_email_on_vote',
+                'admin_email' => 'admin_email'
+            ];
+
+            foreach ($mapping as $old => $new) {
+                if (isset($old_options[$old])) {
+                    $new_settings[$new] = $old_options[$old];
+                }
+            }
+
+            if (!empty($new_settings)) {
+                update_option('dgptm_module_settings_abstimmen-addon', $new_settings);
+            }
+        }
+        update_option('dgptm_abstimmen_addon_migrated', true);
     }
 }
 

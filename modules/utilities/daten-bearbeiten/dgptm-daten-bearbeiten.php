@@ -447,25 +447,56 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
                 $this->log('DGPTM_Mitgliedsantrag class not found');
             }
 
-            // Try crm-abruf module
-            $this->log('Checking crm-abruf module...');
+            // Try crm-abruf module (DGPTM_Zoho_CRM_Hardened)
+            $this->log('Checking crm-abruf module (DGPTM_Zoho_CRM_Hardened)...');
             if (class_exists('DGPTM_Zoho_CRM_Hardened')) {
                 $this->log('DGPTM_Zoho_CRM_Hardened class exists');
                 $crm_abruf = DGPTM_Zoho_CRM_Hardened::get_instance();
+                // Try get_oauth_token first (correct method name)
+                if (method_exists($crm_abruf, 'get_oauth_token')) {
+                    $this->log('get_oauth_token method exists, calling it...');
+                    $token = $crm_abruf->get_oauth_token();
+                    if ($token && !is_wp_error($token)) {
+                        $this->log('Token obtained from crm-abruf module via get_oauth_token');
+                        return $token;
+                    } else {
+                        $this->log('crm-abruf get_oauth_token returned empty or error');
+                    }
+                }
+                // Fallback to get_access_token
                 if (method_exists($crm_abruf, 'get_access_token')) {
                     $this->log('get_access_token method exists, calling it...');
                     $token = $crm_abruf->get_access_token();
-                    if ($token) {
-                        $this->log('Token obtained from crm-abruf module');
+                    if ($token && !is_wp_error($token)) {
+                        $this->log('Token obtained from crm-abruf module via get_access_token');
                         return $token;
                     } else {
-                        $this->log('crm-abruf returned empty token');
+                        $this->log('crm-abruf get_access_token returned empty or error');
                     }
                 } else {
-                    $this->log('get_access_token method does not exist');
+                    $this->log('Neither get_oauth_token nor get_access_token method exists');
                 }
             } else {
                 $this->log('DGPTM_Zoho_CRM_Hardened class not found');
+            }
+
+            // Try DGPTM_Zoho_Plugin class (alternative crm-abruf class)
+            $this->log('Checking DGPTM_Zoho_Plugin class...');
+            if (class_exists('DGPTM_Zoho_Plugin')) {
+                $this->log('DGPTM_Zoho_Plugin class exists');
+                $zoho = DGPTM_Zoho_Plugin::get_instance();
+                if (method_exists($zoho, 'get_oauth_token')) {
+                    $this->log('get_oauth_token method exists, calling it...');
+                    $token = $zoho->get_oauth_token();
+                    if ($token && !is_wp_error($token)) {
+                        $this->log('Token obtained from DGPTM_Zoho_Plugin');
+                        return $token;
+                    } else {
+                        $this->log('DGPTM_Zoho_Plugin returned empty or error');
+                    }
+                }
+            } else {
+                $this->log('DGPTM_Zoho_Plugin class not found');
             }
 
             $this->log('ERROR: No OAuth token available from any source');

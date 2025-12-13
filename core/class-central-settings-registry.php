@@ -967,10 +967,38 @@ class DGPTM_Central_Settings_Registry {
 
     private function migrate_daten_bearbeiten_settings() {
         $current_settings = get_option('dgptm_module_settings_daten-bearbeiten', []);
-        $old_options = get_option('dgptm_daten_bearbeiten_options', []);
 
-        if (empty($current_settings['gocardless_token']) && isset($old_options['gocardless_token'])) {
-            $current_settings['gocardless_token'] = $old_options['gocardless_token'];
+        // Nur migrieren wenn zentrale Settings leer
+        if (!empty($current_settings['gocardless_token'])) {
+            return;
+        }
+
+        $token = '';
+
+        // Versuch 1: Array-Option
+        $old_options = get_option('dgptm_daten_bearbeiten_options', []);
+        if (is_array($old_options) && !empty($old_options['gocardless_token'])) {
+            $token = $old_options['gocardless_token'];
+        }
+
+        // Versuch 2: Direkter Option-Name
+        if (empty($token)) {
+            $direct = get_option('dgptm_gocardless_token', '');
+            if (!empty($direct)) {
+                $token = $direct;
+            }
+        }
+
+        // Versuch 3: Alte gcl_settings (GoCardless Modul)
+        if (empty($token)) {
+            $gcl = get_option('gcl_settings', []);
+            if (is_array($gcl) && !empty($gcl['api_token'])) {
+                $token = $gcl['api_token'];
+            }
+        }
+
+        if (!empty($token)) {
+            $current_settings['gocardless_token'] = $token;
             update_option('dgptm_module_settings_daten-bearbeiten', $current_settings);
         }
     }

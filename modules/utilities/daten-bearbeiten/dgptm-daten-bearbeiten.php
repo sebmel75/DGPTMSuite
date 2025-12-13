@@ -201,9 +201,19 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
                 }
             }
 
-            // Fallback: Legacy database option
+            // Fallback: Legacy database option (Array-Format)
             $options = get_option('dgptm_daten_bearbeiten_options', []);
-            return $options['gocardless_token'] ?? '';
+            if (is_array($options) && !empty($options['gocardless_token'])) {
+                return $options['gocardless_token'];
+            }
+
+            // Fallback 2: Direkter Option-Name (falls als String gespeichert)
+            $direct = get_option('dgptm_gocardless_token', '');
+            if (!empty($direct)) {
+                return $direct;
+            }
+
+            return '';
         }
 
         /**

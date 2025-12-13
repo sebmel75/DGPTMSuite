@@ -1,148 +1,164 @@
-# DGPTM Plugin Suite - Master Controller
+# DGPTM Plugin Suite
 
-**Version:** 1.0.0
+**Version:** 3.0.0
 **Author:** Sebastian Melzer / DGPTM
 **License:** GPL v2 or later
+**Repository:** https://github.com/sebmel75/DGPTMSuite
 
-## 📋 Overview
+## Übersicht
 
-DGPTM Plugin Suite is a comprehensive WordPress plugin management system that consolidates **33 individual modules** into a single, unified administration interface. It provides centralized control over all DGPTM plugins with features like individual activation/deactivation, dependency management, update handling, and standalone plugin export.
+DGPTM Plugin Suite ist ein umfassendes WordPress Plugin-Management-System, das **50+ individuelle Module** in einer einheitlichen Administrationsoberfläche konsolidiert. Es bietet zentralisierte Kontrolle über alle DGPTM-Plugins mit Features wie individuelle Aktivierung/Deaktivierung, Abhängigkeitsmanagement, Update-Verwaltung und Standalone-Plugin-Export.
 
-## ✨ Features
+## Features
 
-- **Centralized Dashboard** - Manage all 33 modules from one interface
-- **Dependency Management** - Automatic dependency checking and resolution
-- **Smart Activation** - Enable/disable modules individually with dependency warnings
-- **Module Export** - Export any module as a standalone WordPress plugin (ZIP)
-- **Update Management** - Centralized update system for all modules
-- **Category Organization** - Modules grouped by function (Core, Business, Payment, etc.)
-- **Search & Filter** - Quickly find modules by name, category, or status
-- **Visual Status** - Clear indication of active, loaded, and dependency status
+- **Zentrales Dashboard** - Alle Module von einer Oberfläche verwalten
+- **Abhängigkeitsmanagement** - Automatische Abhängigkeitsprüfung und -auflösung
+- **Modul-Metadaten** - Flags, Kommentare und Versionsverwaltung pro Modul
+- **Modul-Export** - Jedes Modul als eigenständiges WordPress-Plugin exportieren (ZIP)
+- **Update-Management** - Zentrales Update-System für alle Module
+- **Kategorieorganisation** - Module nach Funktion gruppiert
+- **System-Logging** - Ausführliche Logs mit automatischer Rotation
+- **Suche & Filter** - Module schnell finden nach Name, Kategorie oder Status
 
-## 📦 Included Modules (33 total)
+---
 
-### Core Infrastructure (5)
-- **crm-abruf** - Zoho CRM & API Endpoints (v1.8.0)
-- **rest-api-extension** - Custom REST API Endpoints
-- **webhook-trigger** - Webhook Management
-- **menu-control** - Menu Visibility Control
-- **side-restrict** - Page Access Restrictions
+## Enthaltene Module (50+)
 
-### Business Logic (9)
-- **fortbildung** - Training Management (v1.57)
-- **quiz-manager** - Quiz Management (v2.4.7)
-- **herzzentren** - Heart Center Editor (v4.0.1)
-- **timeline-manager** - Timeline Management (v1.6.7)
-- **event-tracker** - Event Routing & Webhooks (v1.16.2)
-- **abstimmen-addon** - Online Voting System (v2.0)
-- **microsoft-gruppen** - MS365 Group Management (v1.5.3)
-- **anwesenheitsscanner** - Attendance Scanner (v2.0)
-- **gehaltsstatistik** - Salary Statistics
+### Core Infrastructure (7 Module)
 
-### Payment (2)
-- **stripe-formidable** - Stripe Payment Integration (v3.0)
-- **gocardless** - GoCardless Direct Debit (v1.20)
+| Modul | Beschreibung |
+|-------|--------------|
+| **crm-abruf** | Zoho CRM Integration mit OAuth2, API Endpoints und Webhook-Unterstützung |
+| **rest-api-extension** | Benutzerdefinierte REST API Endpoints für DGPTM |
+| **webhook-trigger** | Webhook-Management und Trigger-System |
+| **menu-control** | Erweiterte Menü-Sichtbarkeit und -Kontrolle |
+| **side-restrict** | Seiten- und Inhaltszugangsbeschränkungen mit dynamischen ACF-Berechtigungen |
+| **otp-login** | Sicheres OTP-basiertes Login mit Rate Limiting und Multisite-Unterstützung |
+| **role-manager** | Backend-Zugriffskontrolle, Multiple Rollen und Toolbar-Management |
 
-### Authentication (1)
-- **otp-login** - OTP Login System (v3.4.0)
+### Business & Events (6 Module)
 
-### Media & Content (4)
-- **vimeo-streams** - Vimeo Stream Manager (v3.0.4)
-- **wissens-bot** - Claude AI Knowledge Bot (v1.0.0)
-- **news-management** - News Editing System
-- **publication-workflow** - Publication Management
+| Modul | Beschreibung |
+|-------|--------------|
+| **event-tracker** | Moderne Event-Management-Suite mit Webhook-Integration, Mail-System und mehrtägigen Events |
+| **quiz-manager** | Quiz-Verwaltung mit öffentlicher Anzeige, bestandenen Quizzes und Zoho-CRM Integration |
+| **session-display** | Dynamische Anzeige von Jahrestagung-Sessions via Zoho Backstage API mit Elementor-Integration |
+| **timeline-manager** | Timeline-Management mit Custom Post Type und Frontend-Editor |
+| **microsoft-gruppen** | Microsoft 365 Gruppen-Management Integration |
+| **zoho-books-integration** | Zeigt Rechnungen und Gutschriften aus Zoho Books basierend auf Finance ID |
 
-### ACF Tools (3)
-- **acf-anzeiger** - ACF Field Display
-- **acf-toggle** - ACF Toggle Functions
-- **acf-jetsync** - ACF JetEngine Sync
+### Fortbildung & Training (5 Module)
 
-### Utilities (8)
-- **kiosk-jahrestagung** - Kiosk Mode
-- **exif-data** - EXIF Data Manager
-- **blaue-seiten** - Directory (Blue Pages)
-- **shortcode-tools** - Shortcode Editors
-- **stellenanzeige** - Job Postings
-- **conditional-logic** - Conditional Content
-- **installer** - Plugin Installer
-- **zoho-role-manager** - Zoho Role Manager
+| Modul | Beschreibung |
+|-------|--------------|
+| **fortbildung** | Fortbildungsverwaltung mit Quiz-Import und PDF-Zertifikaten |
+| **abstimmen-addon** | Umfassendes Voting-System mit Umfragen, Zoom-Integration und Präsenz-Scanner |
+| **anwesenheitsscanner** | Anwesenheitserfassung mit PDF und Barcode-Generierung |
+| **efn-manager** | EFN-Management mit Barcode-Generierung, Aufkleber-Druck und Kiosk-Modus |
+| **gehaltsstatistik** | Gehaltsdaten-Analyse und Statistiken |
 
-## 🚀 Installation
+### Content Management (11 Module)
 
-1. Upload `dgptm-plugin-suite` folder to `/wp-content/plugins/`
-2. Activate "DGPTM Plugin Suite - Master Controller" in WordPress
-3. Navigate to **DGPTM Suite** in the admin menu
-4. Enable desired modules from the dashboard
+| Modul | Beschreibung |
+|-------|--------------|
+| **herzzentren** | Herzzentrum-Editor mit Karten und Elementor-Widgets |
+| **news-management** | News-Bearbeitungs- und Listensystem |
+| **publication-workflow** | Publikations-Management und Workflow |
+| **ebcp-guidelines** | EBCP-Guidelines Viewer mit Mehrsprachigkeit, Suche und PDF-Export |
+| **mitgliedsantrag** | Mitgliedsantragsformular mit Zoho CRM Integration und Adressvalidierung |
+| **kardiotechnik-archiv** | Archiv-Suche der Verbandszeitschrift Kardiotechnik |
+| **stellenanzeige** | Stellenanzeigen-Manager mit Frontend-Editor und ACF-Integration |
+| **create-quiz-from-frontend** | Quiz Maker Add-on für Frontend Quiz-Erstellung |
+| **blaue-seiten** | Verzeichnis-Funktionalität (Blaue Seiten) |
+| **wissens-bot** | KI-gestützter Wissens-Bot mit Claude AI und Multi-Datenbank-Integration |
+| **custom-content-shortcode** | Anzeige von Posts, Custom Fields, Dateien, Menüs und Widget-Areas |
 
-## 📖 Usage
+### Media & Video (3 Module)
 
-### Activating Modules
+| Modul | Beschreibung |
+|-------|--------------|
+| **vimeo-webinare** | Vimeo Webinare mit dynamischen URLs, automatischen Fortbildungspunkten und Zertifikaten |
+| **vimeo-streams** | Multi-Stream Vimeo Video-Management mit Mobile Maximize Support |
+| **kiosk-jahrestagung** | Kiosk-Modus für Jahrestagungen |
 
-1. Go to **DGPTM Suite → Dashboard**
-2. Browse modules by category
-3. Click **Activate** on any module
-4. Dependencies are automatically checked
+### Payment & Finance (3 Module)
 
-### Exporting Modules
+| Modul | Beschreibung |
+|-------|--------------|
+| **stripe-formidable** | Stripe SEPA und Kartenzahlung Integration für Formidable Forms |
+| **gocardless** | GoCardless Lastschrift-Mandatsverwaltung |
+| **daten-bearbeiten** | Mitgliedsdaten-Bearbeitung mit Zoho CRM Sync und GoCardless Integration |
 
-1. Go to **DGPTM Suite → Dashboard**
-2. Click the **Export** button next to any module
-3. Download the generated ZIP file
-4. Install on any WordPress site as a standalone plugin
+### ACF Tools (4 Module)
 
-### Bulk Operations
+| Modul | Beschreibung |
+|-------|--------------|
+| **acf-anzeiger** | ACF Feld-Anzeige mit erweiterter Formatierung |
+| **acf-jetsync** | ACF zu JetEngine Synchronisation |
+| **acf-toggle** | ACF Toggle-Funktionen für Feldsichtbarkeit |
+| **acf-permissions-manager** | ACF-Berechtigungen verwalten mit Batch-Zuweisung |
 
-1. Select multiple modules using checkboxes
-2. Choose action from dropdown (Activate, Deactivate, Export)
-3. Click **Apply**
+### Utilities (11 Module)
 
-### Search & Filter
+| Modul | Beschreibung |
+|-------|--------------|
+| **elementor-doctor** | Scannt und repariert fehlerhafte Elementor-Seiten |
+| **elementor-ai-export** | Exportiert Elementor-Seiten in Claude-freundliches Format |
+| **frontend-page-editor** | Frontend-Seitenbearbeitung für Nicht-Admins mit Elementor |
+| **conditional-logic** | Bedingte Inhaltsanzeige |
+| **shortcode-tools** | Shortcode-Editoren und Grid-Layouts |
+| **exif-data** | Bild-EXIF-Metadaten-Verwaltung |
+| **zoho-role-manager** | Rollenverwaltung basierend auf Zoho CRM Daten |
+| **installer** | Plugin-Installations-Helfer |
+| **event-tracker-weiterleitung** | Event-Tracker Weiterleitungs-Webhook |
 
-- **Search:** Type module name or ID
-- **Category Filter:** Show only specific category
-- **Status Filter:** Show only active or inactive modules
+---
 
-## ⚙️ Requirements
+## Installation
 
-- **PHP:** 7.4 or higher
-- **WordPress:** 5.8 or higher
-- **Extensions:** ZipArchive (for export functionality)
+1. `dgptm-plugin-suite` Ordner nach `/wp-content/plugins/` hochladen
+2. "DGPTM Plugin Suite" in WordPress aktivieren
+3. Zu **DGPTM Suite** im Admin-Menü navigieren
+4. Gewünschte Module vom Dashboard aktivieren
 
-### Module-Specific Requirements
+## Systemanforderungen
 
-Some modules require additional WordPress plugins:
-- **ACF Modules:** Advanced Custom Fields
-- **Herzzentren:** Elementor + ACF
-- **Payment Modules:** Formidable Forms
-- **Quiz Manager:** Quiz Maker plugin
+- **PHP:** 7.4 oder höher
+- **WordPress:** 5.8 oder höher
+- **Extensions:** ZipArchive (für Export-Funktionalität)
 
-## 📂 Directory Structure
+### Modul-spezifische Anforderungen
+
+| Anforderung | Module |
+|-------------|--------|
+| Advanced Custom Fields | ACF-Module, Herzzentren, Side-Restrict, Stellenanzeige |
+| Elementor | Herzzentren, Session-Display, Frontend-Page-Editor |
+| Formidable Forms | Stripe-Formidable, GoCardless |
+| Quiz Maker | Quiz-Manager, Create-Quiz-from-Frontend |
+
+## Verzeichnisstruktur
 
 ```
 dgptm-plugin-suite/
-├── dgptm-master.php                    # Main plugin file
-├── README.md
-├── LICENSE
+├── dgptm-master.php          # Haupt-Plugin-Datei
+├── categories.json           # Kategorie- und Flag-Definitionen
+├── CLAUDE.md                 # Claude Code Dokumentation
+├── README.md                 # Diese Datei
 │
-├── admin/                              # Admin interface
+├── admin/                    # Admin-Interface
 │   ├── class-plugin-manager.php
-│   ├── views/
-│   │   ├── dashboard.php
-│   │   ├── module-settings.php
-│   │   ├── updates.php
-│   │   └── export.php
-│   └── assets/
-│       ├── css/admin.css
-│       └── js/admin.js
+│   ├── views/               # Dashboard, Settings, Export, Logs
+│   └── assets/              # CSS und JavaScript
 │
-├── core/                               # Core functionality
-│   ├── class-module-base.php
-│   ├── class-dependency-manager.php
+├── core/                     # Kern-Funktionalität
 │   ├── class-module-loader.php
-│   ├── class-update-manager.php
+│   ├── class-dependency-manager.php
+│   ├── class-module-metadata-file.php
+│   ├── class-safe-loader.php
+│   ├── class-logger.php
 │   └── class-zip-generator.php
 │
-├── modules/                            # All modules
+├── modules/                  # Alle Module
 │   ├── core-infrastructure/
 │   ├── business/
 │   ├── payment/
@@ -152,110 +168,52 @@ dgptm-plugin-suite/
 │   ├── acf-tools/
 │   └── utilities/
 │
-├── libraries/                          # Shared libraries
-│   ├── fpdf/
-│   └── class-code128.php
+├── libraries/                # Shared Libraries
+│   ├── fpdf/                # PDF-Generierung
+│   └── class-code128.php    # Barcode-Generierung
 │
-└── exports/                            # Generated exports
+├── guides/                   # Modul-Dokumentationen (JSON)
+└── exports/                  # Generierte Exports
 ```
 
-## 🔧 Development
+## Modul-Konfiguration
 
-### Adding New Modules
-
-1. Create module directory in appropriate category folder
-2. Add your plugin file(s)
-3. Create `module.json` with configuration:
+Jedes Modul enthält eine `module.json` Datei:
 
 ```json
 {
-  "id": "my-module",
-  "name": "My Module",
-  "description": "Module description",
+  "id": "module-id",
+  "name": "Modul Name",
+  "description": "Beschreibung",
   "version": "1.0.0",
-  "author": "Your Name",
-  "main_file": "my-module.php",
-  "dependencies": [],
-  "optional_dependencies": [],
-  "wp_dependencies": {"plugins": []},
-  "requires_php": "7.4",
-  "requires_wp": "5.8",
+  "author": "Autor",
+  "main_file": "main-file.php",
+  "dependencies": ["andere-module"],
+  "wp_dependencies": {"plugins": ["required-plugin"]},
   "category": "utilities",
   "icon": "dashicons-admin-plugins",
   "active": false,
-  "can_export": true
+  "critical": false,
+  "flags": ["production"],
+  "comment": {"text": "Notiz", "timestamp": 1700000000}
 }
 ```
 
-### Module Configuration
+## Sicherheit
 
-- **id:** Unique module identifier (slug)
-- **dependencies:** Required DGPTM modules
-- **optional_dependencies:** Optional DGPTM modules
-- **wp_dependencies:** Required WordPress plugins
-- **category:** Module category (see structure above)
-- **icon:** Dashicons class name
+- Alle Operationen erfordern `manage_options` Berechtigung
+- Nonce-Verifizierung bei allen AJAX-Aufrufen
+- Input-Sanitisierung und -Validierung
+- Abhängigkeitsprüfung vor Aktivierung
+- ABSPATH-Checks in allen Dateien
+- API-Tokens werden sicher in der Datenbank gespeichert
 
-## 🔒 Security
-
-- All modules require `manage_options` capability
-- Nonce verification on all AJAX calls
-- Input sanitization and validation
-- Dependency checks before activation
-- ABSPATH checks in all files
-
-## 📝 Changelog
-
-### Version 1.0.0 (2025-11-19)
-- Initial release
-- 33 modules migrated to unified structure
-- Complete dependency management system
-- Module export functionality
-- Centralized admin interface
-- Update management system
-
-## 🐛 Troubleshooting
-
-### Module Won't Activate
-- Check dependencies in module info
-- Ensure required WordPress plugins are active
-- Check PHP version requirements
-
-### Export Fails
-- Ensure ZipArchive extension is installed
-- Check write permissions on exports folder
-- Verify module files exist
-
-### Missing Dependencies Warning
-- Install required WordPress plugins
-- Activate dependent DGPTM modules first
-- Check module.json configuration
-
-## 📄 License
-
-This plugin is licensed under the GPL v2 or later.
-
-```
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-```
-
-## 👥 Credits
-
-Developed by Sebastian Melzer for DGPTM (Deutsche Gesellschaft für Prävention und Telemedizin e.V.)
-
-## 🔗 Links
+## Support & Links
 
 - **Website:** https://www.dgptm.de/
-- **Support:** https://github.com/dgptm/plugin-suite/issues
+- **Repository:** https://github.com/sebmel75/DGPTMSuite
+- **Issues:** https://github.com/sebmel75/DGPTMSuite/issues
 
 ---
 
-**Made with ❤️ for DGPTM**
+**Entwickelt von Sebastian Melzer für DGPTM (Deutsche Gesellschaft für Prävention und Telemedizin e.V.)**

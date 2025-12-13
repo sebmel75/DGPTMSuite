@@ -30,10 +30,10 @@ Bei jedem Push auf den `main` Branch:
 
 | Secret Name | Wert | Beschreibung |
 |-------------|------|--------------|
-| `SSH_HOST` | `81.27.231.84` | Server IP-Adresse |
-| `SSH_USER` | `Sebmel75` | SSH Benutzername |
-| `SSH_PASSWORD` | `[Dein SSH Passwort]` | SSH Passwort (sicher eingeben!) |
-| `WP_PATH` | `/httpdocs` | WordPress Root-Pfad (ohne trailing slash) |
+| `SSH_HOST` | `[Server IP oder Hostname]` | Server IP-Adresse |
+| `SSH_USER` | `[SSH Benutzername]` | SSH Benutzername |
+| `SSH_PASSWORD` | `[SSH Passwort]` | SSH Passwort (sicher eingeben!) |
+| `WP_PATH` | `[WordPress Pfad]` | WordPress Root-Pfad (z.B. `/httpdocs`) |
 
 ### Schritt 3: Secrets einzeln hinzufügen
 
@@ -75,10 +75,10 @@ Backups werden auf dem Server gespeichert unter:
 ### Backup wiederherstellen
 
 ```bash
-ssh Sebmel75@81.27.231.84
+ssh [USER]@[HOST]
 cd ~/backups
 ls -la  # Verfügbare Backups anzeigen
-tar -xzf dgptm-backup-YYYYMMDD-HHMMSS.tar.gz -C /httpdocs/wp-content/plugins/
+tar -xzf dgptm-backup-YYYYMMDD-HHMMSS.tar.gz -C [WP_PATH]/wp-content/plugins/
 ```
 
 ---
@@ -128,7 +128,7 @@ rsync -avz --delete \
   --exclude='.github' \
   --exclude='exports/' \
   --exclude='*.log' \
-  ./ Sebmel75@81.27.231.84:/httpdocs/wp-content/plugins/dgptm-plugin-suite/
+  ./ [USER]@[HOST]:[WP_PATH]/wp-content/plugins/dgptm-plugin-suite/
 ```
 
 ---

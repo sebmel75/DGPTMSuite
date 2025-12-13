@@ -72,6 +72,23 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
+      - name: Test SSH Connection
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          echo "Testing SSH connection..."
+          sshpass -e ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 \
+              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+              "echo 'SSH connection successful'" || {
+            echo "❌ SSH connection failed!"
+            echo "Please check:"
+            echo "  - SSH_HOST: Is the IP/hostname correct?"
+            echo "  - SSH_USER: Is the username correct?"
+            echo "  - SSH_PASSWORD: Is the password correct?"
+            echo "  - Is SSH (port 22) open on the server?"
+            exit 1
+          }
+
       - name: Create Backup on Server
         env:
           SSHPASS: ${{ secrets.SSH_PASSWORD }}
@@ -80,14 +97,15 @@ jobs:
           sshpass -e ssh -o StrictHostKeyChecking=no \
               ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
               "mkdir -p ~/backups && \
-               cd ${{ secrets.WP_PATH }}/wp-content/plugins && \
+               cd ${{ secrets.WP_PATH }}/wp-content/plugins 2>/dev/null || mkdir -p ${{ secrets.WP_PATH }}/wp-content/plugins && cd ${{ secrets.WP_PATH }}/wp-content/plugins && \
                if [ -d '${{ env.PLUGIN_NAME }}' ]; then \
                  BACKUP_NAME='dgptm-backup-\$(date +%Y%m%d-%H%M%S).tar.gz' && \
                  tar -czf ~/backups/\$BACKUP_NAME ${{ env.PLUGIN_NAME }} && \
-                 echo 'Backup created: '\$BACKUP_NAME; \
+                 echo '✅ Backup created: '\$BACKUP_NAME; \
                else \
-                 echo 'No existing plugin to backup - fresh install'; \
+                 echo '⚠️ No existing plugin to backup - fresh install'; \
                fi"
+        continue-on-error: true
 
       - name: Deploy via rsync
         env:

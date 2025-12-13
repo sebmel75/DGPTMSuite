@@ -131,41 +131,69 @@ jobs:
         env:
           SSHPASS: ${{ secrets.SSH_PASSWORD }}
         run: |
-          echo "Checking target directory..."
+          echo "=== Checking target directory ==="
           sshpass -e ssh -o StrictHostKeyChecking=no \
-              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-              "echo 'Home directory:' && pwd && \
-               echo '' && \
-               echo 'Checking WP_PATH: ${{ secrets.WP_PATH }}' && \
-               ls -la ${{ secrets.WP_PATH }}/ 2>&1 | head -10 && \
-               echo '' && \
-               echo 'Checking plugins directory:' && \
-               ls -la ${{ secrets.WP_PATH }}/wp-content/plugins/ 2>&1 | head -10 || \
-               echo 'Creating plugins directory...' && \
-               mkdir -p ${{ secrets.WP_PATH }}/wp-content/plugins/"
+              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} bash -c '
+                echo "Home directory: $(pwd)"
+                echo "User: $(whoami)"
+                echo ""
+                echo "=== Checking paths ==="
+
+                # Test verschiedene Pfade
+                for path in "/httpdocs" "httpdocs" "$HOME/httpdocs" "~/httpdocs"; do
+                  if [ -d "$path" ]; then
+                    echo "✓ Found: $path"
+                    ls -la "$path" 2>/dev/null | head -5
+                  else
+                    echo "✗ Not found: $path"
+                  fi
+                done
+
+                echo ""
+                echo "=== Looking for wp-content ==="
+                find ~ -name "wp-content" -type d 2>/dev/null | head -5 || echo "wp-content not found in home"
+
+                echo ""
+                echo "=== Creating target directory ==="
+                mkdir -p ~/httpdocs/wp-content/plugins/dgptm-plugin-suite
+                echo "✓ Target directory ready"
+              '
+        continue-on-error: true
 
       - name: Deploy via rsync
         env:
           SSHPASS: ${{ secrets.SSH_PASSWORD }}
         run: |
-          echo "Deploying to production..."
-          echo "Target: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.WP_PATH }}/wp-content/plugins/${{ env.PLUGIN_NAME }}/"
-          sshpass -e rsync -avz --delete \
-                --exclude='exports/' \
-                --exclude='*.log' \
-                -e "ssh -o StrictHostKeyChecking=no" \
-                ./deploy-package/ \
-                ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.WP_PATH }}/wp-content/plugins/${{ env.PLUGIN_NAME }}/ || {
-            echo "❌ rsync failed!"
-            echo "Trying alternative with full path from home..."
-            sshpass -e rsync -avz --delete \
+          echo "=== Deploying to production ==="
+
+          # Versuche verschiedene Pfade
+          PATHS=(
+            "httpdocs/wp-content/plugins/${{ env.PLUGIN_NAME }}"
+            "~/httpdocs/wp-content/plugins/${{ env.PLUGIN_NAME }}"
+            "${{ secrets.WP_PATH }}/wp-content/plugins/${{ env.PLUGIN_NAME }}"
+          )
+
+          DEPLOYED=false
+          for TARGET_PATH in "${PATHS[@]}"; do
+            echo "Trying: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${TARGET_PATH}/"
+            if sshpass -e rsync -avz \
                   --exclude='exports/' \
                   --exclude='*.log' \
                   -e "ssh -o StrictHostKeyChecking=no" \
                   ./deploy-package/ \
-                  ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/httpdocs/wp-content/plugins/${{ env.PLUGIN_NAME }}/
-          }
-          echo "✅ Deployment completed"
+                  "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${TARGET_PATH}/" 2>&1; then
+              echo "✅ Deployment successful to: ${TARGET_PATH}"
+              DEPLOYED=true
+              break
+            else
+              echo "⚠️ Failed for path: ${TARGET_PATH}"
+            fi
+          done
+
+          if [ "$DEPLOYED" = false ]; then
+            echo "❌ All deployment attempts failed!"
+            exit 1
+          fi
 
       - name: Verify Deployment
         env:

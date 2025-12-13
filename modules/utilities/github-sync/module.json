@@ -1,0 +1,21 @@
+{
+  "id": "github-sync",
+  "name": "DGPTM - GitHub Sync",
+  "description": "Automatische Synchronisation mit GitHub Repository inkl. Webhook-Empfang, Backup und Rollback",
+  "version": "1.0.0",
+  "author": "Sebastian Melzer",
+  "main_file": "github-sync.php",
+  "dependencies": [],
+  "optional_dependencies": [],
+  "wp_dependencies": {
+    "plugins": []
+  },
+  "requires_php": "7.4",
+  "requires_wp": "5.8",
+  "category": "utilities",
+  "icon": "dashicons-update",
+  "active": false,
+  "can_export": true,
+  "critical": false,
+  "flags": ["development"]
+}

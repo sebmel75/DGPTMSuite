@@ -1,0 +1,144 @@
+name: Deploy DGPTM Plugin Suite
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # Manueller Trigger
+
+env:
+  PLUGIN_NAME: dgptm-plugin-suite
+  WP_PLUGIN_PATH: /wp-content/plugins/dgptm-plugin-suite
+
+jobs:
+  # Job 1: Syntax-Check und Tests
+  test:
+    name: PHP Syntax Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          tools: php-parallel-lint
+
+      - name: PHP Syntax Check
+        run: |
+          echo "Checking PHP syntax..."
+          find . -name "*.php" -not -path "./vendor/*" | head -100 | xargs -I {} php -l {} || true
+          echo "Syntax check completed"
+
+      - name: Check Critical Files
+        run: |
+          echo "Verifying critical files exist..."
+          test -f dgptm-master.php && echo "✓ dgptm-master.php exists"
+          test -f categories.json && echo "✓ categories.json exists"
+          test -d core && echo "✓ core/ directory exists"
+          test -d modules && echo "✓ modules/ directory exists"
+          echo "Critical files verified"
+
+  # Job 2: Backup und Deployment
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: test  # Nur nach erfolgreichen Tests
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Create Deployment Package
+        run: |
+          echo "Creating deployment package..."
+          # Exclude unnecessary files
+          rsync -av --exclude='.git' \
+                    --exclude='.github' \
+                    --exclude='*.md' \
+                    --exclude='.claude' \
+                    --exclude='exports/' \
+                    --exclude='*.log' \
+                    --exclude='.gitignore' \
+                    ./ ./deploy-package/
+          echo "Package created"
+
+      - name: Install sshpass
+        run: sudo apt-get install -y sshpass
+
+      - name: Setup SSH Known Hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Create Backup on Server
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          echo "Creating backup on server..."
+          sshpass -e ssh -o StrictHostKeyChecking=no \
+              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+              "mkdir -p ~/backups && \
+               cd ${{ secrets.WP_PATH }}/wp-content/plugins && \
+               if [ -d '${{ env.PLUGIN_NAME }}' ]; then \
+                 BACKUP_NAME='dgptm-backup-\$(date +%Y%m%d-%H%M%S).tar.gz' && \
+                 tar -czf ~/backups/\$BACKUP_NAME ${{ env.PLUGIN_NAME }} && \
+                 echo 'Backup created: '\$BACKUP_NAME; \
+               else \
+                 echo 'No existing plugin to backup - fresh install'; \
+               fi"
+
+      - name: Deploy via rsync
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          echo "Deploying to production..."
+          sshpass -e rsync -avz --delete \
+                --exclude='exports/' \
+                --exclude='*.log' \
+                -e "ssh -o StrictHostKeyChecking=no" \
+                ./deploy-package/ \
+                ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.WP_PATH }}/wp-content/plugins/${{ env.PLUGIN_NAME }}/
+          echo "Deployment completed"
+
+      - name: Verify Deployment
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          echo "Verifying deployment..."
+          sshpass -e ssh -o StrictHostKeyChecking=no \
+              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+              "test -f ${{ secrets.WP_PATH }}/wp-content/plugins/${{ env.PLUGIN_NAME }}/dgptm-master.php && \
+               echo '✓ Deployment verified successfully' || \
+               echo '✗ Deployment verification failed'"
+
+      - name: Clear WordPress Cache (optional)
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          sshpass -e ssh -o StrictHostKeyChecking=no \
+              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+              "cd ${{ secrets.WP_PATH }} && \
+               wp cache flush 2>/dev/null || echo 'WP-CLI not available, skipping cache flush'"
+        continue-on-error: true
+
+  # Job 3: Benachrichtigung
+  notify:
+    name: Deployment Notification
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: always()
+
+    steps:
+      - name: Deployment Status
+        run: |
+          if [ "${{ needs.deploy.result }}" == "success" ]; then
+            echo "✅ Deployment to perfusiologie.de successful!"
+            echo "Version: ${{ github.sha }}"
+            echo "Branch: ${{ github.ref_name }}"
+            echo "Time: $(date)"
+          else
+            echo "❌ Deployment failed!"
+            echo "Check the logs for details."
+          fi

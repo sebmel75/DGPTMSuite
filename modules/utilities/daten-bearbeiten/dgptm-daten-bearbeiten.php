@@ -499,7 +499,72 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
                 $this->log('DGPTM_Zoho_Plugin class not found');
             }
 
+            // Fallback: Direkt aus WordPress Options lesen und ggf. refreshen
+            $this->log('Trying direct token retrieval from wp_options...');
+            $token = $this->get_token_directly();
+            if ($token) {
+                $this->log('Token obtained directly from wp_options');
+                return $token;
+            }
+
             $this->log('ERROR: No OAuth token available from any source');
+            return false;
+        }
+
+        /**
+         * Get token directly from wp_options with auto-refresh
+         */
+        private function get_token_directly() {
+            $access_token = get_option('dgptm_zoho_access_token', '');
+            $expires_at = (int) get_option('dgptm_zoho_token_expires', 0);
+
+            // Token noch gueltig?
+            if (!empty($access_token) && time() < $expires_at) {
+                $this->log('Direct: Using existing valid token');
+                return $access_token;
+            }
+
+            // Token abgelaufen - versuche zu refreshen
+            $refresh_token = get_option('dgptm_zoho_refresh_token', '');
+            $client_id = get_option('dgptm_zoho_client_id', '');
+            $client_secret = get_option('dgptm_zoho_client_secret', '');
+
+            if (empty($refresh_token) || empty($client_id) || empty($client_secret)) {
+                $this->log('Direct: Missing OAuth credentials for refresh');
+                return false;
+            }
+
+            $this->log('Direct: Attempting token refresh...');
+            $response = wp_remote_post('https://accounts.zoho.eu/oauth/v2/token', [
+                'body' => [
+                    'refresh_token' => $refresh_token,
+                    'client_id' => $client_id,
+                    'client_secret' => $client_secret,
+                    'grant_type' => 'refresh_token'
+                ],
+                'timeout' => 20
+            ]);
+
+            if (is_wp_error($response)) {
+                $this->log('Direct: Token refresh failed - ' . $response->get_error_message());
+                return false;
+            }
+
+            $body = wp_remote_retrieve_body($response);
+            $data = json_decode($body, true);
+
+            if (isset($data['access_token'])) {
+                $new_token = sanitize_text_field($data['access_token']);
+                $expires_in = isset($data['expires_in']) ? (int) $data['expires_in'] : 3600;
+
+                update_option('dgptm_zoho_access_token', $new_token);
+                update_option('dgptm_zoho_token_expires', time() + $expires_in - 60);
+
+                $this->log('Direct: Token refreshed successfully');
+                return $new_token;
+            }
+
+            $this->log('Direct: Token refresh response invalid - ' . $body);
             return false;
         }
 

@@ -764,19 +764,24 @@ final class Bummern_Code_Scanner {
 
         $code = isset($_POST['code']) ? sanitize_text_field(wp_unslash($_POST['code'])) : '';
         $start = microtime(true);
+        $debug = [];
 
         // OAuth Token abrufen
         $token = $this->get_crm_oauth_token();
+        $debug['token_available'] = !empty($token);
+        $debug['token_length'] = $token ? strlen($token) : 0;
+
         if (!$token) {
             wp_send_json_error([
                 'message' => 'Kein OAuth Token verfügbar. Bitte CRM-Modul prüfen.',
                 'time_ms' => round((microtime(true) - $start) * 1000),
-                'status' => 'error'
+                'status' => 'error',
+                'debug' => $debug
             ]);
         }
 
-        // Ticket aus CRM abrufen
-        $ticket = $this->fetch_ticket_from_crm($code, $token);
+        // Ticket aus CRM abrufen (mit Debug-Infos)
+        $ticket = $this->fetch_ticket_from_crm_debug($code, $token, $debug);
         $time_ms = round((microtime(true) - $start) * 1000);
 
         if (!$ticket) {
@@ -784,7 +789,8 @@ final class Bummern_Code_Scanner {
                 'message' => 'Ticket nicht gefunden im CRM',
                 'time_ms' => $time_ms,
                 'status' => 'error',
-                'code' => $code
+                'code' => $code,
+                'debug' => $debug
             ]);
         }
 
@@ -792,8 +798,56 @@ final class Bummern_Code_Scanner {
         $result = $this->evaluate_ticket_for_scanner($ticket);
         $result['time_ms'] = $time_ms;
         $result['raw_ticket'] = $ticket;
+        $result['debug'] = $debug;
 
         wp_send_json_success($result);
+    }
+
+    /**
+     * CRM-Abfrage mit Debug-Informationen
+     */
+    private function fetch_ticket_from_crm_debug($scan, $token, &$debug) {
+        $url = 'https://www.zohoapis.eu/crm/v2/Ticket/search?criteria=(Name:equals:' . urlencode($scan) . ')';
+        $debug['crm_url'] = $url;
+
+        $response = wp_remote_get($url, [
+            'headers' => [
+                'Authorization' => 'Zoho-oauthtoken ' . $token,
+            ],
+            'timeout' => 10
+        ]);
+
+        if (is_wp_error($response)) {
+            $debug['crm_error'] = $response->get_error_message();
+            return null;
+        }
+
+        $http_code = wp_remote_retrieve_response_code($response);
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+
+        $debug['crm_http_code'] = $http_code;
+        $debug['crm_body_length'] = strlen($body);
+        $debug['crm_body_preview'] = substr($body, 0, 300);
+
+        if ($http_code === 204) {
+            $debug['crm_status'] = 'No Content (204) - Keine Ergebnisse';
+            return null;
+        }
+
+        if ($http_code !== 200) {
+            $debug['crm_status'] = 'HTTP ' . $http_code;
+            return null;
+        }
+
+        if (!isset($data['data'][0])) {
+            $debug['crm_status'] = 'Keine data[0] in Antwort';
+            $debug['crm_response_keys'] = is_array($data) ? array_keys($data) : 'not array';
+            return null;
+        }
+
+        $debug['crm_status'] = 'OK - Ticket gefunden';
+        return $data['data'][0];
     }
 
     /** AJAX: Code prüfen */
@@ -1047,12 +1101,12 @@ final class Bummern_Code_Scanner {
 
     /**
      * Sucht Ticket im Zoho CRM anhand des Codes
-     * WICHTIG: Das Modul heißt "Ticket2" (Custom-Modul), nicht "Tickets"
+     * WICHTIG: Das Modul heißt "Ticket" (Custom-Modul), nicht "Tickets"
      * Der Barcode/Ticket-ID ist im Feld "Name" gespeichert
      */
     private function fetch_ticket_from_crm($scan, $token) {
-        // Suche im Ticket2-Modul (Custom-Modul) nach dem Namen (= Ticket-ID/Barcode)
-        $url = 'https://www.zohoapis.eu/crm/v2/Ticket2/search?criteria=(Name:equals:' . urlencode($scan) . ')';
+        // Suche im Ticket-Modul (Custom-Modul) nach dem Namen (= Ticket-ID/Barcode)
+        $url = 'https://www.zohoapis.eu/crm/v2/Ticket/search?criteria=(Name:equals:' . urlencode($scan) . ')';
 
         $response = wp_remote_get($url, [
             'headers' => [
@@ -1087,10 +1141,10 @@ final class Bummern_Code_Scanner {
     }
 
     /**
-     * Holt Ticket direkt per ID aus dem Ticket2-Modul
+     * Holt Ticket direkt per ID aus dem Ticket-Modul
      */
     private function fetch_ticket_by_id($ticket_id, $token) {
-        $url = 'https://www.zohoapis.eu/crm/v2/Ticket2/' . $ticket_id;
+        $url = 'https://www.zohoapis.eu/crm/v2/Ticket/' . $ticket_id;
 
         $response = wp_remote_get($url, [
             'headers' => [
@@ -1116,7 +1170,7 @@ final class Bummern_Code_Scanner {
 
     /**
      * Wertet den Ticket-Status aus
-     * Angepasst für das Ticket2-Custom-Modul von Zoho CRM
+     * Angepasst für das Ticket-Custom-Modul von Zoho CRM
      *
      * Feldstruktur aus userMessage[0]:
      * - TN: {name: "Sebastian Melzer", id: "..."} (Lookup zum Kontakt)

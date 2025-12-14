@@ -627,135 +627,258 @@ $base_url = remove_query_arg(['tab', 'status', 'editor_artikel_id']);
              ============================================ -->
         <?php
         // Get current settings
-        $settings = get_option(DGPTM_Artikel_Einreichung::OPT_SETTINGS, [
-            'email_notifications' => 1,
-            'notification_email' => get_option('admin_email'),
-            'submission_confirmation_text' => '',
-            'review_instructions' => '',
-            'max_file_size' => 20,
-            'auto_assign_reviewers' => 0
-        ]);
+        $settings = get_option(DGPTM_Artikel_Einreichung::OPT_SETTINGS, []);
+
+        // Default email templates
+        $default_templates = [
+            'master_header' => '<div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
+<div style="background: #1a365d; color: #fff; padding: 20px; text-align: center;">
+<h1 style="margin: 0; font-size: 24px;">Die Perfusiologie</h1>
+<p style="margin: 5px 0 0 0; font-size: 14px;">Fachzeitschrift für Kardiotechnik</p>
+</div>
+<div style="padding: 30px; background: #fff;">',
+            'master_footer' => '</div>
+<div style="background: #f7fafc; padding: 20px; text-align: center; font-size: 12px; color: #718096;">
+<p>Deutsche Gesellschaft für Prävention und Telemedizin e.V.</p>
+<p>Bei Fragen wenden Sie sich an: redaktion@perfusiologie.de</p>
+</div>
+</div>',
+            'email_submission' => [
+                'enabled' => 1,
+                'subject' => 'Vielen Dank für Ihre Einreichung - {submission_id}',
+                'body' => '<p>Sehr geehrte/r {author_name},</p>
+<p>vielen Dank für die Einreichung Ihres Artikels <strong>"{title}"</strong> bei Die Perfusiologie.</p>
+<p><strong>Ihre Einreichungs-ID:</strong> {submission_id}</p>
+<p>Sie können den Status Ihrer Einreichung jederzeit über folgenden Link einsehen:</p>
+<p><a href="{dashboard_url}" style="display: inline-block; background: #3182ce; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 4px;">Zum Autoren-Dashboard</a></p>
+<p>Wir werden Ihren Artikel prüfen und uns in Kürze bei Ihnen melden.</p>
+<p>Mit freundlichen Grüßen,<br>Die Redaktion</p>'
+            ],
+            'email_reviewer_request' => [
+                'enabled' => 1,
+                'subject' => 'Gutachten-Anfrage: {submission_id}',
+                'body' => '<p>Sehr geehrte/r {reviewer_name},</p>
+<p>wir möchten Sie bitten, ein Gutachten für folgenden Artikel zu erstellen:</p>
+<p><strong>Artikel-ID:</strong> {submission_id}<br>
+<strong>Titel:</strong> {title}<br>
+<strong>Publikationsart:</strong> {publication_type}</p>
+<p>Bitte klicken Sie auf folgenden Link, um das Manuskript einzusehen und Ihr Gutachten abzugeben:</p>
+<p><a href="{review_url}" style="display: inline-block; background: #3182ce; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 4px;">Zum Review-Dashboard</a></p>
+<p>Wir bitten um Rückmeldung innerhalb von 3 Wochen.</p>
+<p>Mit freundlichen Grüßen,<br>Die Redaktion</p>'
+            ],
+            'email_revision_request' => [
+                'enabled' => 1,
+                'subject' => 'Überarbeitung erforderlich: {submission_id}',
+                'body' => '<p>Sehr geehrte/r {author_name},</p>
+<p>die Begutachtung Ihres Artikels <strong>"{title}"</strong> ist abgeschlossen.</p>
+<p>Die Gutachter haben eine <strong>Überarbeitung</strong> empfohlen. Bitte beachten Sie die folgenden Hinweise:</p>
+<div style="background: #fef3c7; padding: 15px; border-radius: 4px; margin: 15px 0;">
+{decision_letter}
+</div>
+<p>Bitte laden Sie Ihre überarbeitete Version über folgenden Link hoch:</p>
+<p><a href="{dashboard_url}" style="display: inline-block; background: #d69e2e; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 4px;">Revision einreichen</a></p>
+<p>Mit freundlichen Grüßen,<br>Die Redaktion</p>'
+            ],
+            'email_accepted' => [
+                'enabled' => 1,
+                'subject' => 'Artikel angenommen: {submission_id}',
+                'body' => '<p>Sehr geehrte/r {author_name},</p>
+<p>wir freuen uns, Ihnen mitteilen zu können, dass Ihr Artikel <strong>"{title}"</strong> zur Veröffentlichung in Die Perfusiologie <strong>angenommen</strong> wurde.</p>
+<div style="background: #c6f6d5; padding: 15px; border-radius: 4px; margin: 15px 0;">
+{decision_letter}
+</div>
+<p>Wir werden Sie über die weiteren Schritte zur Veröffentlichung informieren.</p>
+<p>Herzlichen Glückwunsch und vielen Dank für Ihren Beitrag!</p>
+<p>Mit freundlichen Grüßen,<br>Die Redaktion</p>'
+            ],
+            'email_rejected' => [
+                'enabled' => 1,
+                'subject' => 'Artikel nicht angenommen: {submission_id}',
+                'body' => '<p>Sehr geehrte/r {author_name},</p>
+<p>nach sorgfältiger Prüfung müssen wir Ihnen leider mitteilen, dass Ihr Artikel <strong>"{title}"</strong> nicht zur Veröffentlichung in Die Perfusiologie angenommen werden kann.</p>
+<div style="background: #fed7d7; padding: 15px; border-radius: 4px; margin: 15px 0;">
+{decision_letter}
+</div>
+<p>Wir danken Ihnen für Ihr Interesse an unserer Zeitschrift und wünschen Ihnen für Ihre weitere wissenschaftliche Arbeit viel Erfolg.</p>
+<p>Mit freundlichen Grüßen,<br>Die Redaktion</p>'
+            ],
+            'email_status_update' => [
+                'enabled' => 0,
+                'subject' => 'Statusänderung: {submission_id}',
+                'body' => '<p>Sehr geehrte/r {author_name},</p>
+<p>der Status Ihres Artikels <strong>"{title}"</strong> wurde aktualisiert:</p>
+<p><strong>Neuer Status:</strong> {status}</p>
+<p>Sie können den aktuellen Status jederzeit über folgenden Link einsehen:</p>
+<p><a href="{dashboard_url}" style="display: inline-block; background: #3182ce; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 4px;">Zum Autoren-Dashboard</a></p>
+<p>Mit freundlichen Grüßen,<br>Die Redaktion</p>'
+            ]
+        ];
+
+        // Merge with saved settings
+        foreach ($default_templates as $key => $default) {
+            if (!isset($settings[$key])) {
+                $settings[$key] = $default;
+            }
+        }
         ?>
 
         <h2>Einstellungen</h2>
 
         <form id="settings-form">
-            <!-- Email Notifications -->
+            <!-- General Settings -->
             <div class="article-card" style="margin-bottom: 20px;">
                 <div class="article-card-header">
-                    <h3 style="margin: 0;">E-Mail-Benachrichtigungen</h3>
+                    <h3 style="margin: 0;">Allgemeine Einstellungen</h3>
                 </div>
                 <div class="article-card-body">
                     <div class="form-row" style="margin-bottom: 15px;">
-                        <label style="display: flex; align-items: center; gap: 10px;">
-                            <input type="checkbox" name="email_notifications" value="1" <?php checked($settings['email_notifications'] ?? 0, 1); ?>>
-                            <span>E-Mail-Benachrichtigungen bei Statusänderungen senden</span>
-                        </label>
-                    </div>
-
-                    <div class="form-row">
-                        <label for="notification_email">Zusätzliche Benachrichtigungs-E-Mail:</label>
+                        <label for="notification_email">Benachrichtigungs-E-Mail (Redaktion):</label>
                         <input type="email" id="notification_email" name="notification_email"
                                value="<?php echo esc_attr($settings['notification_email'] ?? ''); ?>"
                                style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px;">
-                        <p style="color: #718096; font-size: 13px; margin-top: 5px;">
-                            Optional: Zusätzliche E-Mail-Adresse für Benachrichtigungen (zusätzlich zum Editor in Chief).
-                        </p>
                     </div>
-                </div>
-            </div>
-
-            <!-- Texts -->
-            <div class="article-card" style="margin-bottom: 20px;">
-                <div class="article-card-header">
-                    <h3 style="margin: 0;">Texte</h3>
-                </div>
-                <div class="article-card-body">
-                    <div class="form-row" style="margin-bottom: 20px;">
-                        <label for="submission_confirmation_text">Bestätigungstext nach Einreichung:</label>
-                        <textarea id="submission_confirmation_text" name="submission_confirmation_text" rows="4"
-                                  style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px;"><?php echo esc_textarea($settings['submission_confirmation_text'] ?? ''); ?></textarea>
-                        <p style="color: #718096; font-size: 13px; margin-top: 5px;">
-                            Optionaler zusätzlicher Text, der dem Autor nach erfolgreicher Einreichung angezeigt wird.
-                        </p>
-                    </div>
-
-                    <div class="form-row">
-                        <label for="review_instructions">Review-Anweisungen:</label>
-                        <textarea id="review_instructions" name="review_instructions" rows="6"
-                                  style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px;"><?php echo esc_textarea($settings['review_instructions'] ?? ''); ?></textarea>
-                        <p style="color: #718096; font-size: 13px; margin-top: 5px;">
-                            Anweisungen für Reviewer. Wird auf der Review-Seite angezeigt.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- File Upload -->
-            <div class="article-card" style="margin-bottom: 20px;">
-                <div class="article-card-header">
-                    <h3 style="margin: 0;">Datei-Upload</h3>
-                </div>
-                <div class="article-card-body">
-                    <div class="form-row">
+                    <div class="form-row" style="margin-bottom: 15px;">
                         <label for="max_file_size">Maximale Dateigröße (MB):</label>
                         <input type="number" id="max_file_size" name="max_file_size"
                                value="<?php echo esc_attr($settings['max_file_size'] ?? 20); ?>" min="1" max="100"
                                style="width: 100px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px;">
-                        <p style="color: #718096; font-size: 13px; margin-top: 5px;">
-                            Server-Limit: <?php echo esc_html(ini_get('upload_max_filesize')); ?>
-                        </p>
+                        <span style="color: #718096; font-size: 13px; margin-left: 10px;">Server-Limit: <?php echo esc_html(ini_get('upload_max_filesize')); ?></span>
+                    </div>
+                    <div class="form-row">
+                        <label for="review_instructions">Review-Anweisungen:</label>
+                        <textarea id="review_instructions" name="review_instructions" rows="4"
+                                  style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px;"><?php echo esc_textarea($settings['review_instructions'] ?? ''); ?></textarea>
                     </div>
                 </div>
             </div>
 
-            <!-- Shortcodes Reference -->
+            <!-- Placeholder Reference -->
             <div class="article-card" style="margin-bottom: 20px;">
                 <div class="article-card-header">
-                    <h3 style="margin: 0;">Shortcodes</h3>
+                    <h3 style="margin: 0;">Verfügbare Platzhalter</h3>
                 </div>
                 <div class="article-card-body">
-                    <table class="dgptm-artikel-table" style="margin: 0;">
-                        <thead>
-                            <tr>
-                                <th>Shortcode</th>
-                                <th>Beschreibung</th>
-                                <th>Berechtigung</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><code>[artikel_einreichung]</code></td>
-                                <td>Einreichungsformular für neue Artikel</td>
-                                <td>Alle (auch ohne Login)</td>
-                            </tr>
-                            <tr>
-                                <td><code>[artikel_dashboard]</code></td>
-                                <td>Autoren-Dashboard - Übersicht der eigenen Einreichungen</td>
-                                <td>Eingeloggte Benutzer oder Token-Zugang</td>
-                            </tr>
-                            <tr>
-                                <td><code>[artikel_review]</code></td>
-                                <td>Reviewer-Dashboard - Zugewiesene Artikel begutachten</td>
-                                <td>Zugewiesene Reviewer</td>
-                            </tr>
-                            <tr>
-                                <td><code>[artikel_redaktion]</code></td>
-                                <td>Redaktions-Übersicht - Alle Artikel (anonymisiert)</td>
-                                <td>ACF-Feld: redaktion_perfusiologie</td>
-                            </tr>
-                            <tr>
-                                <td><code>[artikel_editor_dashboard]</code></td>
-                                <td>Editor-in-Chief Dashboard - Vollzugriff</td>
-                                <td>ACF-Feld: editor_in_chief</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 13px;">
+                        <div><code>{author_name}</code> - Name des Autors</div>
+                        <div><code>{author_email}</code> - E-Mail des Autors</div>
+                        <div><code>{title}</code> - Artikeltitel</div>
+                        <div><code>{submission_id}</code> - Einreichungs-ID</div>
+                        <div><code>{publication_type}</code> - Publikationsart</div>
+                        <div><code>{status}</code> - Aktueller Status</div>
+                        <div><code>{dashboard_url}</code> - Link zum Autoren-Dashboard</div>
+                        <div><code>{review_url}</code> - Link zum Review-Dashboard</div>
+                        <div><code>{reviewer_name}</code> - Name des Reviewers</div>
+                        <div><code>{decision_letter}</code> - Entscheidungsschreiben</div>
+                        <div><code>{date}</code> - Aktuelles Datum</div>
+                    </div>
                 </div>
             </div>
 
+            <!-- Master Template -->
+            <div class="article-card" style="margin-bottom: 20px;">
+                <div class="article-card-header">
+                    <h3 style="margin: 0;">E-Mail Master-Template</h3>
+                </div>
+                <div class="article-card-body">
+                    <div class="form-row" style="margin-bottom: 15px;">
+                        <label>Header (wird vor jeder E-Mail eingefügt):</label>
+                        <textarea name="master_header" rows="6" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px; font-family: monospace; font-size: 12px;"><?php echo esc_textarea($settings['master_header'] ?? $default_templates['master_header']); ?></textarea>
+                    </div>
+                    <div class="form-row">
+                        <label>Footer (wird nach jeder E-Mail eingefügt):</label>
+                        <textarea name="master_footer" rows="4" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px; font-family: monospace; font-size: 12px;"><?php echo esc_textarea($settings['master_footer'] ?? $default_templates['master_footer']); ?></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Email Templates -->
+            <?php
+            $email_types = [
+                'email_submission' => ['title' => 'Einreichungsbestätigung', 'desc' => 'Wird nach erfolgreicher Einreichung an den Autor gesendet'],
+                'email_reviewer_request' => ['title' => 'Reviewer-Anfrage', 'desc' => 'Wird an Reviewer gesendet, wenn ihnen ein Artikel zugewiesen wird'],
+                'email_revision_request' => ['title' => 'Überarbeitungsanforderung', 'desc' => 'Wird an den Autor gesendet, wenn eine Revision erforderlich ist'],
+                'email_accepted' => ['title' => 'Annahme', 'desc' => 'Wird an den Autor gesendet, wenn der Artikel angenommen wird'],
+                'email_rejected' => ['title' => 'Ablehnung', 'desc' => 'Wird an den Autor gesendet, wenn der Artikel abgelehnt wird'],
+                'email_status_update' => ['title' => 'Statusmeldung', 'desc' => 'Allgemeine Statusbenachrichtigung an den Autor']
+            ];
+
+            foreach ($email_types as $key => $info):
+                $template = $settings[$key] ?? $default_templates[$key];
+            ?>
+            <div class="article-card email-template-card" style="margin-bottom: 20px;">
+                <div class="article-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h3 style="margin: 0;"><?php echo esc_html($info['title']); ?></h3>
+                        <p style="margin: 5px 0 0 0; font-size: 12px; color: #718096;"><?php echo esc_html($info['desc']); ?></p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" name="<?php echo esc_attr($key); ?>_enabled" value="1"
+                               <?php checked($template['enabled'] ?? 0, 1); ?>>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="article-card-body">
+                    <div class="form-row" style="margin-bottom: 15px;">
+                        <label>Betreff:</label>
+                        <input type="text" name="<?php echo esc_attr($key); ?>_subject"
+                               value="<?php echo esc_attr($template['subject'] ?? ''); ?>"
+                               style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px;">
+                    </div>
+                    <div class="form-row">
+                        <label>Inhalt (HTML):</label>
+                        <textarea name="<?php echo esc_attr($key); ?>_body" rows="8"
+                                  style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px; font-family: monospace; font-size: 12px;"><?php echo esc_textarea($template['body'] ?? ''); ?></textarea>
+                    </div>
+                </div>
+            </div>
+            <?php endforeach; ?>
+
             <button type="submit" class="btn btn-primary">Einstellungen speichern</button>
         </form>
+
+        <style>
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e0;
+            transition: 0.3s;
+            border-radius: 26px;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: #38a169;
+        }
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+        </style>
 
     <?php endif; ?>
 

@@ -234,18 +234,23 @@
 .dgptm-artikel-container .btn-primary,
 .dgptm-artikel-form .btn-primary,
 .dgptm-artikel-container button.btn-primary,
-.dgptm-artikel-container a.btn-primary {
-    background: #1a365d !important;
-    background-color: #1a365d !important;
+.dgptm-artikel-container a.btn-primary,
+body .dgptm-artikel-container .btn.btn-primary,
+body .dgptm-artikel-form .btn.btn-primary {
+    background: #3182ce !important;
+    background-color: #3182ce !important;
     color: #fff !important;
+    border: none !important;
 }
 
 .dgptm-artikel-container .btn-primary:hover,
 .dgptm-artikel-form .btn-primary:hover,
 .dgptm-artikel-container button.btn-primary:hover,
-.dgptm-artikel-container a.btn-primary:hover {
-    background: #2c5282 !important;
-    background-color: #2c5282 !important;
+.dgptm-artikel-container a.btn-primary:hover,
+body .dgptm-artikel-container .btn.btn-primary:hover,
+body .dgptm-artikel-form .btn.btn-primary:hover {
+    background: #2b6cb0 !important;
+    background-color: #2b6cb0 !important;
     color: #fff !important;
 }
 

@@ -1470,13 +1470,34 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
                 wp_send_json_error(['message' => 'Keine Berechtigung.']);
             }
 
+            // Email template types
+            $email_types = [
+                'email_submission',
+                'email_reviewer_request',
+                'email_revision_request',
+                'email_accepted',
+                'email_rejected',
+                'email_status_update'
+            ];
+
             $settings = [
                 'email_notifications' => intval($_POST['email_notifications'] ?? 0),
                 'notification_email' => sanitize_email($_POST['notification_email'] ?? ''),
-                'submission_confirmation_text' => wp_kses_post($_POST['submission_confirmation_text'] ?? ''),
                 'review_instructions' => wp_kses_post($_POST['review_instructions'] ?? ''),
-                'max_file_size' => intval($_POST['max_file_size'] ?? 20)
+                'max_file_size' => intval($_POST['max_file_size'] ?? 20),
+                // Master template
+                'master_header' => wp_kses_post($_POST['master_header'] ?? ''),
+                'master_footer' => wp_kses_post($_POST['master_footer'] ?? '')
             ];
+
+            // Save each email template
+            foreach ($email_types as $type) {
+                $settings[$type] = [
+                    'enabled' => intval($_POST[$type . '_enabled'] ?? 0),
+                    'subject' => sanitize_text_field($_POST[$type . '_subject'] ?? ''),
+                    'body' => wp_kses_post($_POST[$type . '_body'] ?? '')
+                ];
+            }
 
             update_option(self::OPT_SETTINGS, $settings);
 

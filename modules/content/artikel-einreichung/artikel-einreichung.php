@@ -71,6 +71,9 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             add_action('wp_ajax_dgptm_editor_decision', [$this, 'ajax_editor_decision']);
             add_action('wp_ajax_dgptm_save_editor_notes', [$this, 'ajax_save_editor_notes']);
             add_action('wp_ajax_dgptm_search_users', [$this, 'ajax_search_users']);
+            add_action('wp_ajax_dgptm_add_reviewer', [$this, 'ajax_add_reviewer']);
+            add_action('wp_ajax_dgptm_remove_reviewer', [$this, 'ajax_remove_reviewer']);
+            add_action('wp_ajax_dgptm_save_artikel_settings', [$this, 'ajax_save_artikel_settings']);
 
             // AJAX Handlers for non-logged in users (token-based)
             add_action('wp_ajax_nopriv_dgptm_submit_artikel', [$this, 'ajax_submit_artikel']);
@@ -1404,6 +1407,80 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             }
 
             wp_send_json_success(['users' => $results]);
+        }
+
+        /**
+         * AJAX: Add a reviewer to the pool
+         */
+        public function ajax_add_reviewer() {
+            check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+            if (!$this->is_editor_in_chief() && !current_user_can('manage_options')) {
+                wp_send_json_error(['message' => 'Keine Berechtigung.']);
+            }
+
+            $user_id = intval($_POST['user_id'] ?? 0);
+
+            if (!$user_id) {
+                wp_send_json_error(['message' => 'Ungültige Benutzer-ID.']);
+            }
+
+            $reviewer_ids = get_option(self::OPT_REVIEWERS, []);
+            if (!in_array($user_id, $reviewer_ids)) {
+                $reviewer_ids[] = $user_id;
+                update_option(self::OPT_REVIEWERS, $reviewer_ids);
+            }
+
+            wp_send_json_success(['message' => 'Reviewer hinzugefügt.']);
+        }
+
+        /**
+         * AJAX: Remove a reviewer from the pool
+         */
+        public function ajax_remove_reviewer() {
+            check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+            if (!$this->is_editor_in_chief() && !current_user_can('manage_options')) {
+                wp_send_json_error(['message' => 'Keine Berechtigung.']);
+            }
+
+            $user_id = intval($_POST['user_id'] ?? 0);
+
+            if (!$user_id) {
+                wp_send_json_error(['message' => 'Ungültige Benutzer-ID.']);
+            }
+
+            $reviewer_ids = get_option(self::OPT_REVIEWERS, []);
+            $reviewer_ids = array_filter($reviewer_ids, function($id) use ($user_id) {
+                return $id !== $user_id;
+            });
+            $reviewer_ids = array_values($reviewer_ids); // Re-index
+            update_option(self::OPT_REVIEWERS, $reviewer_ids);
+
+            wp_send_json_success(['message' => 'Reviewer entfernt.']);
+        }
+
+        /**
+         * AJAX: Save article settings (from frontend editor dashboard)
+         */
+        public function ajax_save_artikel_settings() {
+            check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+            if (!$this->is_editor_in_chief() && !current_user_can('manage_options')) {
+                wp_send_json_error(['message' => 'Keine Berechtigung.']);
+            }
+
+            $settings = [
+                'email_notifications' => intval($_POST['email_notifications'] ?? 0),
+                'notification_email' => sanitize_email($_POST['notification_email'] ?? ''),
+                'submission_confirmation_text' => wp_kses_post($_POST['submission_confirmation_text'] ?? ''),
+                'review_instructions' => wp_kses_post($_POST['review_instructions'] ?? ''),
+                'max_file_size' => intval($_POST['max_file_size'] ?? 20)
+            ];
+
+            update_option(self::OPT_SETTINGS, $settings);
+
+            wp_send_json_success(['message' => 'Einstellungen gespeichert.']);
         }
 
         /**

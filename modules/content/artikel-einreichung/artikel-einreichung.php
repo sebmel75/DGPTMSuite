@@ -86,6 +86,10 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             // Testdata generator
             add_action('admin_init', [$this, 'handle_testdata_generation']);
 
+            // PDF Download handler
+            add_action('admin_init', [$this, 'handle_pdf_download']);
+            add_action('template_redirect', [$this, 'handle_frontend_pdf_download']);
+
             // Admin notices
             add_action('admin_notices', [$this, 'show_admin_notices']);
         }
@@ -129,6 +133,204 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
                     exit;
                 }
             }
+        }
+
+        /**
+         * Handle PDF download in admin
+         */
+        public function handle_pdf_download() {
+            if (!isset($_GET['dgptm_artikel_pdf']) || !isset($_GET['artikel_id'])) {
+                return;
+            }
+
+            $artikel_id = intval($_GET['artikel_id']);
+
+            if (!current_user_can('manage_options') && !$this->is_editor_in_chief()) {
+                wp_die('Keine Berechtigung.');
+            }
+
+            $this->generate_artikel_pdf($artikel_id);
+            exit;
+        }
+
+        /**
+         * Handle PDF download in frontend (for authors with token)
+         */
+        public function handle_frontend_pdf_download() {
+            if (!isset($_GET['dgptm_artikel_pdf']) || !isset($_GET['artikel_id'])) {
+                return;
+            }
+
+            $artikel_id = intval($_GET['artikel_id']);
+            $token = isset($_GET['autor_token']) ? sanitize_text_field($_GET['autor_token']) : '';
+
+            // Check if user is logged in and author, or has valid token
+            $article = get_post($artikel_id);
+            if (!$article || $article->post_type !== self::POST_TYPE) {
+                wp_die('Artikel nicht gefunden.');
+            }
+
+            $is_author = is_user_logged_in() && $article->post_author == get_current_user_id();
+            $is_valid_token = $token && $this->validate_author_token($token) === $artikel_id;
+            $is_editor = $this->is_editor_in_chief();
+
+            if (!$is_author && !$is_valid_token && !$is_editor && !current_user_can('manage_options')) {
+                wp_die('Keine Berechtigung.');
+            }
+
+            $this->generate_artikel_pdf($artikel_id);
+            exit;
+        }
+
+        /**
+         * Generate PDF for article
+         */
+        private function generate_artikel_pdf($artikel_id) {
+            $article = get_post($artikel_id);
+            if (!$article) {
+                wp_die('Artikel nicht gefunden.');
+            }
+
+            // Include FPDF
+            $fpdf_path = dirname(dirname(dirname(dirname(__FILE__)))) . '/libraries/fpdf/fpdf.php';
+            if (!file_exists($fpdf_path)) {
+                wp_die('PDF-Bibliothek nicht gefunden.');
+            }
+            require_once $fpdf_path;
+
+            // Get article data
+            $submission_id = get_field('submission_id', $artikel_id);
+            $title = $article->post_title;
+            $author_name = get_field('hauptautorin', $artikel_id);
+            $author_email = get_field('hauptautor_email', $artikel_id);
+            $institution = get_field('hauptautor_institution', $artikel_id);
+            $co_authors = get_field('autoren', $artikel_id);
+            $publikationsart = self::PUBLIKATIONSARTEN[get_field('publikationsart', $artikel_id)] ?? '';
+            $abstract_de = get_field('abstract-deutsch', $artikel_id);
+            $abstract_en = get_field('abstract', $artikel_id);
+            $keywords_de = get_field('keywords-deutsch', $artikel_id);
+            $keywords_en = get_field('keywords', $artikel_id);
+            $status = $this->get_status_label(get_field('artikel_status', $artikel_id));
+            $submitted_at = get_field('submitted_at', $artikel_id);
+
+            // Create PDF
+            $pdf = new \FPDF('P', 'mm', 'A4');
+            $pdf->AddPage();
+            $pdf->SetMargins(20, 20, 20);
+
+            // Header
+            $pdf->SetFont('Helvetica', 'B', 18);
+            $pdf->SetTextColor(26, 54, 93); // #1a365d
+            $pdf->Cell(0, 10, 'Die Perfusiologie', 0, 1, 'C');
+            $pdf->SetFont('Helvetica', '', 10);
+            $pdf->SetTextColor(100, 100, 100);
+            $pdf->Cell(0, 5, 'Fachzeitschrift fuer Kardiotechnik', 0, 1, 'C');
+            $pdf->Ln(10);
+
+            // Submission ID
+            $pdf->SetFont('Helvetica', '', 9);
+            $pdf->SetTextColor(100, 100, 100);
+            $pdf->Cell(0, 5, 'Einreichungs-ID: ' . $this->utf8_decode_safe($submission_id), 0, 1, 'R');
+            $pdf->Cell(0, 5, 'Status: ' . $this->utf8_decode_safe($status), 0, 1, 'R');
+            $pdf->Cell(0, 5, 'Eingereicht: ' . date_i18n('d.m.Y H:i', strtotime($submitted_at)), 0, 1, 'R');
+            $pdf->Ln(5);
+
+            // Title
+            $pdf->SetFont('Helvetica', 'B', 14);
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->MultiCell(0, 7, $this->utf8_decode_safe($title), 0, 'L');
+            $pdf->Ln(3);
+
+            // Publication type
+            $pdf->SetFont('Helvetica', 'I', 10);
+            $pdf->SetTextColor(100, 100, 100);
+            $pdf->Cell(0, 5, 'Publikationsart: ' . $this->utf8_decode_safe($publikationsart), 0, 1);
+            $pdf->Ln(5);
+
+            // Author info
+            $pdf->SetFont('Helvetica', 'B', 11);
+            $pdf->SetTextColor(26, 54, 93);
+            $pdf->Cell(0, 6, 'Korrespondenzautor', 0, 1);
+            $pdf->SetFont('Helvetica', '', 10);
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->Cell(0, 5, $this->utf8_decode_safe($author_name), 0, 1);
+            $pdf->SetFont('Helvetica', '', 9);
+            $pdf->SetTextColor(100, 100, 100);
+            $pdf->Cell(0, 5, $this->utf8_decode_safe($author_email), 0, 1);
+            if ($institution) {
+                $pdf->Cell(0, 5, $this->utf8_decode_safe($institution), 0, 1);
+            }
+            $pdf->Ln(3);
+
+            // Co-authors
+            if ($co_authors) {
+                $pdf->SetFont('Helvetica', 'B', 11);
+                $pdf->SetTextColor(26, 54, 93);
+                $pdf->Cell(0, 6, 'Ko-Autoren', 0, 1);
+                $pdf->SetFont('Helvetica', '', 10);
+                $pdf->SetTextColor(0, 0, 0);
+                $pdf->MultiCell(0, 5, $this->utf8_decode_safe($co_authors), 0, 'L');
+                $pdf->Ln(3);
+            }
+
+            // Abstract German
+            if ($abstract_de) {
+                $pdf->SetFont('Helvetica', 'B', 11);
+                $pdf->SetTextColor(26, 54, 93);
+                $pdf->Cell(0, 6, 'Abstract (Deutsch)', 0, 1);
+                $pdf->SetFont('Helvetica', '', 10);
+                $pdf->SetTextColor(0, 0, 0);
+                $pdf->MultiCell(0, 5, $this->utf8_decode_safe($abstract_de), 0, 'J');
+                $pdf->Ln(3);
+            }
+
+            // Keywords German
+            if ($keywords_de) {
+                $pdf->SetFont('Helvetica', 'I', 9);
+                $pdf->SetTextColor(100, 100, 100);
+                $pdf->Cell(0, 5, 'Keywords: ' . $this->utf8_decode_safe($keywords_de), 0, 1);
+                $pdf->Ln(3);
+            }
+
+            // Abstract English
+            if ($abstract_en) {
+                $pdf->SetFont('Helvetica', 'B', 11);
+                $pdf->SetTextColor(26, 54, 93);
+                $pdf->Cell(0, 6, 'Abstract (English)', 0, 1);
+                $pdf->SetFont('Helvetica', '', 10);
+                $pdf->SetTextColor(0, 0, 0);
+                $pdf->MultiCell(0, 5, $this->utf8_decode_safe($abstract_en), 0, 'J');
+                $pdf->Ln(3);
+            }
+
+            // Keywords English
+            if ($keywords_en) {
+                $pdf->SetFont('Helvetica', 'I', 9);
+                $pdf->SetTextColor(100, 100, 100);
+                $pdf->Cell(0, 5, 'Keywords: ' . $this->utf8_decode_safe($keywords_en), 0, 1);
+            }
+
+            // Footer
+            $pdf->SetY(-30);
+            $pdf->SetFont('Helvetica', '', 8);
+            $pdf->SetTextColor(150, 150, 150);
+            $pdf->Cell(0, 5, 'Generiert am ' . date_i18n('d.m.Y H:i') . ' - Die Perfusiologie', 0, 0, 'C');
+
+            // Output
+            $filename = 'Artikel_' . $submission_id . '.pdf';
+            $pdf->Output('D', $filename);
+        }
+
+        /**
+         * Helper to safely convert UTF-8 to ISO-8859-1 for FPDF
+         */
+        private function utf8_decode_safe($string) {
+            if (!$string) return '';
+            // Replace common German characters
+            $search = ['ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', 'ß', 'é', 'è', 'ê', 'à', 'â', 'ô', 'î', 'û', 'ç', '€', '–', '—', '"', '"', ''', ''', '…'];
+            $replace = ['ae', 'oe', 'ue', 'Ae', 'Oe', 'Ue', 'ss', 'e', 'e', 'e', 'a', 'a', 'o', 'i', 'u', 'c', 'EUR', '-', '-', '"', '"', "'", "'", '...'];
+            $string = str_replace($search, $replace, $string);
+            return iconv('UTF-8', 'ISO-8859-1//TRANSLIT//IGNORE', $string) ?: $string;
         }
 
         private function define_constants() {

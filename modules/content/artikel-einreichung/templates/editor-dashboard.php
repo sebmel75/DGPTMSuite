@@ -238,6 +238,13 @@ $base_url = remove_query_arg(['tab', 'status', 'editor_artikel_id']);
                                     <h4 style="margin-top: 20px;">Interessenkonflikte</h4>
                                     <p><?php echo esc_html($coi); ?></p>
                                     <?php endif; ?>
+
+                                    <hr style="margin: 20px 0;">
+
+                                    <h4>PDF Export</h4>
+                                    <a href="<?php echo esc_url(add_query_arg(['dgptm_artikel_pdf' => 1, 'artikel_id' => $view_id], home_url())); ?>" target="_blank" class="btn btn-secondary">
+                                        Artikel-Übersicht als PDF herunterladen
+                                    </a>
                                 </div>
 
                                 <!-- Reviews Tab -->
@@ -402,6 +409,39 @@ $base_url = remove_query_arg(['tab', 'status', 'editor_artikel_id']);
                             <button class="btn btn-secondary" style="margin-top: 10px;" onclick="saveEditorNotes(<?php echo esc_attr($view_id); ?>)">
                                 Speichern
                             </button>
+                        </div>
+                    </div>
+
+                    <!-- Author Token & Dashboard Link -->
+                    <div class="article-card" style="margin-top: 20px; background: #f0f9ff;">
+                        <div class="article-card-header" style="background: #e0f2fe; border-color: #bae6fd;">
+                            <h3 style="margin: 0; font-size: 16px; color: #0369a1;">Autoren-Zugang</h3>
+                        </div>
+                        <div class="article-card-body">
+                            <?php
+                            $author_token = get_field('author_token', $view_id);
+                            $author_dashboard_url = $plugin->get_author_dashboard_url($view_id);
+                            ?>
+                            <?php if ($author_token): ?>
+                            <div style="margin-bottom: 10px;">
+                                <label style="font-size: 12px; color: #64748b; display: block; margin-bottom: 4px;">Token</label>
+                                <code style="font-size: 11px; word-break: break-all; display: block; background: #fff; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0;">
+                                    <?php echo esc_html($author_token); ?>
+                                </code>
+                            </div>
+                            <div style="margin-bottom: 10px;">
+                                <label style="font-size: 12px; color: #64748b; display: block; margin-bottom: 4px;">Dashboard-URL</label>
+                                <input type="text" readonly value="<?php echo esc_url($author_dashboard_url); ?>"
+                                       style="width: 100%; font-size: 11px; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px; background: #fff;"
+                                       onclick="this.select();">
+                            </div>
+                            <button type="button" class="btn btn-secondary" style="width: 100%;"
+                                    onclick="navigator.clipboard.writeText('<?php echo esc_js($author_dashboard_url); ?>').then(function() { alert('Link kopiert!'); });">
+                                Link kopieren
+                            </button>
+                            <?php else: ?>
+                            <p style="margin: 0; color: #64748b; font-style: italic;">Kein Token vorhanden.</p>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>

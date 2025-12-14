@@ -100,6 +100,46 @@ $articles = $articles_query->posts;
                             </tr>
                         </table>
 
+                        <!-- Token & PDF Download -->
+                        <div class="dgptm-admin-box" style="margin-top: 20px; background: #f0f9ff; border: 1px solid #bee3f8;">
+                            <h3 style="margin-top: 0;">Autoren-Zugang</h3>
+                            <?php
+                            $author_token = get_field('author_token', $artikel_id);
+                            $author_dashboard_url = $plugin->get_author_dashboard_url($artikel_id);
+                            ?>
+                            <?php if ($author_token): ?>
+                            <table class="form-table" style="margin-bottom: 15px;">
+                                <tr>
+                                    <th style="width: 100px;">Token</th>
+                                    <td>
+                                        <code style="background: #fff; padding: 5px 10px; border: 1px solid #e2e8f0; border-radius: 4px; word-break: break-all; display: block; max-width: 100%;">
+                                            <?php echo esc_html($author_token); ?>
+                                        </code>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Dashboard-URL</th>
+                                    <td>
+                                        <input type="text" readonly value="<?php echo esc_url($author_dashboard_url); ?>" class="large-text" style="background: #fff; cursor: text;" onclick="this.select();">
+                                        <p class="description">Diesen Link an den Autor senden, um Zugang zum Artikel zu erhalten.</p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <button type="button" class="button" onclick="navigator.clipboard.writeText('<?php echo esc_js($author_dashboard_url); ?>').then(function() { alert('Link in Zwischenablage kopiert!'); });">
+                                Link kopieren
+                            </button>
+                            <?php else: ?>
+                            <p><em>Kein Token vorhanden.</em></p>
+                            <?php endif; ?>
+
+                            <hr style="margin: 15px 0;">
+
+                            <h4 style="margin-bottom: 10px;">PDF Export</h4>
+                            <a href="<?php echo esc_url(add_query_arg(['dgptm_artikel_pdf' => 1, 'artikel_id' => $artikel_id], admin_url())); ?>" class="button button-primary" target="_blank">
+                                Artikel als PDF herunterladen
+                            </a>
+                        </div>
+
                         <h3>Abstract (Deutsch)</h3>
                         <div class="abstract-box">
                             <?php echo nl2br(esc_html(get_field('abstract-deutsch', $artikel_id))); ?>

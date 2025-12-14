@@ -122,6 +122,17 @@ if ($is_token_access) {
                                 </a>
                             </li>
                             <?php endif; ?>
+                            <li style="margin-top: 10px;">
+                                <?php
+                                $pdf_url = add_query_arg(['dgptm_artikel_pdf' => 1, 'artikel_id' => $view_id], home_url());
+                                if ($is_token_access && $author_token) {
+                                    $pdf_url = add_query_arg('autor_token', $author_token, $pdf_url);
+                                }
+                                ?>
+                                <a href="<?php echo esc_url($pdf_url); ?>" target="_blank" class="btn btn-secondary">
+                                    Artikel-Übersicht als PDF
+                                </a>
+                            </li>
                         </ul>
                     </div>
                 </div>

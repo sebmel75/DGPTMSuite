@@ -326,11 +326,36 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
          */
         private function utf8_decode_safe($string) {
             if (!$string) return '';
-            // Replace common German characters
-            $search = ['ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', 'ß', 'é', 'è', 'ê', 'à', 'â', 'ô', 'î', 'û', 'ç', '€', '–', '—', '"', '"', ''', ''', '…'];
-            $replace = ['ae', 'oe', 'ue', 'Ae', 'Oe', 'Ue', 'ss', 'e', 'e', 'e', 'a', 'a', 'o', 'i', 'u', 'c', 'EUR', '-', '-', '"', '"', "'", "'", '...'];
-            $string = str_replace($search, $replace, $string);
-            return iconv('UTF-8', 'ISO-8859-1//TRANSLIT//IGNORE', $string) ?: $string;
+            // Replace common German and special characters
+            $replacements = [
+                "\xC3\xA4" => 'ae',  // ä
+                "\xC3\xB6" => 'oe',  // ö
+                "\xC3\xBC" => 'ue',  // ü
+                "\xC3\x84" => 'Ae',  // Ä
+                "\xC3\x96" => 'Oe',  // Ö
+                "\xC3\x9C" => 'Ue',  // Ü
+                "\xC3\x9F" => 'ss',  // ß
+                "\xC3\xA9" => 'e',   // é
+                "\xC3\xA8" => 'e',   // è
+                "\xC3\xAA" => 'e',   // ê
+                "\xC3\xA0" => 'a',   // à
+                "\xC3\xA2" => 'a',   // â
+                "\xC3\xB4" => 'o',   // ô
+                "\xC3\xAE" => 'i',   // î
+                "\xC3\xBB" => 'u',   // û
+                "\xC3\xA7" => 'c',   // ç
+                "\xE2\x82\xAC" => 'EUR',  // €
+                "\xE2\x80\x93" => '-',    // –
+                "\xE2\x80\x94" => '-',    // —
+                "\xE2\x80\x9C" => '"',    // "
+                "\xE2\x80\x9D" => '"',    // "
+                "\xE2\x80\x98" => "'",    // '
+                "\xE2\x80\x99" => "'",    // '
+                "\xE2\x80\xA6" => '...',  // …
+            ];
+            $string = str_replace(array_keys($replacements), array_values($replacements), $string);
+            $result = @iconv('UTF-8', 'ISO-8859-1//TRANSLIT//IGNORE', $string);
+            return $result !== false ? $result : $string;
         }
 
         private function define_constants() {

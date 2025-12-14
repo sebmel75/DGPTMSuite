@@ -79,6 +79,53 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
 
             // ACF Fields
             add_action('acf/init', [$this, 'register_acf_fields']);
+
+            // Testdata generator
+            add_action('admin_init', [$this, 'handle_testdata_generation']);
+
+            // Admin notices
+            add_action('admin_notices', [$this, 'show_admin_notices']);
+        }
+
+        /**
+         * Show admin notices (e.g., after testdata generation)
+         */
+        public function show_admin_notices() {
+            if (isset($_GET['testdata_created']) && intval($_GET['testdata_created']) > 0) {
+                $count = intval($_GET['testdata_created']);
+                echo '<div class="notice notice-success is-dismissible">';
+                echo '<p><strong>Artikel-Einreichung:</strong> ' . $count . ' Testdatensätze wurden erfolgreich erstellt.</p>';
+                echo '</div>';
+            }
+        }
+
+        /**
+         * Handle testdata generation request
+         */
+        public function handle_testdata_generation() {
+            if (!isset($_GET['generate_testdata']) || $_GET['generate_testdata'] !== '1') {
+                return;
+            }
+
+            if (!current_user_can('manage_options')) {
+                return;
+            }
+
+            // Include the generator file
+            $generator_file = DGPTM_ARTIKEL_PATH . 'generate-testdata.php';
+            if (file_exists($generator_file)) {
+                require_once $generator_file;
+
+                // Function is defined in the generator file
+                if (function_exists('dgptm_generate_artikel_testdata')) {
+                    $count = isset($_GET['count']) ? intval($_GET['count']) : 5;
+                    $results = dgptm_generate_artikel_testdata($count);
+
+                    // Redirect back with success message
+                    wp_redirect(admin_url('edit.php?post_type=' . self::POST_TYPE . '&testdata_created=' . count($results)));
+                    exit;
+                }
+            }
         }
 
         private function define_constants() {

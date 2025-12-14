@@ -3640,9 +3640,9 @@ private function get_crm_oauth_token(): ?string {
  * @return array|null Ticket-Daten oder null wenn nicht gefunden
  */
 private function fetch_ticket_from_crm(string $scan, string $token): ?array {
-	// Suche im Tickets-Modul nach dem Namen (Barcode)
-	// Criteria: Name equals scan OR Ticket_Subject contains scan
-	$url = 'https://www.zohoapis.eu/crm/v2/Tickets/search?criteria=((Name:equals:' . urlencode($scan) . ')or(Subject:contains:' . urlencode($scan) . '))';
+	// Suche im Ticket-Modul (Custom-Modul) nach dem Namen (= Ticket-ID/Barcode)
+	// WICHTIG: Das Modul heißt "Ticket", nicht "Tickets"
+	$url = 'https://www.zohoapis.eu/crm/v2/Ticket/search?criteria=(Name:equals:' . urlencode($scan) . ')';
 
 	$this->dbg('fetch_ticket_from_crm', ['url' => $url]);
 
@@ -3666,10 +3666,6 @@ private function fetch_ticket_from_crm(string $scan, string $token): ?array {
 
 	// 204 = No Content (keine Ergebnisse)
 	if ($http_code === 204) {
-		// Fallback: Direkte ID-Abfrage falls scan eine Zoho-ID ist
-		if (preg_match('/^\d{15,}$/', $scan)) {
-			return $this->fetch_ticket_by_id($scan, $token);
-		}
 		return null;
 	}
 
@@ -3681,10 +3677,10 @@ private function fetch_ticket_from_crm(string $scan, string $token): ?array {
 }
 
 /**
- * Holt Ticket direkt per ID
+ * Holt Ticket direkt per ID aus dem Ticket-Modul
  */
 private function fetch_ticket_by_id(string $ticket_id, string $token): ?array {
-	$url = 'https://www.zohoapis.eu/crm/v2/Tickets/' . $ticket_id;
+	$url = 'https://www.zohoapis.eu/crm/v2/Ticket/' . $ticket_id;
 
 	$response = wp_remote_get($url, [
 		'headers' => [
@@ -3710,71 +3706,76 @@ private function fetch_ticket_by_id(string $ticket_id, string $token): ?array {
 
 /**
  * Wertet den Ticket-Status aus und gibt das Ergebnis zurück
+ * Angepasst für das Ticket-Custom-Modul von Zoho CRM
+ *
+ * Feldstruktur:
+ * - TN: {name: "Sebastian Melzer", id: "..."} (Lookup zum Kontakt)
+ * - Email: "s.melzer@dgptm.de"
+ * - event: {name: "...", id: "548256000025929001"} (Lookup zur Veranstaltung)
+ * - Ticketart: "Freiticket"
+ * - Name: "103490000164570151" (= Ticket-ID/Barcode)
+ * - MembershipType: "Ordentliches Mitglied"
  */
 private function evaluate_ticket_status(array $ticket): array {
-	// Standard-Felder aus Zoho Tickets
 	$name = '';
 	$email = '';
-	$status = '';
-	$result = 'red';
+	$status = 'Gültig';
+	$result = 'green'; // Wenn Ticket gefunden wurde, ist es gültig
+	$eid = '';
+	$veranstaltung = '';
 
-	// Contact-Daten aus dem Ticket extrahieren
-	if (!empty($ticket['Contact_Name'])) {
-		if (is_array($ticket['Contact_Name'])) {
-			$name = $ticket['Contact_Name']['name'] ?? '';
+	// Teilnehmer-Name aus TN-Lookup-Feld
+	if (!empty($ticket['TN'])) {
+		if (is_array($ticket['TN'])) {
+			$name = $ticket['TN']['name'] ?? '';
 		} else {
-			$name = (string)$ticket['Contact_Name'];
+			$name = (string)$ticket['TN'];
 		}
 	}
 
-	// Fallback: Subject als Name
-	if (empty($name) && !empty($ticket['Subject'])) {
-		$name = (string)$ticket['Subject'];
-	}
-
-	// E-Mail aus Contact oder direkt
+	// E-Mail
 	if (!empty($ticket['Email'])) {
 		$email = (string)$ticket['Email'];
 	}
 
-	// Status auswerten
-	$ticket_status = strtolower($ticket['Status'] ?? '');
-	$this->dbg('evaluate_ticket_status', ['ticket_status' => $ticket_status, 'ticket' => $ticket]);
-
-	// Grün: Ticket ist gültig/aktiv
-	$green_statuses = ['open', 'offen', 'gültig', 'valid', 'aktiv', 'active', 'approved', 'confirmed', 'bestätigt'];
-	// Gelb: Teilweise gültig oder Warnung
-	$yellow_statuses = ['pending', 'ausstehend', 'in progress', 'in bearbeitung', 'warnung', 'warning'];
-
-	if (in_array($ticket_status, $green_statuses, true)) {
-		$result = 'green';
-		$status = 'Gültig';
-	} elseif (in_array($ticket_status, $yellow_statuses, true)) {
-		$result = 'yellow';
-		$status = 'Ausstehend';
-	} else {
-		// Prüfe auf benutzerdefinierte Felder für Mitgliedsstatus
-		if (!empty($ticket['Mitgliedsstatus']) || !empty($ticket['Member_Status'])) {
-			$member_status = strtolower($ticket['Mitgliedsstatus'] ?? $ticket['Member_Status'] ?? '');
-			if (strpos($member_status, 'aktiv') !== false || strpos($member_status, 'active') !== false) {
-				$result = 'green';
-				$status = $ticket['Mitgliedsstatus'] ?? $ticket['Member_Status'] ?? 'Aktiv';
-			}
-		}
-
-		// Fallback Status-Text
-		if ($result === 'red') {
-			$status = !empty($ticket['Status']) ? $ticket['Status'] : 'Ungültig';
+	// Event-ID aus event-Lookup-Feld
+	if (!empty($ticket['event'])) {
+		if (is_array($ticket['event'])) {
+			$eid = $ticket['event']['id'] ?? '';
+			$veranstaltung = $ticket['event']['name'] ?? '';
 		}
 	}
 
+	// Ticketart (für Anzeige)
+	$ticketart = $ticket['Ticketart'] ?? '';
+	if (!empty($ticketart)) {
+		$status = $ticketart;
+	}
+
+	// Mitgliedschaftstyp
+	$membership = $ticket['MembershipType'] ?? '';
+
+	$this->dbg('evaluate_ticket_status', [
+		'name' => $name,
+		'email' => $email,
+		'eid' => $eid,
+		'veranstaltung' => $veranstaltung,
+		'ticketart' => $ticketart
+	]);
+
 	return [
-		'ok' => ($result !== 'red'),
+		'ok' => true,
 		'result' => $result,
 		'name' => $name,
+		'TN' => $name, // Alias für Template-Kompatibilität
 		'status' => $status,
 		'email' => $email,
-		'ticket_id' => $ticket['id'] ?? ''
+		'eid' => $eid,
+		'veranstaltung' => $veranstaltung,
+		'ticketart' => $ticketart,
+		'membership' => $membership,
+		'ticket_id' => $ticket['id'] ?? '',
+		'ticket_name' => $ticket['Name'] ?? '' // Der Barcode
 	];
 }
 

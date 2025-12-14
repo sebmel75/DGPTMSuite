@@ -3,6 +3,8 @@
  * Template: Editor-in-Chief Dashboard (Frontend)
  * Shortcode: [artikel_editor_dashboard]
  * Nur für Benutzer mit editor_in_chief Berechtigung
+ *
+ * Design angelehnt an das Admin-Dashboard für einheitliche Benutzerführung
  */
 
 if (!defined('ABSPATH')) exit;
@@ -42,28 +44,78 @@ if ($filter_status) {
 
 $articles = get_posts($query_args);
 
-// Statistics
-$stats = [
-    'total' => 0,
-    'pending' => 0,
-    'in_review' => 0,
-    'revision' => 0,
-    'accepted' => 0
-];
-
+// Get ALL articles for statistics (unfiltered)
 $all_articles = get_posts([
     'post_type' => DGPTM_Artikel_Einreichung::POST_TYPE,
-    'posts_per_page' => -1
+    'posts_per_page' => -1,
+    'post_status' => 'publish'
 ]);
 
-foreach ($all_articles as $art) {
-    $stats['total']++;
-    $st = get_field('artikel_status', $art->ID);
-    if ($st === DGPTM_Artikel_Einreichung::STATUS_SUBMITTED) $stats['pending']++;
-    elseif ($st === DGPTM_Artikel_Einreichung::STATUS_UNDER_REVIEW) $stats['in_review']++;
-    elseif (in_array($st, [DGPTM_Artikel_Einreichung::STATUS_REVISION_REQUIRED, DGPTM_Artikel_Einreichung::STATUS_REVISION_SUBMITTED])) $stats['revision']++;
-    elseif ($st === DGPTM_Artikel_Einreichung::STATUS_ACCEPTED) $stats['accepted']++;
+// Calculate statistics
+$stats = [
+    'total' => count($all_articles),
+    'submitted' => 0,
+    'in_review' => 0,
+    'revision_required' => 0,
+    'revision_submitted' => 0,
+    'accepted' => 0,
+    'rejected' => 0,
+    'published' => 0
+];
+
+foreach ($all_articles as $article) {
+    $status = get_field('artikel_status', $article->ID);
+    switch ($status) {
+        case DGPTM_Artikel_Einreichung::STATUS_SUBMITTED:
+            $stats['submitted']++;
+            break;
+        case DGPTM_Artikel_Einreichung::STATUS_UNDER_REVIEW:
+            $stats['in_review']++;
+            break;
+        case DGPTM_Artikel_Einreichung::STATUS_REVISION_REQUIRED:
+            $stats['revision_required']++;
+            break;
+        case DGPTM_Artikel_Einreichung::STATUS_REVISION_SUBMITTED:
+            $stats['revision_submitted']++;
+            break;
+        case DGPTM_Artikel_Einreichung::STATUS_ACCEPTED:
+            $stats['accepted']++;
+            break;
+        case DGPTM_Artikel_Einreichung::STATUS_REJECTED:
+            $stats['rejected']++;
+            break;
+        case DGPTM_Artikel_Einreichung::STATUS_PUBLISHED:
+            $stats['published']++;
+            break;
+    }
 }
+
+// Pending action articles
+$pending_action = get_posts([
+    'post_type' => DGPTM_Artikel_Einreichung::POST_TYPE,
+    'posts_per_page' => -1,
+    'meta_query' => [
+        'relation' => 'OR',
+        [
+            'key' => 'artikel_status',
+            'value' => DGPTM_Artikel_Einreichung::STATUS_SUBMITTED,
+            'compare' => '='
+        ],
+        [
+            'key' => 'artikel_status',
+            'value' => DGPTM_Artikel_Einreichung::STATUS_REVISION_SUBMITTED,
+            'compare' => '='
+        ]
+    ]
+]);
+
+// Recent submissions
+$recent = get_posts([
+    'post_type' => DGPTM_Artikel_Einreichung::POST_TYPE,
+    'posts_per_page' => 10,
+    'orderby' => 'date',
+    'order' => 'DESC'
+]);
 
 // Check if viewing single article
 $view_id = isset($_GET['editor_artikel_id']) ? intval($_GET['editor_artikel_id']) : 0;
@@ -77,7 +129,7 @@ if ($view_id) {
 }
 ?>
 
-<div class="dgptm-artikel-container">
+<div class="dgptm-artikel-container dgptm-editor-dashboard">
 
     <?php if ($view_article): ?>
         <!-- Single Article Editor View -->
@@ -98,19 +150,21 @@ if ($view_id) {
             &larr; Zurück zur Übersicht
         </a>
 
-        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+        <div class="editor-detail-grid">
             <!-- Main Content -->
-            <div>
-                <div class="article-card">
-                    <div class="article-card-header">
-                        <span class="submission-id"><?php echo esc_html($submission_id); ?></span>
-                        <h3><?php echo esc_html($view_article->post_title); ?></h3>
+            <div class="editor-main">
+                <div class="editor-box">
+                    <div class="editor-box-header">
+                        <div>
+                            <span class="submission-id"><?php echo esc_html($submission_id); ?></span>
+                            <h2 style="margin: 5px 0 0 0;"><?php echo esc_html($view_article->post_title); ?></h2>
+                        </div>
                         <span class="status-badge <?php echo esc_attr($plugin->get_status_class($status)); ?>">
                             <?php echo esc_html($plugin->get_status_label($status)); ?>
                         </span>
                     </div>
 
-                    <div class="article-card-body">
+                    <div class="editor-box-body">
                         <!-- Tabs -->
                         <div class="tabs-container">
                             <div class="tabs">
@@ -150,7 +204,7 @@ if ($view_id) {
                                 </ul>
 
                                 <h4 style="margin-top: 20px;">Abstract (Deutsch)</h4>
-                                <div style="white-space: pre-wrap; background: #f7fafc; padding: 15px; border-radius: 6px; font-size: 14px;">
+                                <div class="abstract-box">
                                     <?php echo esc_html(get_field('abstract-deutsch', $view_id)); ?>
                                 </div>
 
@@ -173,7 +227,7 @@ if ($view_id) {
                                         Herunterladen (<?php echo esc_html($manuskript['filename']); ?>)
                                     </a>
                                 <?php else: ?>
-                                    <p>Kein Manuskript vorhanden.</p>
+                                    <p class="no-items">Kein Manuskript vorhanden.</p>
                                 <?php endif; ?>
 
                                 <?php if ($revision): ?>
@@ -184,7 +238,7 @@ if ($view_id) {
 
                                 <?php if ($response = get_field('revision_response', $view_id)): ?>
                                 <h4 style="margin-top: 20px;">Response to Reviewers</h4>
-                                <div style="white-space: pre-wrap; background: #f7fafc; padding: 15px; border-radius: 6px;">
+                                <div class="abstract-box">
                                     <?php echo esc_html($response); ?>
                                 </div>
                                 <?php endif; ?>
@@ -192,7 +246,7 @@ if ($view_id) {
 
                                 <?php if ($literatur = get_field('literatur', $view_id)): ?>
                                 <h4 style="margin-top: 20px;">Literaturverzeichnis</h4>
-                                <div style="white-space: pre-wrap; background: #f7fafc; padding: 15px; border-radius: 6px; font-size: 13px;">
+                                <div class="abstract-box" style="font-size: 13px;">
                                     <?php echo esc_html($literatur); ?>
                                 </div>
                                 <?php endif; ?>
@@ -221,42 +275,44 @@ if ($view_id) {
                                 ?>
 
                                 <!-- Reviewer 1 -->
-                                <div class="review-section">
-                                    <h4>Reviewer 1</h4>
-                                    <?php if ($r1_status === 'completed'): ?>
-                                        <p>
-                                            <strong>Empfehlung:</strong>
+                                <div class="review-display">
+                                    <div class="review-header">
+                                        <strong>Reviewer 1</strong>
+                                        <?php if ($r1_status === 'completed'): ?>
                                             <span class="status-badge <?php echo esc_attr($rec_class[$r1_rec] ?? 'status-gray'); ?>">
                                                 <?php echo esc_html($rec_labels[$r1_rec] ?? '-'); ?>
                                             </span>
-                                        </p>
-                                        <div style="white-space: pre-wrap; background: #fff; padding: 15px; border-radius: 6px; margin-top: 10px; border: 1px solid #e2e8f0;">
+                                        <?php endif; ?>
+                                    </div>
+                                    <?php if ($r1_status === 'completed'): ?>
+                                        <div class="review-text">
                                             <?php echo esc_html($r1_comment); ?>
                                         </div>
                                     <?php elseif ($r1_status === 'pending'): ?>
-                                        <p class="status-badge status-orange">Gutachten ausstehend</p>
+                                        <p><span class="status-badge status-orange">Gutachten ausstehend</span></p>
                                     <?php else: ?>
-                                        <p>Noch nicht zugewiesen</p>
+                                        <p class="no-items">Noch nicht zugewiesen</p>
                                     <?php endif; ?>
                                 </div>
 
                                 <!-- Reviewer 2 -->
-                                <div class="review-section" style="margin-top: 20px;">
-                                    <h4>Reviewer 2</h4>
-                                    <?php if ($r2_status === 'completed'): ?>
-                                        <p>
-                                            <strong>Empfehlung:</strong>
+                                <div class="review-display" style="margin-top: 20px;">
+                                    <div class="review-header">
+                                        <strong>Reviewer 2</strong>
+                                        <?php if ($r2_status === 'completed'): ?>
                                             <span class="status-badge <?php echo esc_attr($rec_class[$r2_rec] ?? 'status-gray'); ?>">
                                                 <?php echo esc_html($rec_labels[$r2_rec] ?? '-'); ?>
                                             </span>
-                                        </p>
-                                        <div style="white-space: pre-wrap; background: #fff; padding: 15px; border-radius: 6px; margin-top: 10px; border: 1px solid #e2e8f0;">
+                                        <?php endif; ?>
+                                    </div>
+                                    <?php if ($r2_status === 'completed'): ?>
+                                        <div class="review-text">
                                             <?php echo esc_html($r2_comment); ?>
                                         </div>
                                     <?php elseif ($r2_status === 'pending'): ?>
-                                        <p class="status-badge status-orange">Gutachten ausstehend</p>
+                                        <p><span class="status-badge status-orange">Gutachten ausstehend</span></p>
                                     <?php else: ?>
-                                        <p>Noch nicht zugewiesen</p>
+                                        <p class="no-items">Noch nicht zugewiesen</p>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -266,106 +322,103 @@ if ($view_id) {
             </div>
 
             <!-- Sidebar -->
-            <div>
+            <div class="editor-sidebar">
                 <!-- Reviewer Assignment -->
-                <div class="article-card">
-                    <div class="article-card-header">
-                        <h3 style="margin: 0; font-size: 16px;">Reviewer zuweisen</h3>
-                    </div>
-                    <div class="article-card-body">
-                        <!-- Reviewer 1 -->
-                        <div style="margin-bottom: 20px;">
-                            <label style="font-weight: 600; display: block; margin-bottom: 5px;">Reviewer 1</label>
-                            <?php if ($reviewer_1): ?>
-                                <p>
-                                    <?php
-                                    $r1_user = is_object($reviewer_1) ? $reviewer_1 : get_user_by('ID', $reviewer_1);
-                                    echo esc_html($r1_user ? $r1_user->display_name : 'Unbekannt');
-                                    ?>
-                                    <span class="status-badge <?php echo $r1_status === 'completed' ? 'status-green' : 'status-orange'; ?>" style="margin-left: 10px;">
-                                        <?php echo $r1_status === 'completed' ? 'Fertig' : 'Ausstehend'; ?>
-                                    </span>
-                                </p>
-                            <?php else: ?>
-                                <select id="reviewer-1-select" style="width: 100%; padding: 8px;">
-                                    <option value="">-- Auswählen --</option>
-                                    <?php foreach ($reviewers as $rev): ?>
-                                        <option value="<?php echo esc_attr($rev->ID); ?>">
-                                            <?php echo esc_html($rev->display_name); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <button class="btn btn-primary assign-reviewer-btn" data-article-id="<?php echo esc_attr($view_id); ?>" data-slot="1" style="margin-top: 10px; width: 100%;">
-                                    Zuweisen
-                                </button>
-                            <?php endif; ?>
-                        </div>
+                <div class="sidebar-card">
+                    <h3>Reviewer zuweisen</h3>
 
-                        <!-- Reviewer 2 -->
-                        <div>
-                            <label style="font-weight: 600; display: block; margin-bottom: 5px;">Reviewer 2</label>
-                            <?php if ($reviewer_2): ?>
-                                <p>
-                                    <?php
-                                    $r2_user = is_object($reviewer_2) ? $reviewer_2 : get_user_by('ID', $reviewer_2);
-                                    echo esc_html($r2_user ? $r2_user->display_name : 'Unbekannt');
-                                    ?>
-                                    <span class="status-badge <?php echo $r2_status === 'completed' ? 'status-green' : 'status-orange'; ?>" style="margin-left: 10px;">
-                                        <?php echo $r2_status === 'completed' ? 'Fertig' : 'Ausstehend'; ?>
-                                    </span>
-                                </p>
-                            <?php else: ?>
-                                <select id="reviewer-2-select" style="width: 100%; padding: 8px;">
-                                    <option value="">-- Auswählen --</option>
-                                    <?php foreach ($reviewers as $rev): ?>
-                                        <option value="<?php echo esc_attr($rev->ID); ?>">
-                                            <?php echo esc_html($rev->display_name); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <button class="btn btn-primary assign-reviewer-btn" data-article-id="<?php echo esc_attr($view_id); ?>" data-slot="2" style="margin-top: 10px; width: 100%;">
-                                    Zuweisen
-                                </button>
+                    <!-- Reviewer 1 -->
+                    <div class="reviewer-slot">
+                        <div class="slot-header">
+                            <span class="slot-label">Reviewer 1</span>
+                            <?php if ($r1_status): ?>
+                                <span class="reviewer-status <?php echo $r1_status === 'completed' ? 'completed' : 'pending'; ?>">
+                                    <?php echo $r1_status === 'completed' ? 'Fertig' : 'Ausstehend'; ?>
+                                </span>
                             <?php endif; ?>
                         </div>
+                        <?php if ($reviewer_1): ?>
+                            <p style="margin: 0;">
+                                <?php
+                                $r1_user = is_object($reviewer_1) ? $reviewer_1 : get_user_by('ID', $reviewer_1);
+                                echo esc_html($r1_user ? $r1_user->display_name : 'Unbekannt');
+                                ?>
+                            </p>
+                        <?php else: ?>
+                            <select id="reviewer-1-select" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
+                                <option value="">-- Auswählen --</option>
+                                <?php foreach ($reviewers as $rev): ?>
+                                    <option value="<?php echo esc_attr($rev->ID); ?>">
+                                        <?php echo esc_html($rev->display_name); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <button class="btn btn-primary assign-reviewer-btn" data-article-id="<?php echo esc_attr($view_id); ?>" data-slot="1" style="margin-top: 10px; width: 100%;">
+                                Zuweisen
+                            </button>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Reviewer 2 -->
+                    <div class="reviewer-slot">
+                        <div class="slot-header">
+                            <span class="slot-label">Reviewer 2</span>
+                            <?php if ($r2_status): ?>
+                                <span class="reviewer-status <?php echo $r2_status === 'completed' ? 'completed' : 'pending'; ?>">
+                                    <?php echo $r2_status === 'completed' ? 'Fertig' : 'Ausstehend'; ?>
+                                </span>
+                            <?php endif; ?>
+                        </div>
+                        <?php if ($reviewer_2): ?>
+                            <p style="margin: 0;">
+                                <?php
+                                $r2_user = is_object($reviewer_2) ? $reviewer_2 : get_user_by('ID', $reviewer_2);
+                                echo esc_html($r2_user ? $r2_user->display_name : 'Unbekannt');
+                                ?>
+                            </p>
+                        <?php else: ?>
+                            <select id="reviewer-2-select" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
+                                <option value="">-- Auswählen --</option>
+                                <?php foreach ($reviewers as $rev): ?>
+                                    <option value="<?php echo esc_attr($rev->ID); ?>">
+                                        <?php echo esc_html($rev->display_name); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <button class="btn btn-primary assign-reviewer-btn" data-article-id="<?php echo esc_attr($view_id); ?>" data-slot="2" style="margin-top: 10px; width: 100%;">
+                                Zuweisen
+                            </button>
+                        <?php endif; ?>
                     </div>
                 </div>
 
                 <!-- Decision Panel -->
                 <?php if (($r1_status === 'completed' || $r2_status === 'completed') &&
                           !in_array($status, [DGPTM_Artikel_Einreichung::STATUS_ACCEPTED, DGPTM_Artikel_Einreichung::STATUS_REJECTED, DGPTM_Artikel_Einreichung::STATUS_PUBLISHED])): ?>
-                <div class="article-card" style="margin-top: 20px; background: #1a365d; color: #fff;">
-                    <div class="article-card-header" style="background: transparent; border-color: rgba(255,255,255,0.2);">
-                        <h3 style="margin: 0; font-size: 16px; color: #fff;">Entscheidung treffen</h3>
-                    </div>
-                    <div class="article-card-body">
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <button class="btn btn-success decision-btn" data-article-id="<?php echo esc_attr($view_id); ?>" data-decision="accept">
-                                Annehmen
-                            </button>
-                            <button class="btn decision-btn" style="background: #d69e2e; color: #fff;" data-article-id="<?php echo esc_attr($view_id); ?>" data-decision="revision">
-                                Revision anfordern
-                            </button>
-                            <button class="btn btn-danger decision-btn" data-article-id="<?php echo esc_attr($view_id); ?>" data-decision="reject">
-                                Ablehnen
-                            </button>
-                        </div>
+                <div class="decision-panel">
+                    <h3>Entscheidung treffen</h3>
+                    <div class="decision-buttons">
+                        <button class="btn btn-success decision-btn" data-article-id="<?php echo esc_attr($view_id); ?>" data-decision="accept">
+                            Annehmen
+                        </button>
+                        <button class="btn decision-btn" style="background: #d69e2e !important; color: #fff !important;" data-article-id="<?php echo esc_attr($view_id); ?>" data-decision="revision">
+                            Revision
+                        </button>
+                        <button class="btn btn-danger decision-btn" data-article-id="<?php echo esc_attr($view_id); ?>" data-decision="reject">
+                            Ablehnen
+                        </button>
                     </div>
                 </div>
                 <?php endif; ?>
 
                 <!-- Editor Notes -->
-                <div class="article-card" style="margin-top: 20px;">
-                    <div class="article-card-header">
-                        <h3 style="margin: 0; font-size: 16px;">Interne Notizen</h3>
-                    </div>
-                    <div class="article-card-body">
-                        <textarea id="editor-notes" rows="4" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px;"
-                                  placeholder="Notizen für die Redaktion..."><?php echo esc_textarea(get_field('editor_notes', $view_id)); ?></textarea>
-                        <button class="btn btn-secondary" style="margin-top: 10px;" onclick="saveEditorNotes(<?php echo esc_attr($view_id); ?>)">
-                            Speichern
-                        </button>
-                    </div>
+                <div class="sidebar-card">
+                    <h3>Interne Notizen</h3>
+                    <textarea id="editor-notes" rows="4" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px; resize: vertical;"
+                              placeholder="Notizen für die Redaktion..."><?php echo esc_textarea(get_field('editor_notes', $view_id)); ?></textarea>
+                    <button class="btn btn-secondary" style="margin-top: 10px; width: 100%;" onclick="saveEditorNotes(<?php echo esc_attr($view_id); ?>)">
+                        Speichern
+                    </button>
                 </div>
             </div>
         </div>
@@ -445,101 +498,210 @@ if ($view_id) {
 
     <?php else: ?>
         <!-- Dashboard Overview -->
-        <h2>Editor-in-Chief Dashboard</h2>
+        <div class="dashboard-header">
+            <h1>Die Perfusiologie - Editor Dashboard</h1>
+        </div>
 
-        <!-- Stats -->
-        <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 30px;">
-            <div class="article-card" style="text-align: center; padding: 20px;">
-                <div style="font-size: 36px; font-weight: 700; color: #1a365d;"><?php echo $stats['total']; ?></div>
-                <div style="color: #718096; font-size: 14px;">Gesamt</div>
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number"><?php echo $stats['total']; ?></div>
+                <div class="stat-label">Gesamt</div>
             </div>
-            <div class="article-card" style="text-align: center; padding: 20px;">
-                <div style="font-size: 36px; font-weight: 700; color: #3182ce;"><?php echo $stats['pending']; ?></div>
-                <div style="color: #718096; font-size: 14px;">Neu eingereicht</div>
+            <div class="stat-card stat-new">
+                <div class="stat-number"><?php echo $stats['submitted']; ?></div>
+                <div class="stat-label">Neu eingereicht</div>
             </div>
-            <div class="article-card" style="text-align: center; padding: 20px;">
-                <div style="font-size: 36px; font-weight: 700; color: #d69e2e;"><?php echo $stats['in_review']; ?></div>
-                <div style="color: #718096; font-size: 14px;">Im Review</div>
+            <div class="stat-card stat-review">
+                <div class="stat-number"><?php echo $stats['in_review']; ?></div>
+                <div class="stat-label">Im Review</div>
             </div>
-            <div class="article-card" style="text-align: center; padding: 20px;">
-                <div style="font-size: 36px; font-weight: 700; color: #38a169;"><?php echo $stats['accepted']; ?></div>
-                <div style="color: #718096; font-size: 14px;">Angenommen</div>
+            <div class="stat-card stat-revision">
+                <div class="stat-number"><?php echo $stats['revision_submitted']; ?></div>
+                <div class="stat-label">Revision eingereicht</div>
+            </div>
+            <div class="stat-card stat-accepted">
+                <div class="stat-number"><?php echo $stats['accepted']; ?></div>
+                <div class="stat-label">Angenommen</div>
+            </div>
+            <div class="stat-card stat-published">
+                <div class="stat-number"><?php echo $stats['published']; ?></div>
+                <div class="stat-label">Veröffentlicht</div>
             </div>
         </div>
 
-        <!-- Filters -->
-        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-            <a href="<?php echo esc_url(remove_query_arg('status')); ?>" class="btn <?php echo !$filter_status ? 'btn-primary' : 'btn-secondary'; ?>">Alle</a>
-            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_SUBMITTED)); ?>"
-               class="btn <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_SUBMITTED ? 'btn-primary' : 'btn-secondary'; ?>">Neu</a>
-            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_UNDER_REVIEW)); ?>"
-               class="btn <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_UNDER_REVIEW ? 'btn-primary' : 'btn-secondary'; ?>">Im Review</a>
-            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_REVISION_SUBMITTED)); ?>"
-               class="btn <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_REVISION_SUBMITTED ? 'btn-primary' : 'btn-secondary'; ?>">Revision</a>
+        <!-- Two Column Layout -->
+        <div class="dashboard-columns">
+            <!-- Pending Action -->
+            <div class="dashboard-column">
+                <div class="dashboard-box">
+                    <h2>Aktion erforderlich (<?php echo count($pending_action); ?>)</h2>
+                    <?php if (empty($pending_action)): ?>
+                        <p class="no-items">Keine Einreichungen erfordern aktuell eine Aktion.</p>
+                    <?php else: ?>
+                        <table class="dgptm-artikel-table compact">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Titel</th>
+                                    <th>Status</th>
+                                    <th>Aktion</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($pending_action as $article):
+                                    $status = get_field('artikel_status', $article->ID);
+                                    $submission_id = get_field('submission_id', $article->ID);
+                                ?>
+                                <tr>
+                                    <td class="submission-id"><?php echo esc_html($submission_id); ?></td>
+                                    <td>
+                                        <strong><?php echo esc_html(wp_trim_words($article->post_title, 6)); ?></strong>
+                                    </td>
+                                    <td>
+                                        <span class="status-badge <?php echo esc_attr($plugin->get_status_class($status)); ?>">
+                                            <?php echo esc_html($plugin->get_status_label($status)); ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="<?php echo esc_url(add_query_arg('editor_artikel_id', $article->ID)); ?>" class="btn btn-primary btn-small">
+                                            Bearbeiten
+                                        </a>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Recent Submissions -->
+            <div class="dashboard-column">
+                <div class="dashboard-box">
+                    <h2>Letzte Einreichungen</h2>
+                    <?php if (empty($recent)): ?>
+                        <p class="no-items">Keine Einreichungen vorhanden.</p>
+                    <?php else: ?>
+                        <table class="dgptm-artikel-table compact">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Titel</th>
+                                    <th>Datum</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($recent as $article):
+                                    $status = get_field('artikel_status', $article->ID);
+                                    $submission_id = get_field('submission_id', $article->ID);
+                                    $submitted_at = get_field('submitted_at', $article->ID);
+                                ?>
+                                <tr>
+                                    <td class="submission-id"><?php echo esc_html($submission_id); ?></td>
+                                    <td>
+                                        <a href="<?php echo esc_url(add_query_arg('editor_artikel_id', $article->ID)); ?>">
+                                            <?php echo esc_html(wp_trim_words($article->post_title, 6)); ?>
+                                        </a>
+                                    </td>
+                                    <td><?php echo esc_html($submitted_at ? date_i18n('d.m.Y', strtotime($submitted_at)) : '-'); ?></td>
+                                    <td>
+                                        <span class="status-badge <?php echo esc_attr($plugin->get_status_class($status)); ?>">
+                                            <?php echo esc_html($plugin->get_status_label($status)); ?>
+                                        </span>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php endif; ?>
+                </div>
+            </div>
         </div>
 
-        <!-- Article List -->
-        <?php if (empty($articles)): ?>
-            <div class="empty-state">
-                <div class="empty-state-icon">&#128196;</div>
-                <h3>Keine Artikel gefunden</h3>
+        <!-- All Articles Section -->
+        <div class="dashboard-box" style="margin-top: 20px;">
+            <h2>Alle Einreichungen</h2>
+
+            <!-- Filters -->
+            <div class="filter-bar">
+                <a href="<?php echo esc_url(remove_query_arg('status')); ?>" class="btn <?php echo !$filter_status ? 'btn-primary' : 'btn-secondary'; ?>">Alle</a>
+                <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_SUBMITTED)); ?>"
+                   class="btn <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_SUBMITTED ? 'btn-primary' : 'btn-secondary'; ?>">Neu</a>
+                <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_UNDER_REVIEW)); ?>"
+                   class="btn <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_UNDER_REVIEW ? 'btn-primary' : 'btn-secondary'; ?>">Im Review</a>
+                <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_REVISION_SUBMITTED)); ?>"
+                   class="btn <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_REVISION_SUBMITTED ? 'btn-primary' : 'btn-secondary'; ?>">Revision</a>
+                <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_ACCEPTED)); ?>"
+                   class="btn <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_ACCEPTED ? 'btn-primary' : 'btn-secondary'; ?>">Angenommen</a>
+                <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_PUBLISHED)); ?>"
+                   class="btn <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_PUBLISHED ? 'btn-primary' : 'btn-secondary'; ?>">Publiziert</a>
             </div>
-        <?php else: ?>
-            <table class="dgptm-artikel-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Titel</th>
-                        <th>Autor</th>
-                        <th>Status</th>
-                        <th>Reviewer</th>
-                        <th>Eingereicht</th>
-                        <th>Aktion</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($articles as $article):
-                        $status = get_field('artikel_status', $article->ID);
-                        $submission_id = get_field('submission_id', $article->ID);
-                        $submitted_at = get_field('submitted_at', $article->ID);
-                        $r1 = get_field('reviewer_1', $article->ID);
-                        $r2 = get_field('reviewer_2', $article->ID);
-                        $r1_st = get_field('reviewer_1_status', $article->ID);
-                        $r2_st = get_field('reviewer_2_status', $article->ID);
-                    ?>
-                    <tr>
-                        <td class="submission-id"><?php echo esc_html($submission_id); ?></td>
-                        <td>
-                            <div class="article-title"><?php echo esc_html($article->post_title); ?></div>
-                            <div class="article-meta">
-                                <?php echo esc_html(DGPTM_Artikel_Einreichung::PUBLIKATIONSARTEN[get_field('publikationsart', $article->ID)] ?? ''); ?>
-                            </div>
-                        </td>
-                        <td><?php echo esc_html(get_field('hauptautorin', $article->ID)); ?></td>
-                        <td>
-                            <span class="status-badge <?php echo esc_attr($plugin->get_status_class($status)); ?>">
-                                <?php echo esc_html($plugin->get_status_label($status)); ?>
-                            </span>
-                        </td>
-                        <td>
-                            <?php
-                            $reviewer_info = [];
-                            if ($r1) $reviewer_info[] = 'R1: ' . ($r1_st === 'completed' ? '&#10003;' : '...');
-                            if ($r2) $reviewer_info[] = 'R2: ' . ($r2_st === 'completed' ? '&#10003;' : '...');
-                            echo $reviewer_info ? implode(' ', $reviewer_info) : '-';
-                            ?>
-                        </td>
-                        <td><?php echo esc_html($submitted_at ? date_i18n('d.m.Y', strtotime($submitted_at)) : '-'); ?></td>
-                        <td>
-                            <a href="<?php echo esc_url(add_query_arg('editor_artikel_id', $article->ID)); ?>" class="btn btn-primary">
-                                Bearbeiten
-                            </a>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        <?php endif; ?>
+
+            <!-- Article List -->
+            <?php if (empty($articles)): ?>
+                <div class="empty-state">
+                    <div class="empty-state-icon">&#128196;</div>
+                    <h3>Keine Artikel gefunden</h3>
+                </div>
+            <?php else: ?>
+                <table class="dgptm-artikel-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Titel</th>
+                            <th>Autor</th>
+                            <th>Status</th>
+                            <th>Reviewer</th>
+                            <th>Eingereicht</th>
+                            <th>Aktion</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($articles as $article):
+                            $status = get_field('artikel_status', $article->ID);
+                            $submission_id = get_field('submission_id', $article->ID);
+                            $submitted_at = get_field('submitted_at', $article->ID);
+                            $r1 = get_field('reviewer_1', $article->ID);
+                            $r2 = get_field('reviewer_2', $article->ID);
+                            $r1_st = get_field('reviewer_1_status', $article->ID);
+                            $r2_st = get_field('reviewer_2_status', $article->ID);
+                        ?>
+                        <tr>
+                            <td class="submission-id"><?php echo esc_html($submission_id); ?></td>
+                            <td>
+                                <div class="article-title"><?php echo esc_html($article->post_title); ?></div>
+                                <div class="article-meta">
+                                    <?php echo esc_html(DGPTM_Artikel_Einreichung::PUBLIKATIONSARTEN[get_field('publikationsart', $article->ID)] ?? ''); ?>
+                                </div>
+                            </td>
+                            <td><?php echo esc_html(get_field('hauptautorin', $article->ID)); ?></td>
+                            <td>
+                                <span class="status-badge <?php echo esc_attr($plugin->get_status_class($status)); ?>">
+                                    <?php echo esc_html($plugin->get_status_label($status)); ?>
+                                </span>
+                            </td>
+                            <td>
+                                <?php
+                                $reviewer_info = [];
+                                if ($r1) $reviewer_info[] = 'R1: ' . ($r1_st === 'completed' ? '&#10003;' : '...');
+                                if ($r2) $reviewer_info[] = 'R2: ' . ($r2_st === 'completed' ? '&#10003;' : '...');
+                                echo $reviewer_info ? implode(' ', $reviewer_info) : '-';
+                                ?>
+                            </td>
+                            <td><?php echo esc_html($submitted_at ? date_i18n('d.m.Y', strtotime($submitted_at)) : '-'); ?></td>
+                            <td>
+                                <a href="<?php echo esc_url(add_query_arg('editor_artikel_id', $article->ID)); ?>" class="btn btn-primary btn-small">
+                                    Bearbeiten
+                                </a>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
 
     <?php endif; ?>
 

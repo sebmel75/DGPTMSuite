@@ -712,7 +712,323 @@
     display: block;
 }
 
-/* Responsive */
+/* ===========================================
+   EDITOR DASHBOARD STYLES (Frontend)
+   Mirrors the Admin Dashboard design
+   =========================================== */
+
+/* Dashboard Header */
+.dgptm-editor-dashboard .dashboard-header {
+    margin-bottom: 30px;
+}
+
+.dgptm-editor-dashboard .dashboard-header h1 {
+    color: #1a365d;
+    font-size: 28px;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* Statistics Grid */
+.dgptm-editor-dashboard .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.dgptm-editor-dashboard .stat-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.dgptm-editor-dashboard .stat-card .stat-number {
+    font-size: 36px;
+    font-weight: 700;
+    color: #1a365d;
+    line-height: 1.2;
+}
+
+.dgptm-editor-dashboard .stat-card .stat-label {
+    color: #718096;
+    font-size: 13px;
+    margin-top: 5px;
+}
+
+.dgptm-editor-dashboard .stat-card.stat-new .stat-number { color: #3182ce; }
+.dgptm-editor-dashboard .stat-card.stat-review .stat-number { color: #d69e2e; }
+.dgptm-editor-dashboard .stat-card.stat-revision .stat-number { color: #805ad5; }
+.dgptm-editor-dashboard .stat-card.stat-accepted .stat-number { color: #38a169; }
+.dgptm-editor-dashboard .stat-card.stat-published .stat-number { color: #1a365d; }
+
+/* Dashboard Columns Layout */
+.dgptm-editor-dashboard .dashboard-columns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.dgptm-editor-dashboard .dashboard-column {
+    min-width: 0;
+}
+
+/* Dashboard Box */
+.dgptm-editor-dashboard .dashboard-box {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.dgptm-editor-dashboard .dashboard-box h2 {
+    margin: 0 0 15px 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 16px;
+    color: #1a365d;
+}
+
+.dgptm-editor-dashboard .no-items {
+    color: #718096;
+    font-style: italic;
+    margin: 0;
+}
+
+/* Filter Bar */
+.dgptm-editor-dashboard .filter-bar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+/* Compact Table */
+.dgptm-editor-dashboard .dgptm-artikel-table.compact th,
+.dgptm-editor-dashboard .dgptm-artikel-table.compact td {
+    padding: 10px 12px;
+    font-size: 13px;
+}
+
+/* Small Button */
+.dgptm-artikel-container .btn-small,
+.dgptm-artikel-container .btn.btn-small {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+}
+
+/* Editor Detail View */
+.dgptm-editor-dashboard .editor-detail-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+}
+
+.dgptm-editor-dashboard .editor-main {
+    min-width: 0;
+}
+
+.dgptm-editor-dashboard .editor-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Editor Box (Main content) */
+.dgptm-editor-dashboard .editor-box {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.dgptm-editor-dashboard .editor-box-header {
+    padding: 20px;
+    background: #f7fafc;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.dgptm-editor-dashboard .editor-box-body {
+    padding: 20px;
+}
+
+/* Sidebar Card */
+.dgptm-editor-dashboard .sidebar-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.dgptm-editor-dashboard .sidebar-card h3 {
+    margin: 0 0 15px 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 14px;
+    text-transform: uppercase;
+    color: #718096;
+    letter-spacing: 0.5px;
+}
+
+/* Reviewer Slot */
+.dgptm-editor-dashboard .reviewer-slot {
+    background: #f7fafc;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 10px;
+}
+
+.dgptm-editor-dashboard .reviewer-slot:last-child {
+    margin-bottom: 0;
+}
+
+.dgptm-editor-dashboard .slot-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.dgptm-editor-dashboard .slot-label {
+    font-weight: 600;
+    font-size: 13px;
+    color: #4a5568;
+}
+
+.dgptm-editor-dashboard .reviewer-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.dgptm-editor-dashboard .reviewer-status.pending {
+    background: #feebc8;
+    color: #744210;
+}
+
+.dgptm-editor-dashboard .reviewer-status.completed {
+    background: #c6f6d5;
+    color: #22543d;
+}
+
+/* Decision Panel */
+.dgptm-editor-dashboard .decision-panel {
+    background: #1a365d;
+    color: #fff;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.dgptm-editor-dashboard .decision-panel h3 {
+    color: #fff;
+    border-bottom-color: rgba(255,255,255,0.2);
+    margin: 0 0 15px 0;
+    padding-bottom: 10px;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.dgptm-editor-dashboard .decision-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Review Display */
+.dgptm-editor-dashboard .review-display {
+    background: #f7fafc;
+    border-radius: 6px;
+    padding: 15px;
+}
+
+.dgptm-editor-dashboard .review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.dgptm-editor-dashboard .review-text {
+    background: #fff;
+    padding: 15px;
+    border-radius: 6px;
+    white-space: pre-wrap;
+    line-height: 1.6;
+    font-size: 14px;
+    border: 1px solid #e2e8f0;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Abstract Box */
+.dgptm-editor-dashboard .abstract-box {
+    background: #f7fafc;
+    padding: 15px;
+    border-radius: 6px;
+    white-space: pre-wrap;
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+/* Info List for Editor */
+.dgptm-editor-dashboard .info-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.dgptm-editor-dashboard .info-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.dgptm-editor-dashboard .info-list li:last-child {
+    border-bottom: none;
+}
+
+.dgptm-editor-dashboard .info-list .label {
+    color: #718096;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.dgptm-editor-dashboard .info-list .value {
+    font-weight: 500;
+    color: #2d3748;
+    text-align: right;
+}
+
+/* ===========================================
+   RESPONSIVE STYLES
+   =========================================== */
+
+@media (max-width: 1024px) {
+    .dgptm-editor-dashboard .editor-detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dgptm-editor-dashboard .dashboard-columns {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media (max-width: 768px) {
     .dgptm-artikel-container {
         padding: 10px;
@@ -738,5 +1054,18 @@
 
     .progress-step::after {
         display: none;
+    }
+
+    .dgptm-editor-dashboard .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .dgptm-editor-dashboard .filter-bar {
+        flex-direction: column;
+    }
+
+    .dgptm-editor-dashboard .filter-bar .btn {
+        width: 100%;
+        justify-content: center;
     }
 }

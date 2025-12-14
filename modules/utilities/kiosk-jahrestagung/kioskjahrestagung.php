@@ -1047,10 +1047,12 @@ final class Bummern_Code_Scanner {
 
     /**
      * Sucht Ticket im Zoho CRM anhand des Codes
+     * WICHTIG: Das Modul heißt "Ticket2" (Custom-Modul), nicht "Tickets"
+     * Der Barcode/Ticket-ID ist im Feld "Name" gespeichert
      */
     private function fetch_ticket_from_crm($scan, $token) {
-        // Suche im Tickets-Modul nach dem Namen (Barcode) oder Subject
-        $url = 'https://www.zohoapis.eu/crm/v2/Tickets/search?criteria=((Name:equals:' . urlencode($scan) . ')or(Subject:contains:' . urlencode($scan) . '))';
+        // Suche im Ticket2-Modul (Custom-Modul) nach dem Namen (= Ticket-ID/Barcode)
+        $url = 'https://www.zohoapis.eu/crm/v2/Ticket2/search?criteria=(Name:equals:' . urlencode($scan) . ')';
 
         $response = wp_remote_get($url, [
             'headers' => [
@@ -1060,6 +1062,7 @@ final class Bummern_Code_Scanner {
         ]);
 
         if (is_wp_error($response)) {
+            error_log('BCS CRM Error: ' . $response->get_error_message());
             return null;
         }
 
@@ -1067,12 +1070,12 @@ final class Bummern_Code_Scanner {
         $body = wp_remote_retrieve_body($response);
         $data = json_decode($body, true);
 
+        error_log('BCS CRM Query: ' . $url);
+        error_log('BCS CRM HTTP: ' . $http_code);
+        error_log('BCS CRM Response: ' . substr($body, 0, 500));
+
         // 204 = No Content (keine Ergebnisse)
         if ($http_code === 204) {
-            // Fallback: Direkte ID-Abfrage falls scan eine Zoho-ID ist
-            if (preg_match('/^\d{15,}$/', $scan)) {
-                return $this->fetch_ticket_by_id($scan, $token);
-            }
             return null;
         }
 
@@ -1084,10 +1087,10 @@ final class Bummern_Code_Scanner {
     }
 
     /**
-     * Holt Ticket direkt per ID
+     * Holt Ticket direkt per ID aus dem Ticket2-Modul
      */
     private function fetch_ticket_by_id($ticket_id, $token) {
-        $url = 'https://www.zohoapis.eu/crm/v2/Tickets/' . $ticket_id;
+        $url = 'https://www.zohoapis.eu/crm/v2/Ticket2/' . $ticket_id;
 
         $response = wp_remote_get($url, [
             'headers' => [
@@ -1113,25 +1116,29 @@ final class Bummern_Code_Scanner {
 
     /**
      * Wertet den Ticket-Status aus
+     * Angepasst für das Ticket2-Custom-Modul von Zoho CRM
+     *
+     * Feldstruktur aus userMessage[0]:
+     * - TN: {name: "Sebastian Melzer", id: "..."} (Lookup zum Kontakt)
+     * - Email: "s.melzer@dgptm.de"
+     * - event: {name: "...", id: "548256000025929001"} (Lookup zur Veranstaltung)
+     * - Ticketart: "Freiticket"
+     * - Name: "103490000164570151" (= Ticket-ID/Barcode)
      */
     private function evaluate_ticket_for_scanner($ticket) {
         $name = '';
         $email = '';
-        $status = 'error';
+        $status = 'ok'; // Wenn Ticket gefunden wurde, ist es gültig
         $eid = '';
+        $veranstaltung = '';
 
-        // Contact-Daten extrahieren
-        if (!empty($ticket['Contact_Name'])) {
-            if (is_array($ticket['Contact_Name'])) {
-                $name = $ticket['Contact_Name']['name'] ?? '';
+        // Teilnehmer-Name aus TN-Lookup-Feld
+        if (!empty($ticket['TN'])) {
+            if (is_array($ticket['TN'])) {
+                $name = $ticket['TN']['name'] ?? '';
             } else {
-                $name = (string)$ticket['Contact_Name'];
+                $name = (string)$ticket['TN'];
             }
-        }
-
-        // Fallback: Subject als Name
-        if (empty($name) && !empty($ticket['Subject'])) {
-            $name = (string)$ticket['Subject'];
         }
 
         // E-Mail
@@ -1139,42 +1146,31 @@ final class Bummern_Code_Scanner {
             $email = (string)$ticket['Email'];
         }
 
-        // Event-ID aus Ticket (falls vorhanden)
-        if (!empty($ticket['Veranstaltungen_id'])) {
-            $eid = (string)$ticket['Veranstaltungen_id'];
-        } elseif (!empty($ticket['Event_ID'])) {
-            $eid = (string)$ticket['Event_ID'];
-        }
-
-        // Status auswerten
-        $ticket_status = strtolower($ticket['Status'] ?? '');
-
-        // Grün: Ticket ist gültig/aktiv
-        $green_statuses = ['open', 'offen', 'gültig', 'valid', 'aktiv', 'active', 'approved', 'confirmed', 'bestätigt', 'ok'];
-        // Gelb: Teilweise gültig
-        $yellow_statuses = ['pending', 'ausstehend', 'in progress', 'in bearbeitung'];
-
-        if (in_array($ticket_status, $green_statuses, true)) {
-            $status = 'ok';
-        } elseif (in_array($ticket_status, $yellow_statuses, true)) {
-            $status = 'pending';
-        } else {
-            // Prüfe benutzerdefinierte Felder
-            if (!empty($ticket['Mitgliedsstatus']) || !empty($ticket['Member_Status'])) {
-                $member_status = strtolower($ticket['Mitgliedsstatus'] ?? $ticket['Member_Status'] ?? '');
-                if (strpos($member_status, 'aktiv') !== false || strpos($member_status, 'active') !== false) {
-                    $status = 'ok';
-                }
+        // Event-ID aus event-Lookup-Feld
+        if (!empty($ticket['event'])) {
+            if (is_array($ticket['event'])) {
+                $eid = $ticket['event']['id'] ?? '';
+                $veranstaltung = $ticket['event']['name'] ?? '';
             }
         }
+
+        // Ticketart (für Anzeige)
+        $ticketart = $ticket['Ticketart'] ?? '';
+
+        // Mitgliedschaftstyp
+        $membership = $ticket['MembershipType'] ?? '';
 
         return [
             'status' => $status,
             'name' => $name,
+            'TN' => $name, // Alias für Template-Kompatibilität mit Webhook
             'email' => $email,
             'eid' => $eid,
+            'veranstaltung' => $veranstaltung,
+            'ticketart' => $ticketart,
+            'membership' => $membership,
             'ticket_id' => $ticket['id'] ?? '',
-            'ticket_status' => $ticket['Status'] ?? ''
+            'ticket_name' => $ticket['Name'] ?? '' // Der Barcode
         ];
     }
 

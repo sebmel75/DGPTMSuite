@@ -242,6 +242,7 @@
 
     /**
      * Revision Form Handler
+     * Supports both logged-in users and token-based access
      */
     function initRevisionForm() {
         const $form = $('#revision-form');
@@ -251,6 +252,8 @@
             e.preventDefault();
 
             const articleId = $form.data('article-id');
+            const useToken = $form.data('use-token') === '1' || $form.data('use-token') === 1;
+            const authorToken = $form.data('author-token') || '';
             const $file = $form.find('input[name="revision_manuskript"]');
             const response = $form.find('[name="revision_response"]').val();
 
@@ -265,9 +268,17 @@
             }
 
             const formData = new FormData(this);
-            formData.append('action', 'dgptm_submit_revision');
+
+            // Use token-based action for non-logged-in users
+            if (useToken && authorToken) {
+                formData.append('action', 'dgptm_submit_revision_token');
+                formData.append('author_token', authorToken);
+            } else {
+                formData.append('action', 'dgptm_submit_revision');
+                formData.append('article_id', articleId);
+            }
+
             formData.append('nonce', config.nonce);
-            formData.append('article_id', articleId);
 
             const $submitBtn = $form.find('button[type="submit"]');
             $submitBtn.prop('disabled', true).html('<span class="spinner"></span> Wird hochgeladen...');

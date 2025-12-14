@@ -3,6 +3,7 @@
  * Template: Autoren-Dashboard
  * Shortcode: [artikel_dashboard]
  * Zeigt dem Autor seine eingereichten Artikel und deren Status
+ * Unterstützt sowohl eingeloggte Benutzer als auch Token-basierten Zugang
  */
 
 if (!defined('ABSPATH')) exit;
@@ -10,24 +11,37 @@ if (!defined('ABSPATH')) exit;
 $plugin = DGPTM_Artikel_Einreichung::get_instance();
 $user_id = get_current_user_id();
 
-// Get user's submissions
-$articles = get_posts([
-    'post_type' => DGPTM_Artikel_Einreichung::POST_TYPE,
-    'author' => $user_id,
-    'posts_per_page' => -1,
-    'orderby' => 'date',
-    'order' => 'DESC'
-]);
+// Check for token-based access
+$author_token = $GLOBALS['dgptm_artikel_token'] ?? '';
+$token_article_id = $GLOBALS['dgptm_artikel_token_article_id'] ?? false;
+$is_token_access = !empty($author_token) && $token_article_id;
 
-// Check if viewing single article
-$view_id = isset($_GET['artikel_id']) ? intval($_GET['artikel_id']) : 0;
-$view_article = null;
-if ($view_id) {
-    $view_article = get_post($view_id);
-    // Security: Only show if user is author
-    if (!$view_article || $view_article->post_author != $user_id) {
-        $view_article = null;
-        $view_id = 0;
+// Get articles based on access type
+if ($is_token_access) {
+    // Token access: Only show the specific article
+    $articles = [get_post($token_article_id)];
+    $view_id = $token_article_id;
+    $view_article = get_post($token_article_id);
+} else {
+    // Logged-in user: Show all their articles
+    $articles = get_posts([
+        'post_type' => DGPTM_Artikel_Einreichung::POST_TYPE,
+        'author' => $user_id,
+        'posts_per_page' => -1,
+        'orderby' => 'date',
+        'order' => 'DESC'
+    ]);
+
+    // Check if viewing single article
+    $view_id = isset($_GET['artikel_id']) ? intval($_GET['artikel_id']) : 0;
+    $view_article = null;
+    if ($view_id) {
+        $view_article = get_post($view_id);
+        // Security: Only show if user is author
+        if (!$view_article || $view_article->post_author != $user_id) {
+            $view_article = null;
+            $view_id = 0;
+        }
     }
 }
 ?>
@@ -42,9 +56,11 @@ if ($view_id) {
         $decision_letter = get_field('decision_letter', $view_id);
         ?>
 
+        <?php if (!$is_token_access): ?>
         <a href="<?php echo esc_url(remove_query_arg('artikel_id')); ?>" class="btn btn-secondary" style="margin-bottom: 20px;">
             &larr; Zurück zur Übersicht
         </a>
+        <?php endif; ?>
 
         <div class="article-card">
             <div class="article-card-header">
@@ -130,7 +146,11 @@ if ($view_id) {
                     <h4>Revision einreichen</h4>
                     <p>Bitte laden Sie Ihr überarbeitetes Manuskript hoch und beantworten Sie die Reviewer-Kommentare.</p>
 
-                    <form id="revision-form" data-article-id="<?php echo esc_attr($view_id); ?>" enctype="multipart/form-data">
+                    <form id="revision-form"
+                          data-article-id="<?php echo esc_attr($view_id); ?>"
+                          data-use-token="<?php echo $is_token_access ? '1' : '0'; ?>"
+                          data-author-token="<?php echo esc_attr($author_token); ?>"
+                          enctype="multipart/form-data">
                         <div class="form-row">
                             <label>Revidiertes Manuskript <span class="required">*</span></label>
                             <div class="file-upload-area">
@@ -155,8 +175,8 @@ if ($view_id) {
             </div>
         </div>
 
-    <?php else: ?>
-        <!-- Article List View -->
+    <?php elseif (!$is_token_access): ?>
+        <!-- Article List View (only for logged-in users) -->
         <h2>Meine Einreichungen</h2>
 
         <?php if (empty($articles)): ?>

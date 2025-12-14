@@ -61,7 +61,7 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']);
             add_action('wp_enqueue_scripts', [$this, 'enqueue_frontend_assets']);
 
-            // AJAX Handlers
+            // AJAX Handlers (logged in users)
             add_action('wp_ajax_dgptm_submit_artikel', [$this, 'ajax_submit_artikel']);
             add_action('wp_ajax_dgptm_assign_reviewer', [$this, 'ajax_assign_reviewer']);
             add_action('wp_ajax_dgptm_submit_review', [$this, 'ajax_submit_review']);
@@ -71,6 +71,11 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             add_action('wp_ajax_dgptm_editor_decision', [$this, 'ajax_editor_decision']);
             add_action('wp_ajax_dgptm_save_editor_notes', [$this, 'ajax_save_editor_notes']);
             add_action('wp_ajax_dgptm_search_users', [$this, 'ajax_search_users']);
+
+            // AJAX Handlers for non-logged in users (token-based)
+            add_action('wp_ajax_nopriv_dgptm_submit_artikel', [$this, 'ajax_submit_artikel']);
+            add_action('wp_ajax_dgptm_submit_revision_token', [$this, 'ajax_submit_revision_token']);
+            add_action('wp_ajax_nopriv_dgptm_submit_revision_token', [$this, 'ajax_submit_revision_token']);
 
             // ACF Fields
             add_action('acf/init', [$this, 'register_acf_fields']);
@@ -427,6 +432,15 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
                         'name' => 'submission_id',
                         'type' => 'text',
                         'readonly' => 1
+                    ],
+                    // Author Access Token (for non-logged in authors)
+                    [
+                        'key' => 'field_artikel_author_token',
+                        'label' => 'Autoren-Token',
+                        'name' => 'author_token',
+                        'type' => 'text',
+                        'readonly' => 1,
+                        'instructions' => 'Automatisch generierter Token für Autoren ohne Login'
                     ]
                 ],
                 'location' => [
@@ -649,6 +663,62 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
         }
 
         /**
+         * Generate Author Token
+         * Creates a unique, secure token for author access without login
+         */
+        private function generate_author_token() {
+            return bin2hex(random_bytes(32)); // 64-character hex string
+        }
+
+        /**
+         * Validate Author Token
+         * Returns article ID if valid, false otherwise
+         */
+        public function validate_author_token($token) {
+            if (empty($token) || strlen($token) !== 64) {
+                return false;
+            }
+
+            $articles = get_posts([
+                'post_type' => self::POST_TYPE,
+                'meta_key' => 'author_token',
+                'meta_value' => sanitize_text_field($token),
+                'posts_per_page' => 1,
+                'post_status' => 'publish'
+            ]);
+
+            if (!empty($articles)) {
+                return $articles[0]->ID;
+            }
+
+            return false;
+        }
+
+        /**
+         * Get Author Dashboard URL with token
+         */
+        public function get_author_dashboard_url($article_id) {
+            $token = get_field('author_token', $article_id);
+            $dashboard_page = get_option('dgptm_artikel_dashboard_page', '');
+
+            if (!$dashboard_page) {
+                // Try to find page with shortcode
+                $pages = get_posts([
+                    'post_type' => 'page',
+                    's' => '[artikel_dashboard',
+                    'posts_per_page' => 1
+                ]);
+                if (!empty($pages)) {
+                    $dashboard_page = get_permalink($pages[0]->ID);
+                } else {
+                    $dashboard_page = home_url('/');
+                }
+            }
+
+            return add_query_arg('autor_token', $token, $dashboard_page);
+        }
+
+        /**
          * Get status label
          */
         public function get_status_label($status) {
@@ -710,14 +780,12 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
 
         /**
          * AJAX: Submit new article
+         * Works for both logged-in and non-logged-in users
          */
         public function ajax_submit_artikel() {
             check_ajax_referer(self::NONCE_ACTION, 'nonce');
 
-            if (!is_user_logged_in()) {
-                wp_send_json_error(['message' => 'Bitte melden Sie sich an.']);
-            }
-
+            // User ID is 0 for non-logged in users
             $user_id = get_current_user_id();
 
             // Validate required fields
@@ -819,7 +887,14 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
                 }
             }
 
-            // Send confirmation email to author
+            // Generate author token for access without login
+            $author_token = $this->generate_author_token();
+            update_field('author_token', $author_token, $post_id);
+
+            // Build dashboard URL with token
+            $dashboard_url = $this->get_author_dashboard_url($post_id);
+
+            // Send confirmation email to author with dashboard link
             $author_email = sanitize_email($_POST['hauptautor_email']);
             $this->send_notification(
                 $author_email,
@@ -828,6 +903,9 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
                 "Vielen Dank für die Einreichung Ihres Artikels bei Die Perfusiologie.\n\n" .
                 "Titel: " . sanitize_text_field($_POST['titel']) . "\n" .
                 "Einreichungs-ID: " . $submission_id . "\n\n" .
+                "Über folgenden Link können Sie jederzeit den Status Ihrer Einreichung einsehen:\n" .
+                "<a href=\"" . esc_url($dashboard_url) . "\">" . esc_html($dashboard_url) . "</a>\n\n" .
+                "<strong>Bitte bewahren Sie diesen Link sicher auf!</strong> Er ist Ihr persönlicher Zugang zu Ihrer Einreichung.\n\n" .
                 "Wir werden Ihren Artikel prüfen und uns in Kürze bei Ihnen melden.\n\n" .
                 "Mit freundlichen Grüßen,\nDie Redaktion",
                 $post_id
@@ -1023,6 +1101,15 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
                 self::STATUS_REJECTED => 'Entscheidung zu Ihrer Einreichung'
             ];
 
+            // Get dashboard URL for author
+            $dashboard_url = $this->get_author_dashboard_url($article_id);
+
+            $revision_text = '';
+            if ($new_status === self::STATUS_REVISION_REQUIRED) {
+                $revision_text = "Bitte laden Sie die überarbeitete Version über Ihr Autoren-Dashboard hoch:\n" .
+                    "<a href=\"" . esc_url($dashboard_url) . "\">" . esc_html($dashboard_url) . "</a>\n\n";
+            }
+
             $this->send_notification(
                 $author_email,
                 $subject_map[$new_status] . ': ' . $submission_id,
@@ -1030,8 +1117,8 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
                 "zu Ihrer Einreichung \"" . $article_title . "\" (" . $submission_id . ") liegt nun eine Entscheidung vor:\n\n" .
                 "Status: " . $this->get_status_label($new_status) . "\n\n" .
                 ($letter ? "Begründung:\n" . $letter . "\n\n" : "") .
-                ($new_status === self::STATUS_REVISION_REQUIRED ?
-                    "Bitte laden Sie die überarbeitete Version über Ihr Autoren-Dashboard hoch.\n\n" : "") .
+                $revision_text .
+                "Ihr persönlicher Zugangslink:\n<a href=\"" . esc_url($dashboard_url) . "\">" . esc_html($dashboard_url) . "</a>\n\n" .
                 "Mit freundlichen Grüßen,\nDie Redaktion",
                 $article_id
             );
@@ -1059,6 +1146,70 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             $article = get_post($article_id);
             if (!$article || $article->post_author != $user_id) {
                 wp_send_json_error(['message' => 'Keine Berechtigung.']);
+            }
+
+            // Check status
+            $status = get_field('artikel_status', $article_id);
+            if ($status !== self::STATUS_REVISION_REQUIRED) {
+                wp_send_json_error(['message' => 'Für diesen Artikel ist keine Revision angefordert.']);
+            }
+
+            // Check file upload
+            if (empty($_FILES['revision_manuskript']) || $_FILES['revision_manuskript']['error'] !== UPLOAD_ERR_OK) {
+                wp_send_json_error(['message' => 'Bitte laden Sie das revidierte Manuskript hoch.']);
+            }
+
+            $response = sanitize_textarea_field($_POST['revision_response'] ?? '');
+            if (empty($response)) {
+                wp_send_json_error(['message' => 'Bitte geben Sie eine Antwort auf die Reviewer-Kommentare an.']);
+            }
+
+            // Handle file upload
+            require_once(ABSPATH . 'wp-admin/includes/image.php');
+            require_once(ABSPATH . 'wp-admin/includes/file.php');
+            require_once(ABSPATH . 'wp-admin/includes/media.php');
+
+            $revision_id = media_handle_upload('revision_manuskript', $article_id);
+            if (is_wp_error($revision_id)) {
+                wp_send_json_error(['message' => 'Fehler beim Hochladen der Datei.']);
+            }
+
+            // Update fields
+            update_field('revision_manuskript', $revision_id, $article_id);
+            update_field('revision_response', $response, $article_id);
+            update_field('artikel_status', self::STATUS_REVISION_SUBMITTED, $article_id);
+
+            // Notify Editor in Chief
+            $editors = get_users([
+                'meta_key' => 'editor_in_chief',
+                'meta_value' => '1'
+            ]);
+            $submission_id = get_field('submission_id', $article_id);
+            foreach ($editors as $editor) {
+                $this->send_notification(
+                    $editor->user_email,
+                    'Revision eingereicht: ' . $submission_id,
+                    "Eine Revision wurde eingereicht.\n\n" .
+                    "Einreichungs-ID: " . $submission_id . "\n\n" .
+                    "Bitte prüfen Sie die überarbeitete Version.",
+                    $article_id
+                );
+            }
+
+            wp_send_json_success(['message' => 'Ihre Revision wurde erfolgreich eingereicht.']);
+        }
+
+        /**
+         * AJAX: Submit revision via token (for non-logged in users)
+         */
+        public function ajax_submit_revision_token() {
+            check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+            $token = sanitize_text_field($_POST['author_token'] ?? '');
+            $article_id = $this->validate_author_token($token);
+
+            if (!$article_id) {
+                wp_send_json_error(['message' => 'Ungültiger oder abgelaufener Zugangslink.']);
             }
 
             // Check status
@@ -1231,14 +1382,10 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
 
         /**
          * Render submission form shortcode
+         * Works for both logged-in and non-logged-in users
          */
         public function render_submission_form($atts) {
-            if (!is_user_logged_in()) {
-                return '<div class="dgptm-artikel-notice notice-warning">
-                    <p>Bitte <a href="' . esc_url(wp_login_url(get_permalink())) . '">melden Sie sich an</a>, um einen Artikel einzureichen.</p>
-                </div>';
-            }
-
+            // Allow submission without login
             ob_start();
             include DGPTM_ARTIKEL_PATH . 'templates/submission-form.php';
             return ob_get_clean();
@@ -1246,15 +1393,31 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
 
         /**
          * Render author dashboard shortcode
+         * Supports both logged-in users and token-based access
          */
         public function render_author_dashboard($atts) {
-            if (!is_user_logged_in()) {
+            // Check for token access
+            $token = isset($_GET['autor_token']) ? sanitize_text_field($_GET['autor_token']) : '';
+            $token_article_id = $token ? $this->validate_author_token($token) : false;
+
+            // If token is provided but invalid
+            if ($token && !$token_article_id) {
+                return '<div class="dgptm-artikel-notice notice-error">
+                    <p>Ungültiger oder abgelaufener Zugangslink. Bitte überprüfen Sie den Link in Ihrer E-Mail.</p>
+                </div>';
+            }
+
+            // If no token and not logged in
+            if (!$token_article_id && !is_user_logged_in()) {
                 return '<div class="dgptm-artikel-notice notice-warning">
-                    <p>Bitte <a href="' . esc_url(wp_login_url(get_permalink())) . '">melden Sie sich an</a>.</p>
+                    <p>Bitte <a href="' . esc_url(wp_login_url(get_permalink())) . '">melden Sie sich an</a> oder verwenden Sie den Link aus Ihrer Bestätigungs-E-Mail.</p>
                 </div>';
             }
 
             ob_start();
+            // Pass token info to template
+            $GLOBALS['dgptm_artikel_token'] = $token;
+            $GLOBALS['dgptm_artikel_token_article_id'] = $token_article_id;
             include DGPTM_ARTIKEL_PATH . 'templates/author-dashboard.php';
             return ob_get_clean();
         }

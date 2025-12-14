@@ -38,6 +38,7 @@ final class Bummern_Code_Scanner {
         add_action('wp_ajax_bcs_kiosk_login',       [$this,'ajax_kiosk_login']);
         add_action('wp_ajax_nopriv_bcs_kiosk_login',[$this,'ajax_kiosk_login']);
         add_action('wp_ajax_bcs_admin_test_webhook',[$this,'ajax_admin_test_webhook']);
+        add_action('wp_ajax_bcs_admin_test_crm',    [$this,'ajax_admin_test_crm']);
 
         add_action('admin_menu', [$this,'admin_menu']);
         add_action('admin_init', [$this,'register_settings']);
@@ -278,30 +279,171 @@ final class Bummern_Code_Scanner {
 
     private function render_test_tab() {
         $ajax_nonce = wp_create_nonce(self::NONCE_AJAX);
+        $opt = get_option(self::OPT_KEY, []);
         ?>
-        <h2>Webhook-Test</h2>
-        <p>Gibt den rohen JSON-Output (ggf. normalisiert) zurück.</p>
-        <input type="text" id="bcs-test-code" class="regular-text" placeholder="Testcode">
-        <button class="button" id="bcs-test-btn">Testen</button>
-        <pre id="bcs-test-out" style="background:#111;color:#0f0;padding:12px;white-space:pre-wrap;max-width:900px;overflow:auto;"></pre>
+        <h2>Performance-Test: CRM vs Webhook</h2>
+        <p>Testet beide Methoden und zeigt Antwortzeiten.</p>
+
+        <table class="form-table">
+            <tr>
+                <th>Testcode / Ticket-ID:</th>
+                <td>
+                    <input type="text" id="bcs-test-code" class="regular-text" placeholder="z.B. 103490000164570151" style="width:300px">
+                </td>
+            </tr>
+        </table>
+
+        <p>
+            <button class="button button-primary" id="bcs-test-both">🚀 Beide testen (CRM + Webhook)</button>
+            <button class="button" id="bcs-test-crm">CRM direkt</button>
+            <button class="button" id="bcs-test-webhook">Webhook</button>
+        </p>
+
+        <h3>Ergebnisse</h3>
+        <table class="widefat" style="max-width:900px">
+            <thead>
+                <tr>
+                    <th>Methode</th>
+                    <th>Zeit</th>
+                    <th>Status</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody id="bcs-test-results">
+                <tr><td colspan="4"><em>Noch keine Tests ausgeführt</em></td></tr>
+            </tbody>
+        </table>
+
+        <h3>Rohe Antwort</h3>
+        <pre id="bcs-test-out" style="background:#111;color:#0f0;padding:12px;white-space:pre-wrap;max-width:900px;overflow:auto;min-height:100px;"></pre>
+
         <script>
         (function(){
-          const btn=document.getElementById('bcs-test-btn');
-          const out=document.getElementById('bcs-test-out');
-          const code=document.getElementById('bcs-test-code');
-          btn.addEventListener('click', function(){
-            out.textContent='...';
-            const fd=new FormData();
-            fd.append('action','bcs_admin_test_webhook');
-            fd.append('security','<?php echo esc_js($ajax_nonce); ?>');
-            fd.append('code', code.value||'');
-            fetch(ajaxurl,{method:'POST',body:fd,credentials:'same-origin'})
-              .then(r=>r.json()).then(j=>{
-                out.textContent = JSON.stringify(j,null,2);
-              }).catch(e=>{
-                out.textContent = 'Fehler: '+(e&&e.message?e.message:e);
-              });
-          });
+            const out = document.getElementById('bcs-test-out');
+            const results = document.getElementById('bcs-test-results');
+            const codeInput = document.getElementById('bcs-test-code');
+
+            function addResult(method, time, status, details, isError) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${method}</strong></td>
+                    <td style="color:${time < 500 ? 'green' : time < 2000 ? 'orange' : 'red'}; font-weight:bold">${time} ms</td>
+                    <td style="color:${isError ? 'red' : 'green'}">${status}</td>
+                    <td>${details}</td>
+                `;
+                if (results.querySelector('em')) results.innerHTML = '';
+                results.appendChild(row);
+            }
+
+            function clearResults() {
+                results.innerHTML = '<tr><td colspan="4"><em>Test läuft...</em></td></tr>';
+                out.textContent = '';
+            }
+
+            // CRM-Test
+            async function testCRM(code) {
+                const start = performance.now();
+                const fd = new FormData();
+                fd.append('action', 'bcs_admin_test_crm');
+                fd.append('security', '<?php echo esc_js($ajax_nonce); ?>');
+                fd.append('code', code);
+
+                try {
+                    const r = await fetch(ajaxurl, {method:'POST', body:fd, credentials:'same-origin'});
+                    const j = await r.json();
+                    const time = Math.round(performance.now() - start);
+                    const isError = !j.success;
+                    const data = j.data || j;
+
+                    addResult(
+                        '🔷 CRM direkt',
+                        time,
+                        data.status || (isError ? 'error' : 'ok'),
+                        data.name ? `Name: ${data.name}` : (data.message || JSON.stringify(data).substring(0,80)),
+                        isError
+                    );
+
+                    return {time, data: j, method: 'CRM'};
+                } catch(e) {
+                    const time = Math.round(performance.now() - start);
+                    addResult('🔷 CRM direkt', time, 'ERROR', e.message, true);
+                    return {time, error: e.message, method: 'CRM'};
+                }
+            }
+
+            // Webhook-Test
+            async function testWebhook(code) {
+                const start = performance.now();
+                const fd = new FormData();
+                fd.append('action', 'bcs_admin_test_webhook');
+                fd.append('security', '<?php echo esc_js($ajax_nonce); ?>');
+                fd.append('code', code);
+
+                try {
+                    const r = await fetch(ajaxurl, {method:'POST', body:fd, credentials:'same-origin'});
+                    const j = await r.json();
+                    const time = Math.round(performance.now() - start);
+                    const isError = j.http !== 200 || j.json?.status === 'error';
+                    const data = j.json || j;
+
+                    addResult(
+                        '🔶 Webhook',
+                        time,
+                        data.status || `HTTP ${j.http}`,
+                        data.name ? `Name: ${data.name}` : (data.message || data.crm_message || 'OK'),
+                        isError
+                    );
+
+                    return {time, data: j, method: 'Webhook'};
+                } catch(e) {
+                    const time = Math.round(performance.now() - start);
+                    addResult('🔶 Webhook', time, 'ERROR', e.message, true);
+                    return {time, error: e.message, method: 'Webhook'};
+                }
+            }
+
+            // Button: Beide testen
+            document.getElementById('bcs-test-both').addEventListener('click', async function() {
+                const code = codeInput.value.trim();
+                if (!code) { alert('Bitte Code eingeben'); return; }
+
+                clearResults();
+                this.disabled = true;
+
+                const crmResult = await testCRM(code);
+                const webhookResult = await testWebhook(code);
+
+                // Zusammenfassung
+                const speedup = webhookResult.time > 0 ? (webhookResult.time / Math.max(crmResult.time, 1)).toFixed(1) : '?';
+                addResult(
+                    '📊 Vergleich',
+                    '-',
+                    `CRM ist ${speedup}x schneller`,
+                    `CRM: ${crmResult.time}ms vs Webhook: ${webhookResult.time}ms (Ersparnis: ${webhookResult.time - crmResult.time}ms)`,
+                    false
+                );
+
+                out.textContent = JSON.stringify({crm: crmResult.data, webhook: webhookResult.data}, null, 2);
+                this.disabled = false;
+            });
+
+            // Button: Nur CRM
+            document.getElementById('bcs-test-crm').addEventListener('click', async function() {
+                const code = codeInput.value.trim();
+                if (!code) { alert('Bitte Code eingeben'); return; }
+                clearResults();
+                const result = await testCRM(code);
+                out.textContent = JSON.stringify(result.data, null, 2);
+            });
+
+            // Button: Nur Webhook
+            document.getElementById('bcs-test-webhook').addEventListener('click', async function() {
+                const code = codeInput.value.trim();
+                if (!code) { alert('Bitte Code eingeben'); return; }
+                clearResults();
+                const result = await testWebhook(code);
+                out.textContent = JSON.stringify(result.data, null, 2);
+            });
         })();
         </script>
         <?php
@@ -608,9 +750,50 @@ final class Bummern_Code_Scanner {
         check_ajax_referer(self::NONCE_AJAX, 'security');
         $opt = get_option(self::OPT_KEY, []);
         $code = isset($_POST['code']) ? sanitize_text_field(wp_unslash($_POST['code'])) : '';
+        $start = microtime(true);
         $res = $this->call_webhook($opt['webhook_url'] ?? '', $code, intval($opt['timeout'] ?? 8));
+        $res['time_ms'] = round((microtime(true) - $start) * 1000);
         // return raw result (for debug)
         wp_send_json($res);
+    }
+
+    /** AJAX: CRM Test im Backend */
+    public function ajax_admin_test_crm() {
+        if (!current_user_can('manage_options')) wp_send_json_error(['msg'=>'No perms'], 403);
+        check_ajax_referer(self::NONCE_AJAX, 'security');
+
+        $code = isset($_POST['code']) ? sanitize_text_field(wp_unslash($_POST['code'])) : '';
+        $start = microtime(true);
+
+        // OAuth Token abrufen
+        $token = $this->get_crm_oauth_token();
+        if (!$token) {
+            wp_send_json_error([
+                'message' => 'Kein OAuth Token verfügbar. Bitte CRM-Modul prüfen.',
+                'time_ms' => round((microtime(true) - $start) * 1000),
+                'status' => 'error'
+            ]);
+        }
+
+        // Ticket aus CRM abrufen
+        $ticket = $this->fetch_ticket_from_crm($code, $token);
+        $time_ms = round((microtime(true) - $start) * 1000);
+
+        if (!$ticket) {
+            wp_send_json_error([
+                'message' => 'Ticket nicht gefunden im CRM',
+                'time_ms' => $time_ms,
+                'status' => 'error',
+                'code' => $code
+            ]);
+        }
+
+        // Ticket auswerten
+        $result = $this->evaluate_ticket_for_scanner($ticket);
+        $result['time_ms'] = $time_ms;
+        $result['raw_ticket'] = $ticket;
+
+        wp_send_json_success($result);
     }
 
     /** AJAX: Code prüfen */

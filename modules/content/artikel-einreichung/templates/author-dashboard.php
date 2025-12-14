@@ -137,15 +137,44 @@ if ($is_token_access) {
                     </div>
                 </div>
 
+                <!-- Status-specific Messages -->
+                <?php if ($status === DGPTM_Artikel_Einreichung::STATUS_ACCEPTED): ?>
+                <div class="dgptm-artikel-notice notice-success" style="margin-top: 20px;">
+                    <p><strong>Herzlichen Glückwunsch!</strong> Ihr Artikel wurde zur Veröffentlichung angenommen.</p>
+                </div>
+                <?php elseif ($status === DGPTM_Artikel_Einreichung::STATUS_REJECTED): ?>
+                <div class="dgptm-artikel-notice notice-error" style="margin-top: 20px;">
+                    <p>Ihr Artikel wurde leider nicht zur Veröffentlichung angenommen. Bitte lesen Sie die Rückmeldung der Redaktion unten.</p>
+                </div>
+                <?php elseif ($status === DGPTM_Artikel_Einreichung::STATUS_REVISION_SUBMITTED): ?>
+                <div class="dgptm-artikel-notice notice-info" style="margin-top: 20px;">
+                    <p><strong>Revision eingereicht!</strong> Ihre überarbeitete Version wurde erfolgreich übermittelt. Die Redaktion wird diese prüfen.</p>
+                </div>
+                <?php elseif ($status === DGPTM_Artikel_Einreichung::STATUS_UNDER_REVIEW): ?>
+                <div class="dgptm-artikel-notice notice-info" style="margin-top: 20px;">
+                    <p>Ihr Artikel wird derzeit begutachtet. Wir informieren Sie, sobald es Neuigkeiten gibt.</p>
+                </div>
+                <?php endif; ?>
+
                 <!-- Decision Letter (if available) -->
                 <?php if ($decision_letter && in_array($status, [
                     DGPTM_Artikel_Einreichung::STATUS_REVISION_REQUIRED,
                     DGPTM_Artikel_Einreichung::STATUS_ACCEPTED,
                     DGPTM_Artikel_Einreichung::STATUS_REJECTED
                 ])): ?>
-                <div class="review-section" style="margin-top: 30px;">
-                    <h4>Rückmeldung der Redaktion</h4>
-                    <div style="white-space: pre-wrap; line-height: 1.6;">
+                <div class="review-section" style="margin-top: 30px; background: <?php
+                    if ($status === DGPTM_Artikel_Einreichung::STATUS_ACCEPTED) echo '#c6f6d5';
+                    elseif ($status === DGPTM_Artikel_Einreichung::STATUS_REJECTED) echo '#fed7d7';
+                    else echo '#fef3c7';
+                ?>;">
+                    <h4 style="margin-top: 0;">
+                        <?php
+                        if ($status === DGPTM_Artikel_Einreichung::STATUS_ACCEPTED) echo 'Begründung der Annahme';
+                        elseif ($status === DGPTM_Artikel_Einreichung::STATUS_REJECTED) echo 'Begründung der Ablehnung';
+                        else echo 'Rückmeldung der Redaktion - Überarbeitung erforderlich';
+                        ?>
+                    </h4>
+                    <div style="white-space: pre-wrap; line-height: 1.6; background: rgba(255,255,255,0.5); padding: 15px; border-radius: 6px;">
                         <?php echo esc_html($decision_letter); ?>
                     </div>
                 </div>
@@ -153,34 +182,77 @@ if ($is_token_access) {
 
                 <!-- Revision Form (if revision required) -->
                 <?php if ($status === DGPTM_Artikel_Einreichung::STATUS_REVISION_REQUIRED): ?>
-                <div class="review-section" style="margin-top: 30px; background: #fef3c7;">
-                    <h4>Revision einreichen</h4>
-                    <p>Bitte laden Sie Ihr überarbeitetes Manuskript hoch und beantworten Sie die Reviewer-Kommentare.</p>
+                <div class="review-section" style="margin-top: 30px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #d69e2e; border-radius: 8px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                        <span style="font-size: 28px;">&#9998;</span>
+                        <h4 style="margin: 0; color: #92400e;">Revision einreichen</h4>
+                    </div>
+                    <p style="color: #78350f;">
+                        Die Gutachter haben eine Überarbeitung Ihres Artikels empfohlen. Bitte laden Sie Ihr überarbeitetes Manuskript hoch
+                        und beantworten Sie die Kommentare der Reviewer Punkt für Punkt.
+                    </p>
 
                     <form id="revision-form"
                           data-article-id="<?php echo esc_attr($view_id); ?>"
                           data-use-token="<?php echo $is_token_access ? '1' : '0'; ?>"
                           data-author-token="<?php echo esc_attr($author_token); ?>"
-                          enctype="multipart/form-data">
+                          enctype="multipart/form-data"
+                          style="background: #fff; padding: 20px; border-radius: 6px; margin-top: 15px;">
+
                         <div class="form-row">
-                            <label>Revidiertes Manuskript <span class="required">*</span></label>
-                            <div class="file-upload-area">
+                            <label style="font-weight: 600; color: #1a365d;">Revidiertes Manuskript <span class="required">*</span></label>
+                            <p class="description" style="margin-bottom: 10px;">Laden Sie Ihr überarbeitetes Manuskript hoch (PDF, Word). Änderungen sollten markiert sein.</p>
+                            <div class="file-upload-area" style="background: #f7fafc;">
                                 <input type="file" name="revision_manuskript" accept=".pdf,.doc,.docx" required>
                                 <div class="upload-icon">&#128196;</div>
                                 <div class="upload-text">Klicken oder Datei hierher ziehen</div>
+                                <div class="upload-hint">PDF, DOC oder DOCX (max. 20MB)</div>
                             </div>
                             <div class="file-preview-container"></div>
                         </div>
 
-                        <div class="form-row">
-                            <label for="revision_response">Response to Reviewers <span class="required">*</span></label>
-                            <textarea name="revision_response" id="revision_response" rows="8" required
-                                      placeholder="Bitte beschreiben Sie die vorgenommenen Änderungen und beantworten Sie die Kommentare der Reviewer punkt für punkt."></textarea>
+                        <div class="form-row" style="margin-top: 20px;">
+                            <label for="revision_response" style="font-weight: 600; color: #1a365d;">Response to Reviewers <span class="required">*</span></label>
+                            <p class="description" style="margin-bottom: 10px;">
+                                Beschreiben Sie die vorgenommenen Änderungen und beantworten Sie jeden Kommentar der Reviewer.
+                                Nummerieren Sie Ihre Antworten entsprechend den Reviewer-Kommentaren.
+                            </p>
+                            <textarea name="revision_response" id="revision_response" rows="10" required
+                                      style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-family: inherit;"
+                                      placeholder="Beispiel:
+
+Reviewer 1, Kommentar 1:
+[Antwort und Beschreibung der Änderung]
+
+Reviewer 1, Kommentar 2:
+[Antwort und Beschreibung der Änderung]
+
+Reviewer 2, Kommentar 1:
+[Antwort und Beschreibung der Änderung]
+..."></textarea>
                         </div>
 
-                        <button type="submit" class="btn btn-primary">Revision einreichen</button>
+                        <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+                            <button type="submit" class="btn btn-primary" style="font-size: 16px; padding: 14px 28px;">
+                                &#10003; Revision einreichen
+                            </button>
+                        </div>
                     </form>
                 </div>
+                <?php endif; ?>
+
+                <!-- Show previous revision if submitted -->
+                <?php if ($status === DGPTM_Artikel_Einreichung::STATUS_REVISION_SUBMITTED): ?>
+                <?php $revision_response = get_field('revision_response', $view_id); ?>
+                <?php if ($revision_response): ?>
+                <div class="review-section" style="margin-top: 30px; background: #e0f2fe;">
+                    <h4 style="margin-top: 0; color: #0369a1;">Ihre eingereichte Revision</h4>
+                    <p><strong>Response to Reviewers:</strong></p>
+                    <div style="white-space: pre-wrap; line-height: 1.6; background: #fff; padding: 15px; border-radius: 6px; font-size: 14px;">
+                        <?php echo esc_html($revision_response); ?>
+                    </div>
+                </div>
+                <?php endif; ?>
                 <?php endif; ?>
 
             </div>

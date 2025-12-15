@@ -674,7 +674,6 @@ $base_url = remove_query_arg(['tab', 'status', 'editor_artikel_id']);
             'master_header' => '<div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
 <div style="background: #1a365d; color: #fff; padding: 20px; text-align: center;">
 <h1 style="margin: 0; font-size: 24px;">Die Perfusiologie</h1>
-<p style="margin: 5px 0 0 0; font-size: 14px;">Fachzeitschrift für Kardiotechnik</p>
 </div>
 <div style="padding: 30px; background: #fff;">',
             'master_footer' => '</div>

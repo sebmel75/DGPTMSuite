@@ -222,9 +222,6 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             $pdf->SetFont('Helvetica', 'B', 18);
             $pdf->SetTextColor(26, 54, 93); // #1a365d
             $pdf->Cell(0, 10, 'Die Perfusiologie', 0, 1, 'C');
-            $pdf->SetFont('Helvetica', '', 10);
-            $pdf->SetTextColor(100, 100, 100);
-            $pdf->Cell(0, 5, 'Fachzeitschrift fuer Kardiotechnik', 0, 1, 'C');
             $pdf->Ln(10);
 
             // Submission ID

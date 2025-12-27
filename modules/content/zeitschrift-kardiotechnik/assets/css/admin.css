@@ -1,0 +1,466 @@
+/**
+ * Zeitschrift Kardiotechnik - Admin Styles
+ */
+
+/* ========================================
+   Admin Container
+   ======================================== */
+
+.zk-admin-container {
+    max-width: 1400px;
+    margin: 20px auto;
+    padding: 0 20px;
+}
+
+.zk-admin-header {
+    margin-bottom: 30px;
+}
+
+.zk-admin-title {
+    margin: 0 0 10px;
+    font-size: 28px;
+    color: #1d2327;
+}
+
+.zk-admin-subtitle {
+    margin: 0;
+    color: #666;
+}
+
+.zk-admin-actions {
+    margin-bottom: 25px;
+}
+
+/* ========================================
+   Buttons (Admin)
+   ======================================== */
+
+.zk-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: #0073aa;
+    color: #fff;
+}
+
+.zk-btn:hover {
+    background: #005a87;
+    color: #fff;
+}
+
+.zk-btn:focus {
+    outline: 2px solid #0073aa;
+    outline-offset: 2px;
+}
+
+.zk-btn-primary {
+    background: #0073aa;
+    color: #fff;
+}
+
+.zk-btn-secondary {
+    background: #f0f0f1;
+    color: #1d2327;
+    border-color: #c3c4c7;
+}
+
+.zk-btn-secondary:hover {
+    background: #e0e0e0;
+    color: #1d2327;
+}
+
+.zk-btn-small {
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+.zk-btn-link {
+    background: transparent;
+    color: #0073aa;
+    border: none;
+    padding: 5px 10px;
+}
+
+.zk-btn-link:hover {
+    background: rgba(0, 115, 170, 0.1);
+    color: #005a87;
+}
+
+.zk-btn .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+/* ========================================
+   Admin Table
+   ======================================== */
+
+.zk-admin-table-wrapper {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 30px;
+}
+
+.zk-admin-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.zk-admin-table th {
+    background: #f6f7f7;
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #1d2327;
+    border-bottom: 1px solid #c3c4c7;
+    white-space: nowrap;
+}
+
+.zk-admin-table td {
+    padding: 15px;
+    border-bottom: 1px solid #f0f0f1;
+    vertical-align: middle;
+}
+
+.zk-admin-table tr:last-child td {
+    border-bottom: none;
+}
+
+.zk-admin-table tr:hover td {
+    background: #f9f9f9;
+}
+
+/* Column Widths */
+.zk-col-cover {
+    width: 80px;
+}
+
+.zk-col-ausgabe {
+    width: 150px;
+}
+
+.zk-col-articles {
+    width: 100px;
+    text-align: center;
+}
+
+.zk-col-status {
+    width: 160px;
+}
+
+.zk-col-date {
+    width: 220px;
+}
+
+.zk-col-actions {
+    width: auto;
+}
+
+/* Thumbnail */
+.zk-admin-thumbnail {
+    width: 60px;
+    height: 85px;
+    object-fit: cover;
+    border-radius: 3px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.zk-admin-placeholder {
+    width: 60px;
+    height: 85px;
+    background: #f0f0f1;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.zk-admin-placeholder .dashicons {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+    color: #c3c4c7;
+}
+
+/* Article Count */
+.zk-article-count {
+    display: block;
+    font-size: 20px;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.zk-article-label {
+    display: block;
+    font-size: 11px;
+    color: #666;
+}
+
+/* Status Badge */
+.zk-status-badge {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.zk-status-online {
+    background: #d4edda;
+    color: #155724;
+}
+
+.zk-status-scheduled {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.zk-status-soon {
+    background: #cce5ff;
+    color: #004085;
+}
+
+/* Date Controls */
+.zk-date-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.zk-date-input {
+    padding: 6px 10px;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    font-size: 13px;
+    width: 140px;
+}
+
+.zk-date-input:focus {
+    border-color: #0073aa;
+    outline: none;
+    box-shadow: 0 0 0 1px #0073aa;
+}
+
+.zk-btn-save-date {
+    background: #00a32a;
+}
+
+.zk-btn-save-date:hover {
+    background: #008a20;
+}
+
+/* Action Buttons */
+.zk-action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.zk-btn-publish-now {
+    background: #d63638;
+}
+
+.zk-btn-publish-now:hover {
+    background: #b32d2e;
+}
+
+/* ========================================
+   Accepted Articles Section
+   ======================================== */
+
+.zk-admin-section {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 25px;
+    margin-bottom: 30px;
+}
+
+.zk-section-title {
+    margin: 0 0 10px;
+    font-size: 18px;
+    color: #1d2327;
+}
+
+.zk-section-desc {
+    margin: 0 0 20px;
+    color: #666;
+}
+
+.zk-accepted-list {
+    margin-top: 15px;
+}
+
+.zk-accepted-article {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 15px;
+    background: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.zk-accepted-info {
+    flex: 1;
+}
+
+.zk-accepted-title {
+    font-weight: 500;
+    color: #1d2327;
+    margin-bottom: 3px;
+}
+
+.zk-accepted-meta {
+    font-size: 12px;
+    color: #666;
+}
+
+.zk-accepted-actions {
+    margin-left: 15px;
+}
+
+/* Empty State */
+.zk-no-accepted {
+    text-align: center;
+    padding: 30px;
+    color: #666;
+}
+
+/* Loading State */
+.zk-loading {
+    text-align: center;
+    padding: 30px;
+    color: #666;
+}
+
+.zk-loading::after {
+    content: '';
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #0073aa;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: zk-spin 0.8s linear infinite;
+    margin-left: 10px;
+    vertical-align: middle;
+}
+
+@keyframes zk-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ========================================
+   Footer
+   ======================================== */
+
+.zk-admin-footer {
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.zk-footer-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: #666;
+    font-size: 13px;
+}
+
+.zk-footer-info .dashicons {
+    color: #0073aa;
+}
+
+/* ========================================
+   Notifications
+   ======================================== */
+
+.zk-notice {
+    padding: 12px 15px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.zk-notice-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.zk-notice-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.zk-notice-warning {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+/* ========================================
+   Responsive
+   ======================================== */
+
+@media (max-width: 1200px) {
+    .zk-admin-table-wrapper {
+        overflow-x: auto;
+    }
+
+    .zk-admin-table {
+        min-width: 900px;
+    }
+}
+
+@media (max-width: 768px) {
+    .zk-admin-container {
+        padding: 0 15px;
+    }
+
+    .zk-admin-title {
+        font-size: 22px;
+    }
+
+    .zk-action-buttons {
+        flex-direction: column;
+    }
+
+    .zk-date-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .zk-date-input {
+        width: 100%;
+    }
+
+    .zk-accepted-article {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .zk-accepted-actions {
+        margin-left: 0;
+    }
+}

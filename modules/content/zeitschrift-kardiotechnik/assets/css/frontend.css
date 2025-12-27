@@ -1,0 +1,647 @@
+/**
+ * Zeitschrift Kardiotechnik - Frontend Styles
+ */
+
+/* ========================================
+   Allgemeine Styles
+   ======================================== */
+
+.zk-error {
+    padding: 20px;
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 4px;
+    color: #856404;
+}
+
+.zk-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.zk-btn-primary {
+    background: #0073aa;
+    color: #fff;
+}
+
+.zk-btn-primary:hover {
+    background: #005a87;
+    color: #fff;
+}
+
+.zk-btn-secondary {
+    background: #f0f0f1;
+    color: #1d2327;
+}
+
+.zk-btn-secondary:hover {
+    background: #dcdcde;
+    color: #1d2327;
+}
+
+.zk-btn-small {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+.zk-btn-link {
+    background: transparent;
+    color: #0073aa;
+    padding: 6px 12px;
+}
+
+.zk-btn-link:hover {
+    background: rgba(0, 115, 170, 0.1);
+    color: #005a87;
+}
+
+.zk-btn .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+/* ========================================
+   Grid-Übersicht
+   ======================================== */
+
+.zk-grid-container {
+    padding: 20px 0;
+}
+
+.zk-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 30px;
+}
+
+.zk-grid-container[data-columns="3"] .zk-grid {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.zk-grid-container[data-columns="2"] .zk-grid {
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+}
+
+.zk-no-issues {
+    text-align: center;
+    color: #666;
+    padding: 40px;
+}
+
+/* Card Styles */
+.zk-card {
+    position: relative;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.zk-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.zk-card-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+}
+
+.zk-card-thumbnail {
+    position: relative;
+    width: 100%;
+    padding-top: 140%; /* Zeitschriften-Format */
+    background: #f5f5f5;
+    overflow: hidden;
+}
+
+.zk-card-thumbnail img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.zk-card-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e0e0e0;
+}
+
+.zk-card-placeholder .dashicons {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: #999;
+}
+
+.zk-card-info {
+    padding: 15px;
+    text-align: center;
+    background: #fff;
+}
+
+.zk-card-label {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+}
+
+/* Mobile Artikel-Liste (standardmäßig versteckt) */
+.zk-card-articles-mobile {
+    display: none;
+    padding: 15px;
+    background: #f9f9f9;
+    border-top: 1px solid #eee;
+}
+
+.zk-articles-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.zk-article-item {
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.zk-article-item:last-child {
+    border-bottom: none;
+}
+
+.zk-article-title {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    line-height: 1.3;
+}
+
+.zk-article-authors {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    margin-top: 2px;
+}
+
+/* Hover Popup (Desktop) */
+.zk-card-popup {
+    position: absolute;
+    top: 0;
+    right: calc(100% + 15px);
+    width: 300px;
+    max-height: 400px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(10px);
+    transition: all 0.3s ease;
+    z-index: 100;
+    overflow-y: auto;
+}
+
+.zk-card:hover .zk-card-popup {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+}
+
+/* Popup auf der rechten Seite wenn links kein Platz */
+.zk-card:first-child .zk-card-popup,
+.zk-grid > .zk-card:nth-child(4n+1) .zk-card-popup {
+    right: auto;
+    left: calc(100% + 15px);
+}
+
+.zk-popup-header {
+    padding: 12px 15px;
+    background: #0073aa;
+    color: #fff;
+    font-size: 14px;
+    position: sticky;
+    top: 0;
+}
+
+.zk-popup-articles {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.zk-popup-article {
+    padding: 10px 15px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.zk-popup-article:last-child {
+    border-bottom: none;
+}
+
+.zk-popup-title {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: #333;
+    line-height: 1.3;
+}
+
+.zk-popup-authors {
+    display: block;
+    font-size: 11px;
+    color: #666;
+    margin-top: 3px;
+}
+
+.zk-popup-empty {
+    padding: 15px;
+    color: #999;
+    font-style: italic;
+    margin: 0;
+}
+
+/* ========================================
+   Detailansicht
+   ======================================== */
+
+.zk-detail-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.zk-detail-header {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 40px;
+    margin-bottom: 40px;
+    padding-bottom: 40px;
+    border-bottom: 1px solid #eee;
+}
+
+.zk-detail-cover img {
+    width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.zk-detail-placeholder {
+    width: 100%;
+    padding-top: 140%;
+    background: #e0e0e0;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.zk-detail-placeholder .dashicons {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 80px;
+    width: 80px;
+    height: 80px;
+    color: #999;
+}
+
+.zk-detail-title {
+    margin: 0 0 20px;
+    font-size: 32px;
+    color: #1d2327;
+}
+
+.zk-detail-meta {
+    margin-bottom: 25px;
+}
+
+.zk-meta-item {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 15px;
+}
+
+.zk-meta-label {
+    color: #666;
+}
+
+.zk-meta-value {
+    color: #1d2327;
+    font-weight: 500;
+}
+
+.zk-meta-value a {
+    color: #0073aa;
+    text-decoration: none;
+}
+
+.zk-meta-value a:hover {
+    text-decoration: underline;
+}
+
+.zk-detail-actions {
+    margin-top: 30px;
+}
+
+/* Artikel-Sektionen */
+.zk-detail-content {
+    margin-bottom: 40px;
+}
+
+.zk-articles-section {
+    margin-bottom: 40px;
+}
+
+.zk-section-title {
+    font-size: 22px;
+    margin: 0 0 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #0073aa;
+    color: #1d2327;
+}
+
+.zk-articles-list {
+    display: grid;
+    gap: 20px;
+}
+
+.zk-article-card {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 25px;
+    transition: box-shadow 0.2s ease;
+}
+
+.zk-article-card:hover {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+.zk-article-type {
+    display: inline-block;
+    padding: 4px 10px;
+    background: #0073aa;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    border-radius: 3px;
+    margin-bottom: 10px;
+}
+
+.zk-article-editorial .zk-article-type {
+    background: #4caf50;
+}
+
+.zk-article-journalclub .zk-article-type {
+    background: #ff9800;
+}
+
+.zk-article-tutorial .zk-article-type {
+    background: #9c27b0;
+}
+
+.zk-article-card .zk-article-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1d2327;
+    margin: 0 0 8px;
+    line-height: 1.4;
+}
+
+.zk-article-card .zk-article-authors {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 12px;
+}
+
+.zk-article-supplement {
+    font-size: 14px;
+    color: #0073aa;
+    font-style: italic;
+    margin-bottom: 12px;
+}
+
+.zk-article-abstract {
+    font-size: 14px;
+    color: #444;
+    line-height: 1.6;
+    margin-bottom: 15px;
+}
+
+.zk-article-keywords {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 15px;
+}
+
+.zk-article-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.zk-no-articles {
+    text-align: center;
+    color: #666;
+    padding: 40px;
+    font-style: italic;
+}
+
+.zk-detail-footer {
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+/* ========================================
+   Responsive Design
+   ======================================== */
+
+/* Tablet */
+@media (max-width: 992px) {
+    .zk-grid {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 20px;
+    }
+
+    .zk-detail-header {
+        grid-template-columns: 250px 1fr;
+        gap: 30px;
+    }
+
+    .zk-detail-title {
+        font-size: 26px;
+    }
+}
+
+/* Mobile Landscape */
+@media (max-width: 768px) and (orientation: landscape) {
+    .zk-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .zk-card {
+        display: flex;
+        flex-direction: row;
+    }
+
+    .zk-card-link {
+        display: flex;
+        flex-direction: row;
+        width: 40%;
+    }
+
+    .zk-card-thumbnail {
+        padding-top: 0;
+        height: 200px;
+        min-height: 200px;
+    }
+
+    .zk-card-info {
+        display: none;
+    }
+
+    .zk-card-articles-mobile {
+        display: block;
+        width: 60%;
+        border-top: none;
+        border-left: 1px solid #eee;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .zk-card-popup {
+        display: none !important;
+    }
+}
+
+/* Mobile Portrait */
+@media (max-width: 768px) and (orientation: portrait) {
+    .zk-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+
+    .zk-card-popup {
+        display: none !important;
+    }
+
+    .zk-detail-header {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+
+    .zk-detail-cover {
+        max-width: 250px;
+        margin: 0 auto;
+    }
+
+    .zk-detail-title {
+        font-size: 24px;
+    }
+
+    .zk-meta-item {
+        justify-content: center;
+    }
+
+    .zk-detail-actions {
+        display: flex;
+        justify-content: center;
+    }
+
+    .zk-article-actions {
+        flex-direction: column;
+    }
+
+    .zk-article-actions .zk-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+    .zk-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .zk-card-thumbnail {
+        padding-top: 120%;
+    }
+
+    .zk-detail-container {
+        padding: 15px;
+    }
+
+    .zk-article-card {
+        padding: 15px;
+    }
+
+    .zk-btn {
+        padding: 8px 16px;
+        font-size: 13px;
+    }
+}
+
+/* ========================================
+   Print Styles
+   ======================================== */
+
+@media print {
+    .zk-card-popup,
+    .zk-card-articles-mobile,
+    .zk-btn,
+    .zk-detail-actions,
+    .zk-detail-footer {
+        display: none !important;
+    }
+
+    .zk-grid {
+        display: block;
+    }
+
+    .zk-card {
+        break-inside: avoid;
+        margin-bottom: 20px;
+        box-shadow: none;
+        border: 1px solid #ccc;
+    }
+
+    .zk-detail-header {
+        display: block;
+    }
+
+    .zk-detail-cover {
+        float: left;
+        width: 200px;
+        margin-right: 20px;
+    }
+}

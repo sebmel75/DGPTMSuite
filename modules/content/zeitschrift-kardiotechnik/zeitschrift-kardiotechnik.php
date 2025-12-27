@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Zeitschrift Kardiotechnik Manager
  * Description: Verwaltung und Anzeige der Fachzeitschrift Kardiotechnik
- * Version: 1.0.0
+ * Version: 1.3.0
  * Author: Sebastian Melzer / DGPTM
  */
 
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 // Konstanten
 define('ZK_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('ZK_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('ZK_VERSION', '1.2.3');
+define('ZK_VERSION', '1.3.0');
 define('ZK_POST_TYPE', 'zeitschkardiotechnik');
 define('ZK_PUBLIKATION_TYPE', 'publikation');
 
@@ -57,6 +57,14 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
             add_action('wp_ajax_zk_update_publish_date', [$this, 'ajax_update_publish_date']);
             add_action('wp_ajax_zk_publish_now', [$this, 'ajax_publish_now']);
             add_action('wp_ajax_zk_get_accepted_articles', [$this, 'ajax_get_accepted_articles']);
+
+            // Frontend Manager AJAX Handlers
+            add_action('wp_ajax_zk_get_all_issues', [$this, 'ajax_get_all_issues']);
+            add_action('wp_ajax_zk_create_issue', [$this, 'ajax_create_issue']);
+            add_action('wp_ajax_zk_update_issue', [$this, 'ajax_update_issue']);
+            add_action('wp_ajax_zk_get_issue_details', [$this, 'ajax_get_issue_details']);
+            add_action('wp_ajax_zk_delete_issue', [$this, 'ajax_delete_issue']);
+            add_action('wp_ajax_zk_get_available_years', [$this, 'ajax_get_available_years']);
         }
 
         public function enqueue_frontend_assets() {
@@ -291,6 +299,367 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
             }
 
             wp_send_json_success(['articles' => $result]);
+        }
+
+        /**
+         * Prüft ob User Verwaltungszugriff hat (für AJAX)
+         */
+        private function user_can_manage() {
+            if (!is_user_logged_in()) {
+                return false;
+            }
+
+            if (current_user_can('manage_options')) {
+                return true;
+            }
+
+            $user_id = get_current_user_id();
+
+            $is_manager = get_user_meta($user_id, 'zeitschriftmanager', true);
+            if ($is_manager === '1' || $is_manager === true || $is_manager === 1) {
+                return true;
+            }
+
+            $is_editor = get_user_meta($user_id, 'editor_in_chief', true);
+            if ($is_editor === '1' || $is_editor === true || $is_editor === 1) {
+                return true;
+            }
+
+            return false;
+        }
+
+        /**
+         * AJAX: Alle Ausgaben laden
+         */
+        public function ajax_get_all_issues() {
+            check_ajax_referer('zk_admin_nonce', 'nonce');
+
+            if (!$this->user_can_manage()) {
+                wp_send_json_error(['message' => 'Keine Berechtigung']);
+            }
+
+            $status_filter = sanitize_text_field($_POST['status'] ?? '');
+            $year_filter = sanitize_text_field($_POST['year'] ?? '');
+
+            $args = [
+                'post_type' => ZK_POST_TYPE,
+                'posts_per_page' => -1,
+                'post_status' => 'publish'
+            ];
+
+            // Jahr-Filter
+            if (!empty($year_filter)) {
+                $args['meta_query'][] = [
+                    'key' => 'jahr',
+                    'value' => $year_filter,
+                    'compare' => '='
+                ];
+            }
+
+            $issues = get_posts($args);
+
+            // Sortieren nach Jahr und Ausgabe
+            usort($issues, function($a, $b) {
+                $year_a = (int) get_field('jahr', $a->ID);
+                $year_b = (int) get_field('jahr', $b->ID);
+
+                if ($year_a !== $year_b) {
+                    return $year_b - $year_a;
+                }
+
+                $ausgabe_a = (int) get_field('ausgabe', $a->ID);
+                $ausgabe_b = (int) get_field('ausgabe', $b->ID);
+
+                return $ausgabe_b - $ausgabe_a;
+            });
+
+            $result = [];
+            foreach ($issues as $issue) {
+                $is_visible = self::is_issue_visible($issue->ID);
+                $verfuegbar_ab = get_field('verfuegbar_ab', $issue->ID);
+
+                // Status-Filter
+                if ($status_filter === 'online' && !$is_visible) {
+                    continue;
+                }
+                if ($status_filter === 'scheduled' && $is_visible) {
+                    continue;
+                }
+
+                $titelseite = get_field('titelseite', $issue->ID);
+                $articles = self::get_issue_articles($issue->ID);
+
+                $result[] = [
+                    'id' => $issue->ID,
+                    'title' => $issue->post_title,
+                    'jahr' => get_field('jahr', $issue->ID),
+                    'ausgabe' => get_field('ausgabe', $issue->ID),
+                    'label' => self::format_issue_label($issue->ID),
+                    'doi' => get_field('doi', $issue->ID),
+                    'verfuegbar_ab' => $verfuegbar_ab,
+                    'verfuegbar_ab_formatted' => $verfuegbar_ab ? $verfuegbar_ab : 'Sofort',
+                    'is_visible' => $is_visible,
+                    'status' => $is_visible ? 'online' : 'scheduled',
+                    'status_label' => $is_visible ? 'Online' : 'Geplant',
+                    'thumbnail' => $titelseite ? ($titelseite['sizes']['thumbnail'] ?? $titelseite['url']) : null,
+                    'article_count' => count($articles),
+                    'edit_url' => admin_url('post.php?post=' . $issue->ID . '&action=edit')
+                ];
+            }
+
+            wp_send_json_success(['issues' => $result]);
+        }
+
+        /**
+         * AJAX: Neue Ausgabe erstellen
+         */
+        public function ajax_create_issue() {
+            check_ajax_referer('zk_admin_nonce', 'nonce');
+
+            if (!$this->user_can_manage()) {
+                wp_send_json_error(['message' => 'Keine Berechtigung']);
+            }
+
+            $jahr = intval($_POST['jahr'] ?? 0);
+            $ausgabe = intval($_POST['ausgabe'] ?? 0);
+            $title = sanitize_text_field($_POST['title'] ?? '');
+            $doi = sanitize_text_field($_POST['doi'] ?? '');
+            $verfuegbar_ab = sanitize_text_field($_POST['verfuegbar_ab'] ?? '');
+
+            if (!$jahr || !$ausgabe) {
+                wp_send_json_error(['message' => 'Jahr und Ausgabe sind erforderlich']);
+            }
+
+            // Prüfen ob Ausgabe bereits existiert
+            $existing = get_posts([
+                'post_type' => ZK_POST_TYPE,
+                'posts_per_page' => 1,
+                'post_status' => 'any',
+                'meta_query' => [
+                    'relation' => 'AND',
+                    [
+                        'key' => 'jahr',
+                        'value' => $jahr,
+                        'compare' => '='
+                    ],
+                    [
+                        'key' => 'ausgabe',
+                        'value' => $ausgabe,
+                        'compare' => '='
+                    ]
+                ]
+            ]);
+
+            if (!empty($existing)) {
+                wp_send_json_error(['message' => 'Diese Ausgabe existiert bereits']);
+            }
+
+            // Titel generieren wenn nicht angegeben
+            if (empty($title)) {
+                $title = 'Kardiotechnik ' . $jahr . '/' . $ausgabe;
+            }
+
+            // Post erstellen
+            $post_id = wp_insert_post([
+                'post_type' => ZK_POST_TYPE,
+                'post_title' => $title,
+                'post_status' => 'publish',
+                'post_author' => get_current_user_id()
+            ]);
+
+            if (is_wp_error($post_id)) {
+                wp_send_json_error(['message' => 'Fehler beim Erstellen: ' . $post_id->get_error_message()]);
+            }
+
+            // ACF Felder setzen
+            update_field('jahr', $jahr, $post_id);
+            update_field('ausgabe', $ausgabe, $post_id);
+
+            if (!empty($doi)) {
+                update_field('doi', $doi, $post_id);
+            }
+
+            if (!empty($verfuegbar_ab)) {
+                // Konvertieren von YYYY-MM-DD zu DD/MM/YYYY
+                $date = DateTime::createFromFormat('Y-m-d', $verfuegbar_ab);
+                if ($date) {
+                    update_field('verfuegbar_ab', $date->format('d/m/Y'), $post_id);
+                }
+            }
+
+            wp_send_json_success([
+                'message' => 'Ausgabe erstellt',
+                'post_id' => $post_id,
+                'title' => $title
+            ]);
+        }
+
+        /**
+         * AJAX: Ausgabe aktualisieren
+         */
+        public function ajax_update_issue() {
+            check_ajax_referer('zk_admin_nonce', 'nonce');
+
+            if (!$this->user_can_manage()) {
+                wp_send_json_error(['message' => 'Keine Berechtigung']);
+            }
+
+            $post_id = intval($_POST['post_id'] ?? 0);
+            if (!$post_id) {
+                wp_send_json_error(['message' => 'Ungültige Post-ID']);
+            }
+
+            $post = get_post($post_id);
+            if (!$post || $post->post_type !== ZK_POST_TYPE) {
+                wp_send_json_error(['message' => 'Ausgabe nicht gefunden']);
+            }
+
+            // Felder aktualisieren
+            $jahr = intval($_POST['jahr'] ?? 0);
+            $ausgabe = intval($_POST['ausgabe'] ?? 0);
+            $title = sanitize_text_field($_POST['title'] ?? '');
+            $doi = sanitize_text_field($_POST['doi'] ?? '');
+            $verfuegbar_ab = sanitize_text_field($_POST['verfuegbar_ab'] ?? '');
+
+            if ($jahr) {
+                update_field('jahr', $jahr, $post_id);
+            }
+            if ($ausgabe) {
+                update_field('ausgabe', $ausgabe, $post_id);
+            }
+            if (!empty($title)) {
+                wp_update_post([
+                    'ID' => $post_id,
+                    'post_title' => $title
+                ]);
+            }
+            update_field('doi', $doi, $post_id);
+
+            // Datum konvertieren
+            if (!empty($verfuegbar_ab)) {
+                $date = DateTime::createFromFormat('Y-m-d', $verfuegbar_ab);
+                if ($date) {
+                    update_field('verfuegbar_ab', $date->format('d/m/Y'), $post_id);
+                }
+            } else {
+                update_field('verfuegbar_ab', '', $post_id);
+            }
+
+            wp_send_json_success([
+                'message' => 'Ausgabe aktualisiert',
+                'post_id' => $post_id
+            ]);
+        }
+
+        /**
+         * AJAX: Ausgabe-Details für Bearbeitung
+         */
+        public function ajax_get_issue_details() {
+            check_ajax_referer('zk_admin_nonce', 'nonce');
+
+            if (!$this->user_can_manage()) {
+                wp_send_json_error(['message' => 'Keine Berechtigung']);
+            }
+
+            $post_id = intval($_POST['post_id'] ?? 0);
+            if (!$post_id) {
+                wp_send_json_error(['message' => 'Ungültige Post-ID']);
+            }
+
+            $post = get_post($post_id);
+            if (!$post || $post->post_type !== ZK_POST_TYPE) {
+                wp_send_json_error(['message' => 'Ausgabe nicht gefunden']);
+            }
+
+            $verfuegbar_ab = get_field('verfuegbar_ab', $post_id);
+            $verfuegbar_ab_input = '';
+            if ($verfuegbar_ab) {
+                $date = DateTime::createFromFormat('d/m/Y', $verfuegbar_ab);
+                if ($date) {
+                    $verfuegbar_ab_input = $date->format('Y-m-d');
+                }
+            }
+
+            $articles = self::get_issue_articles($post_id);
+            $linked_articles = [];
+            foreach ($articles as $key => $article) {
+                $pub = $article['publication'];
+                $linked_articles[] = [
+                    'field' => $key,
+                    'id' => $pub->ID,
+                    'title' => $pub->post_title,
+                    'type' => $article['type'],
+                    'authors' => get_field('autoren', $pub->ID) ?: get_field('hauptautorin', $pub->ID)
+                ];
+            }
+
+            wp_send_json_success([
+                'issue' => [
+                    'id' => $post_id,
+                    'title' => $post->post_title,
+                    'jahr' => get_field('jahr', $post_id),
+                    'ausgabe' => get_field('ausgabe', $post_id),
+                    'doi' => get_field('doi', $post_id),
+                    'verfuegbar_ab' => $verfuegbar_ab_input,
+                    'verfuegbar_ab_display' => $verfuegbar_ab ?: 'Sofort'
+                ],
+                'articles' => $linked_articles
+            ]);
+        }
+
+        /**
+         * AJAX: Ausgabe löschen
+         */
+        public function ajax_delete_issue() {
+            check_ajax_referer('zk_admin_nonce', 'nonce');
+
+            if (!$this->user_can_manage()) {
+                wp_send_json_error(['message' => 'Keine Berechtigung']);
+            }
+
+            $post_id = intval($_POST['post_id'] ?? 0);
+            if (!$post_id) {
+                wp_send_json_error(['message' => 'Ungültige Post-ID']);
+            }
+
+            $post = get_post($post_id);
+            if (!$post || $post->post_type !== ZK_POST_TYPE) {
+                wp_send_json_error(['message' => 'Ausgabe nicht gefunden']);
+            }
+
+            $result = wp_trash_post($post_id);
+            if (!$result) {
+                wp_send_json_error(['message' => 'Fehler beim Löschen']);
+            }
+
+            wp_send_json_success(['message' => 'Ausgabe in Papierkorb verschoben']);
+        }
+
+        /**
+         * AJAX: Verfügbare Jahre laden
+         */
+        public function ajax_get_available_years() {
+            check_ajax_referer('zk_admin_nonce', 'nonce');
+
+            if (!$this->user_can_manage()) {
+                wp_send_json_error(['message' => 'Keine Berechtigung']);
+            }
+
+            global $wpdb;
+
+            $years = $wpdb->get_col($wpdb->prepare(
+                "SELECT DISTINCT pm.meta_value
+                 FROM {$wpdb->postmeta} pm
+                 INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+                 WHERE pm.meta_key = %s
+                 AND p.post_type = %s
+                 AND p.post_status = 'publish'
+                 ORDER BY pm.meta_value DESC",
+                'jahr',
+                ZK_POST_TYPE
+            ));
+
+            wp_send_json_success(['years' => $years]);
         }
 
         /**

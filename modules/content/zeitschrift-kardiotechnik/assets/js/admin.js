@@ -1,103 +1,453 @@
 /**
- * Zeitschrift Kardiotechnik - Admin JavaScript
+ * Zeitschrift Kardiotechnik - Admin JavaScript (Frontend Manager)
+ * Vollständig AJAX-basiert für Benutzer ohne Backend-Zugriff
  */
 
 (function($) {
     'use strict';
 
-    var ZKAdmin = {
+    var ZKManager = {
+        config: {
+            ajaxUrl: '',
+            nonce: '',
+            adminUrl: ''
+        },
+
         /**
          * Initialisierung
          */
         init: function() {
+            if (typeof zkAdmin === 'undefined') {
+                console.error('ZK Admin: Konfiguration nicht geladen');
+                return;
+            }
+
+            this.config = zkAdmin;
             this.bindEvents();
+            this.loadYearFilter();
+            this.loadIssues();
         },
 
         /**
          * Event-Handler binden
          */
         bindEvents: function() {
-            // Datum speichern
-            $(document).on('click', '.zk-btn-save-date', this.handleSaveDate);
+            var self = this;
+
+            // Tab-Wechsel
+            $(document).on('click', '.zk-tab', function(e) {
+                e.preventDefault();
+                self.switchTab($(this).data('tab'));
+            });
+
+            // Refresh
+            $(document).on('click', '#zk-refresh-btn', function(e) {
+                e.preventDefault();
+                self.loadIssues();
+            });
+
+            // Filter
+            $(document).on('change', '#zk-filter-status, #zk-filter-year', function() {
+                self.loadIssues();
+            });
+
+            // Neue Ausgabe Modal öffnen
+            $(document).on('click', '#zk-new-issue-btn', function(e) {
+                e.preventDefault();
+                self.openNewModal();
+            });
+
+            // Modal schließen
+            $(document).on('click', '.zk-modal-close, .zk-modal-cancel, .zk-modal-overlay', function(e) {
+                e.preventDefault();
+                self.closeModals();
+            });
+
+            // Neue Ausgabe speichern
+            $(document).on('click', '#zk-save-new-issue', function(e) {
+                e.preventDefault();
+                self.createIssue();
+            });
+
+            // Ausgabe bearbeiten
+            $(document).on('click', '.zk-issue-edit', function(e) {
+                e.preventDefault();
+                var issueId = $(this).closest('.zk-issue-item').data('id');
+                self.openEditModal(issueId);
+            });
+
+            // Bearbeitung speichern
+            $(document).on('click', '#zk-save-edit-issue', function(e) {
+                e.preventDefault();
+                self.updateIssue();
+            });
+
+            // Ausgabe löschen
+            $(document).on('click', '.zk-issue-delete', function(e) {
+                e.preventDefault();
+                var issueId = $(this).closest('.zk-issue-item').data('id');
+                var title = $(this).closest('.zk-issue-item').find('.zk-issue-title').text();
+                self.deleteIssue(issueId, title);
+            });
 
             // Jetzt veröffentlichen
-            $(document).on('click', '.zk-btn-publish-now', this.handlePublishNow);
+            $(document).on('click', '.zk-issue-publish', function(e) {
+                e.preventDefault();
+                var issueId = $(this).closest('.zk-issue-item').data('id');
+                self.publishNow(issueId);
+            });
 
-            // Akzeptierte Artikel laden
-            $(document).on('click', '#zk-load-accepted', this.handleLoadAccepted);
+            // Akzeptierte Artikel Tab
+            $(document).on('click', '.zk-tab[data-tab="accepted"]', function() {
+                self.loadAcceptedArticles();
+            });
 
-            // Datum-Änderung mit Enter speichern
-            $(document).on('keypress', '.zk-date-input', function(e) {
-                if (e.which === 13) {
-                    e.preventDefault();
-                    $(this).closest('.zk-date-controls').find('.zk-btn-save-date').click();
+            // Modal nicht schließen bei Klick auf Content
+            $(document).on('click', '.zk-modal-content', function(e) {
+                e.stopPropagation();
+            });
+
+            // ESC zum Schließen
+            $(document).on('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    self.closeModals();
                 }
             });
         },
 
         /**
-         * Zeigt eine Benachrichtigung an
+         * Tab wechseln
          */
-        showNotice: function($row, type, message) {
-            var $notice = $('<div class="zk-notice zk-notice-' + type + '">' + message + '</div>');
+        switchTab: function(tabId) {
+            $('.zk-tab').removeClass('zk-tab-active');
+            $('.zk-tab[data-tab="' + tabId + '"]').addClass('zk-tab-active');
 
-            // Vorherige Notices entfernen
-            $row.find('.zk-notice').remove();
-
-            // Neue Notice einfügen
-            $row.find('.zk-col-date').prepend($notice);
-
-            // Nach 3 Sekunden ausblenden
-            setTimeout(function() {
-                $notice.fadeOut(300, function() {
-                    $(this).remove();
-                });
-            }, 3000);
+            $('.zk-tab-content').removeClass('zk-tab-active');
+            $('#zk-tab-' + tabId).addClass('zk-tab-active');
         },
 
         /**
-         * Datum speichern
+         * Jahr-Filter laden
          */
-        handleSaveDate: function(e) {
-            e.preventDefault();
+        loadYearFilter: function() {
+            var self = this;
 
-            var $btn = $(this);
-            var $row = $btn.closest('.zk-issue-row');
-            var issueId = $btn.data('issue-id');
-            var $input = $row.find('.zk-date-input');
-            var dateValue = $input.val();
+            $.ajax({
+                url: this.config.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'zk_get_available_years',
+                    nonce: this.config.nonce
+                },
+                success: function(response) {
+                    if (response.success && response.data.years) {
+                        var $select = $('#zk-filter-year');
+                        $select.find('option:not(:first)').remove();
 
-            // Validierung
-            if (!dateValue) {
-                ZKAdmin.showNotice($row, 'error', 'Bitte ein Datum auswählen');
+                        response.data.years.forEach(function(year) {
+                            $select.append('<option value="' + year + '">' + year + '</option>');
+                        });
+                    }
+                }
+            });
+        },
+
+        /**
+         * Alle Ausgaben laden
+         */
+        loadIssues: function() {
+            var self = this;
+            var $list = $('#zk-issues-list');
+
+            $list.html(this.getLoadingHtml('Lade Ausgaben...'));
+
+            $.ajax({
+                url: this.config.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'zk_get_all_issues',
+                    nonce: this.config.nonce,
+                    status: $('#zk-filter-status').val(),
+                    year: $('#zk-filter-year').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        self.renderIssues(response.data.issues);
+                    } else {
+                        $list.html(self.getErrorHtml(response.data.message || 'Fehler beim Laden'));
+                    }
+                },
+                error: function() {
+                    $list.html(self.getErrorHtml('Verbindungsfehler'));
+                }
+            });
+        },
+
+        /**
+         * Ausgaben rendern
+         */
+        renderIssues: function(issues) {
+            var $list = $('#zk-issues-list');
+
+            if (!issues || issues.length === 0) {
+                $list.html('<div class="zk-empty">Keine Ausgaben gefunden.</div>');
                 return;
             }
 
-            // Datum konvertieren (YYYY-MM-DD zu DD/MM/YYYY)
-            var parts = dateValue.split('-');
-            var formattedDate = parts[2] + '/' + parts[1] + '/' + parts[0];
+            var html = '<div class="zk-issues-grid">';
+
+            issues.forEach(function(issue) {
+                html += '<div class="zk-issue-item" data-id="' + issue.id + '">';
+
+                // Thumbnail
+                html += '<div class="zk-issue-thumb">';
+                if (issue.thumbnail) {
+                    html += '<img src="' + issue.thumbnail + '" alt="' + ZKManager.escapeHtml(issue.label) + '">';
+                } else {
+                    html += '<div class="zk-issue-placeholder">';
+                    html += '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">';
+                    html += '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>';
+                    html += '<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>';
+                    html += '</svg>';
+                    html += '</div>';
+                }
+                html += '</div>';
+
+                // Info
+                html += '<div class="zk-issue-info">';
+                html += '<div class="zk-issue-header">';
+                html += '<span class="zk-issue-title">' + ZKManager.escapeHtml(issue.title) + '</span>';
+                html += '<span class="zk-issue-label">' + ZKManager.escapeHtml(issue.label) + '</span>';
+                html += '</div>';
+
+                // Meta
+                html += '<div class="zk-issue-meta">';
+                html += '<span class="zk-issue-status zk-status-' + issue.status + '">' + issue.status_label + '</span>';
+                html += '<span class="zk-issue-date">Veröffentlichung: ' + issue.verfuegbar_ab_formatted + '</span>';
+                html += '<span class="zk-issue-articles">' + issue.article_count + ' Artikel</span>';
+                html += '</div>';
+
+                // Actions
+                html += '<div class="zk-issue-actions">';
+                if (!issue.is_visible) {
+                    html += '<button type="button" class="zk-btn zk-btn-success zk-btn-small zk-issue-publish" title="Jetzt veröffentlichen">';
+                    html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">';
+                    html += '<polyline points="20 6 9 17 4 12"></polyline>';
+                    html += '</svg>';
+                    html += '</button>';
+                }
+                html += '<button type="button" class="zk-btn zk-btn-secondary zk-btn-small zk-issue-edit" title="Bearbeiten">';
+                html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">';
+                html += '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>';
+                html += '<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>';
+                html += '</svg>';
+                html += '</button>';
+                html += '<button type="button" class="zk-btn zk-btn-danger zk-btn-small zk-issue-delete" title="Löschen">';
+                html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">';
+                html += '<polyline points="3 6 5 6 21 6"></polyline>';
+                html += '<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>';
+                html += '</svg>';
+                html += '</button>';
+                html += '</div>';
+
+                html += '</div>'; // .zk-issue-info
+                html += '</div>'; // .zk-issue-item
+            });
+
+            html += '</div>';
+            $list.html(html);
+        },
+
+        /**
+         * Neue Ausgabe Modal öffnen
+         */
+        openNewModal: function() {
+            // Formular zurücksetzen
+            $('#zk-new-issue-form')[0].reset();
+            $('#zk-new-jahr').val(new Date().getFullYear());
+
+            // Nächste Ausgabe-Nummer ermitteln
+            var currentYear = new Date().getFullYear();
+            var maxAusgabe = 0;
+
+            $('.zk-issue-item').each(function() {
+                var label = $(this).find('.zk-issue-label').text();
+                var match = label.match(/(\d{4})\/(\d+)/);
+                if (match && parseInt(match[1]) === currentYear) {
+                    maxAusgabe = Math.max(maxAusgabe, parseInt(match[2]));
+                }
+            });
+
+            $('#zk-new-ausgabe').val(maxAusgabe + 1);
+
+            $('#zk-modal-new').addClass('zk-modal-open');
+        },
+
+        /**
+         * Edit Modal öffnen
+         */
+        openEditModal: function(issueId) {
+            var self = this;
+            var $modal = $('#zk-modal-edit');
+
+            // Lade-Animation im Modal
+            $modal.find('.zk-modal-body').addClass('zk-loading-overlay');
+            $modal.addClass('zk-modal-open');
+
+            $.ajax({
+                url: this.config.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'zk_get_issue_details',
+                    nonce: this.config.nonce,
+                    post_id: issueId
+                },
+                success: function(response) {
+                    if (response.success) {
+                        self.populateEditForm(response.data);
+                    } else {
+                        self.showToast('error', response.data.message || 'Fehler beim Laden');
+                        self.closeModals();
+                    }
+                },
+                error: function() {
+                    self.showToast('error', 'Verbindungsfehler');
+                    self.closeModals();
+                },
+                complete: function() {
+                    $modal.find('.zk-modal-body').removeClass('zk-loading-overlay');
+                }
+            });
+        },
+
+        /**
+         * Edit-Formular befüllen
+         */
+        populateEditForm: function(data) {
+            var issue = data.issue;
+            var articles = data.articles;
+
+            $('#zk-edit-id').val(issue.id);
+            $('#zk-edit-jahr').val(issue.jahr);
+            $('#zk-edit-ausgabe').val(issue.ausgabe);
+            $('#zk-edit-title').val(issue.title);
+            $('#zk-edit-doi').val(issue.doi);
+            $('#zk-edit-date').val(issue.verfuegbar_ab);
+
+            // Verknüpfte Artikel anzeigen
+            var $articlesList = $('#zk-linked-articles');
+
+            if (articles && articles.length > 0) {
+                var html = '<ul class="zk-linked-list">';
+                articles.forEach(function(article) {
+                    var typeLabel = {
+                        'editorial': 'Editorial',
+                        'journalclub': 'Journal Club',
+                        'tutorial': 'Tutorial',
+                        'artikel': 'Fachartikel'
+                    };
+
+                    html += '<li class="zk-linked-item">';
+                    html += '<span class="zk-linked-type">' + (typeLabel[article.type] || article.type) + '</span>';
+                    html += '<span class="zk-linked-title">' + ZKManager.escapeHtml(article.title) + '</span>';
+                    if (article.authors) {
+                        html += '<span class="zk-linked-authors">' + ZKManager.escapeHtml(article.authors) + '</span>';
+                    }
+                    html += '</li>';
+                });
+                html += '</ul>';
+                $articlesList.html(html);
+            } else {
+                $articlesList.html('<p class="zk-no-articles">Keine Artikel verknüpft</p>');
+            }
+        },
+
+        /**
+         * Modals schließen
+         */
+        closeModals: function() {
+            $('.zk-modal').removeClass('zk-modal-open');
+        },
+
+        /**
+         * Neue Ausgabe erstellen
+         */
+        createIssue: function() {
+            var self = this;
+            var $btn = $('#zk-save-new-issue');
+            var $form = $('#zk-new-issue-form');
+
+            var data = {
+                action: 'zk_create_issue',
+                nonce: this.config.nonce,
+                jahr: $form.find('[name="jahr"]').val(),
+                ausgabe: $form.find('[name="ausgabe"]').val(),
+                title: $form.find('[name="title"]').val(),
+                doi: $form.find('[name="doi"]').val(),
+                verfuegbar_ab: $form.find('[name="verfuegbar_ab"]').val()
+            };
+
+            $btn.prop('disabled', true).text('Erstellen...');
+
+            $.ajax({
+                url: this.config.ajaxUrl,
+                type: 'POST',
+                data: data,
+                success: function(response) {
+                    if (response.success) {
+                        self.showToast('success', 'Ausgabe "' + response.data.title + '" erstellt');
+                        self.closeModals();
+                        self.loadIssues();
+                        self.loadYearFilter();
+                    } else {
+                        self.showToast('error', response.data.message || 'Fehler beim Erstellen');
+                    }
+                },
+                error: function() {
+                    self.showToast('error', 'Verbindungsfehler');
+                },
+                complete: function() {
+                    $btn.prop('disabled', false).text('Ausgabe erstellen');
+                }
+            });
+        },
+
+        /**
+         * Ausgabe aktualisieren
+         */
+        updateIssue: function() {
+            var self = this;
+            var $btn = $('#zk-save-edit-issue');
+            var $form = $('#zk-edit-issue-form');
+
+            var data = {
+                action: 'zk_update_issue',
+                nonce: this.config.nonce,
+                post_id: $form.find('[name="post_id"]').val(),
+                jahr: $form.find('[name="jahr"]').val(),
+                ausgabe: $form.find('[name="ausgabe"]').val(),
+                title: $form.find('[name="title"]').val(),
+                doi: $form.find('[name="doi"]').val(),
+                verfuegbar_ab: $form.find('[name="verfuegbar_ab"]').val()
+            };
 
             $btn.prop('disabled', true).text('Speichern...');
 
             $.ajax({
-                url: zkAdmin.ajaxUrl,
+                url: this.config.ajaxUrl,
                 type: 'POST',
-                data: {
-                    action: 'zk_update_publish_date',
-                    nonce: zkAdmin.nonce,
-                    post_id: issueId,
-                    date: formattedDate
-                },
+                data: data,
                 success: function(response) {
                     if (response.success) {
-                        ZKAdmin.showNotice($row, 'success', 'Datum gespeichert');
-                        ZKAdmin.updateRowStatus($row, response.data);
+                        self.showToast('success', 'Ausgabe aktualisiert');
+                        self.closeModals();
+                        self.loadIssues();
                     } else {
-                        ZKAdmin.showNotice($row, 'error', response.data.message || 'Fehler beim Speichern');
+                        self.showToast('error', response.data.message || 'Fehler beim Speichern');
                     }
                 },
                 error: function() {
-                    ZKAdmin.showNotice($row, 'error', 'Verbindungsfehler');
+                    self.showToast('error', 'Verbindungsfehler');
                 },
                 complete: function() {
                     $btn.prop('disabled', false).text('Speichern');
@@ -106,57 +456,65 @@
         },
 
         /**
+         * Ausgabe löschen
+         */
+        deleteIssue: function(issueId, title) {
+            var self = this;
+
+            if (!confirm('Ausgabe "' + title + '" wirklich löschen?\n\nDie Ausgabe wird in den Papierkorb verschoben.')) {
+                return;
+            }
+
+            $.ajax({
+                url: this.config.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'zk_delete_issue',
+                    nonce: this.config.nonce,
+                    post_id: issueId
+                },
+                success: function(response) {
+                    if (response.success) {
+                        self.showToast('success', 'Ausgabe gelöscht');
+                        self.loadIssues();
+                    } else {
+                        self.showToast('error', response.data.message || 'Fehler beim Löschen');
+                    }
+                },
+                error: function() {
+                    self.showToast('error', 'Verbindungsfehler');
+                }
+            });
+        },
+
+        /**
          * Jetzt veröffentlichen
          */
-        handlePublishNow: function(e) {
-            e.preventDefault();
-
-            var $btn = $(this);
-            var $row = $btn.closest('.zk-issue-row');
-            var issueId = $btn.data('issue-id');
+        publishNow: function(issueId) {
+            var self = this;
 
             if (!confirm('Ausgabe jetzt veröffentlichen?')) {
                 return;
             }
 
-            $btn.prop('disabled', true).text('Veröffentlichen...');
-
             $.ajax({
-                url: zkAdmin.ajaxUrl,
+                url: this.config.ajaxUrl,
                 type: 'POST',
                 data: {
                     action: 'zk_publish_now',
-                    nonce: zkAdmin.nonce,
+                    nonce: this.config.nonce,
                     post_id: issueId
                 },
                 success: function(response) {
                     if (response.success) {
-                        ZKAdmin.showNotice($row, 'success', 'Ausgabe veröffentlicht');
-
-                        // Datum-Input aktualisieren
-                        var today = new Date();
-                        var formattedDate = today.toISOString().split('T')[0];
-                        $row.find('.zk-date-input').val(formattedDate);
-
-                        // Status-Badge aktualisieren
-                        $row.find('.zk-status-badge')
-                            .removeClass('zk-status-scheduled zk-status-soon')
-                            .addClass('zk-status-online')
-                            .text('Online');
-
-                        // Publish-Button entfernen
-                        $btn.fadeOut(300, function() {
-                            $(this).remove();
-                        });
+                        self.showToast('success', 'Ausgabe veröffentlicht');
+                        self.loadIssues();
                     } else {
-                        ZKAdmin.showNotice($row, 'error', response.data.message || 'Fehler');
+                        self.showToast('error', response.data.message || 'Fehler');
                     }
                 },
                 error: function() {
-                    ZKAdmin.showNotice($row, 'error', 'Verbindungsfehler');
-                },
-                complete: function() {
-                    $btn.prop('disabled', false).text('Jetzt veröffentlichen');
+                    self.showToast('error', 'Verbindungsfehler');
                 }
             });
         },
@@ -164,95 +522,122 @@
         /**
          * Akzeptierte Artikel laden
          */
-        handleLoadAccepted: function(e) {
-            e.preventDefault();
+        loadAcceptedArticles: function() {
+            var self = this;
+            var $list = $('#zk-accepted-list');
 
-            var $btn = $(this);
-            var $container = $('#zk-accepted-articles');
-            var $list = $container.find('.zk-accepted-list');
-
-            $btn.prop('disabled', true);
-            $list.html('<div class="zk-loading">Lade Artikel...</div>');
+            $list.html(this.getLoadingHtml('Lade Artikel...'));
 
             $.ajax({
-                url: zkAdmin.ajaxUrl,
+                url: this.config.ajaxUrl,
                 type: 'POST',
                 data: {
                     action: 'zk_get_accepted_articles',
-                    nonce: zkAdmin.nonce
+                    nonce: this.config.nonce
                 },
                 success: function(response) {
                     if (response.success) {
-                        var articles = response.data.articles;
-
-                        if (articles.length === 0) {
-                            $list.html('<p class="zk-no-accepted">Keine akzeptierten Artikel vorhanden.</p>');
-                            return;
-                        }
-
-                        var html = '';
-                        articles.forEach(function(article) {
-                            html += '<div class="zk-accepted-article" data-id="' + article.id + '">';
-                            html += '<div class="zk-accepted-info">';
-                            html += '<div class="zk-accepted-title">' + ZKAdmin.escapeHtml(article.title) + '</div>';
-                            html += '<div class="zk-accepted-meta">';
-                            if (article.author) {
-                                html += 'Autor: ' + ZKAdmin.escapeHtml(article.author) + ' | ';
-                            }
-                            if (article.publikationsart) {
-                                html += 'Art: ' + ZKAdmin.escapeHtml(article.publikationsart) + ' | ';
-                            }
-                            html += 'ID: ' + article.submission_id;
-                            html += '</div>';
-                            html += '</div>';
-                            html += '<div class="zk-accepted-actions">';
-                            html += '<a href="' + zkAdmin.adminUrl + 'post.php?post=' + article.id + '&action=edit" ';
-                            html += 'class="zk-btn zk-btn-small zk-btn-secondary" target="_blank">Ansehen</a>';
-                            html += '</div>';
-                            html += '</div>';
-                        });
-
-                        $list.html(html);
+                        self.renderAcceptedArticles(response.data.articles);
                     } else {
-                        $list.html('<p class="zk-notice zk-notice-error">' +
-                            (response.data.message || 'Fehler beim Laden') + '</p>');
+                        $list.html(self.getErrorHtml(response.data.message || 'Fehler beim Laden'));
                     }
                 },
                 error: function() {
-                    $list.html('<p class="zk-notice zk-notice-error">Verbindungsfehler</p>');
-                },
-                complete: function() {
-                    $btn.prop('disabled', false);
+                    $list.html(self.getErrorHtml('Verbindungsfehler'));
                 }
             });
         },
 
         /**
-         * Zeilen-Status aktualisieren
+         * Akzeptierte Artikel rendern
          */
-        updateRowStatus: function($row, data) {
-            var $badge = $row.find('.zk-status-badge');
-            var $publishBtn = $row.find('.zk-btn-publish-now');
+        renderAcceptedArticles: function(articles) {
+            var $list = $('#zk-accepted-list');
 
-            if (data.is_visible) {
-                $badge.removeClass('zk-status-scheduled zk-status-soon')
-                      .addClass('zk-status-online')
-                      .text('Online');
-
-                $publishBtn.fadeOut(300);
-            } else {
-                $badge.removeClass('zk-status-online')
-                      .addClass('zk-status-scheduled')
-                      .text('Geplant: ' + data.date);
-
-                if ($publishBtn.length === 0) {
-                    var html = '<button type="button" class="zk-btn zk-btn-small zk-btn-publish-now" ' +
-                               'data-issue-id="' + $row.data('issue-id') + '">Jetzt veröffentlichen</button>';
-                    $row.find('.zk-action-buttons').prepend(html);
-                } else {
-                    $publishBtn.fadeIn(300);
-                }
+            if (!articles || articles.length === 0) {
+                $list.html('<div class="zk-empty">Keine akzeptierten Artikel vorhanden.</div>');
+                return;
             }
+
+            var html = '<div class="zk-accepted-grid">';
+
+            articles.forEach(function(article) {
+                html += '<div class="zk-accepted-item" data-id="' + article.id + '">';
+                html += '<div class="zk-accepted-info">';
+                html += '<span class="zk-accepted-title">' + ZKManager.escapeHtml(article.title) + '</span>';
+                html += '<div class="zk-accepted-meta">';
+                if (article.author) {
+                    html += '<span>Autor: ' + ZKManager.escapeHtml(article.author) + '</span>';
+                }
+                if (article.publikationsart) {
+                    html += '<span>Art: ' + ZKManager.escapeHtml(article.publikationsart) + '</span>';
+                }
+                html += '<span>ID: ' + article.submission_id + '</span>';
+                html += '</div>';
+                html += '</div>';
+                html += '</div>';
+            });
+
+            html += '</div>';
+            $list.html(html);
+        },
+
+        /**
+         * Toast-Benachrichtigung anzeigen
+         */
+        showToast: function(type, message) {
+            var $container = $('#zk-toast-container');
+            var $toast = $('<div class="zk-toast zk-toast-' + type + '">' +
+                '<span class="zk-toast-message">' + this.escapeHtml(message) + '</span>' +
+                '<button type="button" class="zk-toast-close">&times;</button>' +
+                '</div>');
+
+            $container.append($toast);
+
+            // Einblenden
+            setTimeout(function() {
+                $toast.addClass('zk-toast-visible');
+            }, 10);
+
+            // Automatisch ausblenden
+            setTimeout(function() {
+                $toast.removeClass('zk-toast-visible');
+                setTimeout(function() {
+                    $toast.remove();
+                }, 300);
+            }, 4000);
+
+            // Manuelles Schließen
+            $toast.find('.zk-toast-close').on('click', function() {
+                $toast.removeClass('zk-toast-visible');
+                setTimeout(function() {
+                    $toast.remove();
+                }, 300);
+            });
+        },
+
+        /**
+         * Lade-HTML
+         */
+        getLoadingHtml: function(message) {
+            return '<div class="zk-loading">' +
+                '<div class="zk-spinner"></div>' +
+                '<span>' + message + '</span>' +
+                '</div>';
+        },
+
+        /**
+         * Fehler-HTML
+         */
+        getErrorHtml: function(message) {
+            return '<div class="zk-error-message">' +
+                '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+                '<circle cx="12" cy="12" r="10"></circle>' +
+                '<line x1="12" y1="8" x2="12" y2="12"></line>' +
+                '<line x1="12" y1="16" x2="12.01" y2="16"></line>' +
+                '</svg>' +
+                '<span>' + message + '</span>' +
+                '</div>';
         },
 
         /**
@@ -268,12 +653,8 @@
 
     // Initialisierung
     $(document).ready(function() {
-        if (typeof zkAdmin !== 'undefined') {
-            // Admin URL hinzufügen falls nicht vorhanden
-            if (!zkAdmin.adminUrl) {
-                zkAdmin.adminUrl = '/wp-admin/';
-            }
-            ZKAdmin.init();
+        if ($('#zk-manager').length > 0) {
+            ZKManager.init();
         }
     });
 

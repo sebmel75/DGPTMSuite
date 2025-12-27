@@ -157,7 +157,7 @@ if (!class_exists('ZK_Shortcodes')) {
 
         /**
          * Shortcode: [zeitschrift_verwaltung]
-         * Admin-Tool zur Verwaltung der Zeitschriften
+         * Admin-Tool zur Verwaltung der Zeitschriften (Frontend AJAX-basiert)
          */
         public function render_admin($atts) {
             // Berechtigungsprüfung
@@ -169,30 +169,12 @@ if (!class_exists('ZK_Shortcodes')) {
             wp_enqueue_style('zk-admin');
             wp_enqueue_script('zk-admin');
 
-            // Alle Ausgaben holen (auch zukünftige)
-            $issues = get_posts([
-                'post_type' => ZK_POST_TYPE,
-                'posts_per_page' => -1,
-                'post_status' => 'publish',
-                'meta_key' => 'jahr',
-                'orderby' => 'meta_value_num',
-                'order' => 'DESC'
+            // AJAX-Konfiguration für Frontend bereitstellen
+            wp_localize_script('zk-admin', 'zkAdmin', [
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'adminUrl' => admin_url(),
+                'nonce' => wp_create_nonce('zk_admin_nonce')
             ]);
-
-            // Nach Jahr und Ausgabe sortieren
-            usort($issues, function($a, $b) {
-                $year_a = (int) get_field('jahr', $a->ID);
-                $year_b = (int) get_field('jahr', $b->ID);
-
-                if ($year_a !== $year_b) {
-                    return $year_b - $year_a;
-                }
-
-                $ausgabe_a = (int) get_field('ausgabe', $a->ID);
-                $ausgabe_b = (int) get_field('ausgabe', $b->ID);
-
-                return $ausgabe_b - $ausgabe_a;
-            });
 
             ob_start();
             include ZK_PLUGIN_DIR . 'templates/admin-manager.php';

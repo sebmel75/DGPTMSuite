@@ -169,6 +169,9 @@ if (!class_exists('ZK_Shortcodes')) {
             wp_enqueue_style('zk-admin');
             wp_enqueue_script('zk-admin');
 
+            // WordPress Editor (TinyMCE) laden
+            wp_enqueue_editor();
+
             // AJAX-Konfiguration für Frontend bereitstellen
             wp_localize_script('zk-admin', 'zkAdmin', [
                 'ajaxUrl' => admin_url('admin-ajax.php'),

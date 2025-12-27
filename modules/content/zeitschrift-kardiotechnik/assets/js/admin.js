@@ -490,6 +490,15 @@
          * Modals schließen
          */
         closeModals: function() {
+            // TinyMCE Editoren entfernen
+            if (typeof tinymce !== 'undefined') {
+                if (tinymce.get('zk-article-content')) {
+                    tinymce.get('zk-article-content').remove();
+                }
+                if (tinymce.get('zk-edit-article-content')) {
+                    tinymce.get('zk-edit-article-content').remove();
+                }
+            }
             $('.zk-modal').removeClass('zk-modal-open');
         },
 
@@ -793,6 +802,60 @@
         openNewArticleModal: function() {
             $('#zk-new-article-form')[0].reset();
             $('#zk-modal-new-article').addClass('zk-modal-open');
+
+            // TinyMCE initialisieren
+            this.initTinyMCE('zk-article-content');
+        },
+
+        /**
+         * TinyMCE initialisieren
+         */
+        initTinyMCE: function(editorId) {
+            var self = this;
+
+            // Vorhandenen Editor entfernen
+            if (typeof tinymce !== 'undefined' && tinymce.get(editorId)) {
+                tinymce.get(editorId).remove();
+            }
+
+            // Kurze Verzögerung für DOM-Rendering
+            setTimeout(function() {
+                if (typeof wp !== 'undefined' && wp.editor) {
+                    wp.editor.initialize(editorId, {
+                        tinymce: {
+                            wpautop: true,
+                            plugins: 'lists link paste',
+                            toolbar1: 'bold italic | bullist numlist | link | removeformat',
+                            height: 250,
+                            menubar: false,
+                            statusbar: false
+                        },
+                        quicktags: false,
+                        mediaButtons: false
+                    });
+                }
+            }, 100);
+        },
+
+        /**
+         * TinyMCE Inhalt abrufen
+         */
+        getTinyMCEContent: function(editorId) {
+            if (typeof tinymce !== 'undefined' && tinymce.get(editorId)) {
+                return tinymce.get(editorId).getContent();
+            }
+            return $('#' + editorId).val();
+        },
+
+        /**
+         * TinyMCE Inhalt setzen
+         */
+        setTinyMCEContent: function(editorId, content) {
+            if (typeof tinymce !== 'undefined' && tinymce.get(editorId)) {
+                tinymce.get(editorId).setContent(content || '');
+            } else {
+                $('#' + editorId).val(content || '');
+            }
         },
 
         /**
@@ -817,7 +880,7 @@
                 hauptautorin: $form.find('[name="hauptautorin"]').val(),
                 doi: $form.find('[name="doi"]').val(),
                 publikationsart: $form.find('[name="publikationsart"]').val(),
-                content: $form.find('[name="content"]').val(),
+                content: this.getTinyMCEContent('zk-article-content'),
                 zusammenfassung_deutsch: $form.find('[name="zusammenfassung_deutsch"]').val(),
                 zusammenfassung_englisch: $form.find('[name="zusammenfassung_englisch"]').val(),
                 keywords: $form.find('[name="keywords"]').val()
@@ -866,8 +929,15 @@
                     article_id: articleId
                 },
                 success: function(response) {
+                    console.log('ZK Article Details Response:', response);
                     if (response.success) {
                         self.populateEditArticleForm(response.data.article);
+                        // TinyMCE initialisieren nach Formular-Befüllung
+                        self.initTinyMCE('zk-edit-article-content');
+                        // Inhalt nach TinyMCE-Init setzen
+                        setTimeout(function() {
+                            self.setTinyMCEContent('zk-edit-article-content', response.data.article.content || '');
+                        }, 200);
                     } else {
                         self.showToast('error', response.data.message || 'Fehler beim Laden');
                         self.closeModals();
@@ -889,12 +959,21 @@
         populateEditArticleForm: function(article) {
             var $form = $('#zk-edit-article-form');
 
+            console.log('ZK Populate Form - publikationsart:', article.publikationsart);
+
             $form.find('#zk-edit-article-id').val(article.id);
             $form.find('#zk-edit-article-title').val(article.title);
             $form.find('#zk-edit-article-authors').val(article.autoren);
             $form.find('#zk-edit-article-main-author').val(article.hauptautorin);
             $form.find('#zk-edit-article-doi').val(article.doi);
-            $form.find('#zk-edit-article-type').val(article.publikationsart || '');
+
+            // Publikationsart setzen
+            var $typeSelect = $form.find('#zk-edit-article-type');
+            var pubArt = article.publikationsart || '';
+            console.log('ZK Setting publikationsart to:', pubArt);
+            console.log('ZK Available options:', $typeSelect.find('option').map(function() { return $(this).val(); }).get());
+            $typeSelect.val(pubArt);
+
             $form.find('#zk-edit-article-content').val(article.content || '');
             $form.find('#zk-edit-article-abstract').val(article.zusammenfassung_deutsch);
             $form.find('#zk-edit-article-abstract-en').val(article.zusammenfassung_englisch);
@@ -937,7 +1016,7 @@
                 hauptautorin: $form.find('#zk-edit-article-main-author').val(),
                 doi: $form.find('#zk-edit-article-doi').val(),
                 publikationsart: $form.find('#zk-edit-article-type').val(),
-                content: $form.find('#zk-edit-article-content').val(),
+                content: this.getTinyMCEContent('zk-edit-article-content'),
                 zusammenfassung_deutsch: $form.find('#zk-edit-article-abstract').val(),
                 zusammenfassung_englisch: $form.find('#zk-edit-article-abstract-en').val(),
                 keywords: $form.find('#zk-edit-article-keywords').val()

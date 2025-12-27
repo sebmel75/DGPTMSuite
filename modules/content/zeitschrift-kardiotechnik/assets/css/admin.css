@@ -543,6 +543,30 @@
     box-shadow: 0 0 0 3px rgba(189, 22, 34, 0.1);
 }
 
+/* TinyMCE WYSIWYG Editor Styles */
+.zk-form-group .wp-editor-wrap {
+    border: 1px solid var(--zk-border);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.zk-form-group .wp-editor-container {
+    border: none;
+}
+
+.zk-form-group .mce-toolbar-grp {
+    background: #f7fafc;
+    border-bottom: 1px solid var(--zk-border);
+}
+
+.zk-form-group .mce-edit-area {
+    min-height: 200px;
+}
+
+.zk-form-group .mce-edit-area iframe {
+    min-height: 200px;
+}
+
 /* Edit Layout */
 .zk-edit-layout {
     display: grid;

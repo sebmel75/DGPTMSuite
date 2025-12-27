@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Zeitschrift Kardiotechnik Manager
  * Description: Verwaltung und Anzeige der Fachzeitschrift Kardiotechnik
- * Version: 1.4.2
+ * Version: 1.4.3
  * Author: Sebastian Melzer / DGPTM
  */
 
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 // Konstanten
 define('ZK_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('ZK_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('ZK_VERSION', '1.4.2');
+define('ZK_VERSION', '1.4.3');
 define('ZK_POST_TYPE', 'zeitschkardiotechnik');
 define('ZK_PUBLIKATION_TYPE', 'publikation');
 
@@ -905,6 +905,18 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
                 wp_send_json_error(['message' => 'Artikel nicht gefunden']);
             }
 
+            // Publikationsart abrufen (mehrere Feldnamen probieren)
+            $publikationsart = get_field('publikationsart', $post_id);
+            if (empty($publikationsart)) {
+                $publikationsart = get_field('art_der_publikation', $post_id);
+            }
+            if (empty($publikationsart)) {
+                $publikationsart = get_field('type', $post_id);
+            }
+            if (empty($publikationsart)) {
+                $publikationsart = get_post_meta($post_id, 'publikationsart', true);
+            }
+
             wp_send_json_success([
                 'article' => [
                     'id' => $post_id,
@@ -913,7 +925,7 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
                     'autoren' => get_field('autoren', $post_id),
                     'hauptautorin' => get_field('hauptautorin', $post_id),
                     'doi' => get_field('doi', $post_id),
-                    'publikationsart' => get_field('publikationsart', $post_id),
+                    'publikationsart' => $publikationsart,
                     'zusammenfassung_deutsch' => get_field('abstract-deutsch', $post_id),
                     'zusammenfassung_englisch' => get_field('abstract', $post_id),
                     'keywords' => get_field('keywords-deutsch', $post_id),

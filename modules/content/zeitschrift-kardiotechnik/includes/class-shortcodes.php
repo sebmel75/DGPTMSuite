@@ -26,6 +26,7 @@ if (!class_exists('ZK_Shortcodes')) {
             add_shortcode('zeitschrift_uebersicht', [$this, 'render_overview']);
             add_shortcode('zeitschrift_detail', [$this, 'render_detail']);
             add_shortcode('zeitschrift_verwaltung', [$this, 'render_admin']);
+            add_shortcode('zeitschrift_aktuell', [$this, 'render_current']);
         }
 
         /**
@@ -68,7 +69,7 @@ if (!class_exists('ZK_Shortcodes')) {
          */
         public function render_overview($atts) {
             $atts = shortcode_atts([
-                'anzahl' => -1,
+                'anzahl' => 12,  // Standard: letzte 12 Ausgaben
                 'jahr' => '',
                 'spalten' => 4
             ], $atts, 'zeitschrift_uebersicht');
@@ -195,6 +196,67 @@ if (!class_exists('ZK_Shortcodes')) {
 
             ob_start();
             include ZK_PLUGIN_DIR . 'templates/admin-manager.php';
+            return ob_get_clean();
+        }
+
+        /**
+         * Shortcode: [zeitschrift_aktuell]
+         * Zeigt Titelbild der aktuellen/letzten Ausgabe
+         *
+         * @param array $atts Attribute: link (true/false), class
+         */
+        public function render_current($atts) {
+            $atts = shortcode_atts([
+                'link' => 'true',
+                'class' => ''
+            ], $atts, 'zeitschrift_aktuell');
+
+            // Assets laden
+            wp_enqueue_style('zk-frontend');
+
+            // Neueste sichtbare Ausgabe holen
+            $issues = DGPTM_Zeitschrift_Kardiotechnik::get_visible_issues([
+                'posts_per_page' => 1
+            ]);
+
+            if (empty($issues)) {
+                return '<p class="zk-error">Keine aktuelle Ausgabe verfügbar.</p>';
+            }
+
+            $issue = $issues[0];
+            $issue_id = $issue->ID;
+            $titelseite = get_field('titelseite', $issue_id);
+            $label = DGPTM_Zeitschrift_Kardiotechnik::format_issue_label($issue_id);
+            $detail_url = home_url('/?p=' . $issue_id);
+            $show_link = filter_var($atts['link'], FILTER_VALIDATE_BOOLEAN);
+            $extra_class = !empty($atts['class']) ? ' ' . esc_attr($atts['class']) : '';
+
+            ob_start();
+            ?>
+            <div class="zk-current-issue<?php echo $extra_class; ?>">
+                <?php if ($show_link) : ?>
+                    <a href="<?php echo esc_url($detail_url); ?>" class="zk-current-link">
+                <?php endif; ?>
+
+                <?php if ($titelseite) : ?>
+                    <img src="<?php echo esc_url($titelseite['sizes']['large'] ?? $titelseite['url']); ?>"
+                         alt="Kardiotechnik <?php echo esc_attr($label); ?>"
+                         class="zk-current-cover" />
+                <?php else : ?>
+                    <div class="zk-current-placeholder">
+                        <span class="dashicons dashicons-book-alt"></span>
+                    </div>
+                <?php endif; ?>
+
+                <div class="zk-current-label">
+                    Ausgabe <?php echo esc_html($label); ?>
+                </div>
+
+                <?php if ($show_link) : ?>
+                    </a>
+                <?php endif; ?>
+            </div>
+            <?php
             return ob_get_clean();
         }
 

@@ -25,7 +25,10 @@ $spalten = intval($atts['spalten']);
                 $ausgabe = get_field('ausgabe', $issue_id);
                 $label = DGPTM_Zeitschrift_Kardiotechnik::format_issue_label($issue_id);
                 $articles = DGPTM_Zeitschrift_Kardiotechnik::get_issue_articles($issue_id);
-                $detail_url = home_url('/?p=' . $issue_id);
+                $detail_url = get_permalink($issue_id);
+                if (!$detail_url || $detail_url === false) {
+                    $detail_url = home_url('/?p=' . $issue_id);
+                }
             ?>
                 <div class="zk-card" data-issue-id="<?php echo esc_attr($issue_id); ?>">
                     <a href="<?php echo esc_url($detail_url); ?>" class="zk-card-link">

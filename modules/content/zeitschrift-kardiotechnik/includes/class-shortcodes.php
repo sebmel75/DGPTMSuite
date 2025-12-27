@@ -227,7 +227,10 @@ if (!class_exists('ZK_Shortcodes')) {
             $issue_id = $issue->ID;
             $titelseite = get_field('titelseite', $issue_id);
             $label = DGPTM_Zeitschrift_Kardiotechnik::format_issue_label($issue_id);
-            $detail_url = home_url('/?p=' . $issue_id);
+            $detail_url = get_permalink($issue_id);
+            if (!$detail_url || $detail_url === false) {
+                $detail_url = home_url('/?p=' . $issue_id);
+            }
             $show_link = filter_var($atts['link'], FILTER_VALIDATE_BOOLEAN);
             $extra_class = !empty($atts['class']) ? ' ' . esc_attr($atts['class']) : '';
 

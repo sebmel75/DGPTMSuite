@@ -56,7 +56,7 @@ foreach ($articles as $key => $article) {
         <div class="zk-single-content">
             <!-- Header mit Ausgabe-Info -->
             <div class="zk-single-header">
-                <h1 class="zk-single-title">Kardiotechnik</h1>
+                <h1 class="zk-single-title"><?php echo esc_html($issue->post_title); ?></h1>
                 <div class="zk-single-issue">Ausgabe <?php echo esc_html($label); ?></div>
 
                 <?php if ($doi) : ?>
@@ -91,7 +91,11 @@ foreach ($articles as $key => $article) {
                                 $pub = $article['publication'];
                                 $pub_data = DGPTM_Zeitschrift_Kardiotechnik::get_publication_display_data($pub);
                                 if (!$pub_data) continue;
-                                $article_url = home_url('/?p=' . $pub_data['id']);
+                                // Permalink mit Fallback auf ?p=ID
+                                $article_url = get_permalink($pub_data['id']);
+                                if (!$article_url || $article_url === false) {
+                                    $article_url = home_url('/?p=' . $pub_data['id']);
+                                }
                                 $authors = $pub_data['authors'] ?: $pub_data['main_author'];
                             ?>
                                 <a href="<?php echo esc_url($article_url); ?>" class="zk-article-item">

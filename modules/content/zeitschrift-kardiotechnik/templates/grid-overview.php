@@ -70,7 +70,7 @@ $spalten = intval($atts['spalten']);
                     <!-- Desktop: Hover-Popup -->
                     <div class="zk-card-popup">
                         <div class="zk-popup-header">
-                            <strong>Kardiotechnik <?php echo esc_html($label); ?></strong>
+                            <strong><?php echo esc_html($issue->post_title); ?></strong>
                         </div>
                         <?php if (!empty($articles)) : ?>
                             <ul class="zk-popup-articles">

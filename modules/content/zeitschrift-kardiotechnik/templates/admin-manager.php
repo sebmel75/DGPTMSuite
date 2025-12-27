@@ -41,8 +41,11 @@ $current_user = wp_get_current_user();
         <button type="button" class="zk-tab zk-tab-active" data-tab="issues">
             Ausgaben
         </button>
+        <button type="button" class="zk-tab" data-tab="articles">
+            Artikel
+        </button>
         <button type="button" class="zk-tab" data-tab="accepted">
-            Akzeptierte Artikel
+            Akzeptierte Einreichungen
         </button>
     </div>
 
@@ -67,12 +70,34 @@ $current_user = wp_get_current_user();
         </div>
     </div>
 
-    <!-- Tab: Akzeptierte Artikel -->
+    <!-- Tab: Artikel -->
+    <div class="zk-tab-content" id="zk-tab-articles">
+        <div class="zk-articles-header">
+            <div class="zk-articles-filters">
+                <input type="text" id="zk-article-search" class="zk-input" placeholder="Artikel suchen...">
+            </div>
+            <button type="button" class="zk-btn zk-btn-primary" id="zk-new-article-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Neuer Artikel
+            </button>
+        </div>
+        <div class="zk-articles-list" id="zk-articles-list">
+            <div class="zk-loading">
+                <div class="zk-spinner"></div>
+                <span>Lade Artikel...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab: Akzeptierte Einreichungen -->
     <div class="zk-tab-content" id="zk-tab-accepted">
         <div class="zk-accepted-list" id="zk-accepted-list">
             <div class="zk-loading">
                 <div class="zk-spinner"></div>
-                <span>Lade Artikel...</span>
+                <span>Lade Einreichungen...</span>
             </div>
         </div>
     </div>
@@ -174,6 +199,150 @@ $current_user = wp_get_current_user();
                 <button type="button" class="zk-btn zk-btn-primary" id="zk-save-edit-issue">
                     Speichern
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Neuer Artikel -->
+    <div class="zk-modal" id="zk-modal-new-article">
+        <div class="zk-modal-overlay"></div>
+        <div class="zk-modal-content zk-modal-large">
+            <div class="zk-modal-header">
+                <h3>Neuen Artikel erstellen</h3>
+                <button type="button" class="zk-modal-close">&times;</button>
+            </div>
+            <div class="zk-modal-body">
+                <form id="zk-new-article-form">
+                    <div class="zk-form-group">
+                        <label for="zk-article-title">Titel *</label>
+                        <input type="text" id="zk-article-title" name="title" required>
+                    </div>
+                    <div class="zk-form-group">
+                        <label for="zk-article-authors">Autoren</label>
+                        <input type="text" id="zk-article-authors" name="autoren" placeholder="z.B. Müller A, Schmidt B">
+                    </div>
+                    <div class="zk-form-row">
+                        <div class="zk-form-group">
+                            <label for="zk-article-main-author">Hauptautor/in</label>
+                            <input type="text" id="zk-article-main-author" name="hauptautorin">
+                        </div>
+                        <div class="zk-form-group">
+                            <label for="zk-article-doi">DOI</label>
+                            <input type="text" id="zk-article-doi" name="doi" placeholder="10.xxxx/xxxxx">
+                        </div>
+                    </div>
+                    <div class="zk-form-group">
+                        <label for="zk-article-abstract">Zusammenfassung (Deutsch)</label>
+                        <textarea id="zk-article-abstract" name="zusammenfassung_deutsch" rows="4"></textarea>
+                    </div>
+                    <div class="zk-form-group">
+                        <label for="zk-article-abstract-en">Abstract (English)</label>
+                        <textarea id="zk-article-abstract-en" name="zusammenfassung_englisch" rows="4"></textarea>
+                    </div>
+                    <div class="zk-form-group">
+                        <label for="zk-article-keywords">Keywords</label>
+                        <input type="text" id="zk-article-keywords" name="keywords" placeholder="Kommagetrennt">
+                    </div>
+                </form>
+            </div>
+            <div class="zk-modal-footer">
+                <button type="button" class="zk-btn zk-btn-secondary zk-modal-cancel">Abbrechen</button>
+                <button type="button" class="zk-btn zk-btn-primary" id="zk-save-new-article">
+                    Artikel erstellen
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Artikel bearbeiten -->
+    <div class="zk-modal" id="zk-modal-edit-article">
+        <div class="zk-modal-overlay"></div>
+        <div class="zk-modal-content zk-modal-large">
+            <div class="zk-modal-header">
+                <h3>Artikel bearbeiten</h3>
+                <button type="button" class="zk-modal-close">&times;</button>
+            </div>
+            <div class="zk-modal-body">
+                <form id="zk-edit-article-form">
+                    <input type="hidden" id="zk-edit-article-id" name="article_id">
+                    <div class="zk-form-group">
+                        <label for="zk-edit-article-title">Titel *</label>
+                        <input type="text" id="zk-edit-article-title" name="title" required>
+                    </div>
+                    <div class="zk-form-group">
+                        <label for="zk-edit-article-authors">Autoren</label>
+                        <input type="text" id="zk-edit-article-authors" name="autoren">
+                    </div>
+                    <div class="zk-form-row">
+                        <div class="zk-form-group">
+                            <label for="zk-edit-article-main-author">Hauptautor/in</label>
+                            <input type="text" id="zk-edit-article-main-author" name="hauptautorin">
+                        </div>
+                        <div class="zk-form-group">
+                            <label for="zk-edit-article-doi">DOI</label>
+                            <input type="text" id="zk-edit-article-doi" name="doi">
+                        </div>
+                    </div>
+                    <div class="zk-form-group">
+                        <label for="zk-edit-article-abstract">Zusammenfassung (Deutsch)</label>
+                        <textarea id="zk-edit-article-abstract" name="zusammenfassung_deutsch" rows="4"></textarea>
+                    </div>
+                    <div class="zk-form-group">
+                        <label for="zk-edit-article-abstract-en">Abstract (English)</label>
+                        <textarea id="zk-edit-article-abstract-en" name="zusammenfassung_englisch" rows="4"></textarea>
+                    </div>
+                    <div class="zk-form-group">
+                        <label for="zk-edit-article-keywords">Keywords</label>
+                        <input type="text" id="zk-edit-article-keywords" name="keywords">
+                    </div>
+
+                    <!-- Verknüpfung mit Ausgabe -->
+                    <div class="zk-form-group zk-article-link-section">
+                        <label>Verknüpft mit Ausgabe</label>
+                        <div id="zk-article-linked-issue" class="zk-linked-issue-display">
+                            <span class="zk-no-link">Nicht verknüpft</span>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="zk-modal-footer">
+                <button type="button" class="zk-btn zk-btn-danger" id="zk-delete-article" style="margin-right: auto;">
+                    Löschen
+                </button>
+                <button type="button" class="zk-btn zk-btn-secondary zk-modal-cancel">Abbrechen</button>
+                <button type="button" class="zk-btn zk-btn-primary" id="zk-save-edit-article">
+                    Speichern
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Artikel verknüpfen -->
+    <div class="zk-modal" id="zk-modal-link-article">
+        <div class="zk-modal-overlay"></div>
+        <div class="zk-modal-content">
+            <div class="zk-modal-header">
+                <h3>Artikel verknüpfen</h3>
+                <button type="button" class="zk-modal-close">&times;</button>
+            </div>
+            <div class="zk-modal-body">
+                <input type="hidden" id="zk-link-issue-id">
+                <input type="hidden" id="zk-link-slot">
+
+                <div class="zk-form-group">
+                    <label for="zk-link-article-search">Artikel suchen</label>
+                    <input type="text" id="zk-link-article-search" class="zk-input" placeholder="Titel oder Autor eingeben...">
+                </div>
+
+                <div class="zk-available-articles" id="zk-available-articles">
+                    <div class="zk-loading">
+                        <div class="zk-spinner"></div>
+                        <span>Lade verfügbare Artikel...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="zk-modal-footer">
+                <button type="button" class="zk-btn zk-btn-secondary zk-modal-cancel">Abbrechen</button>
             </div>
         </div>
     </div>

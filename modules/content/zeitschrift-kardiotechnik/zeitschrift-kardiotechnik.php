@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Zeitschrift Kardiotechnik Manager
  * Description: Verwaltung und Anzeige der Fachzeitschrift Kardiotechnik
- * Version: 1.3.0
+ * Version: 1.4.0
  * Author: Sebastian Melzer / DGPTM
  */
 
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 // Konstanten
 define('ZK_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('ZK_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('ZK_VERSION', '1.3.1');
+define('ZK_VERSION', '1.4.0');
 define('ZK_POST_TYPE', 'zeitschkardiotechnik');
 define('ZK_PUBLIKATION_TYPE', 'publikation');
 
@@ -58,13 +58,23 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
             add_action('wp_ajax_zk_publish_now', [$this, 'ajax_publish_now']);
             add_action('wp_ajax_zk_get_accepted_articles', [$this, 'ajax_get_accepted_articles']);
 
-            // Frontend Manager AJAX Handlers
+            // Frontend Manager AJAX Handlers - Ausgaben
             add_action('wp_ajax_zk_get_all_issues', [$this, 'ajax_get_all_issues']);
             add_action('wp_ajax_zk_create_issue', [$this, 'ajax_create_issue']);
             add_action('wp_ajax_zk_update_issue', [$this, 'ajax_update_issue']);
             add_action('wp_ajax_zk_get_issue_details', [$this, 'ajax_get_issue_details']);
             add_action('wp_ajax_zk_delete_issue', [$this, 'ajax_delete_issue']);
             add_action('wp_ajax_zk_get_available_years', [$this, 'ajax_get_available_years']);
+
+            // Frontend Manager AJAX Handlers - Artikel
+            add_action('wp_ajax_zk_get_all_articles', [$this, 'ajax_get_all_articles']);
+            add_action('wp_ajax_zk_create_article', [$this, 'ajax_create_article']);
+            add_action('wp_ajax_zk_update_article', [$this, 'ajax_update_article']);
+            add_action('wp_ajax_zk_delete_article', [$this, 'ajax_delete_article']);
+            add_action('wp_ajax_zk_get_article_details', [$this, 'ajax_get_article_details']);
+            add_action('wp_ajax_zk_link_article', [$this, 'ajax_link_article']);
+            add_action('wp_ajax_zk_unlink_article', [$this, 'ajax_unlink_article']);
+            add_action('wp_ajax_zk_get_available_articles', [$this, 'ajax_get_available_articles']);
         }
 
         public function enqueue_frontend_assets() {
@@ -603,6 +613,7 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
             foreach ($articles as $key => $article) {
                 $pub = $article['publication'];
                 $linked_articles[] = [
+                    'slot' => $key,
                     'field' => $key,
                     'id' => $pub->ID,
                     'title' => $pub->post_title,
@@ -678,6 +689,379 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
             ));
 
             wp_send_json_success(['years' => $years]);
+        }
+
+        /**
+         * AJAX: Alle Artikel laden
+         */
+        public function ajax_get_all_articles() {
+            check_ajax_referer('zk_admin_nonce', 'nonce');
+
+            if (!$this->user_can_manage()) {
+                wp_send_json_error(['message' => 'Keine Berechtigung']);
+            }
+
+            $search = sanitize_text_field($_POST['search'] ?? '');
+
+            $args = [
+                'post_type' => ZK_PUBLIKATION_TYPE,
+                'posts_per_page' => 100,
+                'post_status' => 'publish',
+                'orderby' => 'date',
+                'order' => 'DESC'
+            ];
+
+            if (!empty($search)) {
+                $args['s'] = $search;
+            }
+
+            $articles = get_posts($args);
+
+            $result = [];
+            foreach ($articles as $article) {
+                $result[] = [
+                    'id' => $article->ID,
+                    'title' => $article->post_title,
+                    'authors' => get_field('autoren', $article->ID) ?: get_field('hauptautorin', $article->ID),
+                    'doi' => get_field('doi', $article->ID),
+                    'date' => get_the_date('d.m.Y', $article->ID),
+                    'linked_issue' => $this->get_article_linked_issue($article->ID)
+                ];
+            }
+
+            wp_send_json_success(['articles' => $result]);
+        }
+
+        /**
+         * Hilfsfunktion: Findet die Ausgabe, mit der ein Artikel verknüpft ist
+         */
+        private function get_article_linked_issue($article_id) {
+            global $wpdb;
+
+            // Suche in allen Ausgaben nach diesem Artikel
+            $fields = ['editorial', 'journalclub', 'tutorial', 'pub1', 'pub2', 'pub3', 'pub4', 'pub5', 'pub6'];
+
+            foreach ($fields as $field) {
+                $issue_id = $wpdb->get_var($wpdb->prepare(
+                    "SELECT post_id FROM {$wpdb->postmeta}
+                     WHERE meta_key = %s AND meta_value = %d",
+                    $field,
+                    $article_id
+                ));
+
+                if ($issue_id) {
+                    $issue = get_post($issue_id);
+                    if ($issue && $issue->post_type === ZK_POST_TYPE) {
+                        return [
+                            'id' => $issue_id,
+                            'label' => self::format_issue_label($issue_id),
+                            'field' => $field
+                        ];
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        /**
+         * AJAX: Neuen Artikel erstellen
+         */
+        public function ajax_create_article() {
+            check_ajax_referer('zk_admin_nonce', 'nonce');
+
+            if (!$this->user_can_manage()) {
+                wp_send_json_error(['message' => 'Keine Berechtigung']);
+            }
+
+            $title = sanitize_text_field($_POST['title'] ?? '');
+            $authors = sanitize_text_field($_POST['authors'] ?? '');
+            $doi = sanitize_text_field($_POST['doi'] ?? '');
+            $abstract_de = wp_kses_post($_POST['abstract_de'] ?? '');
+            $abstract_en = wp_kses_post($_POST['abstract_en'] ?? '');
+            $keywords_de = sanitize_text_field($_POST['keywords_de'] ?? '');
+
+            if (empty($title)) {
+                wp_send_json_error(['message' => 'Titel ist erforderlich']);
+            }
+
+            // Post erstellen
+            $post_id = wp_insert_post([
+                'post_type' => ZK_PUBLIKATION_TYPE,
+                'post_title' => $title,
+                'post_status' => 'publish',
+                'post_author' => get_current_user_id()
+            ]);
+
+            if (is_wp_error($post_id)) {
+                wp_send_json_error(['message' => 'Fehler beim Erstellen: ' . $post_id->get_error_message()]);
+            }
+
+            // ACF Felder setzen
+            if (!empty($authors)) {
+                update_field('autoren', $authors, $post_id);
+            }
+            if (!empty($doi)) {
+                update_field('doi', $doi, $post_id);
+            }
+            if (!empty($abstract_de)) {
+                update_field('abstract-deutsch', $abstract_de, $post_id);
+            }
+            if (!empty($abstract_en)) {
+                update_field('abstract', $abstract_en, $post_id);
+            }
+            if (!empty($keywords_de)) {
+                update_field('keywords-deutsch', $keywords_de, $post_id);
+            }
+
+            wp_send_json_success([
+                'message' => 'Artikel erstellt',
+                'post_id' => $post_id,
+                'title' => $title
+            ]);
+        }
+
+        /**
+         * AJAX: Artikel aktualisieren
+         */
+        public function ajax_update_article() {
+            check_ajax_referer('zk_admin_nonce', 'nonce');
+
+            if (!$this->user_can_manage()) {
+                wp_send_json_error(['message' => 'Keine Berechtigung']);
+            }
+
+            $post_id = intval($_POST['post_id'] ?? 0);
+            if (!$post_id) {
+                wp_send_json_error(['message' => 'Ungültige Post-ID']);
+            }
+
+            $post = get_post($post_id);
+            if (!$post || $post->post_type !== ZK_PUBLIKATION_TYPE) {
+                wp_send_json_error(['message' => 'Artikel nicht gefunden']);
+            }
+
+            $title = sanitize_text_field($_POST['title'] ?? '');
+            $authors = sanitize_text_field($_POST['authors'] ?? '');
+            $doi = sanitize_text_field($_POST['doi'] ?? '');
+            $abstract_de = wp_kses_post($_POST['abstract_de'] ?? '');
+            $abstract_en = wp_kses_post($_POST['abstract_en'] ?? '');
+            $keywords_de = sanitize_text_field($_POST['keywords_de'] ?? '');
+
+            if (!empty($title)) {
+                wp_update_post([
+                    'ID' => $post_id,
+                    'post_title' => $title
+                ]);
+            }
+
+            update_field('autoren', $authors, $post_id);
+            update_field('doi', $doi, $post_id);
+            update_field('abstract-deutsch', $abstract_de, $post_id);
+            update_field('abstract', $abstract_en, $post_id);
+            update_field('keywords-deutsch', $keywords_de, $post_id);
+
+            wp_send_json_success([
+                'message' => 'Artikel aktualisiert',
+                'post_id' => $post_id
+            ]);
+        }
+
+        /**
+         * AJAX: Artikel-Details laden
+         */
+        public function ajax_get_article_details() {
+            check_ajax_referer('zk_admin_nonce', 'nonce');
+
+            if (!$this->user_can_manage()) {
+                wp_send_json_error(['message' => 'Keine Berechtigung']);
+            }
+
+            $post_id = intval($_POST['post_id'] ?? 0);
+            if (!$post_id) {
+                wp_send_json_error(['message' => 'Ungültige Post-ID']);
+            }
+
+            $post = get_post($post_id);
+            if (!$post || $post->post_type !== ZK_PUBLIKATION_TYPE) {
+                wp_send_json_error(['message' => 'Artikel nicht gefunden']);
+            }
+
+            wp_send_json_success([
+                'article' => [
+                    'id' => $post_id,
+                    'title' => $post->post_title,
+                    'authors' => get_field('autoren', $post_id),
+                    'main_author' => get_field('hauptautorin', $post_id),
+                    'doi' => get_field('doi', $post_id),
+                    'abstract_de' => get_field('abstract-deutsch', $post_id),
+                    'abstract_en' => get_field('abstract', $post_id),
+                    'keywords_de' => get_field('keywords-deutsch', $post_id)
+                ],
+                'linked_issue' => $this->get_article_linked_issue($post_id)
+            ]);
+        }
+
+        /**
+         * AJAX: Artikel löschen
+         */
+        public function ajax_delete_article() {
+            check_ajax_referer('zk_admin_nonce', 'nonce');
+
+            if (!$this->user_can_manage()) {
+                wp_send_json_error(['message' => 'Keine Berechtigung']);
+            }
+
+            $post_id = intval($_POST['post_id'] ?? 0);
+            if (!$post_id) {
+                wp_send_json_error(['message' => 'Ungültige Post-ID']);
+            }
+
+            $post = get_post($post_id);
+            if (!$post || $post->post_type !== ZK_PUBLIKATION_TYPE) {
+                wp_send_json_error(['message' => 'Artikel nicht gefunden']);
+            }
+
+            $result = wp_trash_post($post_id);
+            if (!$result) {
+                wp_send_json_error(['message' => 'Fehler beim Löschen']);
+            }
+
+            wp_send_json_success(['message' => 'Artikel in Papierkorb verschoben']);
+        }
+
+        /**
+         * AJAX: Artikel mit Ausgabe verknüpfen
+         */
+        public function ajax_link_article() {
+            check_ajax_referer('zk_admin_nonce', 'nonce');
+
+            if (!$this->user_can_manage()) {
+                wp_send_json_error(['message' => 'Keine Berechtigung']);
+            }
+
+            $issue_id = intval($_POST['issue_id'] ?? 0);
+            $article_id = intval($_POST['article_id'] ?? 0);
+            $slot = sanitize_text_field($_POST['slot'] ?? '');
+
+            if (!$issue_id || !$article_id || !$slot) {
+                wp_send_json_error(['message' => 'Ungültige Parameter']);
+            }
+
+            // Prüfen ob Ausgabe existiert
+            $issue = get_post($issue_id);
+            if (!$issue || $issue->post_type !== ZK_POST_TYPE) {
+                wp_send_json_error(['message' => 'Ausgabe nicht gefunden']);
+            }
+
+            // Prüfen ob Artikel existiert
+            $article = get_post($article_id);
+            if (!$article || $article->post_type !== ZK_PUBLIKATION_TYPE) {
+                wp_send_json_error(['message' => 'Artikel nicht gefunden']);
+            }
+
+            // Gültige Slots
+            $valid_slots = ['editorial', 'journalclub', 'tutorial', 'pub1', 'pub2', 'pub3', 'pub4', 'pub5', 'pub6'];
+            if (!in_array($slot, $valid_slots)) {
+                wp_send_json_error(['message' => 'Ungültiger Slot']);
+            }
+
+            // Artikel verknüpfen
+            update_field($slot, $article_id, $issue_id);
+
+            wp_send_json_success([
+                'message' => 'Artikel verknüpft',
+                'issue_id' => $issue_id,
+                'article_id' => $article_id,
+                'slot' => $slot
+            ]);
+        }
+
+        /**
+         * AJAX: Artikel von Ausgabe trennen
+         */
+        public function ajax_unlink_article() {
+            check_ajax_referer('zk_admin_nonce', 'nonce');
+
+            if (!$this->user_can_manage()) {
+                wp_send_json_error(['message' => 'Keine Berechtigung']);
+            }
+
+            $issue_id = intval($_POST['issue_id'] ?? 0);
+            $slot = sanitize_text_field($_POST['slot'] ?? '');
+
+            if (!$issue_id || !$slot) {
+                wp_send_json_error(['message' => 'Ungültige Parameter']);
+            }
+
+            // Prüfen ob Ausgabe existiert
+            $issue = get_post($issue_id);
+            if (!$issue || $issue->post_type !== ZK_POST_TYPE) {
+                wp_send_json_error(['message' => 'Ausgabe nicht gefunden']);
+            }
+
+            // Gültige Slots
+            $valid_slots = ['editorial', 'journalclub', 'tutorial', 'pub1', 'pub2', 'pub3', 'pub4', 'pub5', 'pub6'];
+            if (!in_array($slot, $valid_slots)) {
+                wp_send_json_error(['message' => 'Ungültiger Slot']);
+            }
+
+            // Artikel trennen
+            update_field($slot, '', $issue_id);
+
+            wp_send_json_success([
+                'message' => 'Artikel getrennt',
+                'issue_id' => $issue_id,
+                'slot' => $slot
+            ]);
+        }
+
+        /**
+         * AJAX: Verfügbare Artikel für Verknüpfung laden
+         */
+        public function ajax_get_available_articles() {
+            check_ajax_referer('zk_admin_nonce', 'nonce');
+
+            if (!$this->user_can_manage()) {
+                wp_send_json_error(['message' => 'Keine Berechtigung']);
+            }
+
+            $search = sanitize_text_field($_POST['search'] ?? '');
+            $exclude_issue = intval($_POST['exclude_issue'] ?? 0);
+
+            $args = [
+                'post_type' => ZK_PUBLIKATION_TYPE,
+                'posts_per_page' => 50,
+                'post_status' => 'publish',
+                'orderby' => 'title',
+                'order' => 'ASC'
+            ];
+
+            if (!empty($search)) {
+                $args['s'] = $search;
+            }
+
+            $articles = get_posts($args);
+
+            $result = [];
+            foreach ($articles as $article) {
+                $linked = $this->get_article_linked_issue($article->ID);
+
+                // Bereits verknüpfte Artikel markieren
+                $is_linked = !empty($linked);
+                $linked_to_this = $is_linked && $linked['id'] == $exclude_issue;
+
+                $result[] = [
+                    'id' => $article->ID,
+                    'title' => $article->post_title,
+                    'authors' => get_field('autoren', $article->ID) ?: get_field('hauptautorin', $article->ID),
+                    'is_linked' => $is_linked,
+                    'linked_to_this' => $linked_to_this,
+                    'linked_issue' => $linked
+                ];
+            }
+
+            wp_send_json_success(['articles' => $result]);
         }
 
         /**

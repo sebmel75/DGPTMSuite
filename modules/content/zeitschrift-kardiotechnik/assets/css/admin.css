@@ -811,12 +811,256 @@
 }
 
 /* ========================================
+   Artikel Tab
+   ======================================== */
+
+.zk-articles-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 16px;
+}
+
+.zk-articles-filters {
+    flex: 1;
+    max-width: 400px;
+}
+
+.zk-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--zk-border);
+    border-radius: var(--zk-radius);
+    font-size: 14px;
+    color: var(--zk-text);
+    background: var(--zk-white);
+    transition: var(--zk-transition);
+}
+
+.zk-input:focus {
+    outline: none;
+    border-color: var(--zk-accent);
+    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+}
+
+/* Articles Grid */
+.zk-articles-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.zk-article-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    background: var(--zk-white);
+    border: 1px solid var(--zk-border);
+    border-radius: var(--zk-radius);
+    padding: 14px 18px;
+    transition: var(--zk-transition);
+}
+
+.zk-article-item:hover {
+    box-shadow: var(--zk-shadow);
+    border-color: #cbd5e0;
+}
+
+.zk-article-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.zk-article-title {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--zk-text);
+    margin-bottom: 4px;
+}
+
+.zk-article-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 12px;
+}
+
+.zk-article-authors {
+    color: var(--zk-text-light);
+}
+
+.zk-article-doi {
+    color: var(--zk-accent);
+}
+
+.zk-article-linked {
+    color: var(--zk-success);
+    font-weight: 500;
+}
+
+.zk-article-unlinked {
+    color: var(--zk-text-light);
+    font-style: italic;
+}
+
+.zk-article-actions {
+    flex-shrink: 0;
+    display: flex;
+    gap: 6px;
+}
+
+/* ========================================
+   Artikel-Slots (Edit Modal)
+   ======================================== */
+
+.zk-slots-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.zk-slot-item {
+    background: var(--zk-bg);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.zk-slot-header {
+    padding: 8px 12px;
+    background: var(--zk-primary);
+}
+
+.zk-slot-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--zk-white);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.zk-slot-content {
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.zk-slot-filled {
+    flex-wrap: wrap;
+}
+
+.zk-slot-title {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--zk-text);
+}
+
+.zk-slot-authors {
+    width: 100%;
+    font-size: 11px;
+    color: var(--zk-text-light);
+    margin-top: -4px;
+}
+
+.zk-slot-empty {
+    justify-content: center;
+    padding: 12px;
+}
+
+.zk-btn-mini {
+    padding: 4px 6px;
+    font-size: 11px;
+}
+
+/* ========================================
+   Available Articles (Link Modal)
+   ======================================== */
+
+.zk-available-articles {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-top: 16px;
+}
+
+.zk-available-articles-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.zk-available-article-item {
+    padding: 12px 14px;
+    background: var(--zk-bg);
+    border: 1px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: var(--zk-transition);
+}
+
+.zk-available-article-item:hover {
+    background: var(--zk-white);
+    border-color: var(--zk-accent);
+    box-shadow: var(--zk-shadow);
+}
+
+.zk-available-title {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--zk-text);
+    margin-bottom: 4px;
+}
+
+.zk-available-authors {
+    display: block;
+    font-size: 12px;
+    color: var(--zk-text-light);
+}
+
+/* ========================================
+   Article Edit Modal Enhancements
+   ======================================== */
+
+.zk-article-link-section {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--zk-border);
+}
+
+.zk-linked-issue-display {
+    padding: 12px;
+    background: var(--zk-bg);
+    border-radius: 6px;
+}
+
+.zk-linked-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    background: var(--zk-success);
+    color: var(--zk-white);
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.zk-no-link {
+    color: var(--zk-text-light);
+    font-style: italic;
+    font-size: 13px;
+}
+
+/* ========================================
    Print Styles
    ======================================== */
 
 @media print {
     .zk-manager-actions,
     .zk-issue-actions,
+    .zk-article-actions,
     .zk-modal,
     .zk-toast-container {
         display: none !important;
@@ -826,7 +1070,8 @@
         padding: 0;
     }
 
-    .zk-issue-item {
+    .zk-issue-item,
+    .zk-article-item {
         break-inside: avoid;
     }
 }

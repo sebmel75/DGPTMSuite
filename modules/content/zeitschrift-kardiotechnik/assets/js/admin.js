@@ -108,6 +108,83 @@
                 self.loadAcceptedArticles();
             });
 
+            // Artikel Tab
+            $(document).on('click', '.zk-tab[data-tab="articles"]', function() {
+                self.loadArticles();
+            });
+
+            // Neuer Artikel Button
+            $(document).on('click', '#zk-new-article-btn', function(e) {
+                e.preventDefault();
+                self.openNewArticleModal();
+            });
+
+            // Neuer Artikel speichern
+            $(document).on('click', '#zk-save-new-article', function(e) {
+                e.preventDefault();
+                self.createArticle();
+            });
+
+            // Artikel bearbeiten
+            $(document).on('click', '.zk-article-edit', function(e) {
+                e.preventDefault();
+                var articleId = $(this).closest('.zk-article-item').data('id');
+                self.openEditArticleModal(articleId);
+            });
+
+            // Artikel speichern
+            $(document).on('click', '#zk-save-edit-article', function(e) {
+                e.preventDefault();
+                self.updateArticle();
+            });
+
+            // Artikel löschen
+            $(document).on('click', '#zk-delete-article', function(e) {
+                e.preventDefault();
+                self.deleteArticle();
+            });
+
+            // Artikel-Suche
+            var articleSearchTimeout;
+            $(document).on('input', '#zk-article-search', function() {
+                clearTimeout(articleSearchTimeout);
+                articleSearchTimeout = setTimeout(function() {
+                    self.loadArticles();
+                }, 300);
+            });
+
+            // Link Artikel Button (im Ausgaben-Edit Modal)
+            $(document).on('click', '.zk-link-article-btn', function(e) {
+                e.preventDefault();
+                var issueId = $('#zk-edit-id').val();
+                var slot = $(this).data('slot');
+                self.openLinkArticleModal(issueId, slot);
+            });
+
+            // Artikel verknüpfen
+            $(document).on('click', '.zk-available-article-item', function(e) {
+                e.preventDefault();
+                var articleId = $(this).data('id');
+                self.linkArticle(articleId);
+            });
+
+            // Artikel entknüpfen
+            $(document).on('click', '.zk-unlink-article-btn', function(e) {
+                e.preventDefault();
+                var issueId = $('#zk-edit-id').val();
+                var slot = $(this).data('slot');
+                self.unlinkArticle(issueId, slot);
+            });
+
+            // Link Modal Suche
+            var linkSearchTimeout;
+            $(document).on('input', '#zk-link-article-search', function() {
+                clearTimeout(linkSearchTimeout);
+                linkSearchTimeout = setTimeout(function() {
+                    self.loadAvailableArticles();
+                }, 300);
+            });
+
             // Modal nicht schließen bei Klick auf Content
             $(document).on('click', '.zk-modal-content', function(e) {
                 e.stopPropagation();
@@ -334,6 +411,7 @@
          * Edit-Formular befüllen
          */
         populateEditForm: function(data) {
+            var self = this;
             var issue = data.issue;
             var articles = data.articles;
 
@@ -344,32 +422,68 @@
             $('#zk-edit-doi').val(issue.doi);
             $('#zk-edit-date').val(issue.verfuegbar_ab);
 
-            // Verknüpfte Artikel anzeigen
-            var $articlesList = $('#zk-linked-articles');
+            // Artikel-Slots definieren
+            var slots = [
+                { key: 'editorial', label: 'Editorial' },
+                { key: 'journalclub', label: 'Journal Club' },
+                { key: 'tutorial', label: 'Tutorial' },
+                { key: 'pub1', label: 'Fachartikel 1' },
+                { key: 'pub2', label: 'Fachartikel 2' },
+                { key: 'pub3', label: 'Fachartikel 3' },
+                { key: 'pub4', label: 'Fachartikel 4' },
+                { key: 'pub5', label: 'Fachartikel 5' },
+                { key: 'pub6', label: 'Fachartikel 6' }
+            ];
 
+            // Artikel-Mapping erstellen
+            var articlesMap = {};
             if (articles && articles.length > 0) {
-                var html = '<ul class="zk-linked-list">';
                 articles.forEach(function(article) {
-                    var typeLabel = {
-                        'editorial': 'Editorial',
-                        'journalclub': 'Journal Club',
-                        'tutorial': 'Tutorial',
-                        'artikel': 'Fachartikel'
-                    };
-
-                    html += '<li class="zk-linked-item">';
-                    html += '<span class="zk-linked-type">' + (typeLabel[article.type] || article.type) + '</span>';
-                    html += '<span class="zk-linked-title">' + ZKManager.escapeHtml(article.title) + '</span>';
-                    if (article.authors) {
-                        html += '<span class="zk-linked-authors">' + ZKManager.escapeHtml(article.authors) + '</span>';
-                    }
-                    html += '</li>';
+                    articlesMap[article.slot] = article;
                 });
-                html += '</ul>';
-                $articlesList.html(html);
-            } else {
-                $articlesList.html('<p class="zk-no-articles">Keine Artikel verknüpft</p>');
             }
+
+            // Verknüpfte Artikel mit Slots anzeigen
+            var $articlesList = $('#zk-linked-articles');
+            var html = '<div class="zk-slots-list">';
+
+            slots.forEach(function(slot) {
+                var article = articlesMap[slot.key];
+                html += '<div class="zk-slot-item" data-slot="' + slot.key + '">';
+                html += '<div class="zk-slot-header">';
+                html += '<span class="zk-slot-label">' + slot.label + '</span>';
+                html += '</div>';
+
+                if (article) {
+                    html += '<div class="zk-slot-content zk-slot-filled">';
+                    html += '<span class="zk-slot-title">' + self.escapeHtml(article.title) + '</span>';
+                    if (article.authors) {
+                        html += '<span class="zk-slot-authors">' + self.escapeHtml(article.authors) + '</span>';
+                    }
+                    html += '<button type="button" class="zk-btn zk-btn-danger zk-btn-mini zk-unlink-article-btn" data-slot="' + slot.key + '" title="Verknüpfung entfernen">';
+                    html += '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">';
+                    html += '<line x1="18" y1="6" x2="6" y2="18"></line>';
+                    html += '<line x1="6" y1="6" x2="18" y2="18"></line>';
+                    html += '</svg>';
+                    html += '</button>';
+                    html += '</div>';
+                } else {
+                    html += '<div class="zk-slot-content zk-slot-empty">';
+                    html += '<button type="button" class="zk-btn zk-btn-secondary zk-btn-small zk-link-article-btn" data-slot="' + slot.key + '">';
+                    html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">';
+                    html += '<line x1="12" y1="5" x2="12" y2="19"></line>';
+                    html += '<line x1="5" y1="12" x2="19" y2="12"></line>';
+                    html += '</svg>';
+                    html += 'Artikel verknüpfen';
+                    html += '</button>';
+                    html += '</div>';
+                }
+
+                html += '</div>';
+            });
+
+            html += '</div>';
+            $articlesList.html(html);
         },
 
         /**
@@ -590,6 +704,451 @@
 
             html += '</div>';
             $list.html(html);
+        },
+
+        // ============================================
+        // ARTIKEL-VERWALTUNG
+        // ============================================
+
+        /**
+         * Alle Artikel laden
+         */
+        loadArticles: function() {
+            var self = this;
+            var $list = $('#zk-articles-list');
+            var search = $('#zk-article-search').val() || '';
+
+            $list.html(this.getLoadingHtml('Lade Artikel...'));
+
+            $.ajax({
+                url: this.config.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'zk_get_all_articles',
+                    nonce: this.config.nonce,
+                    search: search
+                },
+                success: function(response) {
+                    if (response.success) {
+                        self.renderArticles(response.data.articles);
+                    } else {
+                        $list.html(self.getErrorHtml(response.data.message || 'Fehler beim Laden'));
+                    }
+                },
+                error: function() {
+                    $list.html(self.getErrorHtml('Verbindungsfehler'));
+                }
+            });
+        },
+
+        /**
+         * Artikel-Liste rendern
+         */
+        renderArticles: function(articles) {
+            var $list = $('#zk-articles-list');
+
+            if (!articles || articles.length === 0) {
+                $list.html('<div class="zk-empty">Keine Artikel gefunden.</div>');
+                return;
+            }
+
+            var html = '<div class="zk-articles-grid">';
+
+            articles.forEach(function(article) {
+                html += '<div class="zk-article-item" data-id="' + article.id + '">';
+                html += '<div class="zk-article-info">';
+                html += '<span class="zk-article-title">' + ZKManager.escapeHtml(article.title) + '</span>';
+                html += '<div class="zk-article-meta">';
+                if (article.authors) {
+                    html += '<span class="zk-article-authors">' + ZKManager.escapeHtml(article.authors) + '</span>';
+                }
+                if (article.doi) {
+                    html += '<span class="zk-article-doi">DOI: ' + ZKManager.escapeHtml(article.doi) + '</span>';
+                }
+                if (article.linked_issue) {
+                    html += '<span class="zk-article-linked">→ ' + ZKManager.escapeHtml(article.linked_issue.label) + ' (' + article.linked_issue.field + ')</span>';
+                } else {
+                    html += '<span class="zk-article-unlinked">Nicht verknüpft</span>';
+                }
+                html += '</div>';
+                html += '</div>';
+                html += '<div class="zk-article-actions">';
+                html += '<button type="button" class="zk-btn zk-btn-secondary zk-btn-small zk-article-edit" title="Bearbeiten">';
+                html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">';
+                html += '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>';
+                html += '<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>';
+                html += '</svg>';
+                html += '</button>';
+                html += '</div>';
+                html += '</div>';
+            });
+
+            html += '</div>';
+            $list.html(html);
+        },
+
+        /**
+         * Neuer Artikel Modal öffnen
+         */
+        openNewArticleModal: function() {
+            $('#zk-new-article-form')[0].reset();
+            $('#zk-modal-new-article').addClass('zk-modal-open');
+        },
+
+        /**
+         * Artikel erstellen
+         */
+        createArticle: function() {
+            var self = this;
+            var $btn = $('#zk-save-new-article');
+            var $form = $('#zk-new-article-form');
+
+            var title = $form.find('[name="title"]').val();
+            if (!title) {
+                self.showToast('error', 'Bitte Titel eingeben');
+                return;
+            }
+
+            var data = {
+                action: 'zk_create_article',
+                nonce: this.config.nonce,
+                title: title,
+                autoren: $form.find('[name="autoren"]').val(),
+                hauptautorin: $form.find('[name="hauptautorin"]').val(),
+                doi: $form.find('[name="doi"]').val(),
+                zusammenfassung_deutsch: $form.find('[name="zusammenfassung_deutsch"]').val(),
+                zusammenfassung_englisch: $form.find('[name="zusammenfassung_englisch"]').val(),
+                keywords: $form.find('[name="keywords"]').val()
+            };
+
+            $btn.prop('disabled', true).text('Erstellen...');
+
+            $.ajax({
+                url: this.config.ajaxUrl,
+                type: 'POST',
+                data: data,
+                success: function(response) {
+                    if (response.success) {
+                        self.showToast('success', 'Artikel erstellt');
+                        self.closeModals();
+                        self.loadArticles();
+                    } else {
+                        self.showToast('error', response.data.message || 'Fehler beim Erstellen');
+                    }
+                },
+                error: function() {
+                    self.showToast('error', 'Verbindungsfehler');
+                },
+                complete: function() {
+                    $btn.prop('disabled', false).text('Artikel erstellen');
+                }
+            });
+        },
+
+        /**
+         * Edit Artikel Modal öffnen
+         */
+        openEditArticleModal: function(articleId) {
+            var self = this;
+            var $modal = $('#zk-modal-edit-article');
+
+            $modal.find('.zk-modal-body').addClass('zk-loading-overlay');
+            $modal.addClass('zk-modal-open');
+
+            $.ajax({
+                url: this.config.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'zk_get_article_details',
+                    nonce: this.config.nonce,
+                    article_id: articleId
+                },
+                success: function(response) {
+                    if (response.success) {
+                        self.populateEditArticleForm(response.data.article);
+                    } else {
+                        self.showToast('error', response.data.message || 'Fehler beim Laden');
+                        self.closeModals();
+                    }
+                },
+                error: function() {
+                    self.showToast('error', 'Verbindungsfehler');
+                    self.closeModals();
+                },
+                complete: function() {
+                    $modal.find('.zk-modal-body').removeClass('zk-loading-overlay');
+                }
+            });
+        },
+
+        /**
+         * Edit Artikel Formular befüllen
+         */
+        populateEditArticleForm: function(article) {
+            var $form = $('#zk-edit-article-form');
+
+            $form.find('#zk-edit-article-id').val(article.id);
+            $form.find('#zk-edit-article-title').val(article.title);
+            $form.find('#zk-edit-article-authors').val(article.autoren);
+            $form.find('#zk-edit-article-main-author').val(article.hauptautorin);
+            $form.find('#zk-edit-article-doi').val(article.doi);
+            $form.find('#zk-edit-article-abstract').val(article.zusammenfassung_deutsch);
+            $form.find('#zk-edit-article-abstract-en').val(article.zusammenfassung_englisch);
+            $form.find('#zk-edit-article-keywords').val(article.keywords);
+
+            // Verknüpfte Ausgabe anzeigen
+            var $linkedIssue = $('#zk-article-linked-issue');
+            if (article.linked_issue) {
+                $linkedIssue.html(
+                    '<span class="zk-linked-badge">' + this.escapeHtml(article.linked_issue.label) +
+                    ' (' + article.linked_issue.field + ')</span>'
+                );
+            } else {
+                $linkedIssue.html('<span class="zk-no-link">Nicht verknüpft</span>');
+            }
+        },
+
+        /**
+         * Artikel aktualisieren
+         */
+        updateArticle: function() {
+            var self = this;
+            var $btn = $('#zk-save-edit-article');
+            var $form = $('#zk-edit-article-form');
+
+            var articleId = $form.find('#zk-edit-article-id').val();
+            var title = $form.find('#zk-edit-article-title').val();
+
+            if (!title) {
+                self.showToast('error', 'Bitte Titel eingeben');
+                return;
+            }
+
+            var data = {
+                action: 'zk_update_article',
+                nonce: this.config.nonce,
+                article_id: articleId,
+                title: title,
+                autoren: $form.find('#zk-edit-article-authors').val(),
+                hauptautorin: $form.find('#zk-edit-article-main-author').val(),
+                doi: $form.find('#zk-edit-article-doi').val(),
+                zusammenfassung_deutsch: $form.find('#zk-edit-article-abstract').val(),
+                zusammenfassung_englisch: $form.find('#zk-edit-article-abstract-en').val(),
+                keywords: $form.find('#zk-edit-article-keywords').val()
+            };
+
+            $btn.prop('disabled', true).text('Speichern...');
+
+            $.ajax({
+                url: this.config.ajaxUrl,
+                type: 'POST',
+                data: data,
+                success: function(response) {
+                    if (response.success) {
+                        self.showToast('success', 'Artikel aktualisiert');
+                        self.closeModals();
+                        self.loadArticles();
+                    } else {
+                        self.showToast('error', response.data.message || 'Fehler beim Speichern');
+                    }
+                },
+                error: function() {
+                    self.showToast('error', 'Verbindungsfehler');
+                },
+                complete: function() {
+                    $btn.prop('disabled', false).text('Speichern');
+                }
+            });
+        },
+
+        /**
+         * Artikel löschen
+         */
+        deleteArticle: function() {
+            var self = this;
+            var $form = $('#zk-edit-article-form');
+            var articleId = $form.find('#zk-edit-article-id').val();
+            var title = $form.find('#zk-edit-article-title').val();
+
+            if (!confirm('Artikel "' + title + '" wirklich löschen?\n\nDer Artikel wird in den Papierkorb verschoben.')) {
+                return;
+            }
+
+            $.ajax({
+                url: this.config.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'zk_delete_article',
+                    nonce: this.config.nonce,
+                    article_id: articleId
+                },
+                success: function(response) {
+                    if (response.success) {
+                        self.showToast('success', 'Artikel gelöscht');
+                        self.closeModals();
+                        self.loadArticles();
+                    } else {
+                        self.showToast('error', response.data.message || 'Fehler beim Löschen');
+                    }
+                },
+                error: function() {
+                    self.showToast('error', 'Verbindungsfehler');
+                }
+            });
+        },
+
+        // ============================================
+        // ARTIKEL-VERKNÜPFUNG
+        // ============================================
+
+        /**
+         * Link Artikel Modal öffnen
+         */
+        openLinkArticleModal: function(issueId, slot) {
+            var slotLabels = {
+                'editorial': 'Editorial',
+                'journalclub': 'Journal Club',
+                'tutorial': 'Tutorial',
+                'pub1': 'Fachartikel 1',
+                'pub2': 'Fachartikel 2',
+                'pub3': 'Fachartikel 3',
+                'pub4': 'Fachartikel 4',
+                'pub5': 'Fachartikel 5',
+                'pub6': 'Fachartikel 6'
+            };
+
+            $('#zk-link-issue-id').val(issueId);
+            $('#zk-link-slot').val(slot);
+            $('#zk-link-article-search').val('');
+            $('#zk-modal-link-article').find('.zk-modal-header h3').text('Artikel für "' + (slotLabels[slot] || slot) + '" auswählen');
+            $('#zk-modal-link-article').addClass('zk-modal-open');
+
+            this.loadAvailableArticles();
+        },
+
+        /**
+         * Verfügbare Artikel laden
+         */
+        loadAvailableArticles: function() {
+            var self = this;
+            var $list = $('#zk-available-articles');
+            var search = $('#zk-link-article-search').val() || '';
+
+            $list.html(this.getLoadingHtml('Lade verfügbare Artikel...'));
+
+            $.ajax({
+                url: this.config.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'zk_get_available_articles',
+                    nonce: this.config.nonce,
+                    search: search
+                },
+                success: function(response) {
+                    if (response.success) {
+                        self.renderAvailableArticles(response.data.articles);
+                    } else {
+                        $list.html(self.getErrorHtml(response.data.message || 'Fehler beim Laden'));
+                    }
+                },
+                error: function() {
+                    $list.html(self.getErrorHtml('Verbindungsfehler'));
+                }
+            });
+        },
+
+        /**
+         * Verfügbare Artikel rendern
+         */
+        renderAvailableArticles: function(articles) {
+            var $list = $('#zk-available-articles');
+
+            if (!articles || articles.length === 0) {
+                $list.html('<div class="zk-empty">Keine verfügbaren Artikel gefunden.</div>');
+                return;
+            }
+
+            var html = '<div class="zk-available-articles-list">';
+
+            articles.forEach(function(article) {
+                html += '<div class="zk-available-article-item" data-id="' + article.id + '">';
+                html += '<span class="zk-available-title">' + ZKManager.escapeHtml(article.title) + '</span>';
+                if (article.authors) {
+                    html += '<span class="zk-available-authors">' + ZKManager.escapeHtml(article.authors) + '</span>';
+                }
+                html += '</div>';
+            });
+
+            html += '</div>';
+            $list.html(html);
+        },
+
+        /**
+         * Artikel mit Ausgabe verknüpfen
+         */
+        linkArticle: function(articleId) {
+            var self = this;
+            var issueId = $('#zk-link-issue-id').val();
+            var slot = $('#zk-link-slot').val();
+
+            $.ajax({
+                url: this.config.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'zk_link_article',
+                    nonce: this.config.nonce,
+                    issue_id: issueId,
+                    article_id: articleId,
+                    slot: slot
+                },
+                success: function(response) {
+                    if (response.success) {
+                        self.showToast('success', 'Artikel verknüpft');
+                        $('#zk-modal-link-article').removeClass('zk-modal-open');
+                        // Issue Edit Modal aktualisieren
+                        self.openEditModal(issueId);
+                    } else {
+                        self.showToast('error', response.data.message || 'Fehler beim Verknüpfen');
+                    }
+                },
+                error: function() {
+                    self.showToast('error', 'Verbindungsfehler');
+                }
+            });
+        },
+
+        /**
+         * Artikel von Ausgabe entknüpfen
+         */
+        unlinkArticle: function(issueId, slot) {
+            var self = this;
+
+            if (!confirm('Artikel-Verknüpfung wirklich entfernen?')) {
+                return;
+            }
+
+            $.ajax({
+                url: this.config.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'zk_unlink_article',
+                    nonce: this.config.nonce,
+                    issue_id: issueId,
+                    slot: slot
+                },
+                success: function(response) {
+                    if (response.success) {
+                        self.showToast('success', 'Verknüpfung entfernt');
+                        // Issue Edit Modal aktualisieren
+                        self.openEditModal(issueId);
+                    } else {
+                        self.showToast('error', response.data.message || 'Fehler');
+                    }
+                },
+                error: function() {
+                    self.showToast('error', 'Verbindungsfehler');
+                }
+            });
         },
 
         /**

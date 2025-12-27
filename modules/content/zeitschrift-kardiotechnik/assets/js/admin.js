@@ -17,15 +17,21 @@
          * Initialisierung
          */
         init: function() {
+            console.log('ZK Manager: Initialisierung gestartet');
+
             if (typeof zkAdmin === 'undefined') {
                 console.error('ZK Admin: Konfiguration nicht geladen');
                 return;
             }
 
+            console.log('ZK Manager: Konfiguration geladen', zkAdmin);
+
             this.config = zkAdmin;
             this.bindEvents();
             this.loadYearFilter();
             this.loadIssues();
+
+            console.log('ZK Manager: Initialisierung abgeschlossen');
         },
 
         /**
@@ -159,6 +165,8 @@
             var self = this;
             var $list = $('#zk-issues-list');
 
+            console.log('ZK Manager: Lade Ausgaben...');
+
             $list.html(this.getLoadingHtml('Lade Ausgaben...'));
 
             $.ajax({
@@ -171,13 +179,15 @@
                     year: $('#zk-filter-year').val()
                 },
                 success: function(response) {
+                    console.log('ZK Manager: AJAX Antwort erhalten', response);
                     if (response.success) {
                         self.renderIssues(response.data.issues);
                     } else {
                         $list.html(self.getErrorHtml(response.data.message || 'Fehler beim Laden'));
                     }
                 },
-                error: function() {
+                error: function(xhr, status, error) {
+                    console.error('ZK Manager: AJAX Fehler', status, error);
                     $list.html(self.getErrorHtml('Verbindungsfehler'));
                 }
             });

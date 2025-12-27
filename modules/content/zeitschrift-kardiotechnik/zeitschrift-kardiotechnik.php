@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 // Konstanten
 define('ZK_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('ZK_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('ZK_VERSION', '1.3.0');
+define('ZK_VERSION', '1.3.1');
 define('ZK_POST_TYPE', 'zeitschkardiotechnik');
 define('ZK_PUBLIKATION_TYPE', 'publikation');
 
@@ -68,6 +68,7 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
         }
 
         public function enqueue_frontend_assets() {
+            // Frontend Assets
             wp_register_style(
                 'zk-frontend',
                 ZK_PLUGIN_URL . 'assets/css/frontend.css',
@@ -82,9 +83,26 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
                 ZK_VERSION,
                 true
             );
+
+            // Admin Assets auch im Frontend registrieren (für Shortcode)
+            wp_register_style(
+                'zk-admin',
+                ZK_PLUGIN_URL . 'assets/css/admin.css',
+                [],
+                ZK_VERSION
+            );
+
+            wp_register_script(
+                'zk-admin',
+                ZK_PLUGIN_URL . 'assets/js/admin.js',
+                ['jquery'],
+                ZK_VERSION,
+                true
+            );
         }
 
         public function enqueue_admin_assets($hook) {
+            // Admin Assets im Backend registrieren
             wp_register_style(
                 'zk-admin',
                 ZK_PLUGIN_URL . 'assets/css/admin.css',

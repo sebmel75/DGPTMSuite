@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Zeitschrift Kardiotechnik Manager
  * Description: Verwaltung und Anzeige der Fachzeitschrift Kardiotechnik
- * Version: 1.4.3
+ * Version: 1.5.0
  * Author: Sebastian Melzer / DGPTM
  */
 
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 // Konstanten
 define('ZK_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('ZK_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('ZK_VERSION', '1.4.3');
+define('ZK_VERSION', '1.5.0');
 define('ZK_POST_TYPE', 'zeitschkardiotechnik');
 define('ZK_PUBLIKATION_TYPE', 'publikation');
 
@@ -774,15 +774,30 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
                 wp_send_json_error(['message' => 'Keine Berechtigung']);
             }
 
+            // Grunddaten
             $title = sanitize_text_field($_POST['title'] ?? '');
+            $unterueberschrift = sanitize_text_field($_POST['unterueberschrift'] ?? '');
+            $publikationsart = sanitize_text_field($_POST['publikationsart'] ?? '');
+            $doi = sanitize_text_field($_POST['doi'] ?? '');
+            $kardiotechnikausgabe = sanitize_text_field($_POST['kardiotechnikausgabe'] ?? '');
+            $supplement = sanitize_text_field($_POST['supplement'] ?? '');
+
+            // Autoren
             $autoren = sanitize_text_field($_POST['autoren'] ?? '');
             $hauptautorin = sanitize_text_field($_POST['hauptautorin'] ?? '');
-            $doi = sanitize_text_field($_POST['doi'] ?? '');
-            $publikationsart = sanitize_text_field($_POST['publikationsart'] ?? '');
+
+            // Inhalt
             $content = wp_kses_post($_POST['content'] ?? '');
-            $zusammenfassung_deutsch = wp_kses_post($_POST['zusammenfassung_deutsch'] ?? '');
-            $zusammenfassung_englisch = wp_kses_post($_POST['zusammenfassung_englisch'] ?? '');
-            $keywords = sanitize_text_field($_POST['keywords'] ?? '');
+            $literatur = wp_kses_post($_POST['literatur'] ?? '');
+
+            // Abstracts & Keywords
+            $abstract_deutsch = wp_kses_post($_POST['abstract_deutsch'] ?? '');
+            $abstract = wp_kses_post($_POST['abstract'] ?? '');
+            $keywords_deutsch = sanitize_text_field($_POST['keywords_deutsch'] ?? '');
+            $keywords_englisch = sanitize_text_field($_POST['keywords_englisch'] ?? '');
+
+            // Optionen
+            $volltext_anzeigen = sanitize_text_field($_POST['volltext_anzeigen'] ?? '');
 
             if (empty($title)) {
                 wp_send_json_error(['message' => 'Titel ist erforderlich']);
@@ -801,28 +816,28 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
                 wp_send_json_error(['message' => 'Fehler beim Erstellen: ' . $post_id->get_error_message()]);
             }
 
-            // ACF Felder setzen
-            if (!empty($autoren)) {
-                update_field('autoren', $autoren, $post_id);
-            }
-            if (!empty($hauptautorin)) {
-                update_field('hauptautorin', $hauptautorin, $post_id);
-            }
-            if (!empty($doi)) {
-                update_field('doi', $doi, $post_id);
-            }
-            if (!empty($publikationsart)) {
-                update_field('publikationsart', $publikationsart, $post_id);
-            }
-            if (!empty($zusammenfassung_deutsch)) {
-                update_field('abstract-deutsch', $zusammenfassung_deutsch, $post_id);
-            }
-            if (!empty($zusammenfassung_englisch)) {
-                update_field('abstract', $zusammenfassung_englisch, $post_id);
-            }
-            if (!empty($keywords)) {
-                update_field('keywords-deutsch', $keywords, $post_id);
-            }
+            // ACF Felder setzen - Grunddaten
+            update_field('unterueberschrift', $unterueberschrift, $post_id);
+            update_field('publikationsart', $publikationsart, $post_id);
+            update_field('doi', $doi, $post_id);
+            update_field('kardiotechnikausgabe', $kardiotechnikausgabe, $post_id);
+            update_field('supplement', $supplement, $post_id);
+
+            // Autoren
+            update_field('autoren', $autoren, $post_id);
+            update_field('hauptautorin', $hauptautorin, $post_id);
+
+            // Inhalt
+            update_field('literatur', $literatur, $post_id);
+
+            // Abstracts & Keywords
+            update_field('abstract-deutsch', $abstract_deutsch, $post_id);
+            update_field('abstract', $abstract, $post_id);
+            update_field('keywords-deutsch', $keywords_deutsch, $post_id);
+            update_field('keywords-englisch', $keywords_englisch, $post_id);
+
+            // Optionen
+            update_field('volltext_anzeigen', $volltext_anzeigen, $post_id);
 
             wp_send_json_success([
                 'message' => 'Artikel erstellt',
@@ -852,15 +867,30 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
                 wp_send_json_error(['message' => 'Artikel nicht gefunden']);
             }
 
+            // Grunddaten
             $title = sanitize_text_field($_POST['title'] ?? '');
+            $unterueberschrift = sanitize_text_field($_POST['unterueberschrift'] ?? '');
+            $publikationsart = sanitize_text_field($_POST['publikationsart'] ?? '');
+            $doi = sanitize_text_field($_POST['doi'] ?? '');
+            $kardiotechnikausgabe = sanitize_text_field($_POST['kardiotechnikausgabe'] ?? '');
+            $supplement = sanitize_text_field($_POST['supplement'] ?? '');
+
+            // Autoren
             $autoren = sanitize_text_field($_POST['autoren'] ?? '');
             $hauptautorin = sanitize_text_field($_POST['hauptautorin'] ?? '');
-            $doi = sanitize_text_field($_POST['doi'] ?? '');
-            $publikationsart = sanitize_text_field($_POST['publikationsart'] ?? '');
+
+            // Inhalt
             $content = wp_kses_post($_POST['content'] ?? '');
-            $zusammenfassung_deutsch = wp_kses_post($_POST['zusammenfassung_deutsch'] ?? '');
-            $zusammenfassung_englisch = wp_kses_post($_POST['zusammenfassung_englisch'] ?? '');
-            $keywords = sanitize_text_field($_POST['keywords'] ?? '');
+            $literatur = wp_kses_post($_POST['literatur'] ?? '');
+
+            // Abstracts & Keywords
+            $abstract_deutsch = wp_kses_post($_POST['abstract_deutsch'] ?? '');
+            $abstract = wp_kses_post($_POST['abstract'] ?? '');
+            $keywords_deutsch = sanitize_text_field($_POST['keywords_deutsch'] ?? '');
+            $keywords_englisch = sanitize_text_field($_POST['keywords_englisch'] ?? '');
+
+            // Optionen
+            $volltext_anzeigen = sanitize_text_field($_POST['volltext_anzeigen'] ?? '');
 
             // Post-Daten aktualisieren
             $update_data = ['ID' => $post_id];
@@ -870,13 +900,28 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
             $update_data['post_content'] = $content;
             wp_update_post($update_data);
 
+            // ACF Felder setzen - Grunddaten
+            update_field('unterueberschrift', $unterueberschrift, $post_id);
+            update_field('publikationsart', $publikationsart, $post_id);
+            update_field('doi', $doi, $post_id);
+            update_field('kardiotechnikausgabe', $kardiotechnikausgabe, $post_id);
+            update_field('supplement', $supplement, $post_id);
+
+            // Autoren
             update_field('autoren', $autoren, $post_id);
             update_field('hauptautorin', $hauptautorin, $post_id);
-            update_field('doi', $doi, $post_id);
-            update_field('publikationsart', $publikationsart, $post_id);
-            update_field('abstract-deutsch', $zusammenfassung_deutsch, $post_id);
-            update_field('abstract', $zusammenfassung_englisch, $post_id);
-            update_field('keywords-deutsch', $keywords, $post_id);
+
+            // Inhalt
+            update_field('literatur', $literatur, $post_id);
+
+            // Abstracts & Keywords
+            update_field('abstract-deutsch', $abstract_deutsch, $post_id);
+            update_field('abstract', $abstract, $post_id);
+            update_field('keywords-deutsch', $keywords_deutsch, $post_id);
+            update_field('keywords-englisch', $keywords_englisch, $post_id);
+
+            // Optionen
+            update_field('volltext_anzeigen', $volltext_anzeigen, $post_id);
 
             wp_send_json_success([
                 'message' => 'Artikel aktualisiert',
@@ -905,30 +950,36 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
                 wp_send_json_error(['message' => 'Artikel nicht gefunden']);
             }
 
-            // Publikationsart abrufen (mehrere Feldnamen probieren)
-            $publikationsart = get_field('publikationsart', $post_id);
-            if (empty($publikationsart)) {
-                $publikationsart = get_field('art_der_publikation', $post_id);
-            }
-            if (empty($publikationsart)) {
-                $publikationsart = get_field('type', $post_id);
-            }
-            if (empty($publikationsart)) {
-                $publikationsart = get_post_meta($post_id, 'publikationsart', true);
-            }
-
+            // Alle ACF-Felder abrufen
             wp_send_json_success([
                 'article' => [
+                    // Grunddaten
                     'id' => $post_id,
                     'title' => $post->post_title,
-                    'content' => $post->post_content,
+                    'unterueberschrift' => get_field('unterueberschrift', $post_id),
+                    'publikationsart' => get_field('publikationsart', $post_id),
+                    'doi' => get_field('doi', $post_id),
+                    'kardiotechnikausgabe' => get_field('kardiotechnikausgabe', $post_id),
+                    'supplement' => get_field('supplement', $post_id),
+
+                    // Autoren
                     'autoren' => get_field('autoren', $post_id),
                     'hauptautorin' => get_field('hauptautorin', $post_id),
-                    'doi' => get_field('doi', $post_id),
-                    'publikationsart' => $publikationsart,
-                    'zusammenfassung_deutsch' => get_field('abstract-deutsch', $post_id),
-                    'zusammenfassung_englisch' => get_field('abstract', $post_id),
-                    'keywords' => get_field('keywords-deutsch', $post_id),
+
+                    // Inhalt
+                    'content' => $post->post_content,
+                    'literatur' => get_field('literatur', $post_id),
+
+                    // Abstracts & Keywords
+                    'abstract_deutsch' => get_field('abstract-deutsch', $post_id),
+                    'abstract' => get_field('abstract', $post_id),
+                    'keywords_deutsch' => get_field('keywords-deutsch', $post_id),
+                    'keywords_englisch' => get_field('keywords-englisch', $post_id),
+
+                    // Optionen
+                    'volltext_anzeigen' => get_field('volltext_anzeigen', $post_id),
+
+                    // Verknüpfung
                     'linked_issue' => $this->get_article_linked_issue($post_id)
                 ]
             ]);

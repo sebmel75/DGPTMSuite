@@ -876,14 +876,20 @@
                 action: 'zk_create_article',
                 nonce: this.config.nonce,
                 title: title,
+                unterueberschrift: $form.find('[name="unterueberschrift"]').val(),
+                publikationsart: $form.find('[name="publikationsart"]').val(),
+                doi: $form.find('[name="doi"]').val(),
+                kardiotechnikausgabe: $form.find('[name="kardiotechnikausgabe"]').val(),
+                supplement: $form.find('[name="supplement"]').val(),
                 autoren: $form.find('[name="autoren"]').val(),
                 hauptautorin: $form.find('[name="hauptautorin"]').val(),
-                doi: $form.find('[name="doi"]').val(),
-                publikationsart: $form.find('[name="publikationsart"]').val(),
                 content: this.getTinyMCEContent('zk-article-content'),
-                zusammenfassung_deutsch: $form.find('[name="zusammenfassung_deutsch"]').val(),
-                zusammenfassung_englisch: $form.find('[name="zusammenfassung_englisch"]').val(),
-                keywords: $form.find('[name="keywords"]').val()
+                literatur: $form.find('[name="literatur"]').val(),
+                abstract_deutsch: $form.find('[name="abstract_deutsch"]').val(),
+                abstract: $form.find('[name="abstract"]').val(),
+                keywords_deutsch: $form.find('[name="keywords_deutsch"]').val(),
+                keywords_englisch: $form.find('[name="keywords_englisch"]').val(),
+                volltext_anzeigen: $form.find('[name="volltext_anzeigen"]').is(':checked') ? '1' : ''
             };
 
             $btn.prop('disabled', true).text('Erstellen...');
@@ -959,25 +965,38 @@
         populateEditArticleForm: function(article) {
             var $form = $('#zk-edit-article-form');
 
-            console.log('ZK Populate Form - publikationsart:', article.publikationsart);
+            console.log('ZK Populate Form - Full article data:', article);
 
+            // Grunddaten
             $form.find('#zk-edit-article-id').val(article.id);
             $form.find('#zk-edit-article-title').val(article.title);
-            $form.find('#zk-edit-article-authors').val(article.autoren);
-            $form.find('#zk-edit-article-main-author').val(article.hauptautorin);
-            $form.find('#zk-edit-article-doi').val(article.doi);
+            $form.find('#zk-edit-article-subtitle').val(article.unterueberschrift || '');
+            $form.find('#zk-edit-article-doi').val(article.doi || '');
+            $form.find('#zk-edit-article-kardiotechnik').val(article.kardiotechnikausgabe || '');
+            $form.find('#zk-edit-article-supplement').val(article.supplement || '');
 
             // Publikationsart setzen
             var $typeSelect = $form.find('#zk-edit-article-type');
             var pubArt = article.publikationsart || '';
             console.log('ZK Setting publikationsart to:', pubArt);
-            console.log('ZK Available options:', $typeSelect.find('option').map(function() { return $(this).val(); }).get());
             $typeSelect.val(pubArt);
 
+            // Autoren
+            $form.find('#zk-edit-article-authors').val(article.autoren || '');
+            $form.find('#zk-edit-article-main-author').val(article.hauptautorin || '');
+
+            // Inhalt
             $form.find('#zk-edit-article-content').val(article.content || '');
-            $form.find('#zk-edit-article-abstract').val(article.zusammenfassung_deutsch);
-            $form.find('#zk-edit-article-abstract-en').val(article.zusammenfassung_englisch);
-            $form.find('#zk-edit-article-keywords').val(article.keywords);
+            $form.find('#zk-edit-article-literatur').val(article.literatur || '');
+
+            // Abstracts & Keywords
+            $form.find('#zk-edit-article-abstract').val(article.abstract_deutsch || '');
+            $form.find('#zk-edit-article-abstract-en').val(article.abstract || '');
+            $form.find('#zk-edit-article-keywords').val(article.keywords_deutsch || '');
+            $form.find('#zk-edit-article-keywords-en').val(article.keywords_englisch || '');
+
+            // Optionen
+            $form.find('#zk-edit-article-fulltext').prop('checked', article.volltext_anzeigen === '1' || article.volltext_anzeigen === 1);
 
             // Verknüpfte Ausgabe anzeigen
             var $linkedIssue = $('#zk-article-linked-issue');
@@ -1012,14 +1031,20 @@
                 nonce: this.config.nonce,
                 article_id: articleId,
                 title: title,
+                unterueberschrift: $form.find('#zk-edit-article-subtitle').val(),
+                publikationsart: $form.find('#zk-edit-article-type').val(),
+                doi: $form.find('#zk-edit-article-doi').val(),
+                kardiotechnikausgabe: $form.find('#zk-edit-article-kardiotechnik').val(),
+                supplement: $form.find('#zk-edit-article-supplement').val(),
                 autoren: $form.find('#zk-edit-article-authors').val(),
                 hauptautorin: $form.find('#zk-edit-article-main-author').val(),
-                doi: $form.find('#zk-edit-article-doi').val(),
-                publikationsart: $form.find('#zk-edit-article-type').val(),
                 content: this.getTinyMCEContent('zk-edit-article-content'),
-                zusammenfassung_deutsch: $form.find('#zk-edit-article-abstract').val(),
-                zusammenfassung_englisch: $form.find('#zk-edit-article-abstract-en').val(),
-                keywords: $form.find('#zk-edit-article-keywords').val()
+                literatur: $form.find('#zk-edit-article-literatur').val(),
+                abstract_deutsch: $form.find('#zk-edit-article-abstract').val(),
+                abstract: $form.find('#zk-edit-article-abstract-en').val(),
+                keywords_deutsch: $form.find('#zk-edit-article-keywords').val(),
+                keywords_englisch: $form.find('#zk-edit-article-keywords-en').val(),
+                volltext_anzeigen: $form.find('#zk-edit-article-fulltext').is(':checked') ? '1' : ''
             };
 
             $btn.prop('disabled', true).text('Speichern...');

@@ -424,6 +424,10 @@
     max-width: 700px;
 }
 
+.zk-modal-xlarge {
+    max-width: 900px;
+}
+
 .zk-modal-header {
     display: flex;
     align-items: center;
@@ -522,6 +526,45 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
+}
+
+/* Form Sections */
+.zk-form-section {
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--zk-border);
+}
+
+.zk-form-section:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.zk-form-section-title {
+    margin: 0 0 16px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--zk-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Checkbox Label */
+.zk-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--zk-text);
+}
+
+.zk-checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--zk-primary);
+    cursor: pointer;
 }
 
 /* HTML Editor Styles */

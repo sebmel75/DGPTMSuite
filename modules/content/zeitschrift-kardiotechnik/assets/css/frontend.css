@@ -294,7 +294,7 @@
 /* Cover */
 .zk-single-cover {
     position: sticky;
-    top: 120px; /* Platz für fixierte Header */
+    top: 180px; /* Platz für fixierte Header */
     z-index: 10;
     align-self: start;
 }

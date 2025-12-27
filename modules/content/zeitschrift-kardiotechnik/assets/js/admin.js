@@ -817,6 +817,7 @@
                 hauptautorin: $form.find('[name="hauptautorin"]').val(),
                 doi: $form.find('[name="doi"]').val(),
                 publikationsart: $form.find('[name="publikationsart"]').val(),
+                content: $form.find('[name="content"]').val(),
                 zusammenfassung_deutsch: $form.find('[name="zusammenfassung_deutsch"]').val(),
                 zusammenfassung_englisch: $form.find('[name="zusammenfassung_englisch"]').val(),
                 keywords: $form.find('[name="keywords"]').val()
@@ -894,6 +895,7 @@
             $form.find('#zk-edit-article-main-author').val(article.hauptautorin);
             $form.find('#zk-edit-article-doi').val(article.doi);
             $form.find('#zk-edit-article-type').val(article.publikationsart || '');
+            $form.find('#zk-edit-article-content').val(article.content || '');
             $form.find('#zk-edit-article-abstract').val(article.zusammenfassung_deutsch);
             $form.find('#zk-edit-article-abstract-en').val(article.zusammenfassung_englisch);
             $form.find('#zk-edit-article-keywords').val(article.keywords);
@@ -935,6 +937,7 @@
                 hauptautorin: $form.find('#zk-edit-article-main-author').val(),
                 doi: $form.find('#zk-edit-article-doi').val(),
                 publikationsart: $form.find('#zk-edit-article-type').val(),
+                content: $form.find('#zk-edit-article-content').val(),
                 zusammenfassung_deutsch: $form.find('#zk-edit-article-abstract').val(),
                 zusammenfassung_englisch: $form.find('#zk-edit-article-abstract-en').val(),
                 keywords: $form.find('#zk-edit-article-keywords').val()

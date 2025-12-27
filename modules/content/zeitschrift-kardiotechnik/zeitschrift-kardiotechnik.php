@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Zeitschrift Kardiotechnik Manager
  * Description: Verwaltung und Anzeige der Fachzeitschrift Kardiotechnik
- * Version: 1.4.1
+ * Version: 1.4.2
  * Author: Sebastian Melzer / DGPTM
  */
 
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 // Konstanten
 define('ZK_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('ZK_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('ZK_VERSION', '1.4.1');
+define('ZK_VERSION', '1.4.2');
 define('ZK_POST_TYPE', 'zeitschkardiotechnik');
 define('ZK_PUBLIKATION_TYPE', 'publikation');
 
@@ -779,6 +779,7 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
             $hauptautorin = sanitize_text_field($_POST['hauptautorin'] ?? '');
             $doi = sanitize_text_field($_POST['doi'] ?? '');
             $publikationsart = sanitize_text_field($_POST['publikationsart'] ?? '');
+            $content = wp_kses_post($_POST['content'] ?? '');
             $zusammenfassung_deutsch = wp_kses_post($_POST['zusammenfassung_deutsch'] ?? '');
             $zusammenfassung_englisch = wp_kses_post($_POST['zusammenfassung_englisch'] ?? '');
             $keywords = sanitize_text_field($_POST['keywords'] ?? '');
@@ -791,6 +792,7 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
             $post_id = wp_insert_post([
                 'post_type' => ZK_PUBLIKATION_TYPE,
                 'post_title' => $title,
+                'post_content' => $content,
                 'post_status' => 'publish',
                 'post_author' => get_current_user_id()
             ]);
@@ -855,16 +857,18 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
             $hauptautorin = sanitize_text_field($_POST['hauptautorin'] ?? '');
             $doi = sanitize_text_field($_POST['doi'] ?? '');
             $publikationsart = sanitize_text_field($_POST['publikationsart'] ?? '');
+            $content = wp_kses_post($_POST['content'] ?? '');
             $zusammenfassung_deutsch = wp_kses_post($_POST['zusammenfassung_deutsch'] ?? '');
             $zusammenfassung_englisch = wp_kses_post($_POST['zusammenfassung_englisch'] ?? '');
             $keywords = sanitize_text_field($_POST['keywords'] ?? '');
 
+            // Post-Daten aktualisieren
+            $update_data = ['ID' => $post_id];
             if (!empty($title)) {
-                wp_update_post([
-                    'ID' => $post_id,
-                    'post_title' => $title
-                ]);
+                $update_data['post_title'] = $title;
             }
+            $update_data['post_content'] = $content;
+            wp_update_post($update_data);
 
             update_field('autoren', $autoren, $post_id);
             update_field('hauptautorin', $hauptautorin, $post_id);
@@ -905,6 +909,7 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
                 'article' => [
                     'id' => $post_id,
                     'title' => $post->post_title,
+                    'content' => $post->post_content,
                     'autoren' => get_field('autoren', $post_id),
                     'hauptautorin' => get_field('hauptautorin', $post_id),
                     'doi' => get_field('doi', $post_id),

@@ -245,6 +245,11 @@ $current_user = wp_get_current_user();
                         </select>
                     </div>
                     <div class="zk-form-group">
+                        <label for="zk-article-content">Artikeltext (HTML)</label>
+                        <textarea id="zk-article-content" name="content" rows="10" class="zk-html-editor" placeholder="HTML-formatierter Artikeltext..."></textarea>
+                        <small>HTML-Tags wie &lt;p&gt;, &lt;strong&gt;, &lt;em&gt;, &lt;ul&gt;, &lt;ol&gt; werden unterstützt</small>
+                    </div>
+                    <div class="zk-form-group">
                         <label for="zk-article-abstract">Zusammenfassung (Deutsch)</label>
                         <textarea id="zk-article-abstract" name="zusammenfassung_deutsch" rows="4"></textarea>
                     </div>
@@ -308,6 +313,11 @@ $current_user = wp_get_current_user();
                             <option value="Übersichtsarbeit">Übersichtsarbeit</option>
                             <option value="Kommentar">Kommentar</option>
                         </select>
+                    </div>
+                    <div class="zk-form-group">
+                        <label for="zk-edit-article-content">Artikeltext (HTML)</label>
+                        <textarea id="zk-edit-article-content" name="content" rows="10" class="zk-html-editor"></textarea>
+                        <small>HTML-Tags wie &lt;p&gt;, &lt;strong&gt;, &lt;em&gt;, &lt;ul&gt;, &lt;ol&gt; werden unterstützt</small>
                     </div>
                     <div class="zk-form-group">
                         <label for="zk-edit-article-abstract">Zusammenfassung (Deutsch)</label>

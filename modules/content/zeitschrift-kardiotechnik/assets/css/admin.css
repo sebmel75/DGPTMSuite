@@ -524,6 +524,25 @@
     gap: 16px;
 }
 
+/* HTML Editor Styles */
+.zk-html-editor {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    min-height: 200px;
+    resize: vertical;
+    background: #fafafa;
+    border: 1px solid var(--zk-border);
+    border-radius: 6px;
+    padding: 12px;
+}
+
+.zk-html-editor:focus {
+    background: #fff;
+    border-color: var(--zk-accent);
+    box-shadow: 0 0 0 3px rgba(189, 22, 34, 0.1);
+}
+
 /* Edit Layout */
 .zk-edit-layout {
     display: grid;

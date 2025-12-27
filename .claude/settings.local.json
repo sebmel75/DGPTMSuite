@@ -16,7 +16,11 @@
       "Bash(git commit:*)",
       "Bash(gh run view:*)",
       "WebFetch(domain:api.github.com)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(git revert:*)",
+      "Bash(git restore:*)",
+      "Bash(find:*)",
+      "Bash(xargs:*)"
     ],
     "deny": [],
     "ask": []

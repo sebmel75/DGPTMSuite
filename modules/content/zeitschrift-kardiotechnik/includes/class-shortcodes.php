@@ -111,10 +111,21 @@ if (!class_exists('ZK_Shortcodes')) {
                 'id' => ''
             ], $atts, 'zeitschrift_detail');
 
-            // ID aus Attribut oder URL-Parameter
+            // ID-Ermittlung in folgender Reihenfolge:
+            // 1. Shortcode-Attribut id=""
+            // 2. URL-Parameter ?p= (WordPress-Standard)
+            // 3. Aktueller Post (wenn auf Single-Seite des CPT)
             $post_id = intval($atts['id']);
-            if (!$post_id && isset($_GET['ausgabe_id'])) {
-                $post_id = intval($_GET['ausgabe_id']);
+
+            if (!$post_id && isset($_GET['p'])) {
+                $post_id = intval($_GET['p']);
+            }
+
+            if (!$post_id) {
+                global $post;
+                if ($post && $post->post_type === ZK_POST_TYPE) {
+                    $post_id = $post->ID;
+                }
             }
 
             if (!$post_id) {
@@ -122,13 +133,13 @@ if (!class_exists('ZK_Shortcodes')) {
             }
 
             // Post prüfen
-            $post = get_post($post_id);
-            if (!$post || $post->post_type !== ZK_POST_TYPE) {
+            $issue = get_post($post_id);
+            if (!$issue || $issue->post_type !== ZK_POST_TYPE) {
                 return '<p class="zk-error">Ausgabe nicht gefunden.</p>';
             }
 
-            // Sichtbarkeit prüfen
-            if (!DGPTM_Zeitschrift_Kardiotechnik::is_issue_visible($post_id)) {
+            // Sichtbarkeit prüfen (außer für Manager)
+            if (!DGPTM_Zeitschrift_Kardiotechnik::is_issue_visible($post_id) && !self::user_can_manage()) {
                 return '<p class="zk-error">Diese Ausgabe ist noch nicht verfügbar.</p>';
             }
 
@@ -136,7 +147,6 @@ if (!class_exists('ZK_Shortcodes')) {
             wp_enqueue_style('zk-frontend');
             wp_enqueue_script('zk-frontend');
 
-            $issue = $post;
             $articles = DGPTM_Zeitschrift_Kardiotechnik::get_issue_articles($post_id);
 
             ob_start();

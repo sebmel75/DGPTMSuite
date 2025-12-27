@@ -283,7 +283,7 @@
 }
 
 /* ========================================
-   Detailansicht
+   Detailansicht (Zwei-Spalten-Layout)
    ======================================== */
 
 .zk-detail-container {
@@ -292,13 +292,17 @@
     padding: 20px;
 }
 
-.zk-detail-header {
+.zk-detail-layout {
     display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: 40px;
-    margin-bottom: 40px;
-    padding-bottom: 40px;
-    border-bottom: 1px solid #eee;
+    grid-template-columns: 320px 1fr;
+    gap: 50px;
+    align-items: start;
+}
+
+/* Linke Spalte: Deckblatt */
+.zk-detail-left {
+    position: sticky;
+    top: 20px;
 }
 
 .zk-detail-cover img {
@@ -329,144 +333,128 @@
     color: #999;
 }
 
-.zk-detail-title {
-    margin: 0 0 20px;
-    font-size: 32px;
-    color: #1d2327;
-}
-
 .zk-detail-meta {
-    margin-bottom: 25px;
+    margin-top: 20px;
+    text-align: center;
 }
 
-.zk-meta-item {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 8px;
-    font-size: 15px;
-}
-
-.zk-meta-label {
-    color: #666;
-}
-
-.zk-meta-value {
+.zk-detail-title {
+    margin: 0 0 10px;
+    font-size: 20px;
     color: #1d2327;
-    font-weight: 500;
 }
 
-.zk-meta-value a {
+.zk-meta-doi {
+    margin-bottom: 15px;
+}
+
+.zk-meta-doi a {
     color: #0073aa;
     text-decoration: none;
+    font-size: 13px;
 }
 
-.zk-meta-value a:hover {
+.zk-meta-doi a:hover {
     text-decoration: underline;
 }
 
-.zk-detail-actions {
-    margin-top: 30px;
+.zk-detail-download {
+    margin-top: 15px;
 }
 
-/* Artikel-Sektionen */
-.zk-detail-content {
-    margin-bottom: 40px;
+.zk-detail-download .zk-btn {
+    width: 100%;
+    justify-content: center;
 }
 
-.zk-articles-section {
-    margin-bottom: 40px;
+/* Rechte Spalte: Artikelliste */
+.zk-detail-right {
+    min-width: 0;
 }
 
-.zk-section-title {
-    font-size: 22px;
-    margin: 0 0 20px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #0073aa;
+.zk-articles-heading {
+    margin: 0 0 25px;
+    font-size: 24px;
     color: #1d2327;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #0073aa;
 }
 
-.zk-articles-list {
-    display: grid;
-    gap: 20px;
+.zk-articles-group {
+    margin-bottom: 30px;
 }
 
-.zk-article-card {
-    background: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 25px;
-    transition: box-shadow 0.2s ease;
+.zk-group-title {
+    margin: 0 0 15px;
+    font-size: 16px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.zk-article-card:hover {
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+/* Artikel-Zeilen */
+.zk-article-row {
+    border-bottom: 1px solid #f0f0f0;
 }
 
-.zk-article-type {
+.zk-article-row:last-child {
+    border-bottom: none;
+}
+
+.zk-article-link {
+    display: block;
+    padding: 15px 0;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+}
+
+.zk-article-link:hover {
+    background-color: #f9f9f9;
+    margin: 0 -15px;
+    padding: 15px;
+}
+
+.zk-article-type-badge {
     display: inline-block;
-    padding: 4px 10px;
-    background: #0073aa;
-    color: #fff;
+    padding: 3px 8px;
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
     border-radius: 3px;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
+    background: #0073aa;
+    color: #fff;
 }
 
-.zk-article-editorial .zk-article-type {
+.zk-article-editorial .zk-article-type-badge {
     background: #4caf50;
 }
 
-.zk-article-journalclub .zk-article-type {
+.zk-article-journalclub .zk-article-type-badge {
     background: #ff9800;
 }
 
-.zk-article-tutorial .zk-article-type {
+.zk-article-tutorial .zk-article-type-badge {
     background: #9c27b0;
 }
 
-.zk-article-card .zk-article-title {
-    font-size: 18px;
+.zk-article-row .zk-article-title {
+    display: block;
+    font-size: 16px;
     font-weight: 600;
     color: #1d2327;
-    margin: 0 0 8px;
     line-height: 1.4;
+    margin-bottom: 4px;
 }
 
-.zk-article-card .zk-article-authors {
-    font-size: 14px;
-    color: #666;
-    margin-bottom: 12px;
-}
-
-.zk-article-supplement {
-    font-size: 14px;
+.zk-article-link:hover .zk-article-title {
     color: #0073aa;
-    font-style: italic;
-    margin-bottom: 12px;
 }
 
-.zk-article-abstract {
+.zk-article-row .zk-article-authors {
+    display: block;
     font-size: 14px;
-    color: #444;
-    line-height: 1.6;
-    margin-bottom: 15px;
-}
-
-.zk-article-keywords {
-    font-size: 13px;
     color: #666;
-    margin-bottom: 15px;
-}
-
-.zk-article-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px solid #f0f0f0;
 }
 
 .zk-no-articles {
@@ -474,11 +462,6 @@
     color: #666;
     padding: 40px;
     font-style: italic;
-}
-
-.zk-detail-footer {
-    padding-top: 20px;
-    border-top: 1px solid #eee;
 }
 
 /* ========================================
@@ -492,13 +475,13 @@
         gap: 20px;
     }
 
-    .zk-detail-header {
+    .zk-detail-layout {
         grid-template-columns: 250px 1fr;
         gap: 30px;
     }
 
-    .zk-detail-title {
-        font-size: 26px;
+    .zk-detail-left {
+        position: static;
     }
 }
 
@@ -554,8 +537,13 @@
         display: none !important;
     }
 
-    .zk-detail-header {
+    .zk-detail-layout {
         grid-template-columns: 1fr;
+        gap: 30px;
+    }
+
+    .zk-detail-left {
+        position: static;
         text-align: center;
     }
 
@@ -564,26 +552,8 @@
         margin: 0 auto;
     }
 
-    .zk-detail-title {
-        font-size: 24px;
-    }
-
-    .zk-meta-item {
-        justify-content: center;
-    }
-
-    .zk-detail-actions {
-        display: flex;
-        justify-content: center;
-    }
-
-    .zk-article-actions {
-        flex-direction: column;
-    }
-
-    .zk-article-actions .zk-btn {
-        width: 100%;
-        justify-content: center;
+    .zk-articles-heading {
+        font-size: 20px;
     }
 }
 
@@ -601,8 +571,12 @@
         padding: 15px;
     }
 
-    .zk-article-card {
-        padding: 15px;
+    .zk-detail-cover {
+        max-width: 200px;
+    }
+
+    .zk-article-row .zk-article-title {
+        font-size: 15px;
     }
 
     .zk-btn {
@@ -619,8 +593,7 @@
     .zk-card-popup,
     .zk-card-articles-mobile,
     .zk-btn,
-    .zk-detail-actions,
-    .zk-detail-footer {
+    .zk-detail-download {
         display: none !important;
     }
 
@@ -635,13 +608,17 @@
         border: 1px solid #ccc;
     }
 
-    .zk-detail-header {
+    .zk-detail-layout {
         display: block;
     }
 
-    .zk-detail-cover {
+    .zk-detail-left {
         float: left;
         width: 200px;
-        margin-right: 20px;
+        margin-right: 30px;
+    }
+
+    .zk-detail-cover img {
+        box-shadow: none;
     }
 }

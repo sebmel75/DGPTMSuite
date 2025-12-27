@@ -232,6 +232,19 @@ $current_user = wp_get_current_user();
                         </div>
                     </div>
                     <div class="zk-form-group">
+                        <label for="zk-article-type">Art der Publikation</label>
+                        <select id="zk-article-type" name="publikationsart" class="zk-select">
+                            <option value="">-- Bitte wählen --</option>
+                            <option value="Fachartikel">Fachartikel</option>
+                            <option value="Editorial">Editorial</option>
+                            <option value="Journal Club">Journal Club</option>
+                            <option value="Tutorial">Tutorial</option>
+                            <option value="Fallbericht">Fallbericht</option>
+                            <option value="Übersichtsarbeit">Übersichtsarbeit</option>
+                            <option value="Kommentar">Kommentar</option>
+                        </select>
+                    </div>
+                    <div class="zk-form-group">
                         <label for="zk-article-abstract">Zusammenfassung (Deutsch)</label>
                         <textarea id="zk-article-abstract" name="zusammenfassung_deutsch" rows="4"></textarea>
                     </div>
@@ -282,6 +295,19 @@ $current_user = wp_get_current_user();
                             <label for="zk-edit-article-doi">DOI</label>
                             <input type="text" id="zk-edit-article-doi" name="doi">
                         </div>
+                    </div>
+                    <div class="zk-form-group">
+                        <label for="zk-edit-article-type">Art der Publikation</label>
+                        <select id="zk-edit-article-type" name="publikationsart" class="zk-select">
+                            <option value="">-- Bitte wählen --</option>
+                            <option value="Fachartikel">Fachartikel</option>
+                            <option value="Editorial">Editorial</option>
+                            <option value="Journal Club">Journal Club</option>
+                            <option value="Tutorial">Tutorial</option>
+                            <option value="Fallbericht">Fallbericht</option>
+                            <option value="Übersichtsarbeit">Übersichtsarbeit</option>
+                            <option value="Kommentar">Kommentar</option>
+                        </select>
                     </div>
                     <div class="zk-form-group">
                         <label for="zk-edit-article-abstract">Zusammenfassung (Deutsch)</label>

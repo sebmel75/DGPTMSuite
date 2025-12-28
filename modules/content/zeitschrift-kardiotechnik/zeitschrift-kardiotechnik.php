@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Zeitschrift Kardiotechnik Manager
  * Description: Verwaltung und Anzeige der Fachzeitschrift Kardiotechnik
- * Version: 1.5.1
+ * Version: 1.6.0
  * Author: Sebastian Melzer / DGPTM
  */
 
@@ -819,6 +819,8 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
             // ACF Felder setzen - Grunddaten
             update_field('unterueberschrift', $unterueberschrift, $post_id);
             update_field('publikationsart', $publikationsart, $post_id);
+            // Auch als post_meta für Fallback speichern
+            update_post_meta($post_id, 'publikationsart', $publikationsart);
             update_field('doi', $doi, $post_id);
             update_field('kardiotechnikausgabe', $kardiotechnikausgabe, $post_id);
             update_field('supplement', $supplement, $post_id);
@@ -903,6 +905,8 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
             // ACF Felder setzen - Grunddaten
             update_field('unterueberschrift', $unterueberschrift, $post_id);
             update_field('publikationsart', $publikationsart, $post_id);
+            // Auch als post_meta für Fallback speichern
+            update_post_meta($post_id, 'publikationsart', $publikationsart);
             update_field('doi', $doi, $post_id);
             update_field('kardiotechnikausgabe', $kardiotechnikausgabe, $post_id);
             update_field('supplement', $supplement, $post_id);
@@ -950,6 +954,20 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
                 wp_send_json_error(['message' => 'Artikel nicht gefunden']);
             }
 
+            // Publikationsart mit Fallback abrufen
+            $publikationsart = get_field('publikationsart', $post_id);
+            if (empty($publikationsart)) {
+                // Fallback: direkt aus post_meta
+                $publikationsart = get_post_meta($post_id, 'publikationsart', true);
+            }
+            if (empty($publikationsart)) {
+                // Weiterer Fallback: alte Feldnamen
+                $publikationsart = get_post_meta($post_id, 'art_der_publikation', true);
+            }
+            if (empty($publikationsart)) {
+                $publikationsart = get_post_meta($post_id, 'type', true);
+            }
+
             // Alle ACF-Felder abrufen
             wp_send_json_success([
                 'article' => [
@@ -957,7 +975,7 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
                     'id' => $post_id,
                     'title' => $post->post_title,
                     'unterueberschrift' => get_field('unterueberschrift', $post_id),
-                    'publikationsart' => get_field('publikationsart', $post_id),
+                    'publikationsart' => $publikationsart,
                     'doi' => get_field('doi', $post_id),
                     'kardiotechnikausgabe' => get_field('kardiotechnikausgabe', $post_id),
                     'supplement' => get_field('supplement', $post_id),

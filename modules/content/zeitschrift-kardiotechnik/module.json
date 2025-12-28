@@ -2,7 +2,7 @@
     "id": "zeitschrift-kardiotechnik",
     "name": "Zeitschrift Kardiotechnik Manager",
     "description": "Verwaltung und Anzeige der Fachzeitschrift Kardiotechnik mit Thumbnail-Grid, Detailansicht und Admin-Verwaltungstool",
-    "version": "1.5.1",
+    "version": "1.6.0",
     "author": "Sebastian Melzer / DGPTM",
     "main_file": "zeitschrift-kardiotechnik.php",
     "dependencies": [],

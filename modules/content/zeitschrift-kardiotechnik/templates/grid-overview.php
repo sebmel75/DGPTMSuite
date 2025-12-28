@@ -73,19 +73,30 @@ $spalten = intval($atts['spalten']);
                             <strong><?php echo esc_html($issue->post_title); ?></strong>
                         </div>
                         <?php if (!empty($articles)) : ?>
-                            <ul class="zk-popup-articles">
+                            <div class="zk-popup-articles">
                                 <?php foreach ($articles as $key => $article) :
                                     $pub = $article['publication'];
                                     $authors = ZK_Shortcodes::get_authors_string($pub);
+                                    $abstract = get_field('abstract-deutsch', $pub->ID);
+                                    if (empty($abstract)) {
+                                        $abstract = get_field('abstract', $pub->ID);
+                                    }
                                 ?>
-                                    <li class="zk-popup-article">
-                                        <span class="zk-popup-title"><?php echo esc_html($pub->post_title); ?></span>
-                                        <?php if ($authors) : ?>
-                                            <span class="zk-popup-authors"><?php echo esc_html($authors); ?></span>
+                                    <div class="zk-popup-article">
+                                        <div class="zk-popup-article-header">
+                                            <span class="zk-popup-title"><?php echo esc_html($pub->post_title); ?></span>
+                                            <?php if ($authors) : ?>
+                                                <span class="zk-popup-authors"><?php echo esc_html($authors); ?></span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php if ($abstract) : ?>
+                                            <div class="zk-popup-abstract">
+                                                <?php echo wp_kses_post($abstract); ?>
+                                            </div>
                                         <?php endif; ?>
-                                    </li>
+                                    </div>
                                 <?php endforeach; ?>
-                            </ul>
+                            </div>
                         <?php else : ?>
                             <p class="zk-popup-empty">Keine Artikel</p>
                         <?php endif; ?>

@@ -138,38 +138,55 @@
 .zk-card-popup {
     position: absolute;
     top: 10px;
-    left: calc(100% + 16px);
-    width: 320px;
-    max-height: 420px;
+    left: calc(100% + 12px);
+    width: 420px;
+    max-height: 520px;
     background: var(--zk-white);
     border-radius: var(--zk-radius);
     box-shadow: var(--zk-shadow-lg);
     opacity: 0;
     visibility: hidden;
     transform: translateX(-10px);
-    transition: all 0.25s ease;
+    transition: opacity 0.25s ease, visibility 0.25s ease, transform 0.25s ease;
     z-index: 1000;
     overflow: hidden;
-    pointer-events: none;
 }
 
-.zk-card:hover .zk-card-popup {
+/* Unsichtbare Brücke zwischen Karte und Popup */
+.zk-card-popup::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -20px;
+    width: 20px;
+    height: 100%;
+}
+
+.zk-card:hover .zk-card-popup,
+.zk-card-popup:hover {
     opacity: 1;
     visibility: visible;
     transform: translateX(0);
-    pointer-events: auto;
 }
 
 /* Popup links anzeigen für rechte Karten */
 .zk-grid > .zk-card:nth-child(4n) .zk-card-popup,
 .zk-grid > .zk-card:nth-child(4n-1) .zk-card-popup {
     left: auto;
-    right: calc(100% + 16px);
+    right: calc(100% + 12px);
     transform: translateX(10px);
 }
 
+.zk-grid > .zk-card:nth-child(4n) .zk-card-popup::before,
+.zk-grid > .zk-card:nth-child(4n-1) .zk-card-popup::before {
+    left: auto;
+    right: -20px;
+}
+
 .zk-grid > .zk-card:nth-child(4n):hover .zk-card-popup,
-.zk-grid > .zk-card:nth-child(4n-1):hover .zk-card-popup {
+.zk-grid > .zk-card:nth-child(4n-1):hover .zk-card-popup,
+.zk-grid > .zk-card:nth-child(4n) .zk-card-popup:hover,
+.zk-grid > .zk-card:nth-child(4n-1) .zk-card-popup:hover {
     transform: translateX(0);
 }
 
@@ -177,20 +194,19 @@
     padding: 16px 20px;
     background: var(--zk-primary);
     color: var(--zk-white);
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 600;
 }
 
 .zk-popup-articles {
-    list-style: none;
     margin: 0;
     padding: 0;
-    max-height: 340px;
+    max-height: 440px;
     overflow-y: auto;
 }
 
 .zk-popup-article {
-    padding: 14px 20px;
+    padding: 16px 20px;
     border-bottom: 1px solid var(--zk-border);
     transition: background-color 0.15s ease;
 }
@@ -203,27 +219,64 @@
     background-color: var(--zk-bg);
 }
 
+.zk-popup-article-header {
+    margin-bottom: 8px;
+}
+
 .zk-popup-title {
     display: block;
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 15px;
+    font-weight: 600;
     color: var(--zk-text);
     line-height: 1.4;
 }
 
 .zk-popup-authors {
     display: block;
-    font-size: 12px;
+    font-size: 13px;
     color: var(--zk-text-light);
     margin-top: 4px;
 }
 
+.zk-popup-abstract {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--zk-text);
+    max-height: 80px;
+    overflow: hidden;
+    position: relative;
+}
+
+.zk-popup-abstract::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 30px;
+    background: linear-gradient(transparent, var(--zk-white));
+    pointer-events: none;
+}
+
+.zk-popup-article:hover .zk-popup-abstract::after {
+    background: linear-gradient(transparent, var(--zk-bg));
+}
+
+.zk-popup-abstract p {
+    margin: 0;
+}
+
+.zk-popup-abstract p + p {
+    margin-top: 8px;
+}
+
 .zk-popup-empty {
-    padding: 20px;
+    padding: 24px 20px;
     color: var(--zk-text-light);
     font-style: italic;
     margin: 0;
     text-align: center;
+    font-size: 14px;
 }
 
 /* ========================================

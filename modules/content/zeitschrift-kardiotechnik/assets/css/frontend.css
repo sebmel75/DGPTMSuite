@@ -7,6 +7,8 @@
     --zk-primary: #BD1622;
     --zk-primary-light: #d41a29;
     --zk-accent: #BD1622;
+    --zk-title-blue: #005791;
+    --zk-title-blue-light: #0068a8;
     --zk-text: #2d3748;
     --zk-text-light: #718096;
     --zk-bg: #f7fafc;
@@ -339,7 +341,7 @@
     margin: 0;
     font-size: 36px;
     font-weight: 700;
-    color: var(--zk-primary);
+    color: var(--zk-title-blue);
     letter-spacing: -0.5px;
 }
 
@@ -384,7 +386,7 @@
     gap: 10px;
     margin-top: 24px;
     padding: 14px 24px;
-    background: var(--zk-primary) !important;
+    background: var(--zk-title-blue) !important;
     color: #ffffff !important;
     font-size: 15px;
     font-weight: 600;
@@ -397,7 +399,7 @@
 .zk-download-btn:visited,
 .zk-download-btn:active,
 .zk-download-btn:focus {
-    background: var(--zk-primary-light) !important;
+    background: var(--zk-title-blue-light) !important;
     color: #ffffff !important;
     text-decoration: none !important;
     transform: translateY(-2px);
@@ -430,19 +432,7 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
     color: var(--zk-white);
-    background: var(--zk-primary);
-}
-
-.zk-article-section[data-type="editorial"] .zk-section-label {
-    background: #059669;
-}
-
-.zk-article-section[data-type="journalclub"] .zk-section-label {
-    background: #d97706;
-}
-
-.zk-article-section[data-type="tutorial"] .zk-section-label {
-    background: #7c3aed;
+    background: #bd1722;
 }
 
 .zk-article-item {

@@ -954,18 +954,42 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
                 wp_send_json_error(['message' => 'Artikel nicht gefunden']);
             }
 
-            // Publikationsart mit Fallback abrufen
-            $publikationsart = get_field('publikationsart', $post_id);
-            if (empty($publikationsart)) {
-                // Fallback: direkt aus post_meta
-                $publikationsart = get_post_meta($post_id, 'publikationsart', true);
+            // Publikationsart mit Fallback abrufen - Debug-Logging
+            $publikationsart = null;
+
+            // Methode 1: ACF get_field
+            $acf_value = get_field('publikationsart', $post_id);
+            error_log("ZK Debug - Post ID: $post_id - get_field('publikationsart'): " . print_r($acf_value, true));
+
+            // Methode 2: ACF mit Field Key
+            $acf_key_value = get_field('field_jetacf2_publikation_publikationsart', $post_id);
+            error_log("ZK Debug - get_field with key: " . print_r($acf_key_value, true));
+
+            // Methode 3: Direkt post_meta
+            $meta_value = get_post_meta($post_id, 'publikationsart', true);
+            error_log("ZK Debug - get_post_meta('publikationsart'): " . print_r($meta_value, true));
+
+            // Methode 4: Mit Unterstrich-Prefix (ACF intern)
+            $meta_underscore = get_post_meta($post_id, '_publikationsart', true);
+            error_log("ZK Debug - get_post_meta('_publikationsart'): " . print_r($meta_underscore, true));
+
+            // Methode 5: Alle Meta-Keys auflisten die "publikation" enthalten
+            $all_meta = get_post_meta($post_id);
+            $relevant_meta = [];
+            foreach ($all_meta as $key => $value) {
+                if (stripos($key, 'publikation') !== false || stripos($key, 'type') !== false || stripos($key, 'art') !== false) {
+                    $relevant_meta[$key] = $value;
+                }
             }
-            if (empty($publikationsart)) {
-                // Weiterer Fallback: alte Feldnamen
-                $publikationsart = get_post_meta($post_id, 'art_der_publikation', true);
-            }
-            if (empty($publikationsart)) {
-                $publikationsart = get_post_meta($post_id, 'type', true);
+            error_log("ZK Debug - Relevant meta keys: " . print_r($relevant_meta, true));
+
+            // Wert bestimmen
+            if (!empty($acf_value)) {
+                $publikationsart = $acf_value;
+            } elseif (!empty($meta_value)) {
+                $publikationsart = $meta_value;
+            } elseif (!empty($meta_underscore)) {
+                $publikationsart = $meta_underscore;
             }
 
             // Alle ACF-Felder abrufen
@@ -976,6 +1000,15 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
                     'title' => $post->post_title,
                     'unterueberschrift' => get_field('unterueberschrift', $post_id),
                     'publikationsart' => $publikationsart,
+                    // Debug-Info
+                    '_debug_publikationsart' => [
+                        'acf_get_field' => $acf_value,
+                        'acf_field_key' => $acf_key_value,
+                        'post_meta' => $meta_value,
+                        'post_meta_underscore' => $meta_underscore,
+                        'relevant_meta_keys' => array_keys($relevant_meta),
+                        'final_value' => $publikationsart
+                    ],
                     'doi' => get_field('doi', $post_id),
                     'kardiotechnikausgabe' => get_field('kardiotechnikausgabe', $post_id),
                     'supplement' => get_field('supplement', $post_id),

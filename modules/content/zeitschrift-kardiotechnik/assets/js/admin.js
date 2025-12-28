@@ -936,6 +936,16 @@
                 },
                 success: function(response) {
                     console.log('ZK Article Details Response:', response);
+                    if (response.data && response.data.article && response.data.article._debug_publikationsart) {
+                        console.log('=== PUBLIKATIONSART DEBUG ===');
+                        console.log('ACF get_field:', response.data.article._debug_publikationsart.acf_get_field);
+                        console.log('ACF field key:', response.data.article._debug_publikationsart.acf_field_key);
+                        console.log('post_meta:', response.data.article._debug_publikationsart.post_meta);
+                        console.log('post_meta underscore:', response.data.article._debug_publikationsart.post_meta_underscore);
+                        console.log('Relevant meta keys:', response.data.article._debug_publikationsart.relevant_meta_keys);
+                        console.log('Final value:', response.data.article._debug_publikationsart.final_value);
+                        console.log('=============================');
+                    }
                     if (response.success) {
                         self.populateEditArticleForm(response.data.article);
                         // TinyMCE initialisieren nach Formular-Befüllung

@@ -1,8 +1,8 @@
 {
     "id": "herzzentren",
     "name": "DGPTM - Herzzentrum Editor",
-    "description": "Heart center management with maps and Elementor widgets",
-    "version": "4.0.1",
+    "description": "Heart center management with maps and Elementor widgets. Registriert CPT herzzentrum nativ (JetEngine nicht mehr erforderlich).",
+    "version": "4.1.0",
     "author": "Sebastian Melzer",
     "main_file": "dgptm-herzzentrum-editor.php",
     "dependencies": [],

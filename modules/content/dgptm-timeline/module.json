@@ -1,0 +1,21 @@
+{
+    "id": "dgptm-timeline",
+    "name": "DGPTM Timeline",
+    "description": "Timeline-Anzeige mit CPT timeline_entry. Ersetzt jet-timeline Widget durch natives Elementor-Widget.",
+    "version": "1.0.0",
+    "author": "Sebastian Melzer / DGPTM",
+    "main_file": "dgptm-timeline.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": ["elementor", "advanced-custom-fields"]
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "content",
+    "icon": "dashicons-clock",
+    "active": false,
+    "can_export": true,
+    "critical": false,
+    "flags": ["development"]
+}

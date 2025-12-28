@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: DGPTM - Herzzentrum Editor (Unified)
- * Description: Version 4.0.1: Bug Fix Release - Konstanten-Fehler behoben. Vereinigtes Plugin mit Multi-Map & Single-Map Widgets, verbesserte Sicherheit, optimierte Map-Darstellung
- * Version:     4.0.1
+ * Description: Version 4.1.0: CPT-Migration - Herzzentrum CPT wird jetzt nativ registriert (JetEngine nicht mehr erforderlich). Vereinigtes Plugin mit Multi-Map & Single-Map Widgets.
+ * Version:     4.1.0
  * Author:      Sebastian Melzer
  * Text Domain: dgptm-herzzentren
  * Domain Path: /languages
@@ -15,12 +15,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin-Konstanten
-define( 'DGPTM_HZ_VERSION', '4.0.1' );
+define( 'DGPTM_HZ_VERSION', '4.1.0' );
 define( 'DGPTM_HZ_FILE', __FILE__ );
 define( 'DGPTM_HZ_PATH', plugin_dir_path( __FILE__ ) );
 define( 'DGPTM_HZ_URL', plugin_dir_url( __FILE__ ) );
 
 // Includes
+require_once DGPTM_HZ_PATH . 'includes/class-post-types.php';
 require_once DGPTM_HZ_PATH . 'includes/acf.php';
 require_once DGPTM_HZ_PATH . 'includes/admin.php';
 require_once DGPTM_HZ_PATH . 'includes/editor.php';

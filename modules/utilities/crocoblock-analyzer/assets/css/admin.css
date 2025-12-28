@@ -1,0 +1,398 @@
+/**
+ * Crocoblock Analyzer - Admin Styles
+ */
+
+.cba-wrap {
+    max-width: 1200px;
+}
+
+.cba-wrap h1 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cba-actions {
+    display: flex;
+    gap: 15px;
+    margin: 20px 0 30px;
+}
+
+.cba-actions .button-hero {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cba-actions .dashicons {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+}
+
+/* Progress Bar */
+.cba-progress-bar {
+    height: 20px;
+    background: #e0e0e0;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 20px 0 10px;
+}
+
+.cba-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #0073aa, #00a0d2);
+    width: 0%;
+    transition: width 0.3s ease;
+    animation: cba-progress-pulse 1.5s infinite;
+}
+
+@keyframes cba-progress-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.cba-progress-text {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+}
+
+/* Sections */
+.cba-section {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+}
+
+.cba-section h2 {
+    margin: 0;
+    padding: 15px 20px;
+    background: #f6f7f7;
+    border-bottom: 1px solid #ccd0d4;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cba-section h2 .dashicons {
+    color: #0073aa;
+}
+
+.cba-content {
+    padding: 20px;
+}
+
+.cba-subsection {
+    margin-bottom: 25px;
+}
+
+.cba-subsection:last-child {
+    margin-bottom: 0;
+}
+
+.cba-subsection h3 {
+    margin: 0 0 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+    font-size: 13px;
+    color: #23282d;
+}
+
+/* Lists */
+.cba-list {
+    background: #f9f9f9;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    padding: 15px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.cba-list.cba-empty {
+    color: #666;
+    font-style: italic;
+    text-align: center;
+    padding: 30px;
+}
+
+/* Items */
+.cba-item {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 15px;
+}
+
+.cba-item:last-child {
+    margin-bottom: 0;
+}
+
+.cba-item-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.cba-item-title {
+    font-weight: 600;
+    color: #23282d;
+    margin-bottom: 5px;
+    word-break: break-word;
+}
+
+.cba-item-meta {
+    font-size: 12px;
+    color: #666;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.cba-item-meta span {
+    background: #f0f0f0;
+    padding: 2px 8px;
+    border-radius: 3px;
+}
+
+.cba-item-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.cba-item-actions a {
+    text-decoration: none;
+    color: #0073aa;
+    font-size: 12px;
+}
+
+.cba-item-actions a:hover {
+    color: #00a0d2;
+}
+
+/* Widget Grid */
+.cba-widget-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.cba-widget-item {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cba-widget-name {
+    font-family: monospace;
+    font-size: 12px;
+    color: #23282d;
+}
+
+.cba-widget-count {
+    background: #0073aa;
+    color: #fff;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+/* Summary Section */
+.cba-summary {
+    border-color: #0073aa;
+}
+
+.cba-summary h2 {
+    background: #0073aa;
+    color: #fff;
+    border-bottom-color: #005a87;
+}
+
+.cba-summary h2 .dashicons {
+    color: #fff;
+}
+
+.cba-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.cba-stat-card {
+    background: #f6f7f7;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    padding: 15px;
+    text-align: center;
+}
+
+.cba-stat-number {
+    font-size: 32px;
+    font-weight: 700;
+    color: #0073aa;
+    line-height: 1;
+    margin-bottom: 5px;
+}
+
+.cba-stat-label {
+    font-size: 12px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Tasks */
+.cba-tasks {
+    margin-top: 20px;
+}
+
+.cba-tasks h4 {
+    margin: 0 0 15px;
+    font-size: 13px;
+}
+
+.cba-task {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-left: 4px solid #0073aa;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 10px;
+}
+
+.cba-task.cba-priority-high {
+    border-left-color: #dc3232;
+}
+
+.cba-task.cba-priority-medium {
+    border-left-color: #ffb900;
+}
+
+.cba-task.cba-priority-low {
+    border-left-color: #46b450;
+}
+
+.cba-task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.cba-task-title {
+    font-weight: 600;
+    color: #23282d;
+}
+
+.cba-task-badge {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.cba-task-badge.high {
+    background: #fbeaea;
+    color: #dc3232;
+}
+
+.cba-task-badge.medium {
+    background: #fff8e5;
+    color: #996800;
+}
+
+.cba-task-badge.low {
+    background: #ecf7ed;
+    color: #2e7d32;
+}
+
+.cba-task-details {
+    font-size: 13px;
+    color: #666;
+    display: flex;
+    gap: 20px;
+}
+
+.cba-task-replacement {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #0073aa;
+}
+
+.cba-task-replacement strong {
+    color: #23282d;
+}
+
+/* Pages List */
+.cba-pages-toggle {
+    margin-top: 10px;
+}
+
+.cba-pages-toggle summary {
+    cursor: pointer;
+    color: #0073aa;
+    font-size: 12px;
+}
+
+.cba-pages-list {
+    margin-top: 10px;
+    padding-left: 15px;
+    font-size: 12px;
+}
+
+.cba-pages-list li {
+    margin-bottom: 5px;
+}
+
+/* Status badges */
+.cba-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 3px;
+}
+
+.cba-status-active {
+    background: #ecf7ed;
+    color: #2e7d32;
+}
+
+.cba-status-inactive {
+    background: #f0f0f0;
+    color: #666;
+}
+
+/* Responsive */
+@media (max-width: 782px) {
+    .cba-actions {
+        flex-direction: column;
+    }
+
+    .cba-summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .cba-item {
+        flex-direction: column;
+    }
+
+    .cba-item-actions {
+        margin-top: 10px;
+    }
+}

@@ -659,6 +659,17 @@ PROMPT;
             $settings = get_option('zk_ai_settings', []);
             $model = $settings['model'] ?? 'claude-sonnet-4-20250514';
 
+            // Veraltete Modelle durch aktuelle ersetzen
+            $deprecated_models = [
+                'claude-3-opus-20240229' => 'claude-sonnet-4-20250514',
+                'claude-3-sonnet-20240229' => 'claude-sonnet-4-20250514',
+                'claude-3-haiku-20240307' => 'claude-3-5-haiku-20241022',
+                'gpt-4-turbo-preview' => 'gpt-4o',
+            ];
+            if (isset($deprecated_models[$model])) {
+                $model = $deprecated_models[$model];
+            }
+
             $response = wp_remote_post('https://api.anthropic.com/v1/messages', [
                 'timeout' => 180,
                 'headers' => [
@@ -719,7 +730,7 @@ PROMPT;
                     'Authorization' => 'Bearer ' . $api_key,
                 ],
                 'body' => json_encode([
-                    'model' => 'gpt-4-turbo-preview',
+                    'model' => 'gpt-4o',
                     'messages' => [
                         ['role' => 'user', 'content' => $prompt]
                     ],

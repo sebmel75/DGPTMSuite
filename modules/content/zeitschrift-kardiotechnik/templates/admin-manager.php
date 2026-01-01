@@ -279,9 +279,10 @@ $current_user = wp_get_current_user();
                         <label for="zk-ai-model">Modell</label>
                         <select id="zk-ai-model" class="zk-select">
                             <option value="claude-sonnet-4-20250514">Claude Sonnet 4 (empfohlen)</option>
+                            <option value="claude-opus-4-5-20251101">Claude Opus 4.5</option>
                             <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
-                            <option value="claude-3-opus-20240229">Claude 3 Opus</option>
-                            <option value="gpt-4-turbo-preview">GPT-4 Turbo</option>
+                            <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku (schnell)</option>
+                            <option value="gpt-4o">GPT-4o</option>
                         </select>
                     </div>
                     <div class="zk-form-group">

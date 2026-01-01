@@ -116,7 +116,7 @@ if (!class_exists('ZK_PDF_Import')) {
         }
 
         /**
-         * Ausgabe extrahieren (Titelseite, Seitenzahl, Grundstruktur)
+         * Ausgabe extrahieren UND mit KI analysieren (kombinierter Schritt)
          */
         public function ajax_extract_issue() {
             check_ajax_referer('zk_admin_nonce', 'nonce');
@@ -140,6 +140,18 @@ if (!class_exists('ZK_PDF_Import')) {
             $import_data = json_decode(file_get_contents($import_file), true);
             $pdf_path = $import_data['filepath'];
 
+            // AI-Einstellungen laden und prüfen
+            $settings = get_option('zk_ai_settings', []);
+            $api_key = $settings['api_key'] ?? '';
+            $provider = $settings['provider'] ?? 'anthropic';
+
+            if (empty($api_key)) {
+                wp_send_json_error([
+                    'message' => 'Kein API-Key konfiguriert. Bitte zuerst die KI-Einstellungen konfigurieren.',
+                    'need_config' => true
+                ]);
+            }
+
             // 1. Titelseite als Bild extrahieren
             $cover_path = $this->extract_cover_page($pdf_path, $import_path);
 
@@ -152,13 +164,47 @@ if (!class_exists('ZK_PDF_Import')) {
             // 4. Alle Bilder extrahieren
             $images = $this->extract_all_images($pdf_path, $import_path);
 
-            // Import-Daten aktualisieren
-            $import_data['status'] = 'extracted';
+            // Zwischenspeichern
             $import_data['cover_path'] = $cover_path;
             $import_data['page_count'] = $page_count;
             $import_data['full_text'] = $full_text;
             $import_data['images'] = $images;
             $import_data['char_count'] = strlen($full_text);
+
+            // 5. KI-Analyse durchführen
+            $analysis = $this->analyze_issue_with_ai(
+                $full_text,
+                $page_count,
+                $api_key,
+                $provider
+            );
+
+            if (is_wp_error($analysis)) {
+                // Bei KI-Fehler trotzdem Extraktion zurückgeben
+                $import_data['status'] = 'extraction_only';
+                file_put_contents($import_file, json_encode($import_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
+                wp_send_json_error([
+                    'message' => 'KI-Analyse fehlgeschlagen: ' . $analysis->get_error_message(),
+                    'extraction_done' => true,
+                    'cover_url' => $cover_path ? str_replace($this->upload_dir['basedir'], $this->upload_dir['baseurl'], $cover_path) : null,
+                    'page_count' => $page_count,
+                ]);
+            }
+
+            // 6. Einzelne Artikel-PDFs erstellen
+            if (!empty($analysis['articles'])) {
+                $analysis['articles'] = $this->create_article_pdfs(
+                    $pdf_path,
+                    $analysis['articles'],
+                    $import_path
+                );
+            }
+
+            // Import-Daten komplett aktualisieren
+            $import_data['status'] = 'analyzed';
+            $import_data['issue'] = $analysis['issue'] ?? [];
+            $import_data['articles'] = $analysis['articles'] ?? [];
 
             file_put_contents($import_file, json_encode($import_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
@@ -168,79 +214,17 @@ if (!class_exists('ZK_PDF_Import')) {
                 'page_count' => $page_count,
                 'char_count' => strlen($full_text),
                 'image_count' => count($images),
-                'text_preview' => mb_substr($full_text, 0, 1000) . '...',
+                'issue' => $analysis['issue'],
+                'articles' => $analysis['articles'],
             ]);
         }
 
         /**
-         * KI-Analyse der Ausgabe
+         * KI-Analyse der Ausgabe (Legacy - leitet zu ajax_extract_issue weiter)
          */
         public function ajax_ai_analyze_issue() {
-            check_ajax_referer('zk_admin_nonce', 'nonce');
-
-            if (!current_user_can('edit_posts')) {
-                wp_send_json_error(['message' => 'Keine Berechtigung']);
-            }
-
-            $import_id = sanitize_text_field($_POST['import_id'] ?? '');
-            if (empty($import_id)) {
-                wp_send_json_error(['message' => 'Ungültige Import-ID']);
-            }
-
-            $import_path = $this->import_dir . $import_id . '/';
-            $import_file = $import_path . 'import.json';
-
-            if (!file_exists($import_file)) {
-                wp_send_json_error(['message' => 'Import nicht gefunden']);
-            }
-
-            $import_data = json_decode(file_get_contents($import_file), true);
-
-            // AI-Einstellungen laden
-            $settings = get_option('zk_ai_settings', []);
-            $api_key = $settings['api_key'] ?? '';
-            $provider = $settings['provider'] ?? 'anthropic';
-
-            if (empty($api_key)) {
-                wp_send_json_error([
-                    'message' => 'Kein API-Key konfiguriert',
-                    'need_config' => true
-                ]);
-            }
-
-            // KI-Analyse durchführen
-            $analysis = $this->analyze_issue_with_ai(
-                $import_data['full_text'],
-                $import_data['page_count'],
-                $api_key,
-                $provider
-            );
-
-            if (is_wp_error($analysis)) {
-                wp_send_json_error(['message' => $analysis->get_error_message()]);
-            }
-
-            // Einzelne Artikel-PDFs erstellen
-            if (!empty($analysis['articles'])) {
-                $analysis['articles'] = $this->create_article_pdfs(
-                    $import_data['filepath'],
-                    $analysis['articles'],
-                    $import_path
-                );
-            }
-
-            // Import-Daten aktualisieren
-            $import_data['status'] = 'analyzed';
-            $import_data['issue'] = $analysis['issue'] ?? [];
-            $import_data['articles'] = $analysis['articles'] ?? [];
-
-            file_put_contents($import_file, json_encode($import_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-
-            wp_send_json_success([
-                'import_id' => $import_id,
-                'issue' => $analysis['issue'],
-                'articles' => $analysis['articles'],
-            ]);
+            // Für Rückwärtskompatibilität - ruft extract auf
+            $this->ajax_extract_issue();
         }
 
         /**

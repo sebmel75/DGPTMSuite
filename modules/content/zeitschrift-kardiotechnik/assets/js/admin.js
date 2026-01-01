@@ -1422,16 +1422,10 @@
                 self.discardImport();
             });
 
-            // Inhalte extrahieren
+            // KI-Extraktion & Analyse (kombiniert)
             $(document).on('click', '#zk-extract-btn', function(e) {
                 e.preventDefault();
-                self.extractIssue();
-            });
-
-            // KI analysieren
-            $(document).on('click', '#zk-analyze-btn', function(e) {
-                e.preventDefault();
-                self.aiAnalyzeIssue();
+                self.extractAndAnalyzeIssue();
             });
 
             // KI-Einstellungen öffnen
@@ -1550,9 +1544,10 @@
         },
 
         /**
-         * Ausgabe extrahieren
+         * KI-Extraktion & Analyse (kombiniert)
+         * Extrahiert Cover, Text, Bilder UND analysiert mit KI in einem Schritt
          */
-        extractIssue: function() {
+        extractAndAnalyzeIssue: function() {
             var self = this;
 
             if (!this.pdfImport.importId) {
@@ -1561,16 +1556,16 @@
             }
 
             var $status = $('#zk-import-step-2 .zk-extraction-status');
-            var $result = $('#zk-import-step-2 .zk-extraction-result');
+            var $statusText = $('#zk-extraction-status-text');
 
             $status.show();
-            $result.hide();
+            $statusText.text('Extrahiere und analysiere... (kann 2-3 Minuten dauern)');
             $('#zk-extract-btn').prop('disabled', true);
 
             $.ajax({
                 url: this.config.ajaxUrl,
                 type: 'POST',
-                timeout: 120000,
+                timeout: 300000, // 5 Minuten für Extraktion + KI-Analyse
                 data: {
                     action: 'zk_extract_issue',
                     nonce: this.config.nonce,
@@ -1581,83 +1576,34 @@
                     $('#zk-extract-btn').prop('disabled', false);
 
                     if (response.success) {
+                        // Cover-URL speichern
                         self.pdfImport.coverUrl = response.data.cover_url;
 
-                        // UI aktualisieren
-                        if (response.data.cover_url) {
-                            $('#zk-cover-preview img').attr('src', response.data.cover_url);
-                            $('#zk-cover-preview').show();
-                        }
-                        $('#zk-page-count').text(response.data.page_count);
-                        $('#zk-char-count').text(response.data.char_count.toLocaleString());
-                        $('#zk-image-count').text(response.data.image_count);
-                        $('#zk-extracted-text').val(response.data.text_preview);
-
-                        $result.show();
-                        self.activateStep(3);
-                        $('#zk-analyze-btn').prop('disabled', false);
-                    } else {
-                        self.showToast('error', response.data.message || 'Fehler beim Extrahieren');
-                    }
-                },
-                error: function() {
-                    $status.hide();
-                    $('#zk-extract-btn').prop('disabled', false);
-                    self.showToast('error', 'Verbindungsfehler');
-                }
-            });
-        },
-
-        /**
-         * KI-Analyse der Ausgabe
-         */
-        aiAnalyzeIssue: function() {
-            var self = this;
-
-            if (!this.pdfImport.importId) {
-                this.showToast('error', 'Keine Extraktion vorhanden');
-                return;
-            }
-
-            var $status = $('#zk-import-step-3 .zk-ai-status');
-            $status.show();
-            $('#zk-analyze-btn').prop('disabled', true);
-
-            $.ajax({
-                url: this.config.ajaxUrl,
-                type: 'POST',
-                timeout: 300000, // 5 Minuten
-                data: {
-                    action: 'zk_ai_analyze_issue',
-                    nonce: this.config.nonce,
-                    import_id: this.pdfImport.importId
-                },
-                success: function(response) {
-                    $status.hide();
-                    $('#zk-analyze-btn').prop('disabled', false);
-
-                    if (response.success) {
+                        // Issue und Artikel-Daten speichern
                         self.pdfImport.issue = response.data.issue;
                         self.pdfImport.articles = response.data.articles;
 
+                        // Direkt zur Vorschau (Schritt 3)
                         self.populateIssuePreview(response.data);
-                        self.activateStep(4);
-                        $('#zk-import-step-4 .zk-import-preview').show();
+                        self.activateStep(3);
+                        $('#zk-import-step-3 .zk-import-preview').show();
+
+                        self.showToast('success', 'Extraktion und Analyse abgeschlossen');
                     } else {
                         if (response.data.need_config) {
                             self.showToast('error', 'Bitte KI-Einstellungen konfigurieren');
                             self.openAiSettings();
                         } else {
-                            self.showToast('error', response.data.message || 'KI-Analyse fehlgeschlagen');
+                            self.showToast('error', response.data.message || 'Fehler bei der KI-Extraktion');
                         }
                     }
                 },
                 error: function(xhr, status) {
                     $status.hide();
-                    $('#zk-analyze-btn').prop('disabled', false);
+                    $('#zk-extract-btn').prop('disabled', false);
 
                     if (status === 'timeout') {
-                        self.showToast('error', 'KI-Analyse Timeout - bitte erneut versuchen');
+                        self.showToast('error', 'Timeout - bitte erneut versuchen');
                     } else {
                         self.showToast('error', 'Verbindungsfehler');
                     }
@@ -1903,10 +1849,10 @@
         },
 
         /**
-         * Import-Schritt aktivieren
+         * Import-Schritt aktivieren (3-Schritte-Workflow)
          */
         activateStep: function(step) {
-            for (var i = 1; i <= 4; i++) {
+            for (var i = 1; i <= 3; i++) {
                 var $step = $('#zk-import-step-' + i);
                 if (i <= step) {
                     $step.addClass('zk-import-step-active');
@@ -1917,7 +1863,7 @@
         },
 
         /**
-         * PDF-Import zurücksetzen
+         * PDF-Import zurücksetzen (3-Schritte-Workflow)
          */
         resetPdfImport: function() {
             this.pdfImport = {
@@ -1932,14 +1878,14 @@
             $('#zk-pdf-info').hide();
             $('#zk-pdf-file').val('');
             $('#zk-extract-btn').prop('disabled', true);
-            $('#zk-analyze-btn').prop('disabled', true);
 
-            $('#zk-import-step-2 .zk-extraction-result').hide();
+            // Schritt 2: Extraktion + Analyse Status
             $('#zk-import-step-2 .zk-extraction-status').hide();
-            $('#zk-import-step-3 .zk-ai-status').hide();
-            $('#zk-import-step-4 .zk-import-preview').hide();
 
-            $('#zk-cover-preview img').attr('src', '');
+            // Schritt 3: Import-Vorschau
+            $('#zk-import-step-3 .zk-import-preview').hide();
+
+            // Vorschau-Felder zurücksetzen
             $('#zk-issue-cover img').attr('src', '');
             $('#zk-issue-jahr, #zk-issue-ausgabe, #zk-issue-doi').val('');
             $('#zk-articles-preview').empty();

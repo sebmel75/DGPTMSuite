@@ -135,7 +135,7 @@ $current_user = wp_get_current_user();
                             <line x1="9" y1="15" x2="15" y2="15"></line>
                         </svg>
                         <p class="zk-upload-text">Komplette Zeitschriften-Ausgabe als PDF hierher ziehen oder <button type="button" class="zk-link-btn" id="zk-pdf-browse">durchsuchen</button></p>
-                        <p class="zk-upload-hint">Die Ausgabe wird analysiert, Titelseite und Artikel werden automatisch extrahiert</p>
+                        <p class="zk-upload-hint">Die Ausgabe wird automatisch mit KI analysiert, Titelseite und Artikel werden extrahiert</p>
                     </div>
                     <div class="zk-upload-progress" style="display: none;">
                         <div class="zk-progress-bar"><div class="zk-progress-fill"></div></div>
@@ -162,49 +162,11 @@ $current_user = wp_get_current_user();
                 </div>
             </div>
 
-            <!-- Schritt 2: Inhalte extrahieren -->
+            <!-- Schritt 2: KI-Extraktion (Titelseite, Text, Bilder, Artikel-Erkennung) -->
             <div class="zk-import-step" id="zk-import-step-2">
                 <div class="zk-step-header">
                     <span class="zk-step-number">2</span>
-                    <h3>Inhalte extrahieren</h3>
-                </div>
-                <div class="zk-step-content">
-                    <p class="zk-step-description">Titelseite, Text und Bilder werden aus der Ausgabe extrahiert.</p>
-                    <div class="zk-extraction-status" style="display: none;">
-                        <div class="zk-spinner"></div>
-                        <span>Extrahiere Inhalte...</span>
-                    </div>
-                    <div class="zk-extraction-result" style="display: none;">
-                        <div class="zk-extraction-preview">
-                            <div class="zk-cover-preview" id="zk-cover-preview">
-                                <img src="" alt="Titelseite">
-                            </div>
-                            <div class="zk-extraction-stats">
-                                <div class="zk-stat"><strong id="zk-page-count">0</strong><span>Seiten</span></div>
-                                <div class="zk-stat"><strong id="zk-char-count">0</strong><span>Zeichen</span></div>
-                                <div class="zk-stat"><strong id="zk-image-count">0</strong><span>Bilder</span></div>
-                            </div>
-                        </div>
-                        <div class="zk-extracted-text-preview">
-                            <label>Textvorschau:</label>
-                            <textarea id="zk-extracted-text" rows="4" readonly></textarea>
-                        </div>
-                    </div>
-                    <button type="button" class="zk-btn zk-btn-primary" id="zk-extract-btn" disabled>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="16 18 22 12 16 6"></polyline>
-                            <polyline points="8 6 2 12 8 18"></polyline>
-                        </svg>
-                        Extrahieren
-                    </button>
-                </div>
-            </div>
-
-            <!-- Schritt 3: KI-Analyse -->
-            <div class="zk-import-step" id="zk-import-step-3">
-                <div class="zk-step-header">
-                    <span class="zk-step-number">3</span>
-                    <h3>KI-Analyse &amp; Artikel-Erkennung</h3>
+                    <h3>KI-Extraktion &amp; Analyse</h3>
                     <button type="button" class="zk-btn zk-btn-mini zk-btn-secondary" id="zk-ai-settings-btn" title="KI-Einstellungen">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="3"></circle>
@@ -213,48 +175,54 @@ $current_user = wp_get_current_user();
                     </button>
                 </div>
                 <div class="zk-step-content">
-                    <p class="zk-step-description">Die KI identifiziert alle Artikel, extrahiert Metadaten und erstellt individuelle PDFs.</p>
-                    <div class="zk-ai-status" style="display: none;">
+                    <p class="zk-step-description">Die KI extrahiert Titelseite, Text und Bilder, identifiziert alle Artikel und erstellt individuelle PDFs.</p>
+                    <div class="zk-extraction-status" style="display: none;">
                         <div class="zk-spinner"></div>
-                        <span>KI analysiert die Ausgabe... (kann bis zu 3 Minuten dauern)</span>
+                        <span id="zk-extraction-status-text">Extrahiere und analysiere... (kann 2-3 Minuten dauern)</span>
                     </div>
-                    <button type="button" class="zk-btn zk-btn-primary" id="zk-analyze-btn" disabled>
+                    <button type="button" class="zk-btn zk-btn-primary" id="zk-extract-btn" disabled>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                         </svg>
-                        Mit KI analysieren
+                        Mit KI extrahieren &amp; analysieren
                     </button>
                 </div>
             </div>
 
-            <!-- Schritt 4: Prüfen & Importieren -->
-            <div class="zk-import-step" id="zk-import-step-4">
+            <!-- Schritt 3: Prüfen & Importieren -->
+            <div class="zk-import-step" id="zk-import-step-3">
                 <div class="zk-step-header">
-                    <span class="zk-step-number">4</span>
+                    <span class="zk-step-number">3</span>
                     <h3>Prüfen &amp; Importieren</h3>
                 </div>
                 <div class="zk-step-content">
                     <div class="zk-import-preview" style="display: none;">
-                        <!-- Ausgabe-Metadaten -->
+                        <!-- Ausgabe-Metadaten mit Titelseite -->
                         <div class="zk-preview-section">
                             <h4>Ausgabe</h4>
-                            <div class="zk-form-row zk-form-row-4">
-                                <div class="zk-form-group">
-                                    <label for="zk-issue-jahr">Jahr</label>
-                                    <input type="text" id="zk-issue-jahr" class="zk-input" placeholder="2024">
+                            <div class="zk-cover-preview">
+                                <div class="zk-cover-image" id="zk-issue-cover">
+                                    <img src="" alt="Titelseite">
                                 </div>
-                                <div class="zk-form-group">
-                                    <label for="zk-issue-ausgabe">Ausgabe</label>
-                                    <input type="text" id="zk-issue-ausgabe" class="zk-input" placeholder="1">
-                                </div>
-                                <div class="zk-form-group">
-                                    <label for="zk-issue-doi">DOI</label>
-                                    <input type="text" id="zk-issue-doi" class="zk-input" placeholder="10.1234/...">
-                                </div>
-                                <div class="zk-form-group">
-                                    <label>Titelseite</label>
-                                    <div class="zk-cover-thumb" id="zk-issue-cover">
-                                        <img src="" alt="Titelseite">
+                                <div class="zk-issue-meta-form">
+                                    <div class="zk-form-row">
+                                        <div class="zk-form-group">
+                                            <label for="zk-issue-jahr">Jahr</label>
+                                            <input type="text" id="zk-issue-jahr" class="zk-input" placeholder="2024">
+                                        </div>
+                                        <div class="zk-form-group">
+                                            <label for="zk-issue-ausgabe">Ausgabe</label>
+                                            <input type="text" id="zk-issue-ausgabe" class="zk-input" placeholder="1">
+                                        </div>
+                                    </div>
+                                    <div class="zk-form-group">
+                                        <label for="zk-issue-doi">DOI</label>
+                                        <input type="text" id="zk-issue-doi" class="zk-input" placeholder="10.1234/...">
+                                    </div>
+                                    <div class="zk-extraction-stats">
+                                        <div class="zk-stat"><strong id="zk-page-count">0</strong><span>Seiten</span></div>
+                                        <div class="zk-stat"><strong id="zk-char-count">0</strong><span>Zeichen</span></div>
+                                        <div class="zk-stat"><strong id="zk-image-count">0</strong><span>Bilder</span></div>
                                     </div>
                                 </div>
                             </div>
@@ -263,7 +231,7 @@ $current_user = wp_get_current_user();
                         <!-- Erkannte Artikel -->
                         <div class="zk-preview-section">
                             <h4>Erkannte Artikel (<span id="zk-article-count">0</span>)</h4>
-                            <div class="zk-articles-preview" id="zk-articles-preview">
+                            <div class="zk-articles-preview-list" id="zk-articles-preview">
                                 <!-- Artikel werden dynamisch eingefügt -->
                             </div>
                         </div>

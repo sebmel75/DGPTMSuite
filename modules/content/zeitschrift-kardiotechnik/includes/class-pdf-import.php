@@ -519,28 +519,238 @@ if (!class_exists('ZK_PDF_Import')) {
         }
 
         /**
-         * PHP-basierte Textextraktion
+         * PHP-basierte Textextraktion (verbessert)
          */
         private function extract_text_php($pdf_path) {
             $content = file_get_contents($pdf_path);
+            if (empty($content)) {
+                error_log('ZK PDF: Datei konnte nicht gelesen werden');
+                return '';
+            }
+
+            error_log('ZK PDF: Dateigröße ' . strlen($content) . ' Bytes');
+
+            $text = '';
+            $streams_found = 0;
+            $streams_decoded = 0;
+
+            // Alle Streams finden und dekodieren
+            if (preg_match_all('/stream\r?\n(.*?)\r?\nendstream/s', $content, $matches)) {
+                $streams_found = count($matches[1]);
+
+                foreach ($matches[1] as $stream) {
+                    $decoded = $this->decode_pdf_stream($stream);
+                    if (!empty($decoded)) {
+                        $streams_decoded++;
+                        $extracted = $this->extract_text_from_stream($decoded);
+                        if (!empty($extracted)) {
+                            $text .= $extracted . "\n";
+                        }
+                    }
+                }
+            }
+
+            error_log("ZK PDF: $streams_found Streams gefunden, $streams_decoded dekodiert");
+            error_log('ZK PDF: Extrahierter Text: ' . strlen($text) . ' Zeichen');
+
+            // Fallback: Direkte Textsuche im PDF
+            if (strlen($text) < 500) {
+                error_log('ZK PDF: Versuche direkte Textextraktion...');
+                $direct_text = $this->extract_text_direct($content);
+                if (strlen($direct_text) > strlen($text)) {
+                    $text = $direct_text;
+                    error_log('ZK PDF: Direkte Extraktion: ' . strlen($text) . ' Zeichen');
+                }
+            }
+
+            return $text;
+        }
+
+        /**
+         * PDF Stream dekodieren
+         */
+        private function decode_pdf_stream($stream) {
+            // Versuche verschiedene Dekodierungsmethoden
+            $decoded = @gzuncompress($stream);
+            if ($decoded !== false) {
+                return $decoded;
+            }
+
+            $decoded = @gzinflate($stream);
+            if ($decoded !== false) {
+                return $decoded;
+            }
+
+            // Versuche mit Offset (manche PDFs haben Header)
+            for ($i = 0; $i < 10; $i++) {
+                $decoded = @gzinflate(substr($stream, $i));
+                if ($decoded !== false) {
+                    return $decoded;
+                }
+            }
+
+            // Stream ist möglicherweise nicht komprimiert
+            if (preg_match('/[BT|Tj|TJ]/', $stream)) {
+                return $stream;
+            }
+
+            return '';
+        }
+
+        /**
+         * Text aus dekodiertem Stream extrahieren
+         */
+        private function extract_text_from_stream($stream) {
             $text = '';
 
-            if (preg_match_all('/stream\s*(.*?)\s*endstream/s', $content, $matches)) {
-                foreach ($matches[1] as $stream) {
-                    $decoded = @gzuncompress($stream);
-                    if ($decoded === false) {
-                        $decoded = @gzinflate($stream);
+            // Methode 1: BT...ET Textblöcke
+            if (preg_match_all('/BT\s*(.*?)\s*ET/s', $stream, $btMatches)) {
+                foreach ($btMatches[1] as $block) {
+                    $text .= $this->parse_text_block($block) . ' ';
+                }
+            }
+
+            // Methode 2: TJ Arrays (häufigste Methode)
+            if (preg_match_all('/\[((?:[^][]|\[(?:[^][])*\])*)\]\s*TJ/s', $stream, $tjMatches)) {
+                foreach ($tjMatches[1] as $tjArray) {
+                    $text .= $this->parse_tj_array($tjArray) . ' ';
+                }
+            }
+
+            // Methode 3: Einfache Tj Strings
+            if (preg_match_all('/\(([^)]*)\)\s*Tj/s', $stream, $tjSimple)) {
+                foreach ($tjSimple[1] as $str) {
+                    $text .= $this->decode_pdf_string($str) . ' ';
+                }
+            }
+
+            // Methode 4: Hex-Strings
+            if (preg_match_all('/<([0-9A-Fa-f]+)>\s*Tj/s', $stream, $hexMatches)) {
+                foreach ($hexMatches[1] as $hex) {
+                    $text .= $this->decode_hex_string($hex) . ' ';
+                }
+            }
+
+            return trim($text);
+        }
+
+        /**
+         * Textblock parsen
+         */
+        private function parse_text_block($block) {
+            $text = '';
+
+            // TJ Arrays
+            if (preg_match_all('/\[(.*?)\]\s*TJ/s', $block, $matches)) {
+                foreach ($matches[1] as $arr) {
+                    $text .= $this->parse_tj_array($arr);
+                }
+            }
+
+            // Einfache Tj
+            if (preg_match_all('/\(([^)]*)\)\s*Tj/s', $block, $matches)) {
+                foreach ($matches[1] as $str) {
+                    $text .= $this->decode_pdf_string($str);
+                }
+            }
+
+            return $text;
+        }
+
+        /**
+         * TJ Array parsen
+         */
+        private function parse_tj_array($array) {
+            $text = '';
+
+            // Strings in Klammern
+            if (preg_match_all('/\(([^)]*)\)/', $array, $matches)) {
+                foreach ($matches[1] as $str) {
+                    $text .= $this->decode_pdf_string($str);
+                }
+            }
+
+            // Hex-Strings
+            if (preg_match_all('/<([0-9A-Fa-f]+)>/', $array, $matches)) {
+                foreach ($matches[1] as $hex) {
+                    $text .= $this->decode_hex_string($hex);
+                }
+            }
+
+            return $text;
+        }
+
+        /**
+         * PDF String dekodieren
+         */
+        private function decode_pdf_string($str) {
+            // Escape-Sequenzen ersetzen
+            $str = str_replace(['\\n', '\\r', '\\t', '\\(', '\\)', '\\\\'], ["\n", "\r", "\t", '(', ')', '\\'], $str);
+
+            // Octal-Escape-Sequenzen
+            $str = preg_replace_callback('/\\\\([0-7]{1,3})/', function($m) {
+                return chr(octdec($m[1]));
+            }, $str);
+
+            return $str;
+        }
+
+        /**
+         * Hex-String dekodieren
+         */
+        private function decode_hex_string($hex) {
+            $text = '';
+            $hex = preg_replace('/\s+/', '', $hex);
+
+            // UTF-16BE (beginnt oft mit FEFF)
+            if (strlen($hex) >= 4 && (substr($hex, 0, 4) === 'FEFF' || strlen($hex) % 4 === 0)) {
+                for ($i = 0; $i < strlen($hex); $i += 4) {
+                    $char = hexdec(substr($hex, $i, 4));
+                    if ($char > 31 && $char < 127) {
+                        $text .= chr($char);
+                    } elseif ($char > 127) {
+                        $text .= mb_chr($char, 'UTF-8');
                     }
-                    if ($decoded !== false) {
-                        if (preg_match_all('/\[(.*?)\]\s*TJ/s', $decoded, $textMatches)) {
-                            foreach ($textMatches[1] as $textPart) {
-                                preg_match_all('/\((.*?)\)/s', $textPart, $strings);
-                                $text .= implode('', $strings[1]) . ' ';
-                            }
-                        }
-                        if (preg_match_all('/\((.*?)\)\s*Tj/s', $decoded, $textMatches)) {
-                            $text .= implode(' ', $textMatches[1]) . ' ';
-                        }
+                }
+            } else {
+                // Einfache Hex-Kodierung
+                for ($i = 0; $i < strlen($hex); $i += 2) {
+                    $char = hexdec(substr($hex, $i, 2));
+                    if ($char > 31) {
+                        $text .= chr($char);
+                    }
+                }
+            }
+
+            return $text;
+        }
+
+        /**
+         * Direkte Textextraktion (Fallback)
+         */
+        private function extract_text_direct($content) {
+            $text = '';
+
+            // Suche nach lesbarem Text zwischen Markern
+            // Viele PDFs haben Text in /Contents oder als direkte Strings
+
+            // Methode 1: Text in Td/TD Positionen
+            if (preg_match_all('/\(([^()]{3,})\)\s*(?:Tj|TJ|\'|")/s', $content, $matches)) {
+                foreach ($matches[1] as $str) {
+                    $decoded = $this->decode_pdf_string($str);
+                    // Nur wenn es wie Text aussieht
+                    if (preg_match('/[a-zA-ZäöüÄÖÜß]{2,}/', $decoded)) {
+                        $text .= $decoded . ' ';
+                    }
+                }
+            }
+
+            // Methode 2: Unicode-Text
+            if (preg_match_all('/<([0-9A-Fa-f]{8,})>\s*Tj/s', $content, $matches)) {
+                foreach ($matches[1] as $hex) {
+                    $decoded = $this->decode_hex_string($hex);
+                    if (preg_match('/[a-zA-ZäöüÄÖÜß]{2,}/', $decoded)) {
+                        $text .= $decoded . ' ';
                     }
                 }
             }

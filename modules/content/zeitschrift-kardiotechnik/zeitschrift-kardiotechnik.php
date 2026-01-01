@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Zeitschrift Kardiotechnik Manager
  * Description: Verwaltung und Anzeige der Fachzeitschrift Kardiotechnik
- * Version: 1.8.0
+ * Version: 1.9.0
  * Author: Sebastian Melzer / DGPTM
  */
 
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 // Konstanten
 define('ZK_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('ZK_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('ZK_VERSION', '1.8.0');
+define('ZK_VERSION', '1.9.0');
 define('ZK_POST_TYPE', 'zeitschkardiotechnik');
 define('ZK_PUBLIKATION_TYPE', 'publikation');
 

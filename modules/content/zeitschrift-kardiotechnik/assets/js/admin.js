@@ -1355,16 +1355,15 @@
         },
 
         // ============================================
-        // PDF-IMPORT
+        // PDF-IMPORT (Komplette Ausgaben)
         // ============================================
 
         pdfImport: {
-            fileId: null,
+            importId: null,
             filename: null,
-            extractedText: null,
-            extractedImages: [],
-            metadata: null,
-            aiResult: null
+            issue: null,
+            articles: [],
+            coverUrl: null
         },
 
         /**
@@ -1420,19 +1419,19 @@
             // PDF entfernen
             $(document).on('click', '#zk-pdf-remove', function(e) {
                 e.preventDefault();
-                self.resetPdfImport();
+                self.discardImport();
             });
 
-            // Text extrahieren
+            // Inhalte extrahieren
             $(document).on('click', '#zk-extract-btn', function(e) {
                 e.preventDefault();
-                self.extractPdf();
+                self.extractIssue();
             });
 
             // KI analysieren
             $(document).on('click', '#zk-analyze-btn', function(e) {
                 e.preventDefault();
-                self.aiAnalyze();
+                self.aiAnalyzeIssue();
             });
 
             // KI-Einstellungen öffnen
@@ -1450,13 +1449,19 @@
             // Import speichern
             $(document).on('click', '#zk-import-save', function(e) {
                 e.preventDefault();
-                self.saveImport();
+                self.saveIssueImport();
             });
 
-            // Import zurücksetzen
-            $(document).on('click', '#zk-import-reset', function(e) {
+            // Import verwerfen
+            $(document).on('click', '#zk-import-discard', function(e) {
                 e.preventDefault();
-                self.resetPdfImport();
+                self.discardImport();
+            });
+
+            // Artikel-Bearbeitung Toggle
+            $(document).on('click', '.zk-article-preview-toggle', function(e) {
+                e.preventDefault();
+                $(this).closest('.zk-article-preview').toggleClass('zk-expanded');
             });
         },
 
@@ -1466,7 +1471,6 @@
         uploadPdf: function(file) {
             var self = this;
 
-            // Prüfen ob PDF
             if (file.type !== 'application/pdf') {
                 this.showToast('error', 'Nur PDF-Dateien erlaubt');
                 return;
@@ -1507,10 +1511,10 @@
                     $progress.find('.zk-progress-fill').css('width', '0');
 
                     if (response.success) {
-                        self.pdfImport.fileId = response.data.file_id;
+                        self.pdfImport.importId = response.data.import_id;
                         self.pdfImport.filename = response.data.filename;
+                        $('#zk-import-id').val(response.data.import_id);
 
-                        // UI aktualisieren
                         self.showPdfInfo(response.data);
                         self.activateStep(2);
                         $('#zk-extract-btn').prop('disabled', false);
@@ -1546,12 +1550,12 @@
         },
 
         /**
-         * PDF extrahieren
+         * Ausgabe extrahieren
          */
-        extractPdf: function() {
+        extractIssue: function() {
             var self = this;
 
-            if (!this.pdfImport.fileId) {
+            if (!this.pdfImport.importId) {
                 this.showToast('error', 'Kein PDF hochgeladen');
                 return;
             }
@@ -1561,29 +1565,33 @@
 
             $status.show();
             $result.hide();
+            $('#zk-extract-btn').prop('disabled', true);
 
             $.ajax({
                 url: this.config.ajaxUrl,
                 type: 'POST',
+                timeout: 120000,
                 data: {
-                    action: 'zk_extract_pdf',
+                    action: 'zk_extract_issue',
                     nonce: this.config.nonce,
-                    file_id: this.pdfImport.fileId,
-                    filename: this.pdfImport.filename
+                    import_id: this.pdfImport.importId
                 },
                 success: function(response) {
                     $status.hide();
+                    $('#zk-extract-btn').prop('disabled', false);
 
                     if (response.success) {
-                        self.pdfImport.extractedText = response.data.text;
-                        self.pdfImport.extractedImages = response.data.images || [];
-                        self.pdfImport.metadata = response.data.metadata;
+                        self.pdfImport.coverUrl = response.data.cover_url;
 
                         // UI aktualisieren
+                        if (response.data.cover_url) {
+                            $('#zk-cover-preview img').attr('src', response.data.cover_url);
+                            $('#zk-cover-preview').show();
+                        }
                         $('#zk-page-count').text(response.data.page_count);
-                        $('#zk-char-count').text(response.data.text.length.toLocaleString());
-                        $('#zk-image-count').text(response.data.images.length);
-                        $('#zk-extracted-text').val(response.data.text.substring(0, 2000) + '...');
+                        $('#zk-char-count').text(response.data.char_count.toLocaleString());
+                        $('#zk-image-count').text(response.data.image_count);
+                        $('#zk-extracted-text').val(response.data.text_preview);
 
                         $result.show();
                         self.activateStep(3);
@@ -1594,19 +1602,20 @@
                 },
                 error: function() {
                     $status.hide();
+                    $('#zk-extract-btn').prop('disabled', false);
                     self.showToast('error', 'Verbindungsfehler');
                 }
             });
         },
 
         /**
-         * KI-Analyse durchführen
+         * KI-Analyse der Ausgabe
          */
-        aiAnalyze: function() {
+        aiAnalyzeIssue: function() {
             var self = this;
 
-            if (!this.pdfImport.extractedText) {
-                this.showToast('error', 'Kein Text extrahiert');
+            if (!this.pdfImport.importId) {
+                this.showToast('error', 'Keine Extraktion vorhanden');
                 return;
             }
 
@@ -1617,20 +1626,21 @@
             $.ajax({
                 url: this.config.ajaxUrl,
                 type: 'POST',
-                timeout: 180000, // 3 Minuten Timeout für KI
+                timeout: 300000, // 5 Minuten
                 data: {
-                    action: 'zk_ai_analyze',
+                    action: 'zk_ai_analyze_issue',
                     nonce: this.config.nonce,
-                    text: this.pdfImport.extractedText,
-                    metadata: JSON.stringify(this.pdfImport.metadata || {})
+                    import_id: this.pdfImport.importId
                 },
                 success: function(response) {
                     $status.hide();
                     $('#zk-analyze-btn').prop('disabled', false);
 
                     if (response.success) {
-                        self.pdfImport.aiResult = response.data;
-                        self.populateImportForm(response.data);
+                        self.pdfImport.issue = response.data.issue;
+                        self.pdfImport.articles = response.data.articles;
+
+                        self.populateIssuePreview(response.data);
                         self.activateStep(4);
                         $('#zk-import-step-4 .zk-import-preview').show();
                     } else {
@@ -1656,123 +1666,177 @@
         },
 
         /**
-         * Import-Formular befüllen
+         * Ausgabe-Vorschau befüllen
          */
-        populateImportForm: function(data) {
-            $('#zk-import-title').val(data.title || '');
-            $('#zk-import-subtitle').val(data.subtitle || '');
-            $('#zk-import-type').val(data.publication_type || '');
-            $('#zk-import-doi').val(data.doi || '');
-            $('#zk-import-authors').val(data.authors || '');
-            $('#zk-import-main-author').val(data.main_author || '');
-            $('#zk-import-abstract-de').val(data.abstract_de || '');
-            $('#zk-import-abstract-en').val(data.abstract_en || '');
-            $('#zk-import-keywords-de').val(data.keywords_de || '');
-            $('#zk-import-keywords-en').val(data.keywords_en || '');
-            $('#zk-import-content').val(data.content || '');
-            $('#zk-import-references').val(data.references || '');
+        populateIssuePreview: function(data) {
+            var self = this;
 
-            // Confidence-Werte anzeigen
-            if (data.confidence) {
-                for (var field in data.confidence) {
-                    var confidence = Math.round(data.confidence[field] * 100);
-                    var $badge = $('.zk-confidence[data-field="' + field + '"]');
-                    $badge.text(confidence + '%').attr('data-confidence', confidence);
-                }
+            // Ausgabe-Daten
+            if (data.issue) {
+                $('#zk-issue-jahr').val(data.issue.jahr || '');
+                $('#zk-issue-ausgabe').val(data.issue.ausgabe || '');
+                $('#zk-issue-doi').val(data.issue.doi || '');
             }
 
-            // Bilder anzeigen
-            if (this.pdfImport.extractedImages.length > 0) {
-                var $grid = $('#zk-import-images');
-                $grid.empty();
+            // Titelseite
+            if (this.pdfImport.coverUrl) {
+                $('#zk-issue-cover img').attr('src', this.pdfImport.coverUrl);
+            }
 
-                this.pdfImport.extractedImages.forEach(function(img, i) {
-                    $grid.append(
-                        '<div class="zk-image-item">' +
-                        '<img src="' + img.url + '" alt="Bild ' + (i + 1) + '">' +
-                        '<label class="zk-checkbox-label">' +
-                        '<input type="checkbox" name="import_images[]" value="' + i + '" checked>' +
-                        ' Importieren' +
-                        '</label>' +
-                        '</div>'
-                    );
+            // Artikel-Liste
+            var $container = $('#zk-articles-preview');
+            $container.empty();
+
+            $('#zk-article-count').text(data.articles ? data.articles.length : 0);
+
+            if (data.articles && data.articles.length > 0) {
+                data.articles.forEach(function(article, index) {
+                    var pdfLink = article.pdf_url
+                        ? '<a href="' + article.pdf_url + '" target="_blank" class="zk-article-pdf-link">PDF</a>'
+                        : '';
+
+                    var html = '<div class="zk-article-preview" data-index="' + index + '">';
+                    html += '<div class="zk-article-preview-header">';
+                    html += '<button type="button" class="zk-article-preview-toggle">';
+                    html += '<span class="zk-toggle-icon">▶</span>';
+                    html += '</button>';
+                    html += '<div class="zk-article-preview-info">';
+                    html += '<span class="zk-article-preview-type">' + self.escapeHtml(article.publication_type || 'Artikel') + '</span>';
+                    html += '<span class="zk-article-preview-title">' + self.escapeHtml(article.title || 'Ohne Titel') + '</span>';
+                    html += '<span class="zk-article-preview-authors">' + self.escapeHtml(article.authors || '') + '</span>';
+                    html += '</div>';
+                    html += '<div class="zk-article-preview-meta">';
+                    html += '<span class="zk-article-pages">S. ' + (article.start_page || '?') + '-' + (article.end_page || '?') + '</span>';
+                    html += pdfLink;
+                    html += '</div>';
+                    html += '</div>';
+
+                    // Bearbeitbarer Bereich
+                    html += '<div class="zk-article-preview-body">';
+                    html += '<div class="zk-form-row">';
+                    html += '<div class="zk-form-group"><label>Titel</label>';
+                    html += '<input type="text" class="zk-input zk-article-field" data-field="title" value="' + self.escapeHtml(article.title || '') + '"></div>';
+                    html += '<div class="zk-form-group"><label>Typ</label>';
+                    html += '<select class="zk-select zk-article-field" data-field="publication_type">';
+                    html += '<option value="Fachartikel"' + (article.publication_type === 'Fachartikel' ? ' selected' : '') + '>Fachartikel</option>';
+                    html += '<option value="Editorial"' + (article.publication_type === 'Editorial' ? ' selected' : '') + '>Editorial</option>';
+                    html += '<option value="Journal Club"' + (article.publication_type === 'Journal Club' ? ' selected' : '') + '>Journal Club</option>';
+                    html += '<option value="Tutorial"' + (article.publication_type === 'Tutorial' ? ' selected' : '') + '>Tutorial</option>';
+                    html += '<option value="Fallbericht"' + (article.publication_type === 'Fallbericht' ? ' selected' : '') + '>Fallbericht</option>';
+                    html += '<option value="Übersichtsarbeit"' + (article.publication_type === 'Übersichtsarbeit' ? ' selected' : '') + '>Übersichtsarbeit</option>';
+                    html += '</select></div>';
+                    html += '</div>';
+
+                    html += '<div class="zk-form-group"><label>Autoren</label>';
+                    html += '<input type="text" class="zk-input zk-article-field" data-field="authors" value="' + self.escapeHtml(article.authors || '') + '"></div>';
+
+                    html += '<div class="zk-form-group"><label>Abstract (DE)</label>';
+                    html += '<textarea class="zk-textarea zk-article-field" data-field="abstract_de" rows="3">' + self.escapeHtml(article.abstract_de || '') + '</textarea></div>';
+
+                    html += '<div class="zk-form-group"><label>Keywords</label>';
+                    html += '<input type="text" class="zk-input zk-article-field" data-field="keywords_de" value="' + self.escapeHtml(article.keywords_de || '') + '"></div>';
+
+                    html += '</div></div>';
+
+                    $container.append(html);
                 });
-
-                $('#zk-import-images-section').show();
             }
         },
 
         /**
-         * Import speichern
+         * Ausgabe-Import speichern
          */
-        saveImport: function() {
+        saveIssueImport: function() {
             var self = this;
 
-            var article = {
-                title: $('#zk-import-title').val(),
-                subtitle: $('#zk-import-subtitle').val(),
-                publication_type: $('#zk-import-type').val(),
-                doi: $('#zk-import-doi').val(),
-                authors: $('#zk-import-authors').val(),
-                main_author: $('#zk-import-main-author').val(),
-                abstract_de: $('#zk-import-abstract-de').val(),
-                abstract_en: $('#zk-import-abstract-en').val(),
-                keywords_de: $('#zk-import-keywords-de').val(),
-                keywords_en: $('#zk-import-keywords-en').val(),
-                content: $('#zk-import-content').val(),
-                references: $('#zk-import-references').val(),
-                images: []
+            // Aktuelle Werte aus Formular sammeln
+            var issue = {
+                jahr: $('#zk-issue-jahr').val(),
+                ausgabe: $('#zk-issue-ausgabe').val(),
+                doi: $('#zk-issue-doi').val()
             };
 
-            // Ausgewählte Bilder sammeln
-            $('input[name="import_images[]"]:checked').each(function() {
-                var index = parseInt($(this).val());
-                if (self.pdfImport.extractedImages[index]) {
-                    article.images.push(self.pdfImport.extractedImages[index]);
-                }
+            // Artikel-Daten aktualisieren
+            var articles = [];
+            $('.zk-article-preview').each(function() {
+                var index = $(this).data('index');
+                var article = $.extend({}, self.pdfImport.articles[index] || {});
+
+                $(this).find('.zk-article-field').each(function() {
+                    var field = $(this).data('field');
+                    article[field] = $(this).val();
+                });
+
+                articles.push(article);
             });
 
-            if (!article.title) {
-                this.showToast('error', 'Titel ist erforderlich');
+            if (!issue.jahr || !issue.ausgabe) {
+                this.showToast('error', 'Jahr und Ausgabe sind erforderlich');
                 return;
             }
 
             var $btn = $('#zk-import-save');
-            $btn.prop('disabled', true).text('Speichern...');
+            $btn.prop('disabled', true).text('Importiere...');
 
             $.ajax({
                 url: this.config.ajaxUrl,
                 type: 'POST',
                 data: {
-                    action: 'zk_import_article',
+                    action: 'zk_save_issue_import',
                     nonce: this.config.nonce,
-                    article: JSON.stringify(article)
+                    import_id: this.pdfImport.importId,
+                    issue: JSON.stringify(issue),
+                    articles: JSON.stringify(articles)
                 },
                 success: function(response) {
                     $btn.prop('disabled', false).html(
                         '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
-                        '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>' +
-                        '<polyline points="17 21 17 13 7 13 7 21"></polyline>' +
-                        '<polyline points="7 3 7 8 15 8"></polyline>' +
-                        '</svg> Als Entwurf speichern'
+                        '<polyline points="20 6 9 17 4 12"></polyline>' +
+                        '</svg> Ausgabe importieren'
                     );
 
                     if (response.success) {
-                        self.showToast('success', 'Artikel importiert!');
+                        self.showToast('success', response.data.message);
                         self.resetPdfImport();
 
-                        // Zum Artikel-Tab wechseln
-                        self.switchTab('articles');
-                        self.loadArticles();
+                        // Zur Ausgaben-Übersicht wechseln
+                        self.switchTab('issues');
+                        self.loadIssues();
                     } else {
-                        self.showToast('error', response.data.message || 'Fehler beim Speichern');
+                        self.showToast('error', response.data.message || 'Fehler beim Import');
                     }
                 },
                 error: function() {
-                    $btn.prop('disabled', false).text('Als Entwurf speichern');
+                    $btn.prop('disabled', false).html(
+                        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+                        '<polyline points="20 6 9 17 4 12"></polyline>' +
+                        '</svg> Ausgabe importieren'
+                    );
                     self.showToast('error', 'Verbindungsfehler');
                 }
             });
+        },
+
+        /**
+         * Import verwerfen
+         */
+        discardImport: function() {
+            var self = this;
+
+            if (this.pdfImport.importId) {
+                $.ajax({
+                    url: this.config.ajaxUrl,
+                    type: 'POST',
+                    data: {
+                        action: 'zk_discard_import',
+                        nonce: this.config.nonce,
+                        import_id: this.pdfImport.importId
+                    }
+                });
+            }
+
+            this.resetPdfImport();
+            this.showToast('info', 'Import verworfen');
         },
 
         /**
@@ -1782,7 +1846,6 @@
             var self = this;
             var $modal = $('#zk-modal-ai-settings');
 
-            // Aktuelle Einstellungen laden
             $.ajax({
                 url: this.config.ajaxUrl,
                 type: 'POST',
@@ -1815,18 +1878,16 @@
         saveAiSettings: function() {
             var self = this;
 
-            var data = {
-                action: 'zk_save_ai_settings',
-                nonce: this.config.nonce,
-                provider: $('#zk-ai-provider').val(),
-                model: $('#zk-ai-model').val(),
-                api_key: $('#zk-ai-key').val()
-            };
-
             $.ajax({
                 url: this.config.ajaxUrl,
                 type: 'POST',
-                data: data,
+                data: {
+                    action: 'zk_save_ai_settings',
+                    nonce: this.config.nonce,
+                    provider: $('#zk-ai-provider').val(),
+                    model: $('#zk-ai-model').val(),
+                    api_key: $('#zk-ai-key').val()
+                },
                 success: function(response) {
                     if (response.success) {
                         self.showToast('success', 'Einstellungen gespeichert');
@@ -1860,15 +1921,14 @@
          */
         resetPdfImport: function() {
             this.pdfImport = {
-                fileId: null,
+                importId: null,
                 filename: null,
-                extractedText: null,
-                extractedImages: [],
-                metadata: null,
-                aiResult: null
+                issue: null,
+                articles: [],
+                coverUrl: null
             };
 
-            // UI zurücksetzen
+            $('#zk-import-id').val('');
             $('#zk-pdf-info').hide();
             $('#zk-pdf-file').val('');
             $('#zk-extract-btn').prop('disabled', true);
@@ -1878,15 +1938,12 @@
             $('#zk-import-step-2 .zk-extraction-status').hide();
             $('#zk-import-step-3 .zk-ai-status').hide();
             $('#zk-import-step-4 .zk-import-preview').hide();
-            $('#zk-import-images-section').hide();
 
-            // Formular leeren
-            $('#zk-import-title, #zk-import-subtitle, #zk-import-doi, #zk-import-authors').val('');
-            $('#zk-import-main-author, #zk-import-abstract-de, #zk-import-abstract-en').val('');
-            $('#zk-import-keywords-de, #zk-import-keywords-en, #zk-import-content, #zk-import-references').val('');
-            $('#zk-import-type').val('');
+            $('#zk-cover-preview img').attr('src', '');
+            $('#zk-issue-cover img').attr('src', '');
+            $('#zk-issue-jahr, #zk-issue-ausgabe, #zk-issue-doi').val('');
+            $('#zk-articles-preview').empty();
 
-            // Nur Schritt 1 aktiv
             this.activateStep(1);
         }
     };

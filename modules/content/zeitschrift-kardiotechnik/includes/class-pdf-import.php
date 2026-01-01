@@ -138,7 +138,19 @@ if (!class_exists('ZK_PDF_Import')) {
             }
 
             $import_data = json_decode(file_get_contents($import_file), true);
-            $pdf_path = $import_data['filepath'];
+
+            if (empty($import_data) || !is_array($import_data)) {
+                error_log('ZK Import: import.json ist leer oder ungültig');
+                wp_send_json_error(['message' => 'Import-Daten ungültig. Bitte PDF erneut hochladen.']);
+            }
+
+            $pdf_path = $import_data['filepath'] ?? null;
+
+            if (empty($pdf_path) || !file_exists($pdf_path)) {
+                error_log('ZK Import: PDF-Pfad nicht gefunden: ' . ($pdf_path ?? 'NULL'));
+                error_log('ZK Import: import.json Inhalt: ' . print_r($import_data, true));
+                wp_send_json_error(['message' => 'PDF-Datei nicht gefunden. Bitte erneut hochladen.']);
+            }
 
             // AI-Einstellungen laden und prüfen
             $settings = get_option('zk_ai_settings', []);

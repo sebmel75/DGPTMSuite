@@ -190,13 +190,32 @@ if (!class_exists('ZK_PDF_Import')) {
             $import_data['images'] = $images;
             $import_data['char_count'] = strlen($full_text);
 
+            // Prüfen ob PDF gescannt ist (wenig Text pro Seite)
+            $chars_per_page = $page_count > 0 ? strlen($full_text) / $page_count : 0;
+            $is_scanned_pdf = $chars_per_page < 200; // Weniger als 200 Zeichen pro Seite = wahrscheinlich gescannt
+
+            error_log('ZK PDF: Zeichen pro Seite: ' . round($chars_per_page));
+            error_log('ZK PDF: Gescanntes PDF erkannt: ' . ($is_scanned_pdf ? 'JA' : 'nein'));
+
             // 5. KI-Analyse durchführen
-            $analysis = $this->analyze_issue_with_ai(
-                $full_text,
-                $page_count,
-                $api_key,
-                $provider
-            );
+            if ($is_scanned_pdf && $provider === 'anthropic') {
+                // Gescanntes PDF: Claude Vision API verwenden
+                error_log('ZK PDF: Verwende Claude Vision für gescanntes PDF');
+                $analysis = $this->analyze_scanned_pdf_with_vision(
+                    $pdf_path,
+                    $import_path,
+                    $page_count,
+                    $api_key
+                );
+            } else {
+                // Normales PDF: Textbasierte Analyse
+                $analysis = $this->analyze_issue_with_ai(
+                    $full_text,
+                    $page_count,
+                    $api_key,
+                    $provider
+                );
+            }
 
             if (is_wp_error($analysis)) {
                 // Bei KI-Fehler trotzdem Extraktion zurückgeben
@@ -863,6 +882,261 @@ if (!class_exists('ZK_PDF_Import')) {
             }
 
             return new WP_Error('invalid_provider', 'Ungültiger KI-Provider');
+        }
+
+        /**
+         * Gescanntes PDF mit Claude Vision analysieren
+         */
+        private function analyze_scanned_pdf_with_vision($pdf_path, $import_path, $page_count, $api_key) {
+            error_log('=== ZK Vision Analyse Start ===');
+
+            // 1. PDF-Seiten als Bilder extrahieren
+            $page_images = $this->extract_pages_as_images($pdf_path, $import_path, $page_count);
+
+            if (empty($page_images)) {
+                error_log('ZK Vision: Keine Seitenbilder extrahiert');
+                return new WP_Error('no_images', 'Konnte keine Seitenbilder aus dem PDF extrahieren');
+            }
+
+            error_log('ZK Vision: ' . count($page_images) . ' Seitenbilder extrahiert');
+
+            // 2. Bilder für API vorbereiten (max 20 Seiten wegen Token-Limit)
+            $max_pages = min(count($page_images), 20);
+            $image_contents = [];
+
+            for ($i = 0; $i < $max_pages; $i++) {
+                $image_path = $page_images[$i];
+                if (file_exists($image_path)) {
+                    $image_data = file_get_contents($image_path);
+                    $base64 = base64_encode($image_data);
+                    $mime_type = 'image/jpeg';
+
+                    // Dateigröße prüfen (max 5MB pro Bild)
+                    if (strlen($image_data) > 5 * 1024 * 1024) {
+                        error_log('ZK Vision: Bild ' . ($i + 1) . ' zu groß, überspringe');
+                        continue;
+                    }
+
+                    $image_contents[] = [
+                        'type' => 'image',
+                        'source' => [
+                            'type' => 'base64',
+                            'media_type' => $mime_type,
+                            'data' => $base64,
+                        ],
+                    ];
+
+                    error_log('ZK Vision: Seite ' . ($i + 1) . ' hinzugefügt (' . round(strlen($image_data) / 1024) . ' KB)');
+                }
+            }
+
+            if (empty($image_contents)) {
+                return new WP_Error('no_valid_images', 'Keine gültigen Bilder für Vision-Analyse');
+            }
+
+            // 3. Prompt für Vision-Analyse
+            $prompt_text = $this->build_vision_analysis_prompt($page_count);
+
+            // Prompt als Text-Content hinzufügen
+            $image_contents[] = [
+                'type' => 'text',
+                'text' => $prompt_text,
+            ];
+
+            // 4. Claude Vision API aufrufen
+            return $this->call_anthropic_vision_api($image_contents, $api_key);
+        }
+
+        /**
+         * PDF-Seiten als Bilder extrahieren
+         */
+        private function extract_pages_as_images($pdf_path, $output_dir, $page_count) {
+            $images = [];
+            $pages_dir = $output_dir . 'pages/';
+            wp_mkdir_p($pages_dir);
+
+            // pdftoppm verfügbar?
+            if ($this->command_exists('pdftoppm')) {
+                error_log('ZK Vision: Verwende pdftoppm für Seitenextraktion');
+
+                $command = sprintf(
+                    'pdftoppm -jpeg -r 150 %s %s 2>&1',
+                    escapeshellarg($pdf_path),
+                    escapeshellarg($pages_dir . 'page')
+                );
+                exec($command, $output, $return_var);
+
+                error_log('ZK Vision: pdftoppm Return: ' . $return_var);
+
+                if ($return_var === 0) {
+                    // Generierte Bilder finden
+                    $files = glob($pages_dir . 'page-*.jpg');
+                    sort($files, SORT_NATURAL);
+                    $images = $files;
+                }
+            }
+
+            // Fallback: convert (ImageMagick)
+            if (empty($images) && $this->command_exists('convert')) {
+                error_log('ZK Vision: Verwende ImageMagick convert');
+
+                for ($i = 0; $i < min($page_count, 20); $i++) {
+                    $output_file = $pages_dir . 'page-' . sprintf('%03d', $i + 1) . '.jpg';
+                    $command = sprintf(
+                        'convert -density 150 %s[%d] -quality 85 %s 2>&1',
+                        escapeshellarg($pdf_path),
+                        $i,
+                        escapeshellarg($output_file)
+                    );
+                    exec($command, $output, $return_var);
+
+                    if ($return_var === 0 && file_exists($output_file)) {
+                        $images[] = $output_file;
+                    }
+                }
+            }
+
+            error_log('ZK Vision: ' . count($images) . ' Seitenbilder erstellt');
+            return $images;
+        }
+
+        /**
+         * Prompt für Vision-Analyse erstellen
+         */
+        private function build_vision_analysis_prompt($page_count) {
+            return <<<PROMPT
+Du siehst die gescannten Seiten einer wissenschaftlichen Zeitschrift (Kardiotechnik).
+
+Analysiere die Bilder und extrahiere:
+
+1. **Ausgabe-Informationen** (von der Titelseite):
+   - Jahr
+   - Ausgabennummer
+   - DOI (falls vorhanden)
+
+2. **Alle Artikel** mit:
+   - Titel
+   - Autor(en)
+   - Startseite
+   - Endseite (schätzen wenn nicht klar)
+   - Kategorie (Wissenschaftlicher Artikel, Übersichtsarbeit, Fallbericht, Editorial, Nachrichten, Kongress, Sonstiges)
+
+Antworte im JSON-Format:
+{
+    "issue": {
+        "jahr": 2024,
+        "ausgabe": "1",
+        "doi": "10.1234/zk.2024.1"
+    },
+    "articles": [
+        {
+            "titel": "Artikeltitel",
+            "autoren": ["Autor 1", "Autor 2"],
+            "start_seite": 1,
+            "end_seite": 5,
+            "kategorie": "Wissenschaftlicher Artikel"
+        }
+    ]
+}
+
+Wichtig:
+- Lies den Text aus den Bildern sorgfältig
+- Erkenne alle Artikel, auch kurze Nachrichten
+- Seitenzahlen aus dem PDF (Seite 1-{$page_count})
+
+Antworte NUR mit dem JSON-Objekt.
+PROMPT;
+        }
+
+        /**
+         * Claude Vision API aufrufen
+         */
+        private function call_anthropic_vision_api($content, $api_key) {
+            $settings = get_option('zk_ai_settings', []);
+            $model = $settings['model'] ?? 'claude-sonnet-4-20250514';
+
+            // Vision funktioniert am besten mit Sonnet
+            if (strpos($model, 'haiku') !== false) {
+                $model = 'claude-sonnet-4-20250514';
+            }
+
+            error_log('=== ZK Claude Vision API ===');
+            error_log('Modell: ' . $model);
+            error_log('Content-Elemente: ' . count($content));
+
+            $body_data = [
+                'model' => $model,
+                'max_tokens' => 16384,
+                'messages' => [
+                    ['role' => 'user', 'content' => $content]
+                ],
+            ];
+
+            $json_body = json_encode($body_data, JSON_UNESCAPED_UNICODE);
+
+            if ($json_body === false) {
+                error_log('ZK Vision: JSON encode Fehler');
+                return new WP_Error('json_error', 'JSON-Encoding fehlgeschlagen');
+            }
+
+            error_log('ZK Vision: Request Body Größe: ' . round(strlen($json_body) / 1024 / 1024, 2) . ' MB');
+
+            $response = wp_remote_post('https://api.anthropic.com/v1/messages', [
+                'timeout' => 300, // 5 Minuten für Vision
+                'headers' => [
+                    'Content-Type' => 'application/json',
+                    'x-api-key' => $api_key,
+                    'anthropic-version' => '2023-06-01',
+                ],
+                'body' => $json_body,
+            ]);
+
+            if (is_wp_error($response)) {
+                error_log('ZK Vision: WP Error - ' . $response->get_error_message());
+                return $response;
+            }
+
+            $status = wp_remote_retrieve_response_code($response);
+            $body = wp_remote_retrieve_body($response);
+
+            error_log('ZK Vision: HTTP Status ' . $status);
+
+            if ($status !== 200) {
+                $error = json_decode($body, true);
+                $error_msg = $error['error']['message'] ?? 'API-Fehler: ' . $status;
+                error_log('ZK Vision: API Fehler - ' . $error_msg);
+                return new WP_Error('api_error', $error_msg);
+            }
+
+            $data = json_decode($body, true);
+
+            if (!isset($data['content'][0]['text'])) {
+                error_log('ZK Vision: Ungültige Antwortstruktur');
+                return new WP_Error('parse_error', 'Ungültige API-Antwort');
+            }
+
+            $result_text = $data['content'][0]['text'];
+            error_log('ZK Vision: Antwort erhalten (' . strlen($result_text) . ' Zeichen)');
+
+            // JSON aus Antwort extrahieren
+            $result = json_decode($result_text, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                // Versuche JSON aus Markdown-Block zu extrahieren
+                if (preg_match('/```(?:json)?\s*([\s\S]*?)\s*```/', $result_text, $matches)) {
+                    $result = json_decode($matches[1], true);
+                }
+            }
+
+            if (!$result) {
+                error_log('ZK Vision: JSON Parse Fehler - ' . json_last_error_msg());
+                error_log('ZK Vision: Antwort-Text: ' . substr($result_text, 0, 500));
+                return new WP_Error('parse_error', 'Konnte JSON nicht parsen');
+            }
+
+            error_log('ZK Vision: Erfolgreich! ' . count($result['articles'] ?? []) . ' Artikel erkannt');
+
+            return $result;
         }
 
         /**

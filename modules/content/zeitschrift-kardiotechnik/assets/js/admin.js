@@ -1562,6 +1562,10 @@
             $statusText.text('Extrahiere und analysiere... (kann 2-3 Minuten dauern)');
             $('#zk-extract-btn').prop('disabled', true);
 
+            console.log('=== ZK KI-Extraktion Start ===');
+            console.log('Import-ID:', this.pdfImport.importId);
+            console.log('AJAX URL:', this.config.ajaxUrl);
+
             $.ajax({
                 url: this.config.ajaxUrl,
                 type: 'POST',
@@ -1572,10 +1576,16 @@
                     import_id: this.pdfImport.importId
                 },
                 success: function(response) {
+                    console.log('=== ZK KI-Extraktion Antwort ===');
+                    console.log('Response:', response);
+
                     $status.hide();
                     $('#zk-extract-btn').prop('disabled', false);
 
                     if (response.success) {
+                        console.log('Erfolg! Issue:', response.data.issue);
+                        console.log('Artikel:', response.data.articles);
+
                         // Cover-URL speichern
                         self.pdfImport.coverUrl = response.data.cover_url;
 
@@ -1590,6 +1600,8 @@
 
                         self.showToast('success', 'Extraktion und Analyse abgeschlossen');
                     } else {
+                        console.error('Fehler:', response.data);
+
                         if (response.data.need_config) {
                             self.showToast('error', 'Bitte KI-Einstellungen konfigurieren');
                             self.openAiSettings();
@@ -1598,14 +1610,19 @@
                         }
                     }
                 },
-                error: function(xhr, status) {
+                error: function(xhr, status, error) {
+                    console.error('=== ZK KI-Extraktion AJAX Fehler ===');
+                    console.error('Status:', status);
+                    console.error('Error:', error);
+                    console.error('Response:', xhr.responseText);
+
                     $status.hide();
                     $('#zk-extract-btn').prop('disabled', false);
 
                     if (status === 'timeout') {
                         self.showToast('error', 'Timeout - bitte erneut versuchen');
                     } else {
-                        self.showToast('error', 'Verbindungsfehler');
+                        self.showToast('error', 'Verbindungsfehler: ' + error);
                     }
                 }
             });
@@ -1792,6 +1809,11 @@
             var self = this;
             var $modal = $('#zk-modal-ai-settings');
 
+            // Formular zurücksetzen
+            $('#zk-ai-key').val('');
+
+            console.log('=== ZK KI-Einstellungen laden ===');
+
             $.ajax({
                 url: this.config.ajaxUrl,
                 type: 'POST',
@@ -1800,18 +1822,27 @@
                     nonce: this.config.nonce
                 },
                 success: function(response) {
+                    console.log('Settings Response:', response);
+
                     if (response.success) {
                         $('#zk-ai-provider').val(response.data.provider || 'anthropic');
                         $('#zk-ai-model').val(response.data.model || 'claude-sonnet-4-20250514');
 
                         if (response.data.has_key) {
                             $('#zk-ai-key').attr('placeholder', response.data.api_key_masked);
-                            $('#zk-ai-key-status').text('API-Key konfiguriert').css('color', '#22c55e');
+                            $('#zk-ai-key-status').text('API-Key konfiguriert ✓').css('color', '#22c55e');
                         } else {
-                            $('#zk-ai-key').attr('placeholder', 'sk-...');
-                            $('#zk-ai-key-status').text('Kein API-Key konfiguriert').css('color', '#ef4444');
+                            $('#zk-ai-key').attr('placeholder', 'API-Key eingeben (sk-ant-...)');
+                            $('#zk-ai-key-status').text('⚠ Kein API-Key konfiguriert!').css('color', '#ef4444');
                         }
+
+                        console.log('Provider:', response.data.provider);
+                        console.log('Model:', response.data.model);
+                        console.log('Has Key:', response.data.has_key);
                     }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Settings Load Error:', status, error);
                 }
             });
 
@@ -1823,6 +1854,12 @@
          */
         saveAiSettings: function() {
             var self = this;
+            var apiKey = $('#zk-ai-key').val();
+
+            console.log('=== ZK KI-Einstellungen speichern ===');
+            console.log('Provider:', $('#zk-ai-provider').val());
+            console.log('Model:', $('#zk-ai-model').val());
+            console.log('API-Key eingegeben:', apiKey ? 'ja (Länge: ' + apiKey.length + ')' : 'nein (wird beibehalten)');
 
             $.ajax({
                 url: this.config.ajaxUrl,
@@ -1832,17 +1869,22 @@
                     nonce: this.config.nonce,
                     provider: $('#zk-ai-provider').val(),
                     model: $('#zk-ai-model').val(),
-                    api_key: $('#zk-ai-key').val()
+                    api_key: apiKey
                 },
                 success: function(response) {
+                    console.log('Save Response:', response);
                     if (response.success) {
-                        self.showToast('success', 'Einstellungen gespeichert');
+                        var msg = response.data.has_key
+                            ? 'Einstellungen gespeichert (API-Key aktiv)'
+                            : 'Einstellungen gespeichert (WARNUNG: Kein API-Key!)';
+                        self.showToast(response.data.has_key ? 'success' : 'error', msg);
                         self.closeModals();
                     } else {
                         self.showToast('error', response.data.message || 'Fehler');
                     }
                 },
-                error: function() {
+                error: function(xhr, status, error) {
+                    console.error('Save Error:', status, error);
                     self.showToast('error', 'Verbindungsfehler');
                 }
             });

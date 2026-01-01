@@ -145,7 +145,14 @@ if (!class_exists('ZK_PDF_Import')) {
             $api_key = $settings['api_key'] ?? '';
             $provider = $settings['provider'] ?? 'anthropic';
 
+            error_log('=== ZK Extraktion Start ===');
+            error_log('Import-ID: ' . $import_id);
+            error_log('AI Settings geladen: ' . print_r(array_keys($settings), true));
+            error_log('Provider: ' . $provider);
+            error_log('API-Key vorhanden: ' . (!empty($api_key) ? 'ja (Länge: ' . strlen($api_key) . ')' : 'NEIN!'));
+
             if (empty($api_key)) {
+                error_log('ZK Extraktion: ABBRUCH - Kein API-Key!');
                 wp_send_json_error([
                     'message' => 'Kein API-Key konfiguriert. Bitte zuerst die KI-Einstellungen konfigurieren.',
                     'need_config' => true
@@ -667,8 +674,14 @@ PROMPT;
                 'gpt-4-turbo-preview' => 'gpt-4o',
             ];
             if (isset($deprecated_models[$model])) {
+                error_log('ZK AI: Modell ' . $model . ' veraltet, verwende ' . $deprecated_models[$model]);
                 $model = $deprecated_models[$model];
             }
+
+            error_log('=== ZK Anthropic API Aufruf ===');
+            error_log('Modell: ' . $model);
+            error_log('API-Key vorhanden: ' . (!empty($api_key) ? 'ja (Länge: ' . strlen($api_key) . ')' : 'NEIN!'));
+            error_log('Prompt-Länge: ' . strlen($prompt) . ' Zeichen');
 
             $response = wp_remote_post('https://api.anthropic.com/v1/messages', [
                 'timeout' => 180,
@@ -687,20 +700,27 @@ PROMPT;
             ]);
 
             if (is_wp_error($response)) {
+                error_log('ZK AI: WP Error - ' . $response->get_error_message());
                 return $response;
             }
 
             $status = wp_remote_retrieve_response_code($response);
             $body = wp_remote_retrieve_body($response);
 
+            error_log('ZK AI: HTTP Status ' . $status);
+
             if ($status !== 200) {
                 $error = json_decode($body, true);
-                return new WP_Error('api_error', $error['error']['message'] ?? 'API-Fehler: ' . $status);
+                $error_msg = $error['error']['message'] ?? 'API-Fehler: ' . $status;
+                error_log('ZK AI: API Fehler - ' . $error_msg);
+                error_log('ZK AI: Response Body - ' . substr($body, 0, 500));
+                return new WP_Error('api_error', $error_msg . ' (Modell: ' . $model . ')');
             }
 
             $data = json_decode($body, true);
 
             if (!isset($data['content'][0]['text'])) {
+                error_log('ZK AI: Ungültige Antwortstruktur - ' . substr($body, 0, 500));
                 return new WP_Error('parse_error', 'Ungültige API-Antwort');
             }
 
@@ -943,7 +963,7 @@ PROMPT;
             }
 
             $provider = sanitize_key($_POST['provider'] ?? 'anthropic');
-            $api_key = sanitize_text_field($_POST['api_key'] ?? '');
+            $api_key = trim(sanitize_text_field($_POST['api_key'] ?? ''));
             $model = sanitize_text_field($_POST['model'] ?? 'claude-sonnet-4-20250514');
 
             $settings = get_option('zk_ai_settings', []);
@@ -951,13 +971,22 @@ PROMPT;
             $settings['provider'] = $provider;
             $settings['model'] = $model;
 
+            // API-Key nur aktualisieren wenn neuer eingegeben wurde
             if (!empty($api_key) && strpos($api_key, '...') === false) {
                 $settings['api_key'] = $api_key;
+                error_log('ZK AI Settings: Neuer API-Key gespeichert (Länge: ' . strlen($api_key) . ')');
+            } else {
+                error_log('ZK AI Settings: API-Key beibehalten (existiert: ' . (!empty($settings['api_key']) ? 'ja' : 'nein') . ')');
             }
 
-            update_option('zk_ai_settings', $settings);
+            // Speichern mit autoload=yes für schnelleren Zugriff
+            $result = update_option('zk_ai_settings', $settings, true);
+            error_log('ZK AI Settings: update_option Ergebnis: ' . ($result ? 'success' : 'unchanged/error'));
 
-            wp_send_json_success(['message' => 'Einstellungen gespeichert']);
+            wp_send_json_success([
+                'message' => 'Einstellungen gespeichert',
+                'has_key' => !empty($settings['api_key']),
+            ]);
         }
 
         /**

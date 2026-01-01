@@ -769,6 +769,35 @@ if (!class_exists('ZK_PDF_Import')) {
         }
 
         /**
+         * UTF-8 Text bereinigen (entfernt ungültige Zeichen)
+         */
+        private function sanitize_utf8($text) {
+            if (empty($text)) {
+                return '';
+            }
+
+            // Entferne NULL-Bytes
+            $text = str_replace("\0", '', $text);
+
+            // Konvertiere zu UTF-8 falls nötig
+            $encoding = mb_detect_encoding($text, ['UTF-8', 'ISO-8859-1', 'Windows-1252'], true);
+            if ($encoding && $encoding !== 'UTF-8') {
+                $text = mb_convert_encoding($text, 'UTF-8', $encoding);
+            }
+
+            // Entferne ungültige UTF-8 Sequenzen
+            $text = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
+
+            // Entferne nicht-druckbare Steuerzeichen (außer Newline, Tab)
+            $text = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $text);
+
+            // Ersetze problematische Unicode-Zeichen
+            $text = preg_replace('/[\x{FFFE}\x{FFFF}]/u', '', $text);
+
+            return $text;
+        }
+
+        /**
          * Alle Bilder aus PDF extrahieren
          */
         private function extract_all_images($pdf_path, $output_dir) {
@@ -907,6 +936,27 @@ PROMPT;
             error_log('API-Key vorhanden: ' . (!empty($api_key) ? 'ja (Länge: ' . strlen($api_key) . ')' : 'NEIN!'));
             error_log('Prompt-Länge: ' . strlen($prompt) . ' Zeichen');
 
+            // Prompt bereinigen für gültiges UTF-8 (wichtig für json_encode)
+            $prompt = $this->sanitize_utf8($prompt);
+            error_log('Prompt nach UTF-8 Bereinigung: ' . strlen($prompt) . ' Zeichen');
+
+            $body_data = [
+                'model' => $model,
+                'max_tokens' => 16384,
+                'messages' => [
+                    ['role' => 'user', 'content' => $prompt]
+                ],
+            ];
+
+            $json_body = json_encode($body_data, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+
+            if ($json_body === false) {
+                error_log('ZK AI: json_encode FEHLER - ' . json_last_error_msg());
+                return new WP_Error('json_error', 'JSON-Encoding fehlgeschlagen: ' . json_last_error_msg());
+            }
+
+            error_log('JSON Body Länge: ' . strlen($json_body) . ' Bytes');
+
             $response = wp_remote_post('https://api.anthropic.com/v1/messages', [
                 'timeout' => 180,
                 'headers' => [
@@ -914,13 +964,7 @@ PROMPT;
                     'x-api-key' => $api_key,
                     'anthropic-version' => '2023-06-01',
                 ],
-                'body' => json_encode([
-                    'model' => $model,
-                    'max_tokens' => 16384,
-                    'messages' => [
-                        ['role' => 'user', 'content' => $prompt]
-                    ],
-                ]),
+                'body' => $json_body,
             ]);
 
             if (is_wp_error($response)) {

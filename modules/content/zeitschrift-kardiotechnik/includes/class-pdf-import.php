@@ -963,29 +963,53 @@ PROMPT;
             }
 
             $provider = sanitize_key($_POST['provider'] ?? 'anthropic');
-            $api_key = trim(sanitize_text_field($_POST['api_key'] ?? ''));
+            // API-Key: Nur trimmen, nicht sanitize_text_field (kann Bindestriche entfernen)
+            $api_key = isset($_POST['api_key']) ? trim(wp_unslash($_POST['api_key'])) : '';
             $model = sanitize_text_field($_POST['model'] ?? 'claude-sonnet-4-20250514');
 
-            $settings = get_option('zk_ai_settings', []);
+            error_log('=== ZK AI Settings SAVE ===');
+            error_log('POST api_key raw: ' . (isset($_POST['api_key']) ? 'vorhanden, Länge: ' . strlen($_POST['api_key']) : 'NICHT VORHANDEN'));
+            error_log('api_key nach trim: ' . (!empty($api_key) ? 'Länge: ' . strlen($api_key) . ', Start: ' . substr($api_key, 0, 10) : 'LEER'));
 
-            $settings['provider'] = $provider;
-            $settings['model'] = $model;
+            // Alte Settings laden
+            $old_settings = get_option('zk_ai_settings', []);
+            error_log('Alte Settings: ' . print_r(array_keys($old_settings), true));
+            error_log('Alter API-Key existiert: ' . (!empty($old_settings['api_key']) ? 'ja' : 'nein'));
 
-            // API-Key nur aktualisieren wenn neuer eingegeben wurde
+            // Neue Settings erstellen
+            $settings = [
+                'provider' => $provider,
+                'model' => $model,
+                'api_key' => '', // Wird unten gesetzt
+            ];
+
+            // API-Key: Neuen verwenden oder alten beibehalten
             if (!empty($api_key) && strpos($api_key, '...') === false) {
                 $settings['api_key'] = $api_key;
-                error_log('ZK AI Settings: Neuer API-Key gespeichert (Länge: ' . strlen($api_key) . ')');
+                error_log('ZK AI Settings: NEUER API-Key wird gespeichert (Länge: ' . strlen($api_key) . ')');
+            } elseif (!empty($old_settings['api_key'])) {
+                $settings['api_key'] = $old_settings['api_key'];
+                error_log('ZK AI Settings: ALTER API-Key beibehalten (Länge: ' . strlen($old_settings['api_key']) . ')');
             } else {
-                error_log('ZK AI Settings: API-Key beibehalten (existiert: ' . (!empty($settings['api_key']) ? 'ja' : 'nein') . ')');
+                error_log('ZK AI Settings: KEIN API-Key vorhanden!');
             }
 
-            // Speichern mit autoload=yes für schnelleren Zugriff
-            $result = update_option('zk_ai_settings', $settings, true);
-            error_log('ZK AI Settings: update_option Ergebnis: ' . ($result ? 'success' : 'unchanged/error'));
+            // Option löschen und neu erstellen für sauberes Speichern
+            delete_option('zk_ai_settings');
+            $result = add_option('zk_ai_settings', $settings, '', 'yes');
+
+            error_log('ZK AI Settings: add_option Ergebnis: ' . ($result ? 'SUCCESS' : 'FAILED'));
+
+            // Verifizieren
+            $verify = get_option('zk_ai_settings', []);
+            $verified_key = !empty($verify['api_key']);
+            error_log('ZK AI Settings: Verifizierung - API-Key gespeichert: ' . ($verified_key ? 'JA (Länge: ' . strlen($verify['api_key']) . ')' : 'NEIN!'));
 
             wp_send_json_success([
-                'message' => 'Einstellungen gespeichert',
-                'has_key' => !empty($settings['api_key']),
+                'message' => $verified_key ? 'Einstellungen gespeichert' : 'Fehler beim Speichern des API-Keys!',
+                'has_key' => $verified_key,
+                'saved' => $result,
+                'verified' => $verified_key,
             ]);
         }
 

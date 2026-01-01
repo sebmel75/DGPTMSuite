@@ -1872,12 +1872,18 @@
                     api_key: apiKey
                 },
                 success: function(response) {
-                    console.log('Save Response:', response);
+                    console.log('=== ZK Save Response ===');
+                    console.log('Full Response:', response);
+                    console.log('has_key:', response.data?.has_key);
+                    console.log('saved:', response.data?.saved);
+                    console.log('verified:', response.data?.verified);
+
                     if (response.success) {
-                        var msg = response.data.has_key
-                            ? 'Einstellungen gespeichert (API-Key aktiv)'
-                            : 'Einstellungen gespeichert (WARNUNG: Kein API-Key!)';
-                        self.showToast(response.data.has_key ? 'success' : 'error', msg);
+                        if (response.data.verified) {
+                            self.showToast('success', 'API-Key erfolgreich gespeichert ✓');
+                        } else {
+                            self.showToast('error', 'FEHLER: API-Key wurde NICHT gespeichert!');
+                        }
                         self.closeModals();
                     } else {
                         self.showToast('error', response.data.message || 'Fehler');

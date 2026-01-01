@@ -47,6 +47,9 @@ $current_user = wp_get_current_user();
         <button type="button" class="zk-tab" data-tab="accepted">
             Akzeptierte Einreichungen
         </button>
+        <button type="button" class="zk-tab" data-tab="pdf-import">
+            PDF-Import
+        </button>
     </div>
 
     <!-- Tab: Ausgaben -->
@@ -75,6 +78,15 @@ $current_user = wp_get_current_user();
         <div class="zk-articles-header">
             <div class="zk-articles-filters">
                 <input type="text" id="zk-article-search" class="zk-input" placeholder="Artikel suchen...">
+                <select id="zk-article-sort" class="zk-select">
+                    <option value="date">Erstellungsdatum</option>
+                    <option value="modified">Änderungsdatum</option>
+                    <option value="title">Titel</option>
+                </select>
+                <select id="zk-article-order" class="zk-select">
+                    <option value="DESC">Neueste zuerst</option>
+                    <option value="ASC">Älteste zuerst</option>
+                </select>
             </div>
             <button type="button" class="zk-btn zk-btn-primary" id="zk-new-article-btn">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -98,6 +110,278 @@ $current_user = wp_get_current_user();
             <div class="zk-loading">
                 <div class="zk-spinner"></div>
                 <span>Lade Einreichungen...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab: PDF-Import -->
+    <div class="zk-tab-content" id="zk-tab-pdf-import">
+        <div class="zk-pdf-import">
+            <!-- Schritt 1: PDF hochladen -->
+            <div class="zk-import-step zk-import-step-active" id="zk-import-step-1">
+                <div class="zk-step-header">
+                    <span class="zk-step-number">1</span>
+                    <h3>PDF hochladen</h3>
+                </div>
+                <div class="zk-upload-zone" id="zk-pdf-dropzone">
+                    <input type="file" id="zk-pdf-file" accept="application/pdf" style="display: none;">
+                    <div class="zk-upload-content">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="12" y1="18" x2="12" y2="12"></line>
+                            <line x1="9" y1="15" x2="15" y2="15"></line>
+                        </svg>
+                        <p class="zk-upload-text">PDF-Datei hierher ziehen oder <button type="button" class="zk-link-btn" id="zk-pdf-browse">durchsuchen</button></p>
+                        <p class="zk-upload-hint">Unterstützt werden wissenschaftliche Artikel im PDF-Format</p>
+                    </div>
+                    <div class="zk-upload-progress" style="display: none;">
+                        <div class="zk-progress-bar"><div class="zk-progress-fill"></div></div>
+                        <p class="zk-progress-text">Hochladen...</p>
+                    </div>
+                </div>
+                <div class="zk-upload-info" id="zk-pdf-info" style="display: none;">
+                    <div class="zk-file-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                    </div>
+                    <div class="zk-file-details">
+                        <span class="zk-file-name"></span>
+                        <span class="zk-file-size"></span>
+                    </div>
+                    <button type="button" class="zk-btn zk-btn-danger zk-btn-small" id="zk-pdf-remove">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Schritt 2: Text extrahieren -->
+            <div class="zk-import-step" id="zk-import-step-2">
+                <div class="zk-step-header">
+                    <span class="zk-step-number">2</span>
+                    <h3>Inhalt extrahieren</h3>
+                </div>
+                <div class="zk-step-content">
+                    <p class="zk-step-description">Der Text und die Bilder werden aus dem PDF extrahiert.</p>
+                    <div class="zk-extraction-status" style="display: none;">
+                        <div class="zk-spinner"></div>
+                        <span>Extrahiere Inhalte...</span>
+                    </div>
+                    <div class="zk-extraction-result" style="display: none;">
+                        <div class="zk-extraction-stats">
+                            <span class="zk-stat"><strong id="zk-page-count">0</strong> Seiten</span>
+                            <span class="zk-stat"><strong id="zk-char-count">0</strong> Zeichen</span>
+                            <span class="zk-stat"><strong id="zk-image-count">0</strong> Bilder</span>
+                        </div>
+                        <div class="zk-extracted-preview">
+                            <label>Vorschau des extrahierten Textes:</label>
+                            <textarea id="zk-extracted-text" rows="6" readonly></textarea>
+                        </div>
+                    </div>
+                    <button type="button" class="zk-btn zk-btn-primary" id="zk-extract-btn" disabled>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="16 18 22 12 16 6"></polyline>
+                            <polyline points="8 6 2 12 8 18"></polyline>
+                        </svg>
+                        Text extrahieren
+                    </button>
+                </div>
+            </div>
+
+            <!-- Schritt 3: KI-Analyse -->
+            <div class="zk-import-step" id="zk-import-step-3">
+                <div class="zk-step-header">
+                    <span class="zk-step-number">3</span>
+                    <h3>KI-Analyse</h3>
+                    <button type="button" class="zk-btn zk-btn-mini zk-btn-secondary" id="zk-ai-settings-btn" title="KI-Einstellungen">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="zk-step-content">
+                    <p class="zk-step-description">Die KI analysiert den Text und extrahiert automatisch Titel, Autoren, Abstract und weitere Metadaten.</p>
+                    <div class="zk-ai-status" style="display: none;">
+                        <div class="zk-spinner"></div>
+                        <span>KI analysiert den Text...</span>
+                    </div>
+                    <button type="button" class="zk-btn zk-btn-primary" id="zk-analyze-btn" disabled>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                        </svg>
+                        Mit KI analysieren
+                    </button>
+                </div>
+            </div>
+
+            <!-- Schritt 4: Ergebnisse prüfen und importieren -->
+            <div class="zk-import-step" id="zk-import-step-4">
+                <div class="zk-step-header">
+                    <span class="zk-step-number">4</span>
+                    <h3>Prüfen & Importieren</h3>
+                </div>
+                <div class="zk-step-content">
+                    <div class="zk-import-preview" style="display: none;">
+                        <div class="zk-preview-section">
+                            <h4>Grunddaten</h4>
+                            <div class="zk-form-group">
+                                <label for="zk-import-title">Titel</label>
+                                <input type="text" id="zk-import-title" class="zk-input">
+                                <span class="zk-confidence" data-field="title"></span>
+                            </div>
+                            <div class="zk-form-group">
+                                <label for="zk-import-subtitle">Untertitel</label>
+                                <input type="text" id="zk-import-subtitle" class="zk-input">
+                            </div>
+                            <div class="zk-form-row">
+                                <div class="zk-form-group">
+                                    <label for="zk-import-type">Publikationsart</label>
+                                    <select id="zk-import-type" class="zk-select">
+                                        <option value="">-- Bitte wählen --</option>
+                                        <option value="Fachartikel">Fachartikel</option>
+                                        <option value="Editorial">Editorial</option>
+                                        <option value="Journal Club">Journal Club</option>
+                                        <option value="Tutorial">Tutorial</option>
+                                        <option value="Fallbericht">Fallbericht</option>
+                                        <option value="Übersichtsarbeit">Übersichtsarbeit</option>
+                                        <option value="Kommentar">Kommentar</option>
+                                    </select>
+                                </div>
+                                <div class="zk-form-group">
+                                    <label for="zk-import-doi">DOI</label>
+                                    <input type="text" id="zk-import-doi" class="zk-input">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="zk-preview-section">
+                            <h4>Autoren</h4>
+                            <div class="zk-form-group">
+                                <label for="zk-import-authors">Autoren</label>
+                                <input type="text" id="zk-import-authors" class="zk-input">
+                                <span class="zk-confidence" data-field="authors"></span>
+                            </div>
+                            <div class="zk-form-group">
+                                <label for="zk-import-main-author">Hauptautor/in</label>
+                                <input type="text" id="zk-import-main-author" class="zk-input">
+                            </div>
+                        </div>
+
+                        <div class="zk-preview-section">
+                            <h4>Abstracts</h4>
+                            <div class="zk-form-row">
+                                <div class="zk-form-group">
+                                    <label for="zk-import-abstract-de">Zusammenfassung (Deutsch)</label>
+                                    <textarea id="zk-import-abstract-de" class="zk-textarea" rows="4"></textarea>
+                                    <span class="zk-confidence" data-field="abstract"></span>
+                                </div>
+                                <div class="zk-form-group">
+                                    <label for="zk-import-abstract-en">Abstract (English)</label>
+                                    <textarea id="zk-import-abstract-en" class="zk-textarea" rows="4"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="zk-preview-section">
+                            <h4>Keywords</h4>
+                            <div class="zk-form-row">
+                                <div class="zk-form-group">
+                                    <label for="zk-import-keywords-de">Keywords (Deutsch)</label>
+                                    <input type="text" id="zk-import-keywords-de" class="zk-input">
+                                </div>
+                                <div class="zk-form-group">
+                                    <label for="zk-import-keywords-en">Keywords (English)</label>
+                                    <input type="text" id="zk-import-keywords-en" class="zk-input">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="zk-preview-section">
+                            <h4>Artikelinhalt</h4>
+                            <div class="zk-form-group">
+                                <label for="zk-import-content">Haupttext (HTML)</label>
+                                <textarea id="zk-import-content" class="zk-textarea zk-content-editor" rows="10"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="zk-preview-section">
+                            <h4>Literatur</h4>
+                            <div class="zk-form-group">
+                                <label for="zk-import-references">Literaturverzeichnis</label>
+                                <textarea id="zk-import-references" class="zk-textarea" rows="4"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="zk-preview-section" id="zk-import-images-section" style="display: none;">
+                            <h4>Extrahierte Bilder</h4>
+                            <div class="zk-images-grid" id="zk-import-images"></div>
+                        </div>
+
+                        <div class="zk-import-actions">
+                            <button type="button" class="zk-btn zk-btn-secondary" id="zk-import-reset">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="1 4 1 10 7 10"></polyline>
+                                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                                </svg>
+                                Zurücksetzen
+                            </button>
+                            <button type="button" class="zk-btn zk-btn-success" id="zk-import-save">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                    <polyline points="7 3 7 8 15 8"></polyline>
+                                </svg>
+                                Als Entwurf speichern
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: KI-Einstellungen -->
+    <div class="zk-modal" id="zk-modal-ai-settings">
+        <div class="zk-modal-overlay"></div>
+        <div class="zk-modal-content">
+            <div class="zk-modal-header">
+                <h3>KI-Einstellungen</h3>
+                <button type="button" class="zk-modal-close">&times;</button>
+            </div>
+            <div class="zk-modal-body">
+                <form id="zk-ai-settings-form">
+                    <div class="zk-form-group">
+                        <label for="zk-ai-provider">KI-Provider</label>
+                        <select id="zk-ai-provider" class="zk-select">
+                            <option value="anthropic">Anthropic (Claude)</option>
+                            <option value="openai">OpenAI (GPT-4)</option>
+                        </select>
+                    </div>
+                    <div class="zk-form-group">
+                        <label for="zk-ai-model">Modell</label>
+                        <select id="zk-ai-model" class="zk-select">
+                            <option value="claude-sonnet-4-20250514">Claude Sonnet 4 (empfohlen)</option>
+                            <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                            <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                            <option value="gpt-4-turbo-preview">GPT-4 Turbo</option>
+                        </select>
+                    </div>
+                    <div class="zk-form-group">
+                        <label for="zk-ai-key">API-Key</label>
+                        <input type="password" id="zk-ai-key" class="zk-input" placeholder="sk-...">
+                        <small id="zk-ai-key-status"></small>
+                    </div>
+                </form>
+            </div>
+            <div class="zk-modal-footer">
+                <button type="button" class="zk-btn zk-btn-secondary zk-modal-cancel">Abbrechen</button>
+                <button type="button" class="zk-btn zk-btn-primary" id="zk-save-ai-settings">Speichern</button>
             </div>
         </div>
     </div>

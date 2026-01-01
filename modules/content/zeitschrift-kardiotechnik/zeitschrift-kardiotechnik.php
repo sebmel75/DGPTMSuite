@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Zeitschrift Kardiotechnik Manager
  * Description: Verwaltung und Anzeige der Fachzeitschrift Kardiotechnik
- * Version: 1.6.0
+ * Version: 1.8.0
  * Author: Sebastian Melzer / DGPTM
  */
 
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 // Konstanten
 define('ZK_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('ZK_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('ZK_VERSION', '1.7.0');
+define('ZK_VERSION', '1.8.0');
 define('ZK_POST_TYPE', 'zeitschkardiotechnik');
 define('ZK_PUBLIKATION_TYPE', 'publikation');
 
@@ -39,6 +39,8 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
             require_once ZK_PLUGIN_DIR . 'includes/class-post-types.php';
             require_once ZK_PLUGIN_DIR . 'includes/class-shortcodes.php';
             require_once ZK_PLUGIN_DIR . 'includes/class-admin.php';
+            require_once ZK_PLUGIN_DIR . 'includes/class-pdf-import.php';
+            require_once ZK_PLUGIN_DIR . 'includes/class-editor.php';
         }
 
         private function init_hooks() {
@@ -56,6 +58,12 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
 
             // Initialize Admin
             ZK_Admin::get_instance();
+
+            // Initialize PDF Import
+            ZK_PDF_Import::get_instance();
+
+            // Initialize Editor
+            ZK_Editor::get_instance();
 
             // AJAX Handlers
             add_action('wp_ajax_zk_update_publish_date', [$this, 'ajax_update_publish_date']);
@@ -707,12 +715,15 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
 
             $search = sanitize_text_field($_POST['search'] ?? '');
 
+            $sort_by = sanitize_text_field($_POST['sort_by'] ?? 'date');
+            $sort_order = sanitize_text_field($_POST['sort_order'] ?? 'DESC');
+
             $args = [
                 'post_type' => ZK_PUBLIKATION_TYPE,
-                'posts_per_page' => 100,
-                'post_status' => 'publish',
-                'orderby' => 'date',
-                'order' => 'DESC'
+                'posts_per_page' => 200,
+                'post_status' => ['publish', 'draft', 'pending'],
+                'orderby' => $sort_by === 'modified' ? 'modified' : 'date',
+                'order' => strtoupper($sort_order) === 'ASC' ? 'ASC' : 'DESC'
             ];
 
             if (!empty($search)) {
@@ -729,6 +740,11 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
                     'authors' => get_field('autoren', $article->ID) ?: get_field('hauptautorin', $article->ID),
                     'doi' => get_field('doi', $article->ID),
                     'date' => get_the_date('d.m.Y', $article->ID),
+                    'date_raw' => get_the_date('Y-m-d H:i:s', $article->ID),
+                    'modified' => get_the_modified_date('d.m.Y', $article->ID),
+                    'modified_raw' => get_the_modified_date('Y-m-d H:i:s', $article->ID),
+                    'status' => $article->post_status,
+                    'status_label' => get_post_status_object($article->post_status)->label ?? $article->post_status,
                     'linked_issue' => $this->get_article_linked_issue($article->ID)
                 ];
             }

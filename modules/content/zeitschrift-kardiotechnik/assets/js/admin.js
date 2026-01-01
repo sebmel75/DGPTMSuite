@@ -153,6 +153,11 @@
                 }, 300);
             });
 
+            // Artikel-Sortierung
+            $(document).on('change', '#zk-article-sort, #zk-article-order', function() {
+                self.loadArticles();
+            });
+
             // Link Artikel Button (im Ausgaben-Edit Modal)
             $(document).on('click', '.zk-link-article-btn', function(e) {
                 e.preventDefault();
@@ -726,6 +731,8 @@
             var self = this;
             var $list = $('#zk-articles-list');
             var search = $('#zk-article-search').val() || '';
+            var sortBy = $('#zk-article-sort').val() || 'date';
+            var sortOrder = $('#zk-article-order').val() || 'DESC';
 
             $list.html(this.getLoadingHtml('Lade Artikel...'));
 
@@ -735,7 +742,9 @@
                 data: {
                     action: 'zk_get_all_articles',
                     nonce: this.config.nonce,
-                    search: search
+                    search: search,
+                    sort_by: sortBy,
+                    sort_order: sortOrder
                 },
                 success: function(response) {
                     if (response.success) {
@@ -766,11 +775,28 @@
             articles.forEach(function(article) {
                 html += '<div class="zk-article-item" data-id="' + article.id + '">';
                 html += '<div class="zk-article-info">';
+
+                // Titel mit Status-Badge
+                html += '<div class="zk-article-header">';
                 html += '<span class="zk-article-title">' + ZKManager.escapeHtml(article.title) + '</span>';
+                if (article.status && article.status !== 'publish') {
+                    html += '<span class="zk-article-status zk-status-' + article.status + '">' + ZKManager.escapeHtml(article.status_label || article.status) + '</span>';
+                }
+                html += '</div>';
+
                 html += '<div class="zk-article-meta">';
                 if (article.authors) {
                     html += '<span class="zk-article-authors">' + ZKManager.escapeHtml(article.authors) + '</span>';
                 }
+
+                // Datum anzeigen
+                if (article.date) {
+                    html += '<span class="zk-article-date">Erstellt: ' + ZKManager.escapeHtml(article.date) + '</span>';
+                }
+                if (article.modified && article.modified !== article.date) {
+                    html += '<span class="zk-article-modified">Geändert: ' + ZKManager.escapeHtml(article.modified) + '</span>';
+                }
+
                 if (article.doi) {
                     html += '<span class="zk-article-doi">DOI: ' + ZKManager.escapeHtml(article.doi) + '</span>';
                 }
@@ -1326,6 +1352,542 @@
             var div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        },
+
+        // ============================================
+        // PDF-IMPORT
+        // ============================================
+
+        pdfImport: {
+            fileId: null,
+            filename: null,
+            extractedText: null,
+            extractedImages: [],
+            metadata: null,
+            aiResult: null
+        },
+
+        /**
+         * PDF Import Events binden
+         */
+        bindPdfImportEvents: function() {
+            var self = this;
+
+            // PDF Tab aktivieren
+            $(document).on('click', '.zk-tab[data-tab="pdf-import"]', function() {
+                self.resetPdfImport();
+            });
+
+            // Durchsuchen Button
+            $(document).on('click', '#zk-pdf-browse', function(e) {
+                e.preventDefault();
+                $('#zk-pdf-file').click();
+            });
+
+            // Datei-Input
+            $(document).on('change', '#zk-pdf-file', function() {
+                if (this.files && this.files[0]) {
+                    self.uploadPdf(this.files[0]);
+                }
+            });
+
+            // Drag & Drop
+            var $dropzone = $('#zk-pdf-dropzone');
+
+            $dropzone.on('dragover dragenter', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $(this).addClass('zk-dragover');
+            });
+
+            $dropzone.on('dragleave', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $(this).removeClass('zk-dragover');
+            });
+
+            $dropzone.on('drop', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $(this).removeClass('zk-dragover');
+
+                var files = e.originalEvent.dataTransfer.files;
+                if (files && files[0]) {
+                    self.uploadPdf(files[0]);
+                }
+            });
+
+            // PDF entfernen
+            $(document).on('click', '#zk-pdf-remove', function(e) {
+                e.preventDefault();
+                self.resetPdfImport();
+            });
+
+            // Text extrahieren
+            $(document).on('click', '#zk-extract-btn', function(e) {
+                e.preventDefault();
+                self.extractPdf();
+            });
+
+            // KI analysieren
+            $(document).on('click', '#zk-analyze-btn', function(e) {
+                e.preventDefault();
+                self.aiAnalyze();
+            });
+
+            // KI-Einstellungen öffnen
+            $(document).on('click', '#zk-ai-settings-btn', function(e) {
+                e.preventDefault();
+                self.openAiSettings();
+            });
+
+            // KI-Einstellungen speichern
+            $(document).on('click', '#zk-save-ai-settings', function(e) {
+                e.preventDefault();
+                self.saveAiSettings();
+            });
+
+            // Import speichern
+            $(document).on('click', '#zk-import-save', function(e) {
+                e.preventDefault();
+                self.saveImport();
+            });
+
+            // Import zurücksetzen
+            $(document).on('click', '#zk-import-reset', function(e) {
+                e.preventDefault();
+                self.resetPdfImport();
+            });
+        },
+
+        /**
+         * PDF hochladen
+         */
+        uploadPdf: function(file) {
+            var self = this;
+
+            // Prüfen ob PDF
+            if (file.type !== 'application/pdf') {
+                this.showToast('error', 'Nur PDF-Dateien erlaubt');
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append('pdf', file);
+            formData.append('action', 'zk_upload_pdf');
+            formData.append('nonce', this.config.nonce);
+
+            var $dropzone = $('#zk-pdf-dropzone');
+            var $progress = $dropzone.find('.zk-upload-progress');
+            var $content = $dropzone.find('.zk-upload-content');
+
+            $content.hide();
+            $progress.show();
+
+            $.ajax({
+                url: this.config.ajaxUrl,
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                xhr: function() {
+                    var xhr = new window.XMLHttpRequest();
+                    xhr.upload.addEventListener('progress', function(e) {
+                        if (e.lengthComputable) {
+                            var percent = (e.loaded / e.total) * 100;
+                            $progress.find('.zk-progress-fill').css('width', percent + '%');
+                            $progress.find('.zk-progress-text').text('Hochladen... ' + Math.round(percent) + '%');
+                        }
+                    });
+                    return xhr;
+                },
+                success: function(response) {
+                    $progress.hide();
+                    $content.show();
+                    $progress.find('.zk-progress-fill').css('width', '0');
+
+                    if (response.success) {
+                        self.pdfImport.fileId = response.data.file_id;
+                        self.pdfImport.filename = response.data.filename;
+
+                        // UI aktualisieren
+                        self.showPdfInfo(response.data);
+                        self.activateStep(2);
+                        $('#zk-extract-btn').prop('disabled', false);
+                    } else {
+                        self.showToast('error', response.data.message || 'Fehler beim Hochladen');
+                    }
+                },
+                error: function() {
+                    $progress.hide();
+                    $content.show();
+                    self.showToast('error', 'Verbindungsfehler');
+                }
+            });
+        },
+
+        /**
+         * PDF-Info anzeigen
+         */
+        showPdfInfo: function(data) {
+            var $info = $('#zk-pdf-info');
+            $info.find('.zk-file-name').text(data.filename);
+            $info.find('.zk-file-size').text(this.formatFileSize(data.size));
+            $info.show();
+        },
+
+        /**
+         * Dateigröße formatieren
+         */
+        formatFileSize: function(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
+            return Math.round(bytes / 1024 / 1024 * 10) / 10 + ' MB';
+        },
+
+        /**
+         * PDF extrahieren
+         */
+        extractPdf: function() {
+            var self = this;
+
+            if (!this.pdfImport.fileId) {
+                this.showToast('error', 'Kein PDF hochgeladen');
+                return;
+            }
+
+            var $status = $('#zk-import-step-2 .zk-extraction-status');
+            var $result = $('#zk-import-step-2 .zk-extraction-result');
+
+            $status.show();
+            $result.hide();
+
+            $.ajax({
+                url: this.config.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'zk_extract_pdf',
+                    nonce: this.config.nonce,
+                    file_id: this.pdfImport.fileId,
+                    filename: this.pdfImport.filename
+                },
+                success: function(response) {
+                    $status.hide();
+
+                    if (response.success) {
+                        self.pdfImport.extractedText = response.data.text;
+                        self.pdfImport.extractedImages = response.data.images || [];
+                        self.pdfImport.metadata = response.data.metadata;
+
+                        // UI aktualisieren
+                        $('#zk-page-count').text(response.data.page_count);
+                        $('#zk-char-count').text(response.data.text.length.toLocaleString());
+                        $('#zk-image-count').text(response.data.images.length);
+                        $('#zk-extracted-text').val(response.data.text.substring(0, 2000) + '...');
+
+                        $result.show();
+                        self.activateStep(3);
+                        $('#zk-analyze-btn').prop('disabled', false);
+                    } else {
+                        self.showToast('error', response.data.message || 'Fehler beim Extrahieren');
+                    }
+                },
+                error: function() {
+                    $status.hide();
+                    self.showToast('error', 'Verbindungsfehler');
+                }
+            });
+        },
+
+        /**
+         * KI-Analyse durchführen
+         */
+        aiAnalyze: function() {
+            var self = this;
+
+            if (!this.pdfImport.extractedText) {
+                this.showToast('error', 'Kein Text extrahiert');
+                return;
+            }
+
+            var $status = $('#zk-import-step-3 .zk-ai-status');
+            $status.show();
+            $('#zk-analyze-btn').prop('disabled', true);
+
+            $.ajax({
+                url: this.config.ajaxUrl,
+                type: 'POST',
+                timeout: 180000, // 3 Minuten Timeout für KI
+                data: {
+                    action: 'zk_ai_analyze',
+                    nonce: this.config.nonce,
+                    text: this.pdfImport.extractedText,
+                    metadata: JSON.stringify(this.pdfImport.metadata || {})
+                },
+                success: function(response) {
+                    $status.hide();
+                    $('#zk-analyze-btn').prop('disabled', false);
+
+                    if (response.success) {
+                        self.pdfImport.aiResult = response.data;
+                        self.populateImportForm(response.data);
+                        self.activateStep(4);
+                        $('#zk-import-step-4 .zk-import-preview').show();
+                    } else {
+                        if (response.data.need_config) {
+                            self.showToast('error', 'Bitte KI-Einstellungen konfigurieren');
+                            self.openAiSettings();
+                        } else {
+                            self.showToast('error', response.data.message || 'KI-Analyse fehlgeschlagen');
+                        }
+                    }
+                },
+                error: function(xhr, status) {
+                    $status.hide();
+                    $('#zk-analyze-btn').prop('disabled', false);
+
+                    if (status === 'timeout') {
+                        self.showToast('error', 'KI-Analyse Timeout - bitte erneut versuchen');
+                    } else {
+                        self.showToast('error', 'Verbindungsfehler');
+                    }
+                }
+            });
+        },
+
+        /**
+         * Import-Formular befüllen
+         */
+        populateImportForm: function(data) {
+            $('#zk-import-title').val(data.title || '');
+            $('#zk-import-subtitle').val(data.subtitle || '');
+            $('#zk-import-type').val(data.publication_type || '');
+            $('#zk-import-doi').val(data.doi || '');
+            $('#zk-import-authors').val(data.authors || '');
+            $('#zk-import-main-author').val(data.main_author || '');
+            $('#zk-import-abstract-de').val(data.abstract_de || '');
+            $('#zk-import-abstract-en').val(data.abstract_en || '');
+            $('#zk-import-keywords-de').val(data.keywords_de || '');
+            $('#zk-import-keywords-en').val(data.keywords_en || '');
+            $('#zk-import-content').val(data.content || '');
+            $('#zk-import-references').val(data.references || '');
+
+            // Confidence-Werte anzeigen
+            if (data.confidence) {
+                for (var field in data.confidence) {
+                    var confidence = Math.round(data.confidence[field] * 100);
+                    var $badge = $('.zk-confidence[data-field="' + field + '"]');
+                    $badge.text(confidence + '%').attr('data-confidence', confidence);
+                }
+            }
+
+            // Bilder anzeigen
+            if (this.pdfImport.extractedImages.length > 0) {
+                var $grid = $('#zk-import-images');
+                $grid.empty();
+
+                this.pdfImport.extractedImages.forEach(function(img, i) {
+                    $grid.append(
+                        '<div class="zk-image-item">' +
+                        '<img src="' + img.url + '" alt="Bild ' + (i + 1) + '">' +
+                        '<label class="zk-checkbox-label">' +
+                        '<input type="checkbox" name="import_images[]" value="' + i + '" checked>' +
+                        ' Importieren' +
+                        '</label>' +
+                        '</div>'
+                    );
+                });
+
+                $('#zk-import-images-section').show();
+            }
+        },
+
+        /**
+         * Import speichern
+         */
+        saveImport: function() {
+            var self = this;
+
+            var article = {
+                title: $('#zk-import-title').val(),
+                subtitle: $('#zk-import-subtitle').val(),
+                publication_type: $('#zk-import-type').val(),
+                doi: $('#zk-import-doi').val(),
+                authors: $('#zk-import-authors').val(),
+                main_author: $('#zk-import-main-author').val(),
+                abstract_de: $('#zk-import-abstract-de').val(),
+                abstract_en: $('#zk-import-abstract-en').val(),
+                keywords_de: $('#zk-import-keywords-de').val(),
+                keywords_en: $('#zk-import-keywords-en').val(),
+                content: $('#zk-import-content').val(),
+                references: $('#zk-import-references').val(),
+                images: []
+            };
+
+            // Ausgewählte Bilder sammeln
+            $('input[name="import_images[]"]:checked').each(function() {
+                var index = parseInt($(this).val());
+                if (self.pdfImport.extractedImages[index]) {
+                    article.images.push(self.pdfImport.extractedImages[index]);
+                }
+            });
+
+            if (!article.title) {
+                this.showToast('error', 'Titel ist erforderlich');
+                return;
+            }
+
+            var $btn = $('#zk-import-save');
+            $btn.prop('disabled', true).text('Speichern...');
+
+            $.ajax({
+                url: this.config.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'zk_import_article',
+                    nonce: this.config.nonce,
+                    article: JSON.stringify(article)
+                },
+                success: function(response) {
+                    $btn.prop('disabled', false).html(
+                        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+                        '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>' +
+                        '<polyline points="17 21 17 13 7 13 7 21"></polyline>' +
+                        '<polyline points="7 3 7 8 15 8"></polyline>' +
+                        '</svg> Als Entwurf speichern'
+                    );
+
+                    if (response.success) {
+                        self.showToast('success', 'Artikel importiert!');
+                        self.resetPdfImport();
+
+                        // Zum Artikel-Tab wechseln
+                        self.switchTab('articles');
+                        self.loadArticles();
+                    } else {
+                        self.showToast('error', response.data.message || 'Fehler beim Speichern');
+                    }
+                },
+                error: function() {
+                    $btn.prop('disabled', false).text('Als Entwurf speichern');
+                    self.showToast('error', 'Verbindungsfehler');
+                }
+            });
+        },
+
+        /**
+         * KI-Einstellungen öffnen
+         */
+        openAiSettings: function() {
+            var self = this;
+            var $modal = $('#zk-modal-ai-settings');
+
+            // Aktuelle Einstellungen laden
+            $.ajax({
+                url: this.config.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'zk_get_ai_settings',
+                    nonce: this.config.nonce
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $('#zk-ai-provider').val(response.data.provider || 'anthropic');
+                        $('#zk-ai-model').val(response.data.model || 'claude-sonnet-4-20250514');
+
+                        if (response.data.has_key) {
+                            $('#zk-ai-key').attr('placeholder', response.data.api_key_masked);
+                            $('#zk-ai-key-status').text('API-Key konfiguriert').css('color', '#22c55e');
+                        } else {
+                            $('#zk-ai-key').attr('placeholder', 'sk-...');
+                            $('#zk-ai-key-status').text('Kein API-Key konfiguriert').css('color', '#ef4444');
+                        }
+                    }
+                }
+            });
+
+            $modal.addClass('zk-modal-open');
+        },
+
+        /**
+         * KI-Einstellungen speichern
+         */
+        saveAiSettings: function() {
+            var self = this;
+
+            var data = {
+                action: 'zk_save_ai_settings',
+                nonce: this.config.nonce,
+                provider: $('#zk-ai-provider').val(),
+                model: $('#zk-ai-model').val(),
+                api_key: $('#zk-ai-key').val()
+            };
+
+            $.ajax({
+                url: this.config.ajaxUrl,
+                type: 'POST',
+                data: data,
+                success: function(response) {
+                    if (response.success) {
+                        self.showToast('success', 'Einstellungen gespeichert');
+                        self.closeModals();
+                    } else {
+                        self.showToast('error', response.data.message || 'Fehler');
+                    }
+                },
+                error: function() {
+                    self.showToast('error', 'Verbindungsfehler');
+                }
+            });
+        },
+
+        /**
+         * Import-Schritt aktivieren
+         */
+        activateStep: function(step) {
+            for (var i = 1; i <= 4; i++) {
+                var $step = $('#zk-import-step-' + i);
+                if (i <= step) {
+                    $step.addClass('zk-import-step-active');
+                } else {
+                    $step.removeClass('zk-import-step-active');
+                }
+            }
+        },
+
+        /**
+         * PDF-Import zurücksetzen
+         */
+        resetPdfImport: function() {
+            this.pdfImport = {
+                fileId: null,
+                filename: null,
+                extractedText: null,
+                extractedImages: [],
+                metadata: null,
+                aiResult: null
+            };
+
+            // UI zurücksetzen
+            $('#zk-pdf-info').hide();
+            $('#zk-pdf-file').val('');
+            $('#zk-extract-btn').prop('disabled', true);
+            $('#zk-analyze-btn').prop('disabled', true);
+
+            $('#zk-import-step-2 .zk-extraction-result').hide();
+            $('#zk-import-step-2 .zk-extraction-status').hide();
+            $('#zk-import-step-3 .zk-ai-status').hide();
+            $('#zk-import-step-4 .zk-import-preview').hide();
+            $('#zk-import-images-section').hide();
+
+            // Formular leeren
+            $('#zk-import-title, #zk-import-subtitle, #zk-import-doi, #zk-import-authors').val('');
+            $('#zk-import-main-author, #zk-import-abstract-de, #zk-import-abstract-en').val('');
+            $('#zk-import-keywords-de, #zk-import-keywords-en, #zk-import-content, #zk-import-references').val('');
+            $('#zk-import-type').val('');
+
+            // Nur Schritt 1 aktiv
+            this.activateStep(1);
         }
     };
 
@@ -1333,6 +1895,7 @@
     $(document).ready(function() {
         if ($('#zk-manager').length > 0) {
             ZKManager.init();
+            ZKManager.bindPdfImportEvents();
         }
     });
 

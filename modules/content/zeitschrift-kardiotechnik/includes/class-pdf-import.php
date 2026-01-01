@@ -480,8 +480,15 @@ if (!class_exists('ZK_PDF_Import')) {
         private function extract_full_text($pdf_path) {
             $text = '';
 
+            error_log('=== ZK PDF Text Extraktion ===');
+            error_log('PDF Pfad: ' . $pdf_path);
+            error_log('PDF existiert: ' . (file_exists($pdf_path) ? 'ja' : 'NEIN!'));
+
             // Methode 1: pdftotext mit Layout
-            if ($this->command_exists('pdftotext')) {
+            $pdftotext_available = $this->command_exists('pdftotext');
+            error_log('pdftotext verfügbar: ' . ($pdftotext_available ? 'ja' : 'nein'));
+
+            if ($pdftotext_available) {
                 $output_file = $this->temp_dir . uniqid('txt_') . '.txt';
                 $command = sprintf(
                     'pdftotext -layout %s %s 2>&1',
@@ -489,19 +496,26 @@ if (!class_exists('ZK_PDF_Import')) {
                     escapeshellarg($output_file)
                 );
                 exec($command, $output, $return_var);
+                error_log('pdftotext Return: ' . $return_var);
 
                 if ($return_var === 0 && file_exists($output_file)) {
                     $text = file_get_contents($output_file);
                     unlink($output_file);
+                    error_log('pdftotext Ergebnis: ' . strlen($text) . ' Zeichen');
                 }
             }
 
             // Fallback: PHP-basierte Extraktion
             if (empty($text)) {
+                error_log('Verwende PHP Fallback für Textextraktion...');
                 $text = $this->extract_text_php($pdf_path);
+                error_log('PHP Fallback Ergebnis: ' . strlen($text) . ' Zeichen');
             }
 
-            return $this->clean_text($text);
+            $cleaned = $this->clean_text($text);
+            error_log('Nach Bereinigung: ' . strlen($cleaned) . ' Zeichen');
+
+            return $cleaned;
         }
 
         /**

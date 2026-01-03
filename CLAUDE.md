@@ -19,11 +19,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **GitHub Repository:** https://github.com/sebmel75/DGPTMSuite
 
+**Global Constants:**
+- `DGPTM_SUITE_VERSION` - Current version (3.0.0)
+- `DGPTM_SUITE_PATH` - Plugin directory path
+- `DGPTM_SUITE_URL` - Plugin URL
+- `DGPTM_SUITE_FILE` - Main plugin file path
+- `DGPTM_SUITE_BASENAME` - Plugin basename
+
+**Global Accessor:** `dgptm_suite()` returns the main plugin instance (`DGPTM_Plugin_Suite`)
+
 ## Project Overview
 
 DGPTM Plugin Suite is a WordPress plugin management system consolidating 50+ individual modules into a unified administration interface. The project provides centralized control over DGPTM plugins with dependency management, individual activation/deactivation, update handling, standalone plugin export functionality, and module metadata management (flags, comments, version switching).
 
-**Organization:** DGPTM (Deutsche Gesellschaft für Prävention und Telemedizin e.V.)
+**Organization:** DGPTM (Deutsche Gesellschaft für Perfusiologie und Technische Medizin e.V.)
 
 ## Architecture
 
@@ -39,11 +48,18 @@ DGPTM Plugin Suite is a WordPress plugin management system consolidating 50+ ind
    - `class-dependency-manager.php` - Handles module dependencies
    - `class-safe-loader.php` - Safe loading with error handling (isolate test DISABLED)
    - `class-module-metadata-file.php` - File-based metadata (flags, comments, version links)
-   - `class-logger.php` - Logging system with auto-rotation
+   - `class-module-base.php` - Base class for modules to extend
+   - `class-logger.php` - Logging system with database storage
+   - `class-logger-installer.php` - Database table creation for logs
    - `class-zip-generator.php` - Exports modules as standalone plugins
+   - `class-module-generator.php` - Creates new module scaffolding
    - `class-checkout-manager.php` - Module checkout for editing
    - `class-module-settings-manager.php` - Per-module settings management
+   - `class-central-settings-registry.php` - Centralized settings management
    - `class-version-extractor.php` - Extracts versions from plugin headers
+   - `class-guide-manager.php` - Module documentation/guides system
+   - `class-test-version-manager.php` - Links main modules to test versions
+   - `class-dgptm-colors.php` - Color utilities for admin UI
 
 3. **Admin Interface** (`admin/`)
    - `class-plugin-manager.php` - Main admin dashboard controller with AJAX handlers
@@ -296,18 +312,38 @@ public function register_acf_fields() {
 
 **System Logs:** DGPTM Suite → System Logs (filter by level, module, time range)
 
+## Deployment
+
+**CI/CD:** GitHub Actions workflow (`.github/workflows/deploy.yml`)
+- Triggers on push to `main` or manual dispatch
+- Runs PHP syntax check on first 100 PHP files
+- Verifies critical files exist
+- Creates backup on server before deployment
+- Deploys via rsync over SSH
+- Target: perfusiologie.de
+
+**Required GitHub Secrets:**
+- `SSH_HOST`, `SSH_USER`, `SSH_PASSWORD` - Server credentials
+- `WP_PATH` - WordPress installation path on server
+
+**Manual Deployment:**
+1. Push to `main` branch triggers automatic deployment
+2. Or use GitHub Actions → "Run workflow" for manual trigger
+
 ## Development Notes
 
 - German language strings are common (DGPTM is a German organization)
 - Version numbers extracted from plugin headers, not module.json
-- Logs auto-rotate when exceeding 50MB (keeps last 3 backups)
+- Logs stored in database with auto-cleanup (configurable max entries)
 - CSS/JS assets are in `admin/assets/` directory
-- Platform: Windows (use Windows path separators when needed)
+- Platform: Windows development (use Windows path separators when needed)
+- Production: Linux server (perfusiologie.de)
 
 ## Important Files
 
 - `dgptm-master.php` - Main plugin file, initialization
 - `categories.json` - Category and flag definitions
 - `DEPENDENCIES.md` - Comprehensive dependency matrix
-- `README.md` - Project overview and module list
+- `README.md` - Project overview and module list (German)
 - `analyze-dependencies.php` - Standalone dependency analysis script
+- `.github/workflows/deploy.yml` - CI/CD pipeline

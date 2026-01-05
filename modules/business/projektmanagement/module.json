@@ -1,0 +1,20 @@
+{
+    "id": "projektmanagement",
+    "name": "DGPTM - Projektmanagement",
+    "description": "Projekt- und Aufgabenverwaltung mit Vorlagen, tokenbasiertem Zugang und taeglichen E-Mail-Benachrichtigungen",
+    "version": "1.0.0",
+    "author": "Sebastian Melzer",
+    "main_file": "dgptm-projektmanagement.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": []
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "business",
+    "icon": "dashicons-clipboard",
+    "active": false,
+    "can_export": true,
+    "critical": false
+}

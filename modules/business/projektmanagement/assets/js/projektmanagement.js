@@ -318,7 +318,7 @@
         $('#pm-task-project-id').val('');
         $('#pm-task-title').val('');
         $('#pm-task-description').val('');
-        $('#pm-task-assignee').val('');
+        $('#pm-task-assignees').val([]);
         $('#pm-task-priority').val('medium');
         $('#pm-task-due-date').val('');
     }
@@ -328,7 +328,7 @@
         var projectId = $('#pm-task-project-id').val();
         var title = $('#pm-task-title').val().trim();
         var description = $('#pm-task-description').val().trim();
-        var assignee = $('#pm-task-assignee').val();
+        var assignees = $('#pm-task-assignees').val() || [];
         var priority = $('#pm-task-priority').val();
         var dueDate = $('#pm-task-due-date').val();
 
@@ -355,7 +355,7 @@
                 project_id: projectId,
                 title: title,
                 description: description,
-                assignee: assignee,
+                'assignees[]': assignees,
                 priority: priority,
                 due_date: dueDate
             },
@@ -445,7 +445,11 @@
         html += '<div class="pm-meta-item"><strong>Projekt:</strong> ' + escapeHtml(task.project) + '</div>';
         html += '<div class="pm-meta-item"><strong>Prioritaet:</strong> <span class="pm-priority-badge pm-priority-' + task.priority + '">' + priorityLabels[task.priority] + '</span></div>';
         html += '<div class="pm-meta-item"><strong>Status:</strong> ' + (isCompleted ? '<span class="pm-status-completed">Erledigt</span>' : '<span class="pm-status-pending">Offen</span>') + '</div>';
-        if (task.assignee) {
+        // Handle multiple assignees
+        if (task.assignees && task.assignees.length > 0) {
+            html += '<div class="pm-meta-item"><strong>Zugewiesen an:</strong> ' + escapeHtml(task.assignees.join(', ')) + '</div>';
+        } else if (task.assignee) {
+            // Backwards compatibility for single assignee
             html += '<div class="pm-meta-item"><strong>Zugewiesen an:</strong> ' + escapeHtml(task.assignee) + '</div>';
         }
         if (task.due_date) {
@@ -504,10 +508,15 @@
         $('#pm-task-detail-content').html(html);
         openModal('pm-task-detail-modal');
 
-        // Bind comment form
+        // Bind comment form (with double-submit protection)
         $('#pm-comment-form').off('submit').on('submit', function(e) {
             e.preventDefault();
-            submitComment(task.id);
+            var $form = $(this);
+            if ($form.data('submitting')) {
+                return false;
+            }
+            $form.data('submitting', true);
+            submitComment(task.id, $form);
         });
 
         // Bind complete button
@@ -519,10 +528,11 @@
         });
     }
 
-    function submitComment(taskId) {
+    function submitComment(taskId, $form) {
         var comment = $('#pm-new-comment').val().trim();
         if (!comment) {
             alert('Bitte Kommentar eingeben');
+            if ($form) $form.data('submitting', false);
             return;
         }
 
@@ -540,15 +550,18 @@
             },
             success: function(response) {
                 if (response.success) {
+                    // Will render new modal with new form, so no need to reset flag
                     loadTaskDetails(taskId);
                 } else {
                     alert(response.data.message || 'Fehler');
                     $btn.prop('disabled', false).text('Kommentar senden');
+                    if ($form) $form.data('submitting', false);
                 }
             },
             error: function() {
                 alert('Verbindungsfehler');
                 $btn.prop('disabled', false).text('Kommentar senden');
+                if ($form) $form.data('submitting', false);
             }
         });
     }

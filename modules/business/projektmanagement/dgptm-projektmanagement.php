@@ -53,6 +53,7 @@ if (!class_exists('DGPTM_Projektmanagement')) {
             add_shortcode('dgptm-projektmanagement', [$this, 'shortcode_main']);
             add_shortcode('dgptm-meine-aufgaben', [$this, 'shortcode_my_tasks']);
             add_shortcode('dgptm-projekt-templates', [$this, 'shortcode_templates']);
+            add_shortcode('dgptm-pm-einstellungen', [$this, 'shortcode_settings']);
 
             // Project AJAX handlers
             add_action('wp_ajax_pm_create_project', [$this, 'ajax_create_project']);
@@ -75,6 +76,11 @@ if (!class_exists('DGPTM_Projektmanagement')) {
             add_action('wp_ajax_pm_delete_template', [$this, 'ajax_delete_template']);
             add_action('wp_ajax_pm_create_from_template', [$this, 'ajax_create_from_template']);
             add_action('wp_ajax_pm_get_template', [$this, 'ajax_get_template']);
+
+            // Email template AJAX handlers
+            add_action('wp_ajax_pm_get_email_templates', [$this, 'ajax_get_email_templates']);
+            add_action('wp_ajax_pm_save_email_templates', [$this, 'ajax_save_email_templates']);
+            add_action('wp_ajax_pm_reset_email_templates', [$this, 'ajax_reset_email_templates']);
 
             // Token-based AJAX (no login required)
             add_action('wp_ajax_nopriv_pm_token_complete', [$this, 'ajax_token_complete']);
@@ -130,6 +136,7 @@ if (!class_exists('DGPTM_Projektmanagement')) {
             $has_shortcode = has_shortcode($post->post_content, 'dgptm-projektmanagement')
                 || has_shortcode($post->post_content, 'dgptm-meine-aufgaben')
                 || has_shortcode($post->post_content, 'dgptm-projekt-templates')
+                || has_shortcode($post->post_content, 'dgptm-pm-einstellungen')
                 || isset($_GET['pm_token']);
 
             if (!$has_shortcode) {
@@ -260,6 +267,28 @@ if (!class_exists('DGPTM_Projektmanagement')) {
 
             ob_start();
             include $this->plugin_path . 'templates/frontend-templates.php';
+            return ob_get_clean();
+        }
+
+        /**
+         * Email settings shortcode [dgptm-pm-einstellungen]
+         */
+        public function shortcode_settings($atts) {
+            if (!is_user_logged_in()) {
+                return '<div class="pm-notice pm-notice-error">Bitte melden Sie sich an.</div>';
+            }
+
+            $user_id = get_current_user_id();
+
+            if (!$this->permissions->is_projektmanager($user_id)) {
+                return '<div class="pm-notice pm-notice-error">Zugriff verweigert. Sie benoetigen Projektmanager-Rechte.</div>';
+            }
+
+            $email_templates = $this->email_handler->get_templates();
+            $placeholders = $this->email_handler->get_placeholders();
+
+            ob_start();
+            include $this->plugin_path . 'templates/frontend-settings.php';
             return ob_get_clean();
         }
 
@@ -522,7 +551,13 @@ if (!class_exists('DGPTM_Projektmanagement')) {
             $description = wp_kses_post($_POST['description'] ?? '');
             $priority = sanitize_text_field($_POST['priority'] ?? 'medium');
             $due_date = sanitize_text_field($_POST['due_date'] ?? '');
-            $assignee = intval($_POST['assignee'] ?? 0);
+
+            // Handle multiple assignees
+            $assignees = [];
+            if (isset($_POST['assignees']) && is_array($_POST['assignees'])) {
+                $assignees = array_map('intval', $_POST['assignees']);
+                $assignees = array_filter($assignees); // Remove zeros
+            }
 
             if (!$project_id || empty($title)) {
                 wp_send_json_error(['message' => 'Projekt-ID und Titel erforderlich']);
@@ -547,7 +582,7 @@ if (!class_exists('DGPTM_Projektmanagement')) {
 
             // Set meta
             update_post_meta($task_id, '_pm_project_id', $project_id);
-            update_post_meta($task_id, '_pm_assignee', $assignee);
+            update_post_meta($task_id, '_pm_assignees', $assignees);
             update_post_meta($task_id, '_pm_priority', $priority);
             update_post_meta($task_id, '_pm_due_date', $due_date);
             update_post_meta($task_id, '_pm_status', 'pending');
@@ -563,18 +598,19 @@ if (!class_exists('DGPTM_Projektmanagement')) {
             }
             update_post_meta($task_id, '_pm_order', $max_order + 1);
 
-            // Generate token if assignee is set
-            $token = null;
-            if ($assignee) {
-                $token = $this->token_manager->generate_token($task_id, $assignee);
+            // Generate tokens and send notifications for each assignee
+            $tokens = [];
+            foreach ($assignees as $assignee_id) {
+                $token = $this->token_manager->generate_token($task_id, $assignee_id);
+                $tokens[$assignee_id] = $token;
 
                 // Send assignment notification
-                $this->email_handler->send_task_assigned($task_id, $assignee);
+                $this->email_handler->send_task_assigned($task_id, $assignee_id);
             }
 
             wp_send_json_success([
                 'task_id' => $task_id,
-                'token'   => $token,
+                'tokens'  => $tokens,
                 'message' => 'Aufgabe erstellt',
             ]);
         }
@@ -596,11 +632,21 @@ if (!class_exists('DGPTM_Projektmanagement')) {
             $description = wp_kses_post($_POST['description'] ?? '');
             $priority = sanitize_text_field($_POST['priority'] ?? 'medium');
             $due_date = sanitize_text_field($_POST['due_date'] ?? '');
-            $assignee = intval($_POST['assignee'] ?? 0);
 
-            // Check if assignee changed
-            $old_assignee = intval(get_post_meta($task_id, '_pm_assignee', true));
-            $assignee_changed = ($old_assignee !== $assignee && $assignee > 0);
+            // Handle multiple assignees
+            $new_assignees = [];
+            if (isset($_POST['assignees']) && is_array($_POST['assignees'])) {
+                $new_assignees = array_map('intval', $_POST['assignees']);
+                $new_assignees = array_filter($new_assignees);
+            }
+
+            // Get old assignees for comparison
+            $old_assignees = get_post_meta($task_id, '_pm_assignees', true) ?: [];
+            if (!is_array($old_assignees)) {
+                // Backwards compatibility: convert old single assignee
+                $old_single = get_post_meta($task_id, '_pm_assignee', true);
+                $old_assignees = $old_single ? [intval($old_single)] : [];
+            }
 
             wp_update_post([
                 'ID'           => $task_id,
@@ -614,12 +660,15 @@ if (!class_exists('DGPTM_Projektmanagement')) {
 
             update_post_meta($task_id, '_pm_priority', $priority);
             update_post_meta($task_id, '_pm_due_date', $due_date);
-            update_post_meta($task_id, '_pm_assignee', $assignee);
+            update_post_meta($task_id, '_pm_assignees', $new_assignees);
 
-            // Generate new token and notify if assignee changed
-            if ($assignee_changed) {
-                $this->token_manager->regenerate_token($task_id);
-                $this->email_handler->send_task_assigned($task_id, $assignee);
+            // Find new assignees (not in old list)
+            $added_assignees = array_diff($new_assignees, $old_assignees);
+
+            // Generate tokens and notify new assignees only
+            foreach ($added_assignees as $assignee_id) {
+                $this->token_manager->generate_token($task_id, $assignee_id);
+                $this->email_handler->send_task_assigned($task_id, $assignee_id);
             }
 
             wp_send_json_success(['message' => 'Aufgabe aktualisiert']);
@@ -709,6 +758,9 @@ if (!class_exists('DGPTM_Projektmanagement')) {
             if (!$comment_id) {
                 wp_send_json_error(['message' => 'Fehler beim Speichern']);
             }
+
+            // Notify project manager about new comment
+            $this->email_handler->send_comment_added($task_id, $comment_id, $user_id);
 
             wp_send_json_success([
                 'comment_id' => $comment_id,
@@ -800,8 +852,27 @@ if (!class_exists('DGPTM_Projektmanagement')) {
                 wp_send_json_error(['message' => 'Aufgabe nicht gefunden']);
             }
 
-            $assignee_id = get_post_meta($task_id, '_pm_assignee', true);
-            $assignee = get_userdata($assignee_id);
+            // Get multiple assignees (with backwards compatibility)
+            $assignee_ids = get_post_meta($task_id, '_pm_assignees', true) ?: [];
+            if (!is_array($assignee_ids)) {
+                $assignee_ids = [];
+            }
+            // Backwards compatibility: check old single assignee field
+            if (empty($assignee_ids)) {
+                $old_assignee = get_post_meta($task_id, '_pm_assignee', true);
+                if ($old_assignee) {
+                    $assignee_ids = [intval($old_assignee)];
+                }
+            }
+
+            $assignee_names = [];
+            foreach ($assignee_ids as $aid) {
+                $u = get_userdata($aid);
+                if ($u) {
+                    $assignee_names[] = $u->display_name;
+                }
+            }
+
             $project_id = get_post_meta($task_id, '_pm_project_id', true);
             $project = get_post($project_id);
 
@@ -835,16 +906,17 @@ if (!class_exists('DGPTM_Projektmanagement')) {
 
             wp_send_json_success([
                 'task' => [
-                    'id'          => $task->ID,
-                    'title'       => $task->post_title,
-                    'description' => $task->post_content,
-                    'priority'    => get_post_meta($task_id, '_pm_priority', true) ?: 'medium',
-                    'due_date'    => get_post_meta($task_id, '_pm_due_date', true),
-                    'status'      => get_post_meta($task_id, '_pm_status', true) ?: 'pending',
-                    'assignee_id' => $assignee_id,
-                    'assignee'    => $assignee ? $assignee->display_name : '',
-                    'project_id'  => $project_id,
-                    'project'     => $project ? $project->post_title : '',
+                    'id'           => $task->ID,
+                    'title'        => $task->post_title,
+                    'description'  => $task->post_content,
+                    'priority'     => get_post_meta($task_id, '_pm_priority', true) ?: 'medium',
+                    'due_date'     => get_post_meta($task_id, '_pm_due_date', true),
+                    'status'       => get_post_meta($task_id, '_pm_status', true) ?: 'pending',
+                    'assignee_ids' => $assignee_ids,
+                    'assignees'    => $assignee_names,
+                    'assignee'     => !empty($assignee_names) ? $assignee_names[0] : '', // backwards compat
+                    'project_id'   => $project_id,
+                    'project'      => $project ? $project->post_title : '',
                 ],
                 'comments'    => $comments_data,
                 'attachments' => $attachments,
@@ -912,6 +984,9 @@ if (!class_exists('DGPTM_Projektmanagement')) {
             // Mark comment as via token
             if ($comment_id) {
                 update_comment_meta($comment_id, '_pm_via_token', 1);
+
+                // Notify project manager about new comment
+                $this->email_handler->send_comment_added($task->ID, $comment_id, $user_id ?: 0);
             }
 
             wp_send_json_success([
@@ -1041,6 +1116,69 @@ if (!class_exists('DGPTM_Projektmanagement')) {
             }
 
             wp_send_json_success(['template' => $data]);
+        }
+
+        // =====================================================
+        // EMAIL TEMPLATE AJAX HANDLERS
+        // =====================================================
+
+        public function ajax_get_email_templates() {
+            check_ajax_referer('pm_nonce', 'nonce');
+
+            if (!$this->permissions->can_manage_projects()) {
+                wp_send_json_error(['message' => 'Keine Berechtigung']);
+            }
+
+            $templates = $this->email_handler->get_templates();
+            $placeholders = $this->email_handler->get_placeholders();
+
+            wp_send_json_success([
+                'templates' => $templates,
+                'placeholders' => $placeholders,
+            ]);
+        }
+
+        public function ajax_save_email_templates() {
+            check_ajax_referer('pm_nonce', 'nonce');
+
+            if (!$this->permissions->can_manage_projects()) {
+                wp_send_json_error(['message' => 'Keine Berechtigung']);
+            }
+
+            $templates_data = isset($_POST['templates']) ? $_POST['templates'] : [];
+
+            if (empty($templates_data)) {
+                wp_send_json_error(['message' => 'Keine Daten']);
+            }
+
+            // Sanitize templates
+            $sanitized = [];
+            foreach ($templates_data as $key => $template) {
+                $sanitized[$key] = [
+                    'subject' => sanitize_text_field($template['subject'] ?? ''),
+                    'body' => wp_kses_post($template['body'] ?? ''),
+                    'enabled' => !empty($template['enabled']),
+                ];
+            }
+
+            $this->email_handler->save_templates($sanitized);
+
+            wp_send_json_success(['message' => 'E-Mail-Vorlagen gespeichert']);
+        }
+
+        public function ajax_reset_email_templates() {
+            check_ajax_referer('pm_nonce', 'nonce');
+
+            if (!$this->permissions->can_manage_projects()) {
+                wp_send_json_error(['message' => 'Keine Berechtigung']);
+            }
+
+            $this->email_handler->reset_templates();
+
+            wp_send_json_success([
+                'message' => 'E-Mail-Vorlagen zurueckgesetzt',
+                'templates' => $this->email_handler->get_templates(),
+            ]);
         }
 
         // =====================================================

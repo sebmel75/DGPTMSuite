@@ -192,16 +192,23 @@ jQuery(document).ready(function($) {
         });
     });
 
-    // Comment via token
-    $('#pm-token-comment-form').on('submit', function(e) {
+    // Comment via token (with double-submit protection)
+    $('#pm-token-comment-form').off('submit').on('submit', function(e) {
         e.preventDefault();
 
-        var token = $(this).data('token');
+        var $form = $(this);
+        if ($form.data('submitting')) {
+            return false;
+        }
+        $form.data('submitting', true);
+
+        var token = $form.data('token');
         var comment = $('#pm-token-comment').val().trim();
-        var $btn = $(this).find('button[type="submit"]');
+        var $btn = $form.find('button[type="submit"]');
 
         if (!comment) {
             alert('Bitte Kommentar eingeben');
+            $form.data('submitting', false);
             return;
         }
 
@@ -221,11 +228,13 @@ jQuery(document).ready(function($) {
                 } else {
                     alert(response.data.message || 'Fehler');
                     $btn.prop('disabled', false).html('<span class="dashicons dashicons-edit"></span> Kommentar senden');
+                    $form.data('submitting', false);
                 }
             },
             error: function() {
                 alert('Verbindungsfehler');
                 $btn.prop('disabled', false).html('<span class="dashicons dashicons-edit"></span> Kommentar senden');
+                $form.data('submitting', false);
             }
         });
     });

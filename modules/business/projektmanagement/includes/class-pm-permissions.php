@@ -68,9 +68,19 @@ if (!class_exists('PM_Permissions')) {
                 return true;
             }
 
-            // Check if user is assigned to the task
-            $assignee = get_post_meta($task_id, '_pm_assignee', true);
-            return (int) $assignee === (int) $user_id;
+            // Check if user is assigned to the task (multiple assignees)
+            $assignees = get_post_meta($task_id, '_pm_assignees', true) ?: [];
+            if (!is_array($assignees)) {
+                $assignees = [];
+            }
+            // Backwards compatibility: check old single assignee field
+            if (empty($assignees)) {
+                $old_assignee = get_post_meta($task_id, '_pm_assignee', true);
+                if ($old_assignee) {
+                    $assignees = [intval($old_assignee)];
+                }
+            }
+            return in_array((int) $user_id, array_map('intval', $assignees));
         }
 
         /**
@@ -106,9 +116,19 @@ if (!class_exists('PM_Permissions')) {
                 return true;
             }
 
-            // Assignee can complete their task
-            $assignee = get_post_meta($task_id, '_pm_assignee', true);
-            return (int) $assignee === (int) $user_id;
+            // Any assignee can complete the task (multiple assignees)
+            $assignees = get_post_meta($task_id, '_pm_assignees', true) ?: [];
+            if (!is_array($assignees)) {
+                $assignees = [];
+            }
+            // Backwards compatibility: check old single assignee field
+            if (empty($assignees)) {
+                $old_assignee = get_post_meta($task_id, '_pm_assignee', true);
+                if ($old_assignee) {
+                    $assignees = [intval($old_assignee)];
+                }
+            }
+            return in_array((int) $user_id, array_map('intval', $assignees));
         }
 
         /**
@@ -128,24 +148,37 @@ if (!class_exists('PM_Permissions')) {
                 return true;
             }
 
-            // Check if user has any tasks in this project
+            // Check if user has any tasks in this project (multiple assignees)
+            // First check new format: _pm_assignees (serialized array)
             $tasks = get_posts([
                 'post_type'      => 'dgptm_task',
-                'posts_per_page' => 1,
+                'posts_per_page' => -1,
                 'meta_query'     => [
-                    'relation' => 'AND',
                     [
                         'key'   => '_pm_project_id',
                         'value' => $project_id,
                     ],
-                    [
-                        'key'   => '_pm_assignee',
-                        'value' => $user_id,
-                    ],
                 ],
             ]);
 
-            return !empty($tasks);
+            foreach ($tasks as $task) {
+                $assignees = get_post_meta($task->ID, '_pm_assignees', true) ?: [];
+                if (!is_array($assignees)) {
+                    $assignees = [];
+                }
+                // Backwards compatibility: check old single assignee field
+                if (empty($assignees)) {
+                    $old_assignee = get_post_meta($task->ID, '_pm_assignee', true);
+                    if ($old_assignee) {
+                        $assignees = [intval($old_assignee)];
+                    }
+                }
+                if (in_array((int) $user_id, array_map('intval', $assignees))) {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /**

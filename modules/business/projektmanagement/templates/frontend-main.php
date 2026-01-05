@@ -101,12 +101,19 @@ $templates = $this->template_manager->get_all_templates();
                     <?php foreach ($tasks as $task):
                         $status = get_post_meta($task->ID, '_pm_status', true) ?: 'pending';
                         $priority = get_post_meta($task->ID, '_pm_priority', true) ?: 'medium';
-                        $assignee_id = get_post_meta($task->ID, '_pm_assignee', true);
-                        $assignee = get_userdata($assignee_id);
+                        $assignee_ids = get_post_meta($task->ID, '_pm_assignees', true) ?: [];
+                        // Backwards compatibility: check old single assignee field
+                        if (empty($assignee_ids)) {
+                            $old_assignee = get_post_meta($task->ID, '_pm_assignee', true);
+                            if ($old_assignee) {
+                                $assignee_ids = [$old_assignee];
+                            }
+                        }
                         $task_due = get_post_meta($task->ID, '_pm_due_date', true);
+                        $comment_count = get_comments_number($task->ID);
 
                         // Check if user can interact with this task
-                        $can_complete = $is_manager || (int)$assignee_id === $user_id;
+                        $can_complete = $is_manager || in_array($user_id, array_map('intval', (array)$assignee_ids));
                     ?>
                     <div class="pm-task-row pm-status-<?php echo esc_attr($status); ?> pm-priority-<?php echo esc_attr($priority); ?>"
                          data-id="<?php echo esc_attr($task->ID); ?>">
@@ -120,10 +127,22 @@ $templates = $this->template_manager->get_all_templates();
                         <div class="pm-task-info" data-task="<?php echo esc_attr($task->ID); ?>">
                             <span class="pm-task-title"><?php echo esc_html($task->post_title); ?></span>
                             <div class="pm-task-meta">
-                                <?php if ($assignee): ?>
+                                <?php if (!empty($assignee_ids)):
+                                    $assignee_names = [];
+                                    foreach ($assignee_ids as $aid) {
+                                        $u = get_userdata($aid);
+                                        if ($u) $assignee_names[] = $u->display_name;
+                                    }
+                                ?>
                                 <span class="pm-task-assignee">
                                     <span class="dashicons dashicons-admin-users"></span>
-                                    <?php echo esc_html($assignee->display_name); ?>
+                                    <?php echo esc_html(implode(', ', $assignee_names)); ?>
+                                </span>
+                                <?php endif; ?>
+                                <?php if ($comment_count > 0): ?>
+                                <span class="pm-comment-indicator">
+                                    <span class="dashicons dashicons-admin-comments"></span>
+                                    <?php echo $comment_count; ?>
                                 </span>
                                 <?php endif; ?>
                                 <?php if ($task_due): ?>
@@ -213,15 +232,15 @@ $templates = $this->template_manager->get_all_templates();
 
                 <div class="pm-form-row">
                     <div class="pm-form-group">
-                        <label for="pm-task-assignee">Zuweisen an</label>
-                        <select id="pm-task-assignee" name="assignee">
-                            <option value="">-- Nicht zugewiesen --</option>
+                        <label for="pm-task-assignees">Zuweisen an</label>
+                        <select id="pm-task-assignees" name="assignees[]" multiple class="pm-multi-select">
                             <?php foreach ($all_users as $u): ?>
                             <option value="<?php echo esc_attr($u['id']); ?>">
                                 <?php echo esc_html($u['name']); ?>
                             </option>
                             <?php endforeach; ?>
                         </select>
+                        <small class="pm-hint">Strg/Cmd halten fuer Mehrfachauswahl</small>
                     </div>
 
                     <div class="pm-form-group">

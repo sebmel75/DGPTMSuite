@@ -302,3 +302,5 @@ $templates = $this->template_manager->get_all_templates();
         </div>
     </div>
 </div>
+
+<?php include __DIR__ . '/partials/modals.php'; ?>

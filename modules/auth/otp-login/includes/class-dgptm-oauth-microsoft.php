@@ -144,9 +144,6 @@ if ( ! class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
          * Verarbeitet den Callback von Microsoft
          */
         public function handle_callback( WP_REST_Request $request ) {
-            error_log( 'DGPTM OAuth: Callback received' );
-            error_log( 'DGPTM OAuth: Params: ' . print_r( $request->get_params(), true ) );
-
             // Fehler von Microsoft prüfen
             $error = $request->get_param( 'error' );
             if ( $error ) {
@@ -163,70 +160,44 @@ if ( ! class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
             }
 
             // State validieren (CSRF-Schutz)
-            error_log( 'DGPTM OAuth: Validating state: ' . $state );
             $state_data = $this->validate_state_token( $state );
-            error_log( 'DGPTM OAuth: State data: ' . print_r( $state_data, true ) );
-
             if ( ! $state_data ) {
-                error_log( 'DGPTM OAuth: State validation FAILED' );
                 return $this->redirect_with_error( __( 'Sicherheitstoken ungültig oder abgelaufen.', 'dgptm' ) );
             }
 
             // Code Verifier abrufen
             $verifier_key = self::STATE_PREFIX . 'verifier_' . $state;
-            error_log( 'DGPTM OAuth: Looking for verifier: ' . $verifier_key );
             $code_verifier = get_transient( $verifier_key );
-            error_log( 'DGPTM OAuth: Code verifier found: ' . ( $code_verifier ? 'YES' : 'NO' ) );
             delete_transient( $verifier_key );
 
             if ( ! $code_verifier ) {
-                error_log( 'DGPTM OAuth: Code verifier NOT FOUND' );
                 return $this->redirect_with_error( __( 'Sicherheitstoken abgelaufen. Bitte erneut versuchen.', 'dgptm' ) );
             }
 
-            error_log( 'DGPTM OAuth: Exchanging code for tokens...' );
-
             // Authorization Code gegen Access Token tauschen
             $tokens = $this->exchange_code_for_tokens( $code, $code_verifier );
-            error_log( 'DGPTM OAuth: After token exchange, is_wp_error: ' . ( is_wp_error( $tokens ) ? 'YES' : 'NO' ) );
-
             if ( is_wp_error( $tokens ) ) {
-                error_log( 'DGPTM OAuth: Token exchange failed: ' . $tokens->get_error_message() );
                 return $this->redirect_with_error( $tokens->get_error_message() );
             }
 
             // Erst versuchen, E-Mail aus ID Token zu extrahieren (braucht keine Graph API)
             $email = $this->extract_email_from_id_token( $tokens );
-            error_log( 'DGPTM OAuth: Email from ID token: ' . ( $email ?: 'NONE' ) );
 
             // Falls nicht im ID Token, Graph API versuchen
             if ( empty( $email ) ) {
-                error_log( 'DGPTM OAuth: No email in ID token, trying Graph API...' );
-
                 $user_info = $this->get_user_info( $tokens['access_token'] );
-
-                if ( is_wp_error( $user_info ) ) {
-                    error_log( 'DGPTM OAuth: Graph API failed: ' . $user_info->get_error_message() );
-                    // Trotzdem weitermachen, falls ID Token Email hatte
-                } else {
+                if ( ! is_wp_error( $user_info ) ) {
                     $email = $this->extract_email_from_user_info( $user_info );
-                    error_log( 'DGPTM OAuth: Email from Graph API: ' . ( $email ?: 'NONE' ) );
                 }
             }
 
-            error_log( 'DGPTM OAuth: Final extracted email: ' . ( $email ?: 'NONE' ) );
-
             if ( empty( $email ) ) {
-                error_log( 'DGPTM OAuth: No email found in response' );
                 return $this->redirect_with_error( __( 'Keine E-Mail-Adresse von Microsoft erhalten. Bitte prüfen Sie Ihre Microsoft-Kontoeinstellungen.', 'dgptm' ) );
             }
 
             // WordPress-Benutzer mit dieser E-Mail suchen
             $wp_user = get_user_by( 'email', $email );
-            error_log( 'DGPTM OAuth: WP User found: ' . ( $wp_user ? $wp_user->user_login : 'NONE' ) );
-
             if ( ! $wp_user ) {
-                error_log( 'DGPTM OAuth: No WP user with email ' . $email );
                 return $this->redirect_with_error(
                     sprintf(
                         __( 'Kein Benutzerkonto mit der E-Mail-Adresse %s gefunden. Bitte kontaktieren Sie den Administrator.', 'dgptm' ),
@@ -239,13 +210,6 @@ if ( ! class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
             wp_set_current_user( $wp_user->ID );
             wp_set_auth_cookie( $wp_user->ID, true ); // Remember me = true
             do_action( 'wp_login', $wp_user->user_login, $wp_user );
-
-            // OAuth-Login loggen
-            error_log( sprintf(
-                'DGPTM OAuth: User %s (%s) logged in via Microsoft',
-                $wp_user->user_login,
-                $email
-            ) );
 
             // Zur gewünschten Seite weiterleiten
             $redirect_to = ! empty( $state_data['redirect'] ) ? $state_data['redirect'] : home_url( '/' );
@@ -260,9 +224,6 @@ if ( ! class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
             $client_id     = trim( (string) dgptm_get_option( 'dgptm_oauth_microsoft_client_id', '' ) );
             $client_secret = trim( (string) dgptm_get_option( 'dgptm_oauth_microsoft_client_secret', '' ) );
 
-            error_log( 'DGPTM OAuth: Token exchange - Client ID: ' . substr( $client_id, 0, 8 ) . '...' );
-            error_log( 'DGPTM OAuth: Token exchange - Redirect URI: ' . $this->get_callback_url() );
-
             $response = wp_remote_post( self::TOKEN_URL, [
                 'timeout' => 30,
                 'body'    => [
@@ -276,29 +237,20 @@ if ( ! class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
             ] );
 
             if ( is_wp_error( $response ) ) {
-                error_log( 'DGPTM OAuth: Token exchange WP_Error: ' . $response->get_error_message() );
                 return new WP_Error( 'token_error', __( 'Verbindung zu Microsoft fehlgeschlagen.', 'dgptm' ) );
             }
 
-            $response_code = wp_remote_retrieve_response_code( $response );
-            $body_raw = wp_remote_retrieve_body( $response );
-            error_log( 'DGPTM OAuth: Token response code: ' . $response_code );
-            error_log( 'DGPTM OAuth: Token response body: ' . substr( $body_raw, 0, 500 ) );
-
-            $body = json_decode( $body_raw, true );
+            $body = json_decode( wp_remote_retrieve_body( $response ), true );
 
             if ( isset( $body['error'] ) ) {
                 $error_msg = $body['error_description'] ?? $body['error'];
-                error_log( 'DGPTM OAuth: Token error: ' . $error_msg );
                 return new WP_Error( 'token_error', __( 'Token-Fehler: ', 'dgptm' ) . $error_msg );
             }
 
             if ( empty( $body['access_token'] ) ) {
-                error_log( 'DGPTM OAuth: No access token in response' );
                 return new WP_Error( 'token_error', __( 'Kein Access Token erhalten.', 'dgptm' ) );
             }
 
-            error_log( 'DGPTM OAuth: Token exchange SUCCESS' );
             return $body;
         }
 
@@ -306,8 +258,6 @@ if ( ! class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
          * Ruft Benutzerinformationen von Microsoft Graph API ab
          */
         private function get_user_info( $access_token ) {
-            error_log( 'DGPTM OAuth: Fetching user info from Graph API...' );
-
             $response = wp_remote_get( self::USERINFO_URL, [
                 'timeout' => 30,
                 'headers' => [
@@ -317,23 +267,15 @@ if ( ! class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
             ] );
 
             if ( is_wp_error( $response ) ) {
-                error_log( 'DGPTM OAuth: User info WP_Error: ' . $response->get_error_message() );
                 return new WP_Error( 'userinfo_error', __( 'Benutzerinformationen konnten nicht abgerufen werden.', 'dgptm' ) );
             }
 
-            $response_code = wp_remote_retrieve_response_code( $response );
-            $body_raw = wp_remote_retrieve_body( $response );
-            error_log( 'DGPTM OAuth: User info response code: ' . $response_code );
-            error_log( 'DGPTM OAuth: User info body: ' . $body_raw );
-
-            $body = json_decode( $body_raw, true );
+            $body = json_decode( wp_remote_retrieve_body( $response ), true );
 
             if ( isset( $body['error'] ) ) {
-                error_log( 'DGPTM OAuth: User info error: ' . print_r( $body['error'], true ) );
                 return new WP_Error( 'userinfo_error', $body['error']['message'] ?? __( 'Unbekannter Fehler', 'dgptm' ) );
             }
 
-            error_log( 'DGPTM OAuth: User info SUCCESS' );
             return $body;
         }
 
@@ -342,18 +284,15 @@ if ( ! class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
          */
         private function extract_email_from_id_token( $tokens ) {
             if ( empty( $tokens['id_token'] ) ) {
-                error_log( 'DGPTM OAuth: No ID token in response' );
                 return null;
             }
 
             $id_token_parts = explode( '.', $tokens['id_token'] );
             if ( count( $id_token_parts ) !== 3 ) {
-                error_log( 'DGPTM OAuth: Invalid ID token format' );
                 return null;
             }
 
             $payload = json_decode( base64_decode( strtr( $id_token_parts[1], '-_', '+/' ) ), true );
-            error_log( 'DGPTM OAuth: ID Token payload: ' . print_r( $payload, true ) );
 
             // Priorität 1: email claim
             if ( ! empty( $payload['email'] ) && is_email( $payload['email'] ) ) {
@@ -391,17 +330,6 @@ if ( ! class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
         }
 
         /**
-         * Legacy-Methode für Kompatibilität
-         */
-        private function extract_email( $user_info, $tokens ) {
-            $email = $this->extract_email_from_id_token( $tokens );
-            if ( $email ) {
-                return $email;
-            }
-            return $this->extract_email_from_user_info( $user_info );
-        }
-
-        /**
          * Generiert einen sicheren State-Token
          */
         private function generate_state_token( $redirect_after = '' ) {
@@ -412,11 +340,7 @@ if ( ! class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
                 'redirect' => $redirect_after,
             ];
 
-            $transient_key = self::STATE_PREFIX . $state;
-            $saved = set_transient( $transient_key, $data, 600 ); // 10 Minuten gültig
-            error_log( 'DGPTM OAuth: State token created: ' . $state );
-            error_log( 'DGPTM OAuth: State transient key: ' . $transient_key );
-            error_log( 'DGPTM OAuth: State saved: ' . ( $saved ? 'YES' : 'NO' ) );
+            set_transient( self::STATE_PREFIX . $state, $data, 600 ); // 10 Minuten gültig
 
             return $state;
         }
@@ -426,23 +350,17 @@ if ( ! class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
          */
         private function validate_state_token( $state ) {
             $state = preg_replace( '/[^a-f0-9]/', '', $state );
-            $transient_key = self::STATE_PREFIX . $state;
-            error_log( 'DGPTM OAuth: Looking for state transient: ' . $transient_key );
-
-            $data = get_transient( $transient_key );
-            error_log( 'DGPTM OAuth: State transient result: ' . print_r( $data, true ) );
+            $data  = get_transient( self::STATE_PREFIX . $state );
 
             if ( ! $data ) {
-                error_log( 'DGPTM OAuth: State transient not found!' );
                 return false;
             }
 
             // State-Token löschen (Einmalverwendung)
-            delete_transient( $transient_key );
+            delete_transient( self::STATE_PREFIX . $state );
 
             // Zeitprüfung (max 10 Minuten)
             if ( time() - $data['created'] > 600 ) {
-                error_log( 'DGPTM OAuth: State token expired' );
                 return false;
             }
 
@@ -485,7 +403,7 @@ if ( ! class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
          * Registriert Admin-Einstellungen
          */
         public function register_settings() {
-            // Einstellungen werden in class-dgptm-admin.php registriert
+            // Einstellungen werden in class-dgptm-oauth-settings.php registriert
         }
 
         /**

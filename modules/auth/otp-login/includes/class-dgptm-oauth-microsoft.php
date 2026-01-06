@@ -188,13 +188,21 @@ if ( ! class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
 
             // Authorization Code gegen Access Token tauschen
             $tokens = $this->exchange_code_for_tokens( $code, $code_verifier );
+            error_log( 'DGPTM OAuth: After token exchange, is_wp_error: ' . ( is_wp_error( $tokens ) ? 'YES' : 'NO' ) );
+
             if ( is_wp_error( $tokens ) ) {
+                error_log( 'DGPTM OAuth: Token exchange failed: ' . $tokens->get_error_message() );
                 return $this->redirect_with_error( $tokens->get_error_message() );
             }
 
+            error_log( 'DGPTM OAuth: Calling get_user_info...' );
+
             // Benutzerinformationen von Microsoft abrufen
             $user_info = $this->get_user_info( $tokens['access_token'] );
+            error_log( 'DGPTM OAuth: After get_user_info, is_wp_error: ' . ( is_wp_error( $user_info ) ? 'YES' : 'NO' ) );
+
             if ( is_wp_error( $user_info ) ) {
+                error_log( 'DGPTM OAuth: User info failed: ' . $user_info->get_error_message() );
                 return $this->redirect_with_error( $user_info->get_error_message() );
             }
 
@@ -292,6 +300,8 @@ if ( ! class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
          * Ruft Benutzerinformationen von Microsoft Graph API ab
          */
         private function get_user_info( $access_token ) {
+            error_log( 'DGPTM OAuth: Fetching user info from Graph API...' );
+
             $response = wp_remote_get( self::USERINFO_URL, [
                 'timeout' => 30,
                 'headers' => [
@@ -301,15 +311,23 @@ if ( ! class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
             ] );
 
             if ( is_wp_error( $response ) ) {
+                error_log( 'DGPTM OAuth: User info WP_Error: ' . $response->get_error_message() );
                 return new WP_Error( 'userinfo_error', __( 'Benutzerinformationen konnten nicht abgerufen werden.', 'dgptm' ) );
             }
 
-            $body = json_decode( wp_remote_retrieve_body( $response ), true );
+            $response_code = wp_remote_retrieve_response_code( $response );
+            $body_raw = wp_remote_retrieve_body( $response );
+            error_log( 'DGPTM OAuth: User info response code: ' . $response_code );
+            error_log( 'DGPTM OAuth: User info body: ' . $body_raw );
+
+            $body = json_decode( $body_raw, true );
 
             if ( isset( $body['error'] ) ) {
+                error_log( 'DGPTM OAuth: User info error: ' . print_r( $body['error'], true ) );
                 return new WP_Error( 'userinfo_error', $body['error']['message'] ?? __( 'Unbekannter Fehler', 'dgptm' ) );
             }
 
+            error_log( 'DGPTM OAuth: User info SUCCESS' );
             return $body;
         }
 

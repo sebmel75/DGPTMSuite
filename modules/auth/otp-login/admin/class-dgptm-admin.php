@@ -13,6 +13,7 @@ function dgptm_admin_register_top_menu() {
         58
     );
     add_submenu_page( 'dgptm-otp-root', __( 'E-Mail & Sicherheit', 'dgptm' ), __( 'E-Mail & Sicherheit', 'dgptm' ), 'manage_options', 'dgptm-otp-email', 'dgptm_admin_email_page' );
+    add_submenu_page( 'dgptm-otp-root', __( 'Microsoft OAuth', 'dgptm' ), __( 'Microsoft OAuth', 'dgptm' ), 'manage_options', 'dgptm-oauth', 'dgptm_admin_oauth_page' );
     add_submenu_page( 'dgptm-otp-root', __( 'Preloader', 'dgptm' ), __( 'Preloader', 'dgptm' ), 'manage_options', 'dgptm-preloader', 'dgptm_admin_preloader_page' );
     add_submenu_page( 'dgptm-otp-root', __( 'Anleitung', 'dgptm' ), __( 'Anleitung', 'dgptm' ), 'read', 'dgptm-instructions', 'dgptm_admin_instructions_page' );
 }

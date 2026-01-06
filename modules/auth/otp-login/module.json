@@ -1,8 +1,8 @@
 {
     "id": "otp-login",
     "name": "OTP Login System",
-    "description": "Secure OTP-based login with rate limiting and multisite support",
-    "version": "3.4.0",
+    "description": "Secure OTP-based login with Microsoft OAuth, rate limiting and multisite support",
+    "version": "3.5.0",
     "author": "Sebastian Melzer",
     "main_file": "otp-with-rotating-logo-preloader.php",
     "dependencies": [],

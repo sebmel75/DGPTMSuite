@@ -74,6 +74,35 @@ add_shortcode( 'dgptm_otp_login', function( $atts ){
         
         <div class="dgptm-msg" role="status" aria-live="polite"></div>
         <input type="hidden" id="dgptm-nonce" value="<?php echo esc_attr( $nonce ); ?>" />
+
+        <?php
+        // Microsoft OAuth Button anzeigen wenn aktiviert
+        if ( class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
+            $oauth = DGPTM_OAuth_Microsoft::get_instance();
+            if ( $oauth->is_enabled() ) {
+                $oauth_url = rest_url( 'dgptm/v1/oauth/microsoft/init' );
+                if ( ! empty( $atts['redirect'] ) ) {
+                    $oauth_url = add_query_arg( 'redirect_to', urlencode( $atts['redirect'] ), $oauth_url );
+                }
+                ?>
+                <div class="dgptm-oauth-divider">
+                    <span><?php esc_html_e( 'oder', 'dgptm' ); ?></span>
+                </div>
+                <div class="dgptm-oauth-buttons">
+                    <a href="<?php echo esc_url( $oauth_url ); ?>" class="dgptm-oauth-btn dgptm-oauth-microsoft">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 21 21">
+                            <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+                            <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+                            <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+                            <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+                        </svg>
+                        <span><?php esc_html_e( 'Mit Microsoft anmelden', 'dgptm' ); ?></span>
+                    </a>
+                </div>
+                <?php
+            }
+        }
+        ?>
     </div>
     <style>
     #dgptm-otp-form {
@@ -260,10 +289,75 @@ add_shortcode( 'dgptm_otp_login', function( $atts ){
         #dgptm-otp-form {
             padding: 1.5rem;
         }
-        
+
         .dgptm-form-header h2 {
             font-size: 1.25rem;
         }
+    }
+
+    /* OAuth Styles */
+    .dgptm-oauth-divider {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        margin: 1.5rem 0;
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+
+    .dgptm-oauth-divider::before,
+    .dgptm-oauth-divider::after {
+        content: '';
+        flex: 1;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .dgptm-oauth-divider span {
+        padding: 0 1rem;
+        text-transform: lowercase;
+    }
+
+    .dgptm-oauth-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .dgptm-oauth-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        width: 100%;
+        padding: 0.875rem 1.25rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        background: #ffffff;
+        color: #374151;
+        font-size: 1rem;
+        font-weight: 500;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .dgptm-oauth-btn:hover {
+        border-color: #d1d5db;
+        background: #f9fafb;
+        text-decoration: none;
+        color: #1f2937;
+    }
+
+    .dgptm-oauth-btn:active {
+        transform: translateY(1px);
+    }
+
+    .dgptm-oauth-btn svg {
+        flex-shrink: 0;
+    }
+
+    .dgptm-oauth-microsoft:hover {
+        border-color: #0078d4;
     }
     </style>
     <script>
@@ -300,7 +394,22 @@ add_shortcode( 'dgptm_otp_login', function( $atts ){
         var sendBtn = wrap.querySelector('#dgptm-send-otp');
         var verifyBtn = wrap.querySelector('#dgptm-verify-otp');
         var backBtn = wrap.querySelector('#dgptm-back');
-        
+
+        // Check for OAuth error in URL
+        var urlParams = new URLSearchParams(window.location.search);
+        var oauthError = urlParams.get('oauth_error');
+        if (oauthError) {
+            // Remove error from URL without reload
+            var cleanUrl = window.location.href.split('?')[0];
+            if (urlParams.toString()) {
+                urlParams.delete('oauth_error');
+                if (urlParams.toString()) {
+                    cleanUrl += '?' + urlParams.toString();
+                }
+            }
+            window.history.replaceState({}, document.title, cleanUrl);
+        }
+
         // Message helper
         function setMsg(text, type) {
             msg.textContent = text || '';
@@ -432,8 +541,11 @@ add_shortcode( 'dgptm_otp_login', function( $atts ){
             this.value = this.value.replace(/\D/g, '');
         });
         
-        // Focus on load
+        // Focus on load and show OAuth error if present
         setTimeout(function(){
+            if (oauthError) {
+                setMsg(decodeURIComponent(oauthError), 'error');
+            }
             if (step1.style.display !== 'none') {
                 identifier.focus();
             }

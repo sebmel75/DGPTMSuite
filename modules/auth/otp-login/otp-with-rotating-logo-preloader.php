@@ -2,7 +2,7 @@
 /**
  * Plugin Name: OTP with Rotating Logo Preloader
  * Description: Sicheres OTP-Login (AJAX) per E-Mail oder Benutzername, mit Rate-Limit, Preloader (rotierendes Logo), optional 30‑Tage-Login ("Angemeldet bleiben"), Logout‑Shortcodes, und WP‑Login‑Deaktivierung. Multisite‑kompatibel.
- * Version: 3.4.0
+ * Version: 3.5.0
  * Author: Sebastian Melzer
  * Text Domain: dgptm
  * Requires PHP: 7.4
@@ -75,9 +75,11 @@ require_once DGPTM_PLUGIN_DIR . 'admin/class-dgptm-admin.php';
 require_once DGPTM_PLUGIN_DIR . 'admin/class-dgptm-email-settings.php';
 require_once DGPTM_PLUGIN_DIR . 'admin/class-dgptm-preloader-settings.php';
 require_once DGPTM_PLUGIN_DIR . 'admin/class-dgptm-instructions.php';
+require_once DGPTM_PLUGIN_DIR . 'admin/class-dgptm-oauth-settings.php';
 require_once DGPTM_PLUGIN_DIR . 'includes/class-dgptm-otp.php';
 require_once DGPTM_PLUGIN_DIR . 'includes/class-dgptm-preloader.php';
 require_once DGPTM_PLUGIN_DIR . 'includes/class-dgptm-logout.php';
+require_once DGPTM_PLUGIN_DIR . 'includes/class-dgptm-oauth-microsoft.php';
 
 // Defaults
 register_activation_hook( __FILE__, function () {

@@ -195,20 +195,26 @@ if ( ! class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
                 return $this->redirect_with_error( $tokens->get_error_message() );
             }
 
-            error_log( 'DGPTM OAuth: Calling get_user_info...' );
+            // Erst versuchen, E-Mail aus ID Token zu extrahieren (braucht keine Graph API)
+            $email = $this->extract_email_from_id_token( $tokens );
+            error_log( 'DGPTM OAuth: Email from ID token: ' . ( $email ?: 'NONE' ) );
 
-            // Benutzerinformationen von Microsoft abrufen
-            $user_info = $this->get_user_info( $tokens['access_token'] );
-            error_log( 'DGPTM OAuth: After get_user_info, is_wp_error: ' . ( is_wp_error( $user_info ) ? 'YES' : 'NO' ) );
+            // Falls nicht im ID Token, Graph API versuchen
+            if ( empty( $email ) ) {
+                error_log( 'DGPTM OAuth: No email in ID token, trying Graph API...' );
 
-            if ( is_wp_error( $user_info ) ) {
-                error_log( 'DGPTM OAuth: User info failed: ' . $user_info->get_error_message() );
-                return $this->redirect_with_error( $user_info->get_error_message() );
+                $user_info = $this->get_user_info( $tokens['access_token'] );
+
+                if ( is_wp_error( $user_info ) ) {
+                    error_log( 'DGPTM OAuth: Graph API failed: ' . $user_info->get_error_message() );
+                    // Trotzdem weitermachen, falls ID Token Email hatte
+                } else {
+                    $email = $this->extract_email_from_user_info( $user_info );
+                    error_log( 'DGPTM OAuth: Email from Graph API: ' . ( $email ?: 'NONE' ) );
+                }
             }
 
-            // E-Mail extrahieren und validieren
-            $email = $this->extract_email( $user_info, $tokens );
-            error_log( 'DGPTM OAuth: Extracted email: ' . ( $email ?: 'NONE' ) );
+            error_log( 'DGPTM OAuth: Final extracted email: ' . ( $email ?: 'NONE' ) );
 
             if ( empty( $email ) ) {
                 error_log( 'DGPTM OAuth: No email found in response' );
@@ -332,35 +338,67 @@ if ( ! class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
         }
 
         /**
-         * Extrahiert die E-Mail-Adresse aus den Benutzerinformationen
+         * Extrahiert die E-Mail-Adresse aus dem ID Token
          */
-        private function extract_email( $user_info, $tokens ) {
-            // Priorität 1: mail-Feld von Graph API
+        private function extract_email_from_id_token( $tokens ) {
+            if ( empty( $tokens['id_token'] ) ) {
+                error_log( 'DGPTM OAuth: No ID token in response' );
+                return null;
+            }
+
+            $id_token_parts = explode( '.', $tokens['id_token'] );
+            if ( count( $id_token_parts ) !== 3 ) {
+                error_log( 'DGPTM OAuth: Invalid ID token format' );
+                return null;
+            }
+
+            $payload = json_decode( base64_decode( strtr( $id_token_parts[1], '-_', '+/' ) ), true );
+            error_log( 'DGPTM OAuth: ID Token payload: ' . print_r( $payload, true ) );
+
+            // Priorität 1: email claim
+            if ( ! empty( $payload['email'] ) && is_email( $payload['email'] ) ) {
+                return strtolower( $payload['email'] );
+            }
+
+            // Priorität 2: preferred_username (oft E-Mail-Format bei Azure AD)
+            if ( ! empty( $payload['preferred_username'] ) && is_email( $payload['preferred_username'] ) ) {
+                return strtolower( $payload['preferred_username'] );
+            }
+
+            // Priorität 3: upn (User Principal Name)
+            if ( ! empty( $payload['upn'] ) && is_email( $payload['upn'] ) ) {
+                return strtolower( $payload['upn'] );
+            }
+
+            return null;
+        }
+
+        /**
+         * Extrahiert die E-Mail-Adresse aus den Graph API Benutzerinformationen
+         */
+        private function extract_email_from_user_info( $user_info ) {
+            // Priorität 1: mail-Feld
             if ( ! empty( $user_info['mail'] ) && is_email( $user_info['mail'] ) ) {
                 return strtolower( $user_info['mail'] );
             }
 
-            // Priorität 2: userPrincipalName (oft bei Arbeits-/Schulkonten)
+            // Priorität 2: userPrincipalName
             if ( ! empty( $user_info['userPrincipalName'] ) && is_email( $user_info['userPrincipalName'] ) ) {
                 return strtolower( $user_info['userPrincipalName'] );
             }
 
-            // Priorität 3: ID Token parsen (für persönliche Konten)
-            if ( ! empty( $tokens['id_token'] ) ) {
-                $id_token_parts = explode( '.', $tokens['id_token'] );
-                if ( count( $id_token_parts ) === 3 ) {
-                    $payload = json_decode( base64_decode( strtr( $id_token_parts[1], '-_', '+/' ) ), true );
-                    if ( ! empty( $payload['email'] ) && is_email( $payload['email'] ) ) {
-                        return strtolower( $payload['email'] );
-                    }
-                    // Fallback: preferred_username
-                    if ( ! empty( $payload['preferred_username'] ) && is_email( $payload['preferred_username'] ) ) {
-                        return strtolower( $payload['preferred_username'] );
-                    }
-                }
-            }
-
             return null;
+        }
+
+        /**
+         * Legacy-Methode für Kompatibilität
+         */
+        private function extract_email( $user_info, $tokens ) {
+            $email = $this->extract_email_from_id_token( $tokens );
+            if ( $email ) {
+                return $email;
+            }
+            return $this->extract_email_from_user_info( $user_info );
         }
 
         /**

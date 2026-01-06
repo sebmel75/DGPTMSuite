@@ -246,6 +246,9 @@ if ( ! class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
             $client_id     = trim( (string) dgptm_get_option( 'dgptm_oauth_microsoft_client_id', '' ) );
             $client_secret = trim( (string) dgptm_get_option( 'dgptm_oauth_microsoft_client_secret', '' ) );
 
+            error_log( 'DGPTM OAuth: Token exchange - Client ID: ' . substr( $client_id, 0, 8 ) . '...' );
+            error_log( 'DGPTM OAuth: Token exchange - Redirect URI: ' . $this->get_callback_url() );
+
             $response = wp_remote_post( self::TOKEN_URL, [
                 'timeout' => 30,
                 'body'    => [
@@ -259,20 +262,29 @@ if ( ! class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
             ] );
 
             if ( is_wp_error( $response ) ) {
+                error_log( 'DGPTM OAuth: Token exchange WP_Error: ' . $response->get_error_message() );
                 return new WP_Error( 'token_error', __( 'Verbindung zu Microsoft fehlgeschlagen.', 'dgptm' ) );
             }
 
-            $body = json_decode( wp_remote_retrieve_body( $response ), true );
+            $response_code = wp_remote_retrieve_response_code( $response );
+            $body_raw = wp_remote_retrieve_body( $response );
+            error_log( 'DGPTM OAuth: Token response code: ' . $response_code );
+            error_log( 'DGPTM OAuth: Token response body: ' . substr( $body_raw, 0, 500 ) );
+
+            $body = json_decode( $body_raw, true );
 
             if ( isset( $body['error'] ) ) {
                 $error_msg = $body['error_description'] ?? $body['error'];
+                error_log( 'DGPTM OAuth: Token error: ' . $error_msg );
                 return new WP_Error( 'token_error', __( 'Token-Fehler: ', 'dgptm' ) . $error_msg );
             }
 
             if ( empty( $body['access_token'] ) ) {
+                error_log( 'DGPTM OAuth: No access token in response' );
                 return new WP_Error( 'token_error', __( 'Kein Access Token erhalten.', 'dgptm' ) );
             }
 
+            error_log( 'DGPTM OAuth: Token exchange SUCCESS' );
             return $body;
         }
 

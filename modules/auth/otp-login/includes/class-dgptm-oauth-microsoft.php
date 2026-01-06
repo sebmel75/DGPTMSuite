@@ -144,6 +144,9 @@ if ( ! class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
          * Verarbeitet den Callback von Microsoft
          */
         public function handle_callback( WP_REST_Request $request ) {
+            error_log( 'DGPTM OAuth: Callback received' );
+            error_log( 'DGPTM OAuth: Params: ' . print_r( $request->get_params(), true ) );
+
             // Fehler von Microsoft prüfen
             $error = $request->get_param( 'error' );
             if ( $error ) {
@@ -187,13 +190,19 @@ if ( ! class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
 
             // E-Mail extrahieren und validieren
             $email = $this->extract_email( $user_info, $tokens );
+            error_log( 'DGPTM OAuth: Extracted email: ' . ( $email ?: 'NONE' ) );
+
             if ( empty( $email ) ) {
+                error_log( 'DGPTM OAuth: No email found in response' );
                 return $this->redirect_with_error( __( 'Keine E-Mail-Adresse von Microsoft erhalten. Bitte prüfen Sie Ihre Microsoft-Kontoeinstellungen.', 'dgptm' ) );
             }
 
             // WordPress-Benutzer mit dieser E-Mail suchen
             $wp_user = get_user_by( 'email', $email );
+            error_log( 'DGPTM OAuth: WP User found: ' . ( $wp_user ? $wp_user->user_login : 'NONE' ) );
+
             if ( ! $wp_user ) {
+                error_log( 'DGPTM OAuth: No WP user with email ' . $email );
                 return $this->redirect_with_error(
                     sprintf(
                         __( 'Kein Benutzerkonto mit der E-Mail-Adresse %s gefunden. Bitte kontaktieren Sie den Administrator.', 'dgptm' ),
@@ -207,14 +216,12 @@ if ( ! class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
             wp_set_auth_cookie( $wp_user->ID, true ); // Remember me = true
             do_action( 'wp_login', $wp_user->user_login, $wp_user );
 
-            // Optional: Erfolgreichen OAuth-Login loggen
-            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                error_log( sprintf(
-                    'DGPTM OAuth: User %s (%s) logged in via Microsoft',
-                    $wp_user->user_login,
-                    $email
-                ) );
-            }
+            // OAuth-Login loggen
+            error_log( sprintf(
+                'DGPTM OAuth: User %s (%s) logged in via Microsoft',
+                $wp_user->user_login,
+                $email
+            ) );
 
             // Zur gewünschten Seite weiterleiten
             $redirect_to = ! empty( $state_data['redirect'] ) ? $state_data['redirect'] : home_url( '/' );

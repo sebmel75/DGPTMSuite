@@ -163,18 +163,28 @@ if ( ! class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
             }
 
             // State validieren (CSRF-Schutz)
+            error_log( 'DGPTM OAuth: Validating state: ' . $state );
             $state_data = $this->validate_state_token( $state );
+            error_log( 'DGPTM OAuth: State data: ' . print_r( $state_data, true ) );
+
             if ( ! $state_data ) {
+                error_log( 'DGPTM OAuth: State validation FAILED' );
                 return $this->redirect_with_error( __( 'Sicherheitstoken ungültig oder abgelaufen.', 'dgptm' ) );
             }
 
             // Code Verifier abrufen
-            $code_verifier = get_transient( self::STATE_PREFIX . 'verifier_' . $state );
-            delete_transient( self::STATE_PREFIX . 'verifier_' . $state );
+            $verifier_key = self::STATE_PREFIX . 'verifier_' . $state;
+            error_log( 'DGPTM OAuth: Looking for verifier: ' . $verifier_key );
+            $code_verifier = get_transient( $verifier_key );
+            error_log( 'DGPTM OAuth: Code verifier found: ' . ( $code_verifier ? 'YES' : 'NO' ) );
+            delete_transient( $verifier_key );
 
             if ( ! $code_verifier ) {
+                error_log( 'DGPTM OAuth: Code verifier NOT FOUND' );
                 return $this->redirect_with_error( __( 'Sicherheitstoken abgelaufen. Bitte erneut versuchen.', 'dgptm' ) );
             }
+
+            error_log( 'DGPTM OAuth: Exchanging code for tokens...' );
 
             // Authorization Code gegen Access Token tauschen
             $tokens = $this->exchange_code_for_tokens( $code, $code_verifier );
@@ -334,7 +344,11 @@ if ( ! class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
                 'redirect' => $redirect_after,
             ];
 
-            set_transient( self::STATE_PREFIX . $state, $data, 600 ); // 10 Minuten gültig
+            $transient_key = self::STATE_PREFIX . $state;
+            $saved = set_transient( $transient_key, $data, 600 ); // 10 Minuten gültig
+            error_log( 'DGPTM OAuth: State token created: ' . $state );
+            error_log( 'DGPTM OAuth: State transient key: ' . $transient_key );
+            error_log( 'DGPTM OAuth: State saved: ' . ( $saved ? 'YES' : 'NO' ) );
 
             return $state;
         }
@@ -344,17 +358,23 @@ if ( ! class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
          */
         private function validate_state_token( $state ) {
             $state = preg_replace( '/[^a-f0-9]/', '', $state );
-            $data  = get_transient( self::STATE_PREFIX . $state );
+            $transient_key = self::STATE_PREFIX . $state;
+            error_log( 'DGPTM OAuth: Looking for state transient: ' . $transient_key );
+
+            $data = get_transient( $transient_key );
+            error_log( 'DGPTM OAuth: State transient result: ' . print_r( $data, true ) );
 
             if ( ! $data ) {
+                error_log( 'DGPTM OAuth: State transient not found!' );
                 return false;
             }
 
             // State-Token löschen (Einmalverwendung)
-            delete_transient( self::STATE_PREFIX . $state );
+            delete_transient( $transient_key );
 
             // Zeitprüfung (max 10 Minuten)
             if ( time() - $data['created'] > 600 ) {
+                error_log( 'DGPTM OAuth: State token expired' );
                 return false;
             }
 

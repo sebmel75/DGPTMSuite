@@ -382,57 +382,91 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
         public function get_access_token() {
             $options = dgptm_ma_get_options();
+            error_log('[Mitgliedsantrag OAuth] Starting get_access_token()');
 
             // Check if using crm-abruf module's tokens
             if (class_exists('DGPTM_Zoho_CRM_Hardened')) {
+                error_log('[Mitgliedsantrag OAuth] DGPTM_Zoho_CRM_Hardened class exists');
+
                 // Try to use crm-abruf module's get_oauth_token() method
                 $crm_instance = DGPTM_Zoho_CRM_Hardened::get_instance();
                 if (method_exists($crm_instance, 'get_oauth_token')) {
+                    error_log('[Mitgliedsantrag OAuth] Calling crm-abruf get_oauth_token()');
                     $token = $crm_instance->get_oauth_token();
-                    if (!is_wp_error($token) && !empty($token)) {
+                    if (is_wp_error($token)) {
+                        error_log('[Mitgliedsantrag OAuth] get_oauth_token() returned WP_Error: ' . $token->get_error_message());
+                    } elseif (!empty($token)) {
+                        error_log('[Mitgliedsantrag OAuth] SUCCESS: Got token via get_oauth_token()');
                         $this->log('Using crm-abruf module OAuth token via get_oauth_token()');
                         return $token;
+                    } else {
+                        error_log('[Mitgliedsantrag OAuth] get_oauth_token() returned empty');
                     }
                 }
 
                 // Fallback: read crm-abruf tokens directly from options
                 $crm_access_token = get_option('dgptm_zoho_access_token', '');
                 $crm_token_expires = (int) get_option('dgptm_zoho_token_expires', 0);
+                $crm_refresh_token = get_option('dgptm_zoho_refresh_token', '');
+
+                error_log('[Mitgliedsantrag OAuth] Direct options check:');
+                error_log('[Mitgliedsantrag OAuth] - access_token exists: ' . (!empty($crm_access_token) ? 'YES' : 'NO'));
+                error_log('[Mitgliedsantrag OAuth] - refresh_token exists: ' . (!empty($crm_refresh_token) ? 'YES' : 'NO'));
+                error_log('[Mitgliedsantrag OAuth] - token_expires: ' . $crm_token_expires . ' (now: ' . time() . ')');
 
                 if (!empty($crm_access_token) && time() < $crm_token_expires) {
+                    error_log('[Mitgliedsantrag OAuth] SUCCESS: Token valid from options');
                     $this->log('Using crm-abruf module OAuth token from options');
                     return $crm_access_token;
-                } elseif (!empty($crm_access_token)) {
-                    // Token expired, try to refresh via crm-abruf
-                    $this->log('crm-abruf token expired, attempting refresh');
-                    $refresh_token = get_option('dgptm_zoho_refresh_token', '');
+                } elseif (!empty($crm_refresh_token)) {
+                    // Token expired or missing, try to refresh
+                    error_log('[Mitgliedsantrag OAuth] Token expired or missing, attempting refresh');
                     $client_id = get_option('dgptm_zoho_client_id', '');
                     $client_secret = get_option('dgptm_zoho_client_secret', '');
 
-                    if (!empty($refresh_token) && !empty($client_id) && !empty($client_secret)) {
+                    error_log('[Mitgliedsantrag OAuth] - client_id exists: ' . (!empty($client_id) ? 'YES' : 'NO'));
+                    error_log('[Mitgliedsantrag OAuth] - client_secret exists: ' . (!empty($client_secret) ? 'YES' : 'NO'));
+
+                    if (!empty($client_id) && !empty($client_secret)) {
                         $response = wp_remote_post('https://accounts.zoho.eu/oauth/v2/token', [
                             'body' => [
-                                'refresh_token' => $refresh_token,
+                                'refresh_token' => $crm_refresh_token,
                                 'client_id' => $client_id,
                                 'client_secret' => $client_secret,
                                 'grant_type' => 'refresh_token'
                             ]
                         ]);
 
-                        if (!is_wp_error($response)) {
+                        if (is_wp_error($response)) {
+                            error_log('[Mitgliedsantrag OAuth] Refresh request failed: ' . $response->get_error_message());
+                        } else {
                             $body = json_decode(wp_remote_retrieve_body($response), true);
+                            error_log('[Mitgliedsantrag OAuth] Refresh response: ' . wp_json_encode($body));
+
                             if (isset($body['access_token'])) {
                                 update_option('dgptm_zoho_access_token', $body['access_token']);
                                 update_option('dgptm_zoho_token_expires', time() + ($body['expires_in'] ?? 3600) - 60);
+                                error_log('[Mitgliedsantrag OAuth] SUCCESS: Token refreshed');
                                 $this->log('crm-abruf token refreshed successfully');
                                 return $body['access_token'];
+                            } else {
+                                error_log('[Mitgliedsantrag OAuth] Refresh failed - no access_token in response');
                             }
                         }
+                    } else {
+                        error_log('[Mitgliedsantrag OAuth] Cannot refresh - missing client_id or client_secret');
                     }
+                } else {
+                    error_log('[Mitgliedsantrag OAuth] No crm-abruf tokens available');
                 }
+            } else {
+                error_log('[Mitgliedsantrag OAuth] DGPTM_Zoho_CRM_Hardened class NOT found');
             }
 
+            // Fallback to module's own tokens
+            error_log('[Mitgliedsantrag OAuth] Checking module own tokens');
             if (empty($options['access_token'])) {
+                error_log('[Mitgliedsantrag OAuth] FAILED: No access token available anywhere');
                 $this->log('No access token available');
                 return false;
             }

@@ -385,11 +385,50 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             // Check if using crm-abruf module's tokens
             if (class_exists('DGPTM_Zoho_CRM_Hardened')) {
-                // Try to use crm-abruf module's OAuth tokens
-                $crm_options = get_option('dgptm_zoho_config', []);
-                if (!empty($crm_options['access_token'])) {
-                    $this->log('Using crm-abruf module OAuth token');
-                    return $crm_options['access_token'];
+                // Try to use crm-abruf module's get_oauth_token() method
+                $crm_instance = DGPTM_Zoho_CRM_Hardened::get_instance();
+                if (method_exists($crm_instance, 'get_oauth_token')) {
+                    $token = $crm_instance->get_oauth_token();
+                    if (!is_wp_error($token) && !empty($token)) {
+                        $this->log('Using crm-abruf module OAuth token via get_oauth_token()');
+                        return $token;
+                    }
+                }
+
+                // Fallback: read crm-abruf tokens directly from options
+                $crm_access_token = get_option('dgptm_zoho_access_token', '');
+                $crm_token_expires = (int) get_option('dgptm_zoho_token_expires', 0);
+
+                if (!empty($crm_access_token) && time() < $crm_token_expires) {
+                    $this->log('Using crm-abruf module OAuth token from options');
+                    return $crm_access_token;
+                } elseif (!empty($crm_access_token)) {
+                    // Token expired, try to refresh via crm-abruf
+                    $this->log('crm-abruf token expired, attempting refresh');
+                    $refresh_token = get_option('dgptm_zoho_refresh_token', '');
+                    $client_id = get_option('dgptm_zoho_client_id', '');
+                    $client_secret = get_option('dgptm_zoho_client_secret', '');
+
+                    if (!empty($refresh_token) && !empty($client_id) && !empty($client_secret)) {
+                        $response = wp_remote_post('https://accounts.zoho.eu/oauth/v2/token', [
+                            'body' => [
+                                'refresh_token' => $refresh_token,
+                                'client_id' => $client_id,
+                                'client_secret' => $client_secret,
+                                'grant_type' => 'refresh_token'
+                            ]
+                        ]);
+
+                        if (!is_wp_error($response)) {
+                            $body = json_decode(wp_remote_retrieve_body($response), true);
+                            if (isset($body['access_token'])) {
+                                update_option('dgptm_zoho_access_token', $body['access_token']);
+                                update_option('dgptm_zoho_token_expires', time() + ($body['expires_in'] ?? 3600) - 60);
+                                $this->log('crm-abruf token refreshed successfully');
+                                return $body['access_token'];
+                            }
+                        }
+                    }
                 }
             }
 

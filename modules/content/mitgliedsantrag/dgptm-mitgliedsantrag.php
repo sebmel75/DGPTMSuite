@@ -385,11 +385,11 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             error_log('[Mitgliedsantrag OAuth] Starting get_access_token()');
 
             // Check if using crm-abruf module's tokens
-            if (class_exists('DGPTM_Zoho_CRM_Hardened')) {
-                error_log('[Mitgliedsantrag OAuth] DGPTM_Zoho_CRM_Hardened class exists');
+            if (class_exists('DGPTM_Zoho_Plugin')) {
+                error_log('[Mitgliedsantrag OAuth] DGPTM_Zoho_Plugin class exists');
 
                 // Try to use crm-abruf module's get_oauth_token() method
-                $crm_instance = DGPTM_Zoho_CRM_Hardened::get_instance();
+                $crm_instance = DGPTM_Zoho_Plugin::get_instance();
                 if (method_exists($crm_instance, 'get_oauth_token')) {
                     error_log('[Mitgliedsantrag OAuth] Calling crm-abruf get_oauth_token()');
                     $token = $crm_instance->get_oauth_token();
@@ -460,7 +460,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                     error_log('[Mitgliedsantrag OAuth] No crm-abruf tokens available');
                 }
             } else {
-                error_log('[Mitgliedsantrag OAuth] DGPTM_Zoho_CRM_Hardened class NOT found');
+                error_log('[Mitgliedsantrag OAuth] DGPTM_Zoho_Plugin class NOT found');
             }
 
             // Fallback to module's own tokens

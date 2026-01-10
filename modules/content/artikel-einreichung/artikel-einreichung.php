@@ -32,6 +32,7 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
         const STATUS_REVISION_REQUIRED = 'revision_erforderlich';
         const STATUS_REVISION_SUBMITTED = 'revision_eingereicht';
         const STATUS_ACCEPTED = 'angenommen';
+        const STATUS_EXPORTED = 'exportiert';
         const STATUS_REJECTED = 'abgelehnt';
         const STATUS_PUBLISHED = 'veroeffentlicht';
 
@@ -85,6 +86,8 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             add_action('wp_ajax_nopriv_dgptm_lookup_orcid', [$this, 'ajax_lookup_orcid']);
             add_action('wp_ajax_dgptm_save_artikel_settings', [$this, 'ajax_save_artikel_settings']);
             add_action('wp_ajax_dgptm_export_xml', [$this, 'ajax_export_xml']);
+            add_action('wp_ajax_dgptm_change_artikel_status', [$this, 'ajax_change_artikel_status']);
+            add_action('wp_ajax_dgptm_publish_artikel', [$this, 'ajax_publish_artikel']);
 
             // AJAX Handlers for non-logged in users (token-based)
             add_action('wp_ajax_nopriv_dgptm_submit_artikel', [$this, 'ajax_submit_artikel']);
@@ -432,6 +435,7 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
                             self::STATUS_REVISION_REQUIRED => 'Revision erforderlich',
                             self::STATUS_REVISION_SUBMITTED => 'Revision eingereicht',
                             self::STATUS_ACCEPTED => 'Angenommen',
+                            self::STATUS_EXPORTED => 'Exportiert',
                             self::STATUS_REJECTED => 'Abgelehnt',
                             self::STATUS_PUBLISHED => 'Veröffentlicht'
                         ],
@@ -716,6 +720,14 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
                         'key' => 'field_artikel_decision_at',
                         'label' => 'Entscheidung am',
                         'name' => 'decision_at',
+                        'type' => 'date_time_picker',
+                        'display_format' => 'd.m.Y H:i',
+                        'return_format' => 'Y-m-d H:i:s'
+                    ],
+                    [
+                        'key' => 'field_artikel_published_at',
+                        'label' => 'Veröffentlicht am',
+                        'name' => 'published_at',
                         'type' => 'date_time_picker',
                         'display_format' => 'd.m.Y H:i',
                         'return_format' => 'Y-m-d H:i:s'
@@ -1084,6 +1096,7 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
                 self::STATUS_REVISION_REQUIRED => 'Revision erforderlich',
                 self::STATUS_REVISION_SUBMITTED => 'Revision eingereicht',
                 self::STATUS_ACCEPTED => 'Angenommen',
+                self::STATUS_EXPORTED => 'Exportiert',
                 self::STATUS_REJECTED => 'Abgelehnt',
                 self::STATUS_PUBLISHED => 'Veröffentlicht'
             ];
@@ -1101,6 +1114,7 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
                 self::STATUS_REVISION_REQUIRED => 'status-yellow',
                 self::STATUS_REVISION_SUBMITTED => 'status-blue',
                 self::STATUS_ACCEPTED => 'status-green',
+                self::STATUS_EXPORTED => 'status-teal',
                 self::STATUS_REJECTED => 'status-red',
                 self::STATUS_PUBLISHED => 'status-purple'
             ];
@@ -2604,6 +2618,163 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             $xml .= '        </contrib>' . "\n";
 
             return $xml;
+        }
+
+        /**
+         * AJAX: Change article status (for Redaktion)
+         */
+        public function ajax_change_artikel_status() {
+            check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+            if (!$this->is_redaktion() && !$this->is_editor_in_chief() && !current_user_can('manage_options')) {
+                wp_send_json_error(['message' => 'Keine Berechtigung.']);
+            }
+
+            $artikel_id = intval($_POST['article_id'] ?? 0);
+            $new_status = sanitize_text_field($_POST['status'] ?? '');
+
+            if (!$artikel_id) {
+                wp_send_json_error(['message' => 'Keine Artikel-ID angegeben.']);
+            }
+
+            $article = get_post($artikel_id);
+            if (!$article || $article->post_type !== self::POST_TYPE) {
+                wp_send_json_error(['message' => 'Artikel nicht gefunden.']);
+            }
+
+            // Validate status
+            $valid_statuses = [
+                self::STATUS_ACCEPTED,
+                self::STATUS_EXPORTED,
+                self::STATUS_PUBLISHED
+            ];
+
+            if (!in_array($new_status, $valid_statuses)) {
+                wp_send_json_error(['message' => 'Ungültiger Status.']);
+            }
+
+            // Update status
+            update_field('artikel_status', $new_status, $artikel_id);
+
+            // Log the change
+            $this->add_communication_log($artikel_id, [
+                'type' => 'status_change',
+                'user_name' => wp_get_current_user()->display_name,
+                'recipient' => 'System',
+                'subject' => 'Status geändert zu: ' . $this->get_status_label($new_status),
+                'timestamp' => time()
+            ]);
+
+            wp_send_json_success([
+                'message' => 'Status geändert zu: ' . $this->get_status_label($new_status),
+                'status' => $new_status,
+                'status_label' => $this->get_status_label($new_status),
+                'status_class' => $this->get_status_class($new_status)
+            ]);
+        }
+
+        /**
+         * AJAX: Publish article (copy to Publikationen post type)
+         */
+        public function ajax_publish_artikel() {
+            check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+            if (!$this->is_redaktion() && !$this->is_editor_in_chief() && !current_user_can('manage_options')) {
+                wp_send_json_error(['message' => 'Keine Berechtigung.']);
+            }
+
+            $artikel_id = intval($_POST['article_id'] ?? 0);
+
+            if (!$artikel_id) {
+                wp_send_json_error(['message' => 'Keine Artikel-ID angegeben.']);
+            }
+
+            $article = get_post($artikel_id);
+            if (!$article || $article->post_type !== self::POST_TYPE) {
+                wp_send_json_error(['message' => 'Artikel nicht gefunden.']);
+            }
+
+            // Check if already published
+            $existing_publikation_id = get_field('publikation_id', $artikel_id);
+            if ($existing_publikation_id) {
+                wp_send_json_error(['message' => 'Artikel wurde bereits veröffentlicht. Publikations-ID: ' . $existing_publikation_id]);
+            }
+
+            // Gather article data
+            $title = $article->post_title;
+            $abstract_de = get_field('abstract-deutsch', $artikel_id);
+            $abstract_en = get_field('abstract', $artikel_id);
+            $hauptautor = get_field('hauptautorin', $artikel_id);
+            $hauptautor_email = get_field('hauptautor_email', $artikel_id);
+            $hauptautor_institution = get_field('hauptautor_institution', $artikel_id);
+            $hauptautor_orcid = get_field('hauptautor_orcid', $artikel_id);
+            $koautoren = get_field('autoren', $artikel_id);
+            $publikationsart = get_field('publikationsart', $artikel_id);
+            $keywords_de = get_field('keywords-deutsch', $artikel_id);
+            $keywords_en = get_field('keywords-englisch', $artikel_id);
+            $highlights = get_field('highlights', $artikel_id);
+            $literatur = get_field('literatur', $artikel_id);
+            $interessenkonflikte = get_field('interessenkonflikte', $artikel_id);
+            $submission_id = get_field('submission_id', $artikel_id);
+
+            // Create new post in "publikation" post type
+            $publikation_id = wp_insert_post([
+                'post_type' => 'publikation',
+                'post_title' => $title,
+                'post_status' => 'publish',
+                'post_content' => $abstract_de,
+                'meta_input' => [
+                    'artikel_einreichung_id' => $artikel_id,
+                    'submission_id' => $submission_id
+                ]
+            ]);
+
+            if (is_wp_error($publikation_id)) {
+                wp_send_json_error(['message' => 'Fehler beim Erstellen der Publikation: ' . $publikation_id->get_error_message()]);
+            }
+
+            // Copy ACF fields to publikation
+            update_field('abstract_deutsch', $abstract_de, $publikation_id);
+            update_field('abstract_englisch', $abstract_en, $publikation_id);
+            update_field('korrespondenzautor', $hauptautor, $publikation_id);
+            update_field('korrespondenzautor_email', $hauptautor_email, $publikation_id);
+            update_field('korrespondenzautor_institution', $hauptautor_institution, $publikation_id);
+            update_field('korrespondenzautor_orcid', $hauptautor_orcid, $publikation_id);
+            update_field('koautoren', $koautoren, $publikation_id);
+            update_field('publikationsart', $publikationsart, $publikation_id);
+            update_field('keywords_deutsch', $keywords_de, $publikation_id);
+            update_field('keywords_englisch', $keywords_en, $publikation_id);
+            update_field('highlights', $highlights, $publikation_id);
+            update_field('literatur', $literatur, $publikation_id);
+            update_field('interessenkonflikte', $interessenkonflikte, $publikation_id);
+            update_field('veroeffentlicht_am', date('Y-m-d'), $publikation_id);
+
+            // Copy manuscript file if exists
+            $manuskript = get_field('manuskript', $artikel_id);
+            if ($manuskript) {
+                update_field('manuskript', $manuskript['ID'], $publikation_id);
+            }
+
+            // Update original article status and link to publikation
+            update_field('artikel_status', self::STATUS_PUBLISHED, $artikel_id);
+            update_field('publikation_id', $publikation_id, $artikel_id);
+            update_field('published_at', current_time('mysql'), $artikel_id);
+
+            // Log the publication
+            $this->add_communication_log($artikel_id, [
+                'type' => 'published',
+                'user_name' => wp_get_current_user()->display_name,
+                'recipient' => 'System',
+                'subject' => 'Artikel veröffentlicht - Publikation #' . $publikation_id,
+                'timestamp' => time()
+            ]);
+
+            wp_send_json_success([
+                'message' => 'Artikel erfolgreich veröffentlicht!',
+                'publikation_id' => $publikation_id,
+                'publikation_url' => get_permalink($publikation_id),
+                'edit_url' => get_edit_post_link($publikation_id, 'raw')
+            ]);
         }
 
         /**

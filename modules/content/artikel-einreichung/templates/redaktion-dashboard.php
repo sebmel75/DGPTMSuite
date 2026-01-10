@@ -52,6 +52,7 @@ $stats = [
     'in_review' => 0,
     'revision' => 0,
     'accepted' => 0,
+    'exported' => 0,
     'rejected' => 0,
     'published' => 0
 ];
@@ -72,6 +73,9 @@ foreach ($articles as $art) {
             break;
         case DGPTM_Artikel_Einreichung::STATUS_ACCEPTED:
             $stats['accepted']++;
+            break;
+        case DGPTM_Artikel_Einreichung::STATUS_EXPORTED:
+            $stats['exported']++;
             break;
         case DGPTM_Artikel_Einreichung::STATUS_REJECTED:
             $stats['rejected']++;
@@ -263,6 +267,69 @@ if ($view_id) {
                 </div>
                 <?php endif; ?>
 
+                <!-- Export & Aktionen (nur für angenommene/exportierte Artikel) -->
+                <?php if (in_array($status, [
+                    DGPTM_Artikel_Einreichung::STATUS_ACCEPTED,
+                    DGPTM_Artikel_Einreichung::STATUS_EXPORTED,
+                    DGPTM_Artikel_Einreichung::STATUS_PUBLISHED
+                ])): ?>
+                <hr style="margin: 25px 0;">
+
+                <h4>Export & Veröffentlichung</h4>
+
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+                    <!-- XML Export -->
+                    <button type="button" class="btn btn-secondary export-xml-btn" data-article-id="<?php echo esc_attr($view_id); ?>">
+                        XML exportieren (JATS)
+                    </button>
+
+                    <!-- PDF Export -->
+                    <a href="<?php echo esc_url(add_query_arg(['dgptm_artikel_pdf' => 1, 'artikel_id' => $view_id], home_url())); ?>" target="_blank" class="btn btn-secondary">
+                        PDF herunterladen
+                    </a>
+                </div>
+
+                <!-- Status-Änderung -->
+                <div class="redaktion-status-panel" style="background: #f0f9ff; padding: 20px; border-radius: 8px; border: 1px solid #bae6fd; margin-top: 15px;">
+                    <h5 style="margin: 0 0 15px 0; color: #0369a1;">Status ändern</h5>
+
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                        <?php if ($status === DGPTM_Artikel_Einreichung::STATUS_ACCEPTED): ?>
+                            <button type="button" class="btn change-status-btn" style="background: #0d9488; color: #fff;"
+                                    data-article-id="<?php echo esc_attr($view_id); ?>"
+                                    data-status="<?php echo esc_attr(DGPTM_Artikel_Einreichung::STATUS_EXPORTED); ?>">
+                                Als "Exportiert" markieren
+                            </button>
+                            <span style="color: #64748b; font-size: 13px;">→ Artikel wurde für Druckversion exportiert</span>
+
+                        <?php elseif ($status === DGPTM_Artikel_Einreichung::STATUS_EXPORTED): ?>
+                            <button type="button" class="btn publish-artikel-btn" style="background: #7c3aed; color: #fff;"
+                                    data-article-id="<?php echo esc_attr($view_id); ?>">
+                                Online veröffentlichen
+                            </button>
+                            <span style="color: #64748b; font-size: 13px;">→ Erstellt Beitrag in "Publikationen" und setzt Status auf "Veröffentlicht"</span>
+
+                        <?php elseif ($status === DGPTM_Artikel_Einreichung::STATUS_PUBLISHED): ?>
+                            <?php
+                            $publikation_id = get_field('publikation_id', $view_id);
+                            $published_at = get_field('published_at', $view_id);
+                            ?>
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <span class="status-badge status-purple" style="font-size: 14px;">✓ Veröffentlicht</span>
+                                <?php if ($published_at): ?>
+                                    <span style="color: #64748b; font-size: 13px;">am <?php echo esc_html(date_i18n('d.m.Y', strtotime($published_at))); ?></span>
+                                <?php endif; ?>
+                                <?php if ($publikation_id): ?>
+                                    <a href="<?php echo esc_url(get_permalink($publikation_id)); ?>" target="_blank" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">
+                                        Publikation ansehen →
+                                    </a>
+                                <?php endif; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+
             </div>
         </div>
 
@@ -296,6 +363,10 @@ if ($view_id) {
                 <div style="color: #718096; font-size: 12px;">Angenommen</div>
             </div>
             <div class="article-card" style="text-align: center; padding: 15px;">
+                <div style="font-size: 28px; font-weight: 700; color: #14b8a6;"><?php echo $stats['exported']; ?></div>
+                <div style="color: #718096; font-size: 12px;">Exportiert</div>
+            </div>
+            <div class="article-card" style="text-align: center; padding: 15px;">
                 <div style="font-size: 28px; font-weight: 700; color: #9f7aea;"><?php echo $stats['published']; ?></div>
                 <div style="color: #718096; font-size: 12px;">Publiziert</div>
             </div>
@@ -311,6 +382,8 @@ if ($view_id) {
                class="btn <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_UNDER_REVIEW ? 'btn-primary' : 'btn-secondary'; ?>">Im Review</a>
             <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_ACCEPTED)); ?>"
                class="btn <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_ACCEPTED ? 'btn-primary' : 'btn-secondary'; ?>">Angenommen</a>
+            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_EXPORTED)); ?>"
+               class="btn <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_EXPORTED ? 'btn-primary' : 'btn-secondary'; ?>">Exportiert</a>
             <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_PUBLISHED)); ?>"
                class="btn <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_PUBLISHED ? 'btn-primary' : 'btn-secondary'; ?>">Publiziert</a>
         </div>
@@ -368,3 +441,135 @@ if ($view_id) {
     <?php endif; ?>
 
 </div>
+
+<script>
+jQuery(document).ready(function($) {
+    var config = {
+        ajaxUrl: '<?php echo admin_url('admin-ajax.php'); ?>',
+        nonce: '<?php echo wp_create_nonce(DGPTM_Artikel_Einreichung::NONCE_ACTION); ?>'
+    };
+
+    // Export XML (JATS format)
+    $(document).on('click', '.export-xml-btn', function() {
+        var $btn = $(this);
+        var articleId = $btn.data('article-id');
+        var originalText = $btn.text();
+
+        $btn.prop('disabled', true).text('Wird generiert...');
+
+        $.ajax({
+            url: config.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'dgptm_export_xml',
+                nonce: config.nonce,
+                article_id: articleId
+            },
+            success: function(response) {
+                $btn.prop('disabled', false).text(originalText);
+
+                if (response.success) {
+                    // Create blob and download
+                    var blob = new Blob([response.data.xml], { type: 'application/xml' });
+                    var url = window.URL.createObjectURL(blob);
+                    var a = document.createElement('a');
+                    a.href = url;
+                    a.download = response.data.filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    alert(response.data.message || 'Fehler beim Exportieren.');
+                }
+            },
+            error: function() {
+                $btn.prop('disabled', false).text(originalText);
+                alert('Verbindungsfehler.');
+            }
+        });
+    });
+
+    // Change status
+    $(document).on('click', '.change-status-btn', function() {
+        var $btn = $(this);
+        var articleId = $btn.data('article-id');
+        var newStatus = $btn.data('status');
+        var originalText = $btn.text();
+
+        if (!confirm('Status wirklich ändern?')) {
+            return;
+        }
+
+        $btn.prop('disabled', true).text('Wird gespeichert...');
+
+        $.ajax({
+            url: config.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'dgptm_change_artikel_status',
+                nonce: config.nonce,
+                article_id: articleId,
+                status: newStatus
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Reload page to show updated status
+                    location.reload();
+                } else {
+                    $btn.prop('disabled', false).text(originalText);
+                    alert(response.data.message || 'Fehler beim Ändern des Status.');
+                }
+            },
+            error: function() {
+                $btn.prop('disabled', false).text(originalText);
+                alert('Verbindungsfehler.');
+            }
+        });
+    });
+
+    // Publish article
+    $(document).on('click', '.publish-artikel-btn', function() {
+        var $btn = $(this);
+        var articleId = $btn.data('article-id');
+        var originalText = $btn.text();
+
+        if (!confirm('Artikel jetzt online veröffentlichen?\n\nDies erstellt einen neuen Beitrag im Bereich "Publikationen".')) {
+            return;
+        }
+
+        $btn.prop('disabled', true).text('Wird veröffentlicht...');
+
+        $.ajax({
+            url: config.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'dgptm_publish_artikel',
+                nonce: config.nonce,
+                article_id: articleId
+            },
+            success: function(response) {
+                if (response.success) {
+                    alert('Artikel erfolgreich veröffentlicht!\n\nPublikation erstellt mit ID: ' + response.data.publikation_id);
+                    // Reload page to show updated status
+                    location.reload();
+                } else {
+                    $btn.prop('disabled', false).text(originalText);
+                    alert(response.data.message || 'Fehler beim Veröffentlichen.');
+                }
+            },
+            error: function() {
+                $btn.prop('disabled', false).text(originalText);
+                alert('Verbindungsfehler.');
+            }
+        });
+    });
+});
+</script>
+
+<style>
+.status-teal {
+    background-color: #14b8a6 !important;
+    color: #fff !important;
+}
+</style>

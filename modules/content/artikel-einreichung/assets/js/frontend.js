@@ -40,6 +40,108 @@
                 formatted += val[i];
             }
             $(this).val(formatted.toUpperCase());
+
+            // Hide status and register hint when typing
+            $('#orcid-status').removeClass('success error loading').hide();
+            $('#orcid-register-hint').hide();
+        });
+
+        // ORCID Lookup
+        $('#orcid-lookup-btn').on('click', function() {
+            const $btn = $(this);
+            const $input = $('#hauptautor_orcid');
+            const $status = $('#orcid-status');
+            const $registerHint = $('#orcid-register-hint');
+            const orcid = $input.val().trim();
+
+            // Validate format
+            if (!orcid || !/^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/.test(orcid)) {
+                $status.removeClass('success loading').addClass('error')
+                       .html('Bitte geben Sie eine gültige ORCID-ID ein (Format: 0000-0000-0000-0000)').show();
+                $registerHint.show();
+                return;
+            }
+
+            // Show loading
+            $btn.prop('disabled', true).text('Wird abgerufen...');
+            $status.removeClass('success error').addClass('loading')
+                   .html('<span class="spinner" style="display: inline-block; width: 16px; height: 16px; border: 2px solid #7dd3fc; border-top-color: #0369a1; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 8px;"></span> ORCID-Daten werden abgerufen...').show();
+            $registerHint.hide();
+
+            $.ajax({
+                url: config.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'dgptm_lookup_orcid',
+                    nonce: config.nonce,
+                    orcid: orcid
+                },
+                success: function(response) {
+                    $btn.prop('disabled', false).text('Daten abrufen');
+
+                    if (response.success) {
+                        const data = response.data.data;
+
+                        // Fill in the form fields
+                        if (data.name) {
+                            $('#hauptautor').val(data.name);
+                        }
+                        if (data.email) {
+                            $('#hauptautor_email').val(data.email);
+                        }
+                        if (data.institution) {
+                            $('#hauptautor_institution').val(data.institution);
+                        }
+
+                        // Show success message
+                        let successMsg = '<strong>&#10003; Daten erfolgreich abgerufen:</strong><br>';
+                        successMsg += 'Name: ' + (data.name || '<em>nicht öffentlich</em>') + '<br>';
+                        successMsg += 'E-Mail: ' + (data.email || '<em>nicht öffentlich</em>') + '<br>';
+                        successMsg += 'Institution: ' + (data.institution || '<em>nicht verfügbar</em>');
+
+                        $status.removeClass('error loading').addClass('success').html(successMsg).show();
+                        $registerHint.hide();
+
+                        // Highlight filled fields briefly
+                        $('#hauptautor, #hauptautor_email, #hauptautor_institution').each(function() {
+                            if ($(this).val()) {
+                                $(this).css('background-color', '#dcfce7');
+                                setTimeout(() => {
+                                    $(this).css('background-color', '');
+                                }, 2000);
+                            }
+                        });
+
+                    } else {
+                        // Error or partial data
+                        $status.removeClass('success loading').addClass('error')
+                               .html(response.data.message).show();
+
+                        if (response.data.show_register) {
+                            $registerHint.show();
+                        }
+
+                        // If partial data available, still fill what we have
+                        if (response.data.partial && response.data.data) {
+                            const data = response.data.data;
+                            if (data.email) $('#hauptautor_email').val(data.email);
+                            if (data.institution) $('#hauptautor_institution').val(data.institution);
+                        }
+                    }
+                },
+                error: function() {
+                    $btn.prop('disabled', false).text('Daten abrufen');
+                    $status.removeClass('success loading').addClass('error')
+                           .html('Verbindungsfehler. Bitte versuchen Sie es später erneut.').show();
+                }
+            });
+        });
+
+        // Show register hint when clicking into empty ORCID field
+        $('#hauptautor_orcid').on('focus', function() {
+            if (!$(this).val()) {
+                $('#orcid-register-hint').slideDown(200);
+            }
         });
 
         $form.on('submit', function(e) {

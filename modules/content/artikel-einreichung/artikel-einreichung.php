@@ -82,6 +82,8 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             add_action('wp_ajax_dgptm_get_text_snippets', [$this, 'ajax_get_text_snippets']);
             add_action('wp_ajax_dgptm_save_text_snippet', [$this, 'ajax_save_text_snippet']);
             add_action('wp_ajax_dgptm_delete_text_snippet', [$this, 'ajax_delete_text_snippet']);
+            add_action('wp_ajax_dgptm_lookup_orcid', [$this, 'ajax_lookup_orcid']);
+            add_action('wp_ajax_nopriv_dgptm_lookup_orcid', [$this, 'ajax_lookup_orcid']);
             add_action('wp_ajax_dgptm_save_artikel_settings', [$this, 'ajax_save_artikel_settings']);
 
             // AJAX Handlers for non-logged in users (token-based)
@@ -2092,6 +2094,139 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
          */
         public function get_text_snippets() {
             return get_option(self::OPT_TEXT_SNIPPETS, $this->get_default_snippets());
+        }
+
+        /**
+         * AJAX: Lookup ORCID data from public API
+         */
+        public function ajax_lookup_orcid() {
+            check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+            $orcid = sanitize_text_field($_POST['orcid'] ?? '');
+
+            // Validate ORCID format
+            if (!preg_match('/^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/', $orcid)) {
+                wp_send_json_error([
+                    'message' => 'Ungültiges ORCID-Format. Bitte verwenden Sie das Format: 0000-0000-0000-0000',
+                    'show_register' => true
+                ]);
+            }
+
+            // Query ORCID Public API
+            $api_url = 'https://pub.orcid.org/v3.0/' . $orcid . '/person';
+
+            $response = wp_remote_get($api_url, [
+                'headers' => [
+                    'Accept' => 'application/json'
+                ],
+                'timeout' => 10
+            ]);
+
+            if (is_wp_error($response)) {
+                wp_send_json_error([
+                    'message' => 'Verbindungsfehler zur ORCID-API. Bitte versuchen Sie es später erneut.',
+                    'show_register' => false
+                ]);
+            }
+
+            $status_code = wp_remote_retrieve_response_code($response);
+
+            if ($status_code === 404) {
+                wp_send_json_error([
+                    'message' => 'Diese ORCID-ID wurde nicht gefunden. Bitte überprüfen Sie die Eingabe oder registrieren Sie sich bei ORCID.',
+                    'show_register' => true
+                ]);
+            }
+
+            if ($status_code !== 200) {
+                wp_send_json_error([
+                    'message' => 'Fehler beim Abrufen der ORCID-Daten (Status: ' . $status_code . ').',
+                    'show_register' => false
+                ]);
+            }
+
+            $body = wp_remote_retrieve_body($response);
+            $data = json_decode($body, true);
+
+            if (!$data) {
+                wp_send_json_error([
+                    'message' => 'Ungültige Antwort von der ORCID-API.',
+                    'show_register' => false
+                ]);
+            }
+
+            // Extract name
+            $given_name = '';
+            $family_name = '';
+            $full_name = '';
+
+            if (isset($data['name'])) {
+                $given_name = $data['name']['given-names']['value'] ?? '';
+                $family_name = $data['name']['family-name']['value'] ?? '';
+                $full_name = trim($given_name . ' ' . $family_name);
+            }
+
+            // Extract email (may not be public)
+            $email = '';
+            if (isset($data['emails']['email']) && !empty($data['emails']['email'])) {
+                foreach ($data['emails']['email'] as $email_entry) {
+                    if (!empty($email_entry['email'])) {
+                        $email = $email_entry['email'];
+                        break;
+                    }
+                }
+            }
+
+            // Extract current affiliation/institution
+            $institution = '';
+
+            // Also fetch employments for institution
+            $employments_url = 'https://pub.orcid.org/v3.0/' . $orcid . '/employments';
+            $emp_response = wp_remote_get($employments_url, [
+                'headers' => ['Accept' => 'application/json'],
+                'timeout' => 10
+            ]);
+
+            if (!is_wp_error($emp_response) && wp_remote_retrieve_response_code($emp_response) === 200) {
+                $emp_data = json_decode(wp_remote_retrieve_body($emp_response), true);
+
+                if (isset($emp_data['affiliation-group']) && !empty($emp_data['affiliation-group'])) {
+                    // Get the most recent employment (first in list)
+                    foreach ($emp_data['affiliation-group'] as $group) {
+                        if (isset($group['summaries'][0]['employment-summary'])) {
+                            $emp = $group['summaries'][0]['employment-summary'];
+                            $institution = $emp['organization']['name'] ?? '';
+                            if ($institution) break;
+                        }
+                    }
+                }
+            }
+
+            // Check if we got at least a name
+            if (empty($full_name)) {
+                wp_send_json_error([
+                    'message' => 'Der Name ist bei diesem ORCID-Profil nicht öffentlich sichtbar. Bitte geben Sie Ihren Namen manuell ein.',
+                    'show_register' => false,
+                    'partial' => true,
+                    'data' => [
+                        'orcid' => $orcid,
+                        'email' => $email,
+                        'institution' => $institution
+                    ]
+                ]);
+            }
+
+            wp_send_json_success([
+                'message' => 'ORCID-Daten erfolgreich abgerufen.',
+                'data' => [
+                    'orcid' => $orcid,
+                    'name' => $full_name,
+                    'given_name' => $given_name,
+                    'family_name' => $family_name,
+                    'email' => $email,
+                    'institution' => $institution
+                ]
+            ]);
         }
 
         /**

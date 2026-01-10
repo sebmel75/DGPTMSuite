@@ -69,30 +69,56 @@ $publikationsarten = DGPTM_Artikel_Einreichung::PUBLIKATIONSARTEN;
         <div class="form-section">
             <h3>2. Autorenangaben</h3>
 
-            <div class="form-row-inline">
-                <div class="form-row">
-                    <label for="hauptautor">Korrespondenzautor/in <span class="required">*</span></label>
-                    <input type="text" id="hauptautor" name="hauptautor" required
-                           value="<?php echo esc_attr($user->display_name); ?>">
+            <!-- ORCID First -->
+            <div class="form-row orcid-section">
+                <label for="hauptautor_orcid">ORCID-ID <span class="required">*</span></label>
+                <div class="orcid-input-group">
+                    <span class="orcid-prefix">https://orcid.org/</span>
+                    <input type="text" id="hauptautor_orcid" name="hauptautor_orcid"
+                           placeholder="0000-0000-0000-0000"
+                           pattern="\d{4}-\d{4}-\d{4}-\d{3}[\dX]"
+                           required>
+                    <button type="button" id="orcid-lookup-btn" class="btn btn-secondary">
+                        Daten abrufen
+                    </button>
                 </div>
-                <div class="form-row">
-                    <label for="hauptautor_email">E-Mail <span class="required">*</span></label>
-                    <input type="email" id="hauptautor_email" name="hauptautor_email" required
-                           value="<?php echo esc_attr($user->user_email); ?>">
+                <div id="orcid-status" class="orcid-status"></div>
+                <div class="orcid-help">
+                    <p class="description">
+                        Geben Sie Ihre ORCID-ID ein und klicken Sie auf "Daten abrufen", um Ihre Angaben automatisch zu übernehmen.
+                    </p>
+                    <div id="orcid-register-hint" class="orcid-register-hint" style="display: none;">
+                        <p>
+                            <strong>Sie haben noch keine ORCID-ID?</strong><br>
+                            ORCID ist ein kostenloser, eindeutiger Identifikator für Wissenschaftler.
+                            Die Registrierung dauert nur 2 Minuten.
+                        </p>
+                        <a href="https://orcid.org/register" target="_blank" class="btn btn-primary" style="margin-top: 10px;">
+                            Jetzt bei ORCID registrieren
+                        </a>
+                    </div>
                 </div>
             </div>
 
-            <div class="form-row">
-                <label for="hauptautor_institution">Institution / Klinik</label>
-                <input type="text" id="hauptautor_institution" name="hauptautor_institution">
-            </div>
+            <!-- Author Details (auto-filled from ORCID) -->
+            <div id="author-details-section">
+                <div class="form-row-inline">
+                    <div class="form-row">
+                        <label for="hauptautor">Korrespondenzautor/in <span class="required">*</span></label>
+                        <input type="text" id="hauptautor" name="hauptautor" required
+                               value="<?php echo esc_attr($user->display_name); ?>">
+                    </div>
+                    <div class="form-row">
+                        <label for="hauptautor_email">E-Mail <span class="required">*</span></label>
+                        <input type="email" id="hauptautor_email" name="hauptautor_email" required
+                               value="<?php echo esc_attr($user->user_email); ?>">
+                    </div>
+                </div>
 
-            <div class="form-row">
-                <label for="hauptautor_orcid">ORCID-ID</label>
-                <input type="text" id="hauptautor_orcid" name="hauptautor_orcid"
-                       placeholder="0000-0000-0000-0000"
-                       pattern="\d{4}-\d{4}-\d{4}-\d{3}[\dX]">
-                <p class="description">Optional. Format: 0000-0000-0000-0000 (<a href="https://orcid.org" target="_blank">orcid.org</a>)</p>
+                <div class="form-row">
+                    <label for="hauptautor_institution">Institution / Klinik</label>
+                    <input type="text" id="hauptautor_institution" name="hauptautor_institution">
+                </div>
             </div>
 
             <div class="form-row">
@@ -256,6 +282,103 @@ $publikationsarten = DGPTM_Artikel_Einreichung::PUBLIKATIONSARTEN;
 </div>
 
 <style>
+/* ORCID Section */
+.orcid-section {
+    background: #fefce8;
+    border: 1px solid #fde047;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+.orcid-input-group {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    overflow: hidden;
+}
+.orcid-prefix {
+    background: #f1f5f9;
+    padding: 10px 12px;
+    color: #64748b;
+    font-size: 14px;
+    border-right: 1px solid #e2e8f0;
+    white-space: nowrap;
+}
+.orcid-input-group input {
+    flex: 1;
+    border: none !important;
+    padding: 10px 12px;
+    font-size: 14px;
+    min-width: 180px;
+}
+.orcid-input-group input:focus {
+    outline: none;
+    box-shadow: none !important;
+}
+.orcid-input-group .btn {
+    border-radius: 0;
+    margin: 0;
+    padding: 10px 20px;
+    white-space: nowrap;
+}
+.orcid-status {
+    margin-top: 10px;
+    padding: 10px 15px;
+    border-radius: 6px;
+    font-size: 14px;
+    display: none;
+}
+.orcid-status.success {
+    display: block;
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #86efac;
+}
+.orcid-status.error {
+    display: block;
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
+.orcid-status.loading {
+    display: block;
+    background: #f0f9ff;
+    color: #0369a1;
+    border: 1px solid #7dd3fc;
+}
+.orcid-help {
+    margin-top: 10px;
+}
+.orcid-register-hint {
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 6px;
+    padding: 15px;
+    margin-top: 15px;
+}
+.orcid-register-hint p {
+    margin: 0;
+    color: #9a3412;
+    font-size: 14px;
+}
+@media (max-width: 600px) {
+    .orcid-input-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .orcid-prefix {
+        border-right: none;
+        border-bottom: 1px solid #e2e8f0;
+        text-align: center;
+    }
+    .orcid-input-group .btn {
+        border-radius: 0 0 6px 6px;
+    }
+}
+
 /* Highlights Section */
 .highlights-section {
     background: #f0f9ff;

@@ -43,8 +43,7 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             'kurzmitteilung' => 'Kurzmitteilung',
             'kommentar' => 'Kommentar',
             'editorial' => 'Editorial',
-            'tutorial' => 'Tutorial',
-            'abstract' => 'Abstract (Jahrestagung)'
+            'tutorial' => 'Tutorial'
         ];
 
         public static function get_instance() {
@@ -85,6 +84,7 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             add_action('wp_ajax_dgptm_lookup_orcid', [$this, 'ajax_lookup_orcid']);
             add_action('wp_ajax_nopriv_dgptm_lookup_orcid', [$this, 'ajax_lookup_orcid']);
             add_action('wp_ajax_dgptm_save_artikel_settings', [$this, 'ajax_save_artikel_settings']);
+            add_action('wp_ajax_dgptm_export_xml', [$this, 'ajax_export_xml']);
 
             // AJAX Handlers for non-logged in users (token-based)
             add_action('wp_ajax_nopriv_dgptm_submit_artikel', [$this, 'ajax_submit_artikel']);
@@ -2271,6 +2271,339 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             update_option(self::OPT_SETTINGS, $settings);
 
             wp_send_json_success(['message' => 'Einstellungen gespeichert.']);
+        }
+
+        /**
+         * AJAX: Export article as XML (JATS-like format for medical publications)
+         */
+        public function ajax_export_xml() {
+            check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+            if (!$this->is_editor_in_chief() && !current_user_can('manage_options')) {
+                wp_send_json_error(['message' => 'Keine Berechtigung.']);
+            }
+
+            $artikel_id = intval($_POST['article_id'] ?? 0);
+            if (!$artikel_id) {
+                wp_send_json_error(['message' => 'Keine Artikel-ID angegeben.']);
+            }
+
+            $article = get_post($artikel_id);
+            if (!$article || $article->post_type !== self::POST_TYPE) {
+                wp_send_json_error(['message' => 'Artikel nicht gefunden.']);
+            }
+
+            $xml = $this->generate_jats_xml($artikel_id);
+
+            wp_send_json_success([
+                'xml' => $xml,
+                'filename' => 'artikel-' . get_field('submission_id', $artikel_id) . '.xml'
+            ]);
+        }
+
+        /**
+         * Generate JATS-like XML for medical publication
+         * Based on JATS 1.2 (Journal Article Tag Suite)
+         */
+        private function generate_jats_xml($artikel_id) {
+            $article = get_post($artikel_id);
+
+            // Gather all article data
+            $submission_id = get_field('submission_id', $artikel_id);
+            $title = $article->post_title;
+            $subtitle = get_field('unterueberschrift', $artikel_id);
+            $publikationsart = get_field('publikationsart', $artikel_id);
+            $publikationsart_label = self::PUBLIKATIONSARTEN[$publikationsart] ?? $publikationsart;
+
+            // Author data
+            $hauptautor = get_field('hauptautorin', $artikel_id);
+            $hauptautor_email = get_field('hauptautor_email', $artikel_id);
+            $hauptautor_institution = get_field('hauptautor_institution', $artikel_id);
+            $hauptautor_orcid = get_field('hauptautor_orcid', $artikel_id);
+            $koautoren = get_field('autoren', $artikel_id);
+
+            // Content
+            $abstract_de = get_field('abstract-deutsch', $artikel_id);
+            $abstract_en = get_field('abstract', $artikel_id);
+            $keywords_de = get_field('keywords-deutsch', $artikel_id);
+            $keywords_en = get_field('keywords-englisch', $artikel_id);
+            $highlights = get_field('highlights', $artikel_id);
+            $literatur = get_field('literatur', $artikel_id);
+            $interessenkonflikte = get_field('interessenkonflikte', $artikel_id);
+
+            // Dates
+            $submitted_at = get_field('submitted_at', $artikel_id);
+            $status = get_field('artikel_status', $artikel_id);
+
+            // Map article type to JATS article-type
+            $jats_article_types = [
+                'originalarbeit' => 'research-article',
+                'uebersichtsarbeit' => 'review-article',
+                'fallbericht' => 'case-report',
+                'kurzmitteilung' => 'brief-report',
+                'kommentar' => 'editorial',
+                'editorial' => 'editorial',
+                'tutorial' => 'article-commentary'
+            ];
+            $article_type = $jats_article_types[$publikationsart] ?? 'other';
+
+            // Start building XML
+            $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+            $xml .= '<!DOCTYPE article PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Publishing DTD v1.2 20190208//EN" "JATS-journalpublishing1.dtd">' . "\n";
+            $xml .= '<article xmlns:xlink="http://www.w3.org/1999/xlink" article-type="' . esc_attr($article_type) . '" xml:lang="de">' . "\n";
+
+            // === FRONT MATTER ===
+            $xml .= '  <front>' . "\n";
+
+            // Journal metadata
+            $xml .= '    <journal-meta>' . "\n";
+            $xml .= '      <journal-id journal-id-type="publisher">perfusiologie</journal-id>' . "\n";
+            $xml .= '      <journal-title-group>' . "\n";
+            $xml .= '        <journal-title>Die Perfusiologie</journal-title>' . "\n";
+            $xml .= '        <abbrev-journal-title>Perfusiologie</abbrev-journal-title>' . "\n";
+            $xml .= '      </journal-title-group>' . "\n";
+            $xml .= '      <issn pub-type="ppub">1234-5678</issn>' . "\n"; // Placeholder ISSN
+            $xml .= '      <publisher>' . "\n";
+            $xml .= '        <publisher-name>Deutsche Gesellschaft für Perfusiologie und Technische Medizin e.V.</publisher-name>' . "\n";
+            $xml .= '        <publisher-loc>Deutschland</publisher-loc>' . "\n";
+            $xml .= '      </publisher>' . "\n";
+            $xml .= '    </journal-meta>' . "\n";
+
+            // Article metadata
+            $xml .= '    <article-meta>' . "\n";
+
+            // Article IDs
+            $xml .= '      <article-id pub-id-type="manuscript">' . esc_html($submission_id) . '</article-id>' . "\n";
+
+            // Article categories
+            $xml .= '      <article-categories>' . "\n";
+            $xml .= '        <subj-group subj-group-type="heading">' . "\n";
+            $xml .= '          <subject>' . esc_html($publikationsart_label) . '</subject>' . "\n";
+            $xml .= '        </subj-group>' . "\n";
+            $xml .= '      </article-categories>' . "\n";
+
+            // Title group
+            $xml .= '      <title-group>' . "\n";
+            $xml .= '        <article-title>' . esc_html($title) . '</article-title>' . "\n";
+            if ($subtitle) {
+                $xml .= '        <subtitle>' . esc_html($subtitle) . '</subtitle>' . "\n";
+            }
+            $xml .= '      </title-group>' . "\n";
+
+            // Contributors (Authors)
+            $xml .= '      <contrib-group>' . "\n";
+
+            // Corresponding author
+            $xml .= '        <contrib contrib-type="author" corresp="yes">' . "\n";
+            if ($hauptautor_orcid) {
+                $xml .= '          <contrib-id contrib-id-type="orcid">https://orcid.org/' . esc_html($hauptautor_orcid) . '</contrib-id>' . "\n";
+            }
+            $xml .= $this->format_author_name_xml($hauptautor);
+            if ($hauptautor_email) {
+                $xml .= '          <email>' . esc_html($hauptautor_email) . '</email>' . "\n";
+            }
+            if ($hauptautor_institution) {
+                $xml .= '          <aff>' . "\n";
+                $xml .= '            <institution>' . esc_html($hauptautor_institution) . '</institution>' . "\n";
+                $xml .= '          </aff>' . "\n";
+            }
+            $xml .= '        </contrib>' . "\n";
+
+            // Co-authors
+            if ($koautoren) {
+                $coauthor_lines = array_filter(array_map('trim', explode("\n", $koautoren)));
+                foreach ($coauthor_lines as $coauthor_line) {
+                    $xml .= $this->parse_coauthor_xml($coauthor_line);
+                }
+            }
+
+            $xml .= '      </contrib-group>' . "\n";
+
+            // Publication dates
+            if ($submitted_at) {
+                $submitted_date = strtotime($submitted_at);
+                $xml .= '      <pub-date pub-type="received">' . "\n";
+                $xml .= '        <day>' . date('d', $submitted_date) . '</day>' . "\n";
+                $xml .= '        <month>' . date('m', $submitted_date) . '</month>' . "\n";
+                $xml .= '        <year>' . date('Y', $submitted_date) . '</year>' . "\n";
+                $xml .= '      </pub-date>' . "\n";
+            }
+
+            // History (submission status)
+            $xml .= '      <history>' . "\n";
+            if ($submitted_at) {
+                $submitted_date = strtotime($submitted_at);
+                $xml .= '        <date date-type="received">' . "\n";
+                $xml .= '          <day>' . date('d', $submitted_date) . '</day>' . "\n";
+                $xml .= '          <month>' . date('m', $submitted_date) . '</month>' . "\n";
+                $xml .= '          <year>' . date('Y', $submitted_date) . '</year>' . "\n";
+                $xml .= '        </date>' . "\n";
+            }
+            $xml .= '      </history>' . "\n";
+
+            // Permissions (placeholder)
+            $xml .= '      <permissions>' . "\n";
+            $xml .= '        <copyright-year>' . date('Y') . '</copyright-year>' . "\n";
+            $xml .= '        <copyright-holder>Die Autoren</copyright-holder>' . "\n";
+            $xml .= '      </permissions>' . "\n";
+
+            // Abstract (German)
+            if ($abstract_de) {
+                $xml .= '      <abstract xml:lang="de">' . "\n";
+                $xml .= '        <title>Zusammenfassung</title>' . "\n";
+                $xml .= '        <p>' . esc_html($abstract_de) . '</p>' . "\n";
+                $xml .= '      </abstract>' . "\n";
+            }
+
+            // Abstract (English)
+            if ($abstract_en) {
+                $xml .= '      <trans-abstract xml:lang="en">' . "\n";
+                $xml .= '        <title>Abstract</title>' . "\n";
+                $xml .= '        <p>' . esc_html($abstract_en) . '</p>' . "\n";
+                $xml .= '      </trans-abstract>' . "\n";
+            }
+
+            // Keywords (German)
+            if ($keywords_de) {
+                $xml .= '      <kwd-group xml:lang="de">' . "\n";
+                $xml .= '        <title>Schlüsselwörter</title>' . "\n";
+                $kw_list = array_map('trim', explode(',', $keywords_de));
+                foreach ($kw_list as $kw) {
+                    if ($kw) {
+                        $xml .= '        <kwd>' . esc_html($kw) . '</kwd>' . "\n";
+                    }
+                }
+                $xml .= '      </kwd-group>' . "\n";
+            }
+
+            // Keywords (English)
+            if ($keywords_en) {
+                $xml .= '      <kwd-group xml:lang="en">' . "\n";
+                $xml .= '        <title>Keywords</title>' . "\n";
+                $kw_list = array_map('trim', explode(',', $keywords_en));
+                foreach ($kw_list as $kw) {
+                    if ($kw) {
+                        $xml .= '        <kwd>' . esc_html($kw) . '</kwd>' . "\n";
+                    }
+                }
+                $xml .= '      </kwd-group>' . "\n";
+            }
+
+            // Custom metadata: Highlights
+            if ($highlights) {
+                $xml .= '      <custom-meta-group>' . "\n";
+                $xml .= '        <custom-meta>' . "\n";
+                $xml .= '          <meta-name>highlights</meta-name>' . "\n";
+                $xml .= '          <meta-value>' . "\n";
+                $highlight_lines = array_filter(array_map('trim', explode("\n", $highlights)));
+                foreach ($highlight_lines as $highlight) {
+                    $xml .= '            <p>' . esc_html($highlight) . '</p>' . "\n";
+                }
+                $xml .= '          </meta-value>' . "\n";
+                $xml .= '        </custom-meta>' . "\n";
+                $xml .= '      </custom-meta-group>' . "\n";
+            }
+
+            $xml .= '    </article-meta>' . "\n";
+            $xml .= '  </front>' . "\n";
+
+            // === BODY (placeholder - full text would go here) ===
+            $xml .= '  <body>' . "\n";
+            $xml .= '    <sec>' . "\n";
+            $xml .= '      <title>Volltext</title>' . "\n";
+            $xml .= '      <p>[Volltext aus Manuskript-Datei]</p>' . "\n";
+            $xml .= '    </sec>' . "\n";
+            $xml .= '  </body>' . "\n";
+
+            // === BACK MATTER ===
+            $xml .= '  <back>' . "\n";
+
+            // Conflict of interest
+            if ($interessenkonflikte) {
+                $xml .= '    <fn-group>' . "\n";
+                $xml .= '      <fn fn-type="COI-statement">' . "\n";
+                $xml .= '        <p><bold>Interessenkonflikte:</bold> ' . esc_html($interessenkonflikte) . '</p>' . "\n";
+                $xml .= '      </fn>' . "\n";
+                $xml .= '    </fn-group>' . "\n";
+            }
+
+            // References
+            if ($literatur) {
+                $xml .= '    <ref-list>' . "\n";
+                $xml .= '      <title>Literatur</title>' . "\n";
+                $ref_lines = array_filter(array_map('trim', explode("\n", $literatur)));
+                $ref_id = 1;
+                foreach ($ref_lines as $ref) {
+                    if ($ref) {
+                        $xml .= '      <ref id="ref' . $ref_id . '">' . "\n";
+                        $xml .= '        <mixed-citation>' . esc_html($ref) . '</mixed-citation>' . "\n";
+                        $xml .= '      </ref>' . "\n";
+                        $ref_id++;
+                    }
+                }
+                $xml .= '    </ref-list>' . "\n";
+            }
+
+            $xml .= '  </back>' . "\n";
+            $xml .= '</article>' . "\n";
+
+            return $xml;
+        }
+
+        /**
+         * Format author name as XML elements
+         */
+        private function format_author_name_xml($full_name) {
+            $xml = '';
+
+            // Try to split into given and family name
+            $parts = array_map('trim', explode(' ', trim($full_name)));
+            if (count($parts) >= 2) {
+                $family_name = array_pop($parts);
+                $given_names = implode(' ', $parts);
+
+                $xml .= '          <name>' . "\n";
+                $xml .= '            <surname>' . esc_html($family_name) . '</surname>' . "\n";
+                $xml .= '            <given-names>' . esc_html($given_names) . '</given-names>' . "\n";
+                $xml .= '          </name>' . "\n";
+            } else {
+                $xml .= '          <string-name>' . esc_html($full_name) . '</string-name>' . "\n";
+            }
+
+            return $xml;
+        }
+
+        /**
+         * Parse co-author line and return XML
+         * Expected format: Name, Institution, ORCID (optional)
+         */
+        private function parse_coauthor_xml($line) {
+            $xml = '        <contrib contrib-type="author">' . "\n";
+
+            // Parse the line (comma-separated: Name, Institution, ORCID)
+            $parts = array_map('trim', explode(',', $line));
+            $name = $parts[0] ?? '';
+            $institution = $parts[1] ?? '';
+            $orcid = $parts[2] ?? '';
+
+            // Check if ORCID looks valid
+            if ($orcid && preg_match('/\d{4}-\d{4}-\d{4}-\d{3}[\dX]/', $orcid, $matches)) {
+                $xml .= '          <contrib-id contrib-id-type="orcid">https://orcid.org/' . esc_html($matches[0]) . '</contrib-id>' . "\n";
+            }
+
+            if ($name) {
+                $xml .= $this->format_author_name_xml($name);
+            }
+
+            if ($institution) {
+                $xml .= '          <aff>' . "\n";
+                $xml .= '            <institution>' . esc_html($institution) . '</institution>' . "\n";
+                $xml .= '          </aff>' . "\n";
+            }
+
+            $xml .= '        </contrib>' . "\n";
+
+            return $xml;
         }
 
         /**

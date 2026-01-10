@@ -268,10 +268,18 @@ $base_url = remove_query_arg(['tab', 'status', 'editor_artikel_id']);
 
                                     <hr style="margin: 20px 0;">
 
-                                    <h4>PDF Export</h4>
-                                    <a href="<?php echo esc_url(add_query_arg(['dgptm_artikel_pdf' => 1, 'artikel_id' => $view_id], home_url())); ?>" target="_blank" class="btn btn-secondary">
-                                        Artikel-Übersicht als PDF herunterladen
-                                    </a>
+                                    <h4>Export</h4>
+                                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                        <a href="<?php echo esc_url(add_query_arg(['dgptm_artikel_pdf' => 1, 'artikel_id' => $view_id], home_url())); ?>" target="_blank" class="btn btn-secondary">
+                                            PDF herunterladen
+                                        </a>
+                                        <button type="button" class="btn btn-secondary export-xml-btn" data-article-id="<?php echo esc_attr($view_id); ?>">
+                                            XML exportieren (JATS)
+                                        </button>
+                                    </div>
+                                    <p style="margin-top: 10px; font-size: 12px; color: #718096;">
+                                        XML-Format: JATS 1.2 (Journal Article Tag Suite) - Standard für medizinische Publikationen
+                                    </p>
                                 </div>
 
                                 <!-- Reviews Tab -->
@@ -1151,6 +1159,47 @@ jQuery(document).ready(function($) {
                 } else {
                     alert(response.data.message || 'Fehler beim Zuweisen.');
                 }
+            }
+        });
+    });
+
+    // Export XML (JATS format)
+    $(document).on('click', '.export-xml-btn', function() {
+        const $btn = $(this);
+        const articleId = $btn.data('article-id');
+        const originalText = $btn.text();
+
+        $btn.prop('disabled', true).text('Wird generiert...');
+
+        $.ajax({
+            url: dgptmArtikel.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'dgptm_export_xml',
+                nonce: dgptmArtikel.nonce,
+                article_id: articleId
+            },
+            success: function(response) {
+                $btn.prop('disabled', false).text(originalText);
+
+                if (response.success) {
+                    // Create blob and download
+                    const blob = new Blob([response.data.xml], { type: 'application/xml' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = response.data.filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    alert(response.data.message || 'Fehler beim Exportieren.');
+                }
+            },
+            error: function() {
+                $btn.prop('disabled', false).text(originalText);
+                alert('Verbindungsfehler.');
             }
         });
     });

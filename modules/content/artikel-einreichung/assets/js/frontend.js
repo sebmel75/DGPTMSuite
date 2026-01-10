@@ -29,15 +29,45 @@
         const $form = $('#artikel-submission-form');
         if (!$form.length) return;
 
+        // ORCID format helper
+        $form.find('#hauptautor_orcid').on('input', function() {
+            let val = $(this).val().replace(/[^\dX]/gi, '');
+            if (val.length > 16) val = val.substring(0, 16);
+            // Auto-format with dashes
+            let formatted = '';
+            for (let i = 0; i < val.length; i++) {
+                if (i > 0 && i % 4 === 0) formatted += '-';
+                formatted += val[i];
+            }
+            $(this).val(formatted.toUpperCase());
+        });
+
         $form.on('submit', function(e) {
             e.preventDefault();
 
             const $submitBtn = $form.find('button[type="submit"]');
             const originalText = $submitBtn.text();
 
+            // Combine highlights into hidden field
+            const highlight1 = $form.find('#highlight_1').val().trim();
+            const highlight2 = $form.find('#highlight_2').val().trim();
+            const highlight3 = $form.find('#highlight_3').val().trim();
+
+            if (!highlight1 || !highlight2 || !highlight3) {
+                showNotice('Bitte füllen Sie alle drei Highlights aus.', 'error');
+                return;
+            }
+
+            const highlightsText = '1. ' + highlight1 + '\n2. ' + highlight2 + '\n3. ' + highlight3;
+            $form.find('#highlights').val(highlightsText);
+
             // Validate required fields
             let valid = true;
             $form.find('[required]').each(function() {
+                // Skip highlight inputs as we validate them separately
+                if ($(this).attr('id') && $(this).attr('id').startsWith('highlight_')) {
+                    return;
+                }
                 if (!$(this).val()) {
                     $(this).addClass('error');
                     valid = false;
@@ -45,6 +75,14 @@
                     $(this).removeClass('error');
                 }
             });
+
+            // Validate ORCID format if provided
+            const orcid = $form.find('#hauptautor_orcid').val();
+            if (orcid && !/^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/.test(orcid)) {
+                showNotice('Bitte geben Sie eine gültige ORCID-ID ein (Format: 0000-0000-0000-0000).', 'error');
+                $form.find('#hauptautor_orcid').addClass('error');
+                return;
+            }
 
             // Check manuscript upload
             const $manuskript = $form.find('input[name="manuskript"]');
@@ -312,6 +350,185 @@
      * Editor Dashboard (Frontend)
      */
     function initEditorDashboard() {
+        // Text Snippets storage
+        let textSnippets = {};
+
+        // Load text snippets
+        function loadTextSnippets() {
+            $.ajax({
+                url: config.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'dgptm_get_text_snippets',
+                    nonce: config.nonce
+                },
+                success: function(response) {
+                    if (response.success) {
+                        textSnippets = response.data.snippets || {};
+                        updateSnippetDropdown();
+                    }
+                }
+            });
+        }
+
+        // Update snippet dropdown based on category
+        function updateSnippetDropdown(category) {
+            const $select = $('#snippet-select');
+            $select.html('<option value="">-- Textbaustein wählen --</option>');
+
+            const categoryLabels = {
+                'formal': 'Formale Prüfung',
+                'review': 'Review-Feedback',
+                'decision': 'Entscheidungen',
+                'general': 'Allgemein'
+            };
+
+            // Group by category
+            const byCategory = {};
+            Object.values(textSnippets).forEach(function(snippet) {
+                const cat = snippet.category || 'general';
+                if (!byCategory[cat]) byCategory[cat] = [];
+                byCategory[cat].push(snippet);
+            });
+
+            // Add options
+            Object.keys(byCategory).forEach(function(cat) {
+                if (category && category !== cat) return;
+
+                const label = categoryLabels[cat] || cat;
+                const $group = $('<optgroup>').attr('label', label);
+
+                byCategory[cat].forEach(function(snippet) {
+                    $group.append(
+                        $('<option>').val(snippet.id).text(snippet.title)
+                    );
+                });
+
+                $select.append($group);
+            });
+        }
+
+        // Category filter change
+        $(document).on('change', '#snippet-category', function() {
+            updateSnippetDropdown($(this).val());
+        });
+
+        // Insert snippet
+        $(document).on('click', '#insert-snippet-btn', function() {
+            const snippetId = $('#snippet-select').val();
+            if (!snippetId || !textSnippets[snippetId]) {
+                showNotice('Bitte wählen Sie einen Textbaustein aus.', 'error');
+                return;
+            }
+
+            const snippet = textSnippets[snippetId];
+            const $textarea = $('#email-body');
+            const currentText = $textarea.val();
+            const cursorPos = $textarea[0].selectionStart;
+
+            // Insert at cursor position
+            const newText = currentText.substring(0, cursorPos) +
+                           snippet.content +
+                           currentText.substring(cursorPos);
+
+            $textarea.val(newText);
+
+            // Move cursor after inserted text
+            const newCursorPos = cursorPos + snippet.content.length;
+            $textarea[0].setSelectionRange(newCursorPos, newCursorPos);
+            $textarea.focus();
+        });
+
+        // Email Preview
+        $(document).on('click', '.preview-email-btn', function() {
+            const articleId = $(this).data('article-id');
+            const emailType = $(this).data('email-type') || 'status_update';
+            const recipientType = $(this).data('recipient-type') || 'author';
+            const reviewerId = $(this).data('reviewer-id') || 0;
+
+            // Load snippets if not loaded
+            if (Object.keys(textSnippets).length === 0) {
+                loadTextSnippets();
+            }
+
+            // Load email preview
+            $.ajax({
+                url: config.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'dgptm_preview_email',
+                    nonce: config.nonce,
+                    article_id: articleId,
+                    email_type: emailType,
+                    recipient_type: recipientType,
+                    reviewer_id: reviewerId
+                },
+                success: function(response) {
+                    if (response.success) {
+                        const data = response.data;
+                        $('#email-recipient').text(data.recipient_name + ' <' + data.recipient_email + '>');
+                        $('#email-subject').val(data.subject);
+                        $('#email-body').val(data.body || 'Sehr geehrte/r ' + data.recipient_name + ',\n\n\n\nMit freundlichen Grüßen,\nDie Redaktion\nDie Perfusiologie');
+                        $('#email-article-id').val(articleId);
+                        $('#email-type').val(emailType);
+                        $('#email-preview-modal').data('recipient-email', data.recipient_email);
+                        $('#snippet-category').val('');
+                        updateSnippetDropdown();
+                        openModal('email-preview-modal');
+                    } else {
+                        showNotice(response.data.message || 'Fehler beim Laden der E-Mail-Vorschau.', 'error');
+                    }
+                },
+                error: function() {
+                    showNotice('Verbindungsfehler.', 'error');
+                }
+            });
+        });
+
+        // Send Email from Preview
+        $(document).on('click', '#send-email-btn', function() {
+            const $btn = $(this);
+            const articleId = $('#email-article-id').val();
+            const recipientEmail = $('#email-preview-modal').data('recipient-email');
+            const subject = $('#email-subject').val();
+            const body = $('#email-body').val();
+            const emailType = $('#email-type').val();
+
+            if (!subject || !body) {
+                showNotice('Bitte füllen Sie Betreff und Nachricht aus.', 'error');
+                return;
+            }
+
+            $btn.prop('disabled', true).text('Wird gesendet...');
+
+            $.ajax({
+                url: config.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'dgptm_send_custom_email',
+                    nonce: config.nonce,
+                    article_id: articleId,
+                    recipient_email: recipientEmail,
+                    subject: subject,
+                    body: body,
+                    email_type: emailType
+                },
+                success: function(response) {
+                    $btn.prop('disabled', false).text('E-Mail senden');
+                    if (response.success) {
+                        showNotice(response.data.message, 'success');
+                        closeModal();
+                    } else {
+                        showNotice(response.data.message || 'Fehler beim Senden.', 'error');
+                    }
+                },
+                error: function() {
+                    $btn.prop('disabled', false).text('E-Mail senden');
+                    showNotice('Verbindungsfehler.', 'error');
+                }
+            });
+        });
+
         // Assign reviewer
         $(document).on('click', '.assign-reviewer-btn', function() {
             const articleId = $(this).data('article-id');

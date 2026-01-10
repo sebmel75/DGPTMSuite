@@ -330,6 +330,11 @@ body .dgptm-artikel-form .btn.btn-primary:hover {
     color: #2a4365;
 }
 
+.status-cyan {
+    background: #b2f5ea;
+    color: #234e52;
+}
+
 .status-orange {
     background: #feebc8;
     color: #744210;

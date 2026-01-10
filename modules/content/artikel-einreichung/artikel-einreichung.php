@@ -20,11 +20,14 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
         // Constants
         const POST_TYPE = 'artikel_einreichung';
         const OPT_REVIEWERS = 'dgptm_artikel_reviewers';
+        const OPT_REVIEWER_NOTES = 'dgptm_artikel_reviewer_notes';
+        const OPT_TEXT_SNIPPETS = 'dgptm_artikel_text_snippets';
         const OPT_SETTINGS = 'dgptm_artikel_settings';
         const NONCE_ACTION = 'dgptm_artikel_nonce';
 
         // Article Status
         const STATUS_SUBMITTED = 'eingereicht';
+        const STATUS_FORMAL_CHECK = 'formale_pruefung';
         const STATUS_UNDER_REVIEW = 'in_review';
         const STATUS_REVISION_REQUIRED = 'revision_erforderlich';
         const STATUS_REVISION_SUBMITTED = 'revision_eingereicht';
@@ -73,6 +76,12 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             add_action('wp_ajax_dgptm_search_users', [$this, 'ajax_search_users']);
             add_action('wp_ajax_dgptm_add_reviewer', [$this, 'ajax_add_reviewer']);
             add_action('wp_ajax_dgptm_remove_reviewer', [$this, 'ajax_remove_reviewer']);
+            add_action('wp_ajax_dgptm_save_reviewer_notes', [$this, 'ajax_save_reviewer_notes']);
+            add_action('wp_ajax_dgptm_preview_email', [$this, 'ajax_preview_email']);
+            add_action('wp_ajax_dgptm_send_custom_email', [$this, 'ajax_send_custom_email']);
+            add_action('wp_ajax_dgptm_get_text_snippets', [$this, 'ajax_get_text_snippets']);
+            add_action('wp_ajax_dgptm_save_text_snippet', [$this, 'ajax_save_text_snippet']);
+            add_action('wp_ajax_dgptm_delete_text_snippet', [$this, 'ajax_delete_text_snippet']);
             add_action('wp_ajax_dgptm_save_artikel_settings', [$this, 'ajax_save_artikel_settings']);
 
             // AJAX Handlers for non-logged in users (token-based)
@@ -416,6 +425,7 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
                         'type' => 'select',
                         'choices' => [
                             self::STATUS_SUBMITTED => 'Eingereicht',
+                            self::STATUS_FORMAL_CHECK => 'Formale Prüfung',
                             self::STATUS_UNDER_REVIEW => 'Im Review',
                             self::STATUS_REVISION_REQUIRED => 'Revision erforderlich',
                             self::STATUS_REVISION_SUBMITTED => 'Revision eingereicht',
@@ -461,11 +471,19 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
                         'type' => 'text'
                     ],
                     [
+                        'key' => 'field_artikel_hauptautor_orcid',
+                        'label' => 'ORCID Korrespondenzautor',
+                        'name' => 'hauptautor_orcid',
+                        'type' => 'text',
+                        'instructions' => 'Format: 0000-0000-0000-0000 (https://orcid.org)',
+                        'placeholder' => '0000-0000-0000-0000'
+                    ],
+                    [
                         'key' => 'field_artikel_koautoren',
                         'label' => 'Ko-Autoren',
                         'name' => 'autoren',
                         'type' => 'textarea',
-                        'instructions' => 'Ein Autor pro Zeile: Name, Institution'
+                        'instructions' => 'Ein Autor pro Zeile: Name, Institution, ORCID (optional)'
                     ],
                     // Abstracts
                     [
@@ -497,6 +515,16 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
                         'name' => 'keywords-englisch',
                         'type' => 'text',
                         'instructions' => 'Comma-separated, max. 6'
+                    ],
+                    // Highlights
+                    [
+                        'key' => 'field_artikel_highlights',
+                        'label' => 'Highlights',
+                        'name' => 'highlights',
+                        'type' => 'textarea',
+                        'rows' => 4,
+                        'required' => 1,
+                        'instructions' => 'Three key findings/contributions of your work (in English). One highlight per line, numbered 1-3.'
                     ],
                     // Dateien
                     [
@@ -715,6 +743,57 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
                         'type' => 'text',
                         'readonly' => 1,
                         'instructions' => 'Automatisch generierter Token für Autoren ohne Login'
+                    ],
+                    // Communication Log
+                    [
+                        'key' => 'field_artikel_communication_log',
+                        'label' => 'Kommunikations-Log',
+                        'name' => 'communication_log',
+                        'type' => 'repeater',
+                        'sub_fields' => [
+                            [
+                                'key' => 'field_artikel_comm_timestamp',
+                                'label' => 'Zeitstempel',
+                                'name' => 'timestamp',
+                                'type' => 'number'
+                            ],
+                            [
+                                'key' => 'field_artikel_comm_user_id',
+                                'label' => 'Benutzer-ID',
+                                'name' => 'user_id',
+                                'type' => 'number'
+                            ],
+                            [
+                                'key' => 'field_artikel_comm_user_name',
+                                'label' => 'Benutzer-Name',
+                                'name' => 'user_name',
+                                'type' => 'text'
+                            ],
+                            [
+                                'key' => 'field_artikel_comm_type',
+                                'label' => 'Typ',
+                                'name' => 'type',
+                                'type' => 'text'
+                            ],
+                            [
+                                'key' => 'field_artikel_comm_recipient',
+                                'label' => 'Empfänger',
+                                'name' => 'recipient',
+                                'type' => 'text'
+                            ],
+                            [
+                                'key' => 'field_artikel_comm_subject',
+                                'label' => 'Betreff',
+                                'name' => 'subject',
+                                'type' => 'text'
+                            ],
+                            [
+                                'key' => 'field_artikel_comm_body',
+                                'label' => 'Inhalt',
+                                'name' => 'body',
+                                'type' => 'textarea'
+                            ]
+                        ]
                     ]
                 ],
                 'location' => [
@@ -998,6 +1077,7 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
         public function get_status_label($status) {
             $labels = [
                 self::STATUS_SUBMITTED => 'Eingereicht',
+                self::STATUS_FORMAL_CHECK => 'Formale Prüfung',
                 self::STATUS_UNDER_REVIEW => 'Im Review',
                 self::STATUS_REVISION_REQUIRED => 'Revision erforderlich',
                 self::STATUS_REVISION_SUBMITTED => 'Revision eingereicht',
@@ -1014,6 +1094,7 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
         public function get_status_class($status) {
             $classes = [
                 self::STATUS_SUBMITTED => 'status-blue',
+                self::STATUS_FORMAL_CHECK => 'status-cyan',
                 self::STATUS_UNDER_REVIEW => 'status-orange',
                 self::STATUS_REVISION_REQUIRED => 'status-yellow',
                 self::STATUS_REVISION_SUBMITTED => 'status-blue',
@@ -1063,10 +1144,18 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             $user_id = get_current_user_id();
 
             // Validate required fields
-            $required = ['titel', 'publikationsart', 'hauptautor', 'hauptautor_email', 'abstract_deutsch'];
+            $required = ['titel', 'publikationsart', 'hauptautor', 'hauptautor_email', 'abstract_deutsch', 'highlights'];
             foreach ($required as $field) {
                 if (empty($_POST[$field])) {
                     wp_send_json_error(['message' => 'Bitte füllen Sie alle Pflichtfelder aus.']);
+                }
+            }
+
+            // Validate ORCID format if provided
+            if (!empty($_POST['hauptautor_orcid'])) {
+                $orcid = sanitize_text_field($_POST['hauptautor_orcid']);
+                if (!preg_match('/^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/', $orcid)) {
+                    wp_send_json_error(['message' => 'Bitte geben Sie eine gültige ORCID-ID ein (Format: 0000-0000-0000-0000).']);
                 }
             }
 
@@ -1099,11 +1188,13 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             update_field('hauptautorin', sanitize_text_field($_POST['hauptautor']), $post_id);
             update_field('hauptautor_email', sanitize_email($_POST['hauptautor_email']), $post_id);
             update_field('hauptautor_institution', sanitize_text_field($_POST['hauptautor_institution'] ?? ''), $post_id);
+            update_field('hauptautor_orcid', sanitize_text_field($_POST['hauptautor_orcid'] ?? ''), $post_id);
             update_field('autoren', sanitize_textarea_field($_POST['koautoren'] ?? ''), $post_id);
             update_field('abstract-deutsch', sanitize_textarea_field($_POST['abstract_deutsch']), $post_id);
             update_field('abstract', sanitize_textarea_field($_POST['abstract_englisch'] ?? ''), $post_id);
             update_field('keywords-deutsch', sanitize_text_field($_POST['keywords_deutsch'] ?? ''), $post_id);
             update_field('keywords-englisch', sanitize_text_field($_POST['keywords_englisch'] ?? ''), $post_id);
+            update_field('highlights', sanitize_textarea_field($_POST['highlights']), $post_id);
             update_field('literatur', sanitize_textarea_field($_POST['literatur'] ?? ''), $post_id);
             update_field('interessenkonflikte', sanitize_textarea_field($_POST['interessenkonflikte'] ?? ''), $post_id);
             update_field('funding', sanitize_textarea_field($_POST['funding'] ?? ''), $post_id);
@@ -1682,6 +1773,325 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             update_option(self::OPT_REVIEWERS, $reviewer_ids);
 
             wp_send_json_success(['message' => 'Reviewer entfernt.']);
+        }
+
+        /**
+         * AJAX: Save reviewer notes (expertise, availability)
+         */
+        public function ajax_save_reviewer_notes() {
+            check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+            if (!$this->is_editor_in_chief() && !current_user_can('manage_options')) {
+                wp_send_json_error(['message' => 'Keine Berechtigung.']);
+            }
+
+            $user_id = intval($_POST['user_id'] ?? 0);
+            $expertise = sanitize_text_field($_POST['expertise'] ?? '');
+            $availability = sanitize_text_field($_POST['availability'] ?? '');
+            $notes = sanitize_textarea_field($_POST['notes'] ?? '');
+
+            if (!$user_id) {
+                wp_send_json_error(['message' => 'Ungültige Benutzer-ID.']);
+            }
+
+            // Get existing notes
+            $all_notes = get_option(self::OPT_REVIEWER_NOTES, []);
+
+            // Update notes for this reviewer
+            $all_notes[$user_id] = [
+                'expertise' => $expertise,
+                'availability' => $availability,
+                'notes' => $notes,
+                'updated_at' => current_time('timestamp'),
+                'updated_by' => get_current_user_id()
+            ];
+
+            update_option(self::OPT_REVIEWER_NOTES, $all_notes);
+
+            wp_send_json_success(['message' => 'Notizen gespeichert.']);
+        }
+
+        /**
+         * Get reviewer notes
+         */
+        public function get_reviewer_notes($user_id) {
+            $all_notes = get_option(self::OPT_REVIEWER_NOTES, []);
+            return $all_notes[$user_id] ?? [
+                'expertise' => '',
+                'availability' => '',
+                'notes' => ''
+            ];
+        }
+
+        /**
+         * AJAX: Preview email before sending
+         */
+        public function ajax_preview_email() {
+            check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+            if (!$this->is_editor_in_chief() && !$this->is_redaktion() && !current_user_can('manage_options')) {
+                wp_send_json_error(['message' => 'Keine Berechtigung.']);
+            }
+
+            $article_id = intval($_POST['article_id'] ?? 0);
+            $email_type = sanitize_text_field($_POST['email_type'] ?? '');
+            $recipient_type = sanitize_text_field($_POST['recipient_type'] ?? 'author'); // author or reviewer
+            $reviewer_id = intval($_POST['reviewer_id'] ?? 0);
+
+            if (!$article_id) {
+                wp_send_json_error(['message' => 'Ungültige Artikel-ID.']);
+            }
+
+            $article = get_post($article_id);
+            if (!$article) {
+                wp_send_json_error(['message' => 'Artikel nicht gefunden.']);
+            }
+
+            // Get article data
+            $submission_id = get_field('submission_id', $article_id);
+            $author_name = get_field('hauptautorin', $article_id);
+            $author_email = get_field('hauptautor_email', $article_id);
+            $article_title = $article->post_title;
+
+            // Determine recipient
+            if ($recipient_type === 'reviewer' && $reviewer_id) {
+                $reviewer = get_user_by('ID', $reviewer_id);
+                $recipient_email = $reviewer ? $reviewer->user_email : '';
+                $recipient_name = $reviewer ? $reviewer->display_name : '';
+            } else {
+                $recipient_email = $author_email;
+                $recipient_name = $author_name;
+            }
+
+            // Get email template
+            $settings = get_option(self::OPT_SETTINGS, []);
+            $template_key = 'email_' . $email_type;
+            $template = $settings[$template_key] ?? [];
+
+            $subject = $template['subject'] ?? 'Die Perfusiologie - Ihre Einreichung';
+            $body = $template['body'] ?? '';
+
+            // Replace placeholders
+            $placeholders = [
+                '{author_name}' => $author_name,
+                '{recipient_name}' => $recipient_name,
+                '{submission_id}' => $submission_id,
+                '{article_title}' => $article_title,
+                '{site_name}' => get_bloginfo('name'),
+                '{site_url}' => get_site_url()
+            ];
+
+            $subject = str_replace(array_keys($placeholders), array_values($placeholders), $subject);
+            $body = str_replace(array_keys($placeholders), array_values($placeholders), $body);
+
+            wp_send_json_success([
+                'recipient_email' => $recipient_email,
+                'recipient_name' => $recipient_name,
+                'subject' => $subject,
+                'body' => $body,
+                'article_title' => $article_title,
+                'submission_id' => $submission_id
+            ]);
+        }
+
+        /**
+         * AJAX: Send custom email (with preview/editing)
+         */
+        public function ajax_send_custom_email() {
+            check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+            if (!$this->is_editor_in_chief() && !$this->is_redaktion() && !current_user_can('manage_options')) {
+                wp_send_json_error(['message' => 'Keine Berechtigung.']);
+            }
+
+            $article_id = intval($_POST['article_id'] ?? 0);
+            $recipient_email = sanitize_email($_POST['recipient_email'] ?? '');
+            $subject = sanitize_text_field($_POST['subject'] ?? '');
+            $body = wp_kses_post($_POST['body'] ?? '');
+            $email_type = sanitize_text_field($_POST['email_type'] ?? 'custom');
+
+            if (!$article_id || !$recipient_email || !$subject || !$body) {
+                wp_send_json_error(['message' => 'Bitte füllen Sie alle Felder aus.']);
+            }
+
+            // Send email
+            $headers = ['Content-Type: text/html; charset=UTF-8'];
+            $sent = wp_mail($recipient_email, $subject, nl2br($body), $headers);
+
+            if (!$sent) {
+                wp_send_json_error(['message' => 'E-Mail konnte nicht gesendet werden.']);
+            }
+
+            // Log the communication
+            $this->log_communication($article_id, $email_type, $recipient_email, $subject, $body);
+
+            wp_send_json_success(['message' => 'E-Mail erfolgreich gesendet.']);
+        }
+
+        /**
+         * Log communication for an article
+         */
+        public function log_communication($article_id, $type, $recipient, $subject, $body) {
+            $log = get_field('communication_log', $article_id) ?: [];
+
+            $log[] = [
+                'timestamp' => current_time('timestamp'),
+                'user_id' => get_current_user_id(),
+                'user_name' => wp_get_current_user()->display_name,
+                'type' => $type,
+                'recipient' => $recipient,
+                'subject' => $subject,
+                'body' => $body
+            ];
+
+            update_field('communication_log', $log, $article_id);
+        }
+
+        /**
+         * Get communication log for an article
+         */
+        public function get_communication_log($article_id) {
+            return get_field('communication_log', $article_id) ?: [];
+        }
+
+        /**
+         * AJAX: Get all text snippets
+         */
+        public function ajax_get_text_snippets() {
+            check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+            if (!$this->is_editor_in_chief() && !$this->is_redaktion() && !current_user_can('manage_options')) {
+                wp_send_json_error(['message' => 'Keine Berechtigung.']);
+            }
+
+            $snippets = get_option(self::OPT_TEXT_SNIPPETS, $this->get_default_snippets());
+            wp_send_json_success(['snippets' => $snippets]);
+        }
+
+        /**
+         * AJAX: Save a text snippet
+         */
+        public function ajax_save_text_snippet() {
+            check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+            if (!$this->is_editor_in_chief() && !current_user_can('manage_options')) {
+                wp_send_json_error(['message' => 'Keine Berechtigung.']);
+            }
+
+            $snippet_id = sanitize_text_field($_POST['snippet_id'] ?? '');
+            $category = sanitize_text_field($_POST['category'] ?? 'general');
+            $title = sanitize_text_field($_POST['title'] ?? '');
+            $content = wp_kses_post($_POST['content'] ?? '');
+
+            if (!$title || !$content) {
+                wp_send_json_error(['message' => 'Titel und Inhalt sind erforderlich.']);
+            }
+
+            $snippets = get_option(self::OPT_TEXT_SNIPPETS, []);
+
+            // Generate ID if new
+            if (!$snippet_id) {
+                $snippet_id = 'snippet_' . uniqid();
+            }
+
+            $snippets[$snippet_id] = [
+                'id' => $snippet_id,
+                'category' => $category,
+                'title' => $title,
+                'content' => $content,
+                'updated_at' => current_time('timestamp'),
+                'updated_by' => get_current_user_id()
+            ];
+
+            update_option(self::OPT_TEXT_SNIPPETS, $snippets);
+
+            wp_send_json_success([
+                'message' => 'Textbaustein gespeichert.',
+                'snippet' => $snippets[$snippet_id]
+            ]);
+        }
+
+        /**
+         * AJAX: Delete a text snippet
+         */
+        public function ajax_delete_text_snippet() {
+            check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+            if (!$this->is_editor_in_chief() && !current_user_can('manage_options')) {
+                wp_send_json_error(['message' => 'Keine Berechtigung.']);
+            }
+
+            $snippet_id = sanitize_text_field($_POST['snippet_id'] ?? '');
+
+            if (!$snippet_id) {
+                wp_send_json_error(['message' => 'Ungültige Snippet-ID.']);
+            }
+
+            $snippets = get_option(self::OPT_TEXT_SNIPPETS, []);
+
+            if (isset($snippets[$snippet_id])) {
+                unset($snippets[$snippet_id]);
+                update_option(self::OPT_TEXT_SNIPPETS, $snippets);
+            }
+
+            wp_send_json_success(['message' => 'Textbaustein gelöscht.']);
+        }
+
+        /**
+         * Get default text snippets
+         */
+        private function get_default_snippets() {
+            return [
+                'formal_incomplete' => [
+                    'id' => 'formal_incomplete',
+                    'category' => 'formal',
+                    'title' => 'Unvollständige Angaben',
+                    'content' => "Leider fehlen in Ihrer Einreichung noch einige Angaben, die für die weitere Bearbeitung erforderlich sind:\n\n- [Fehlende Angabe 1]\n- [Fehlende Angabe 2]\n\nBitte ergänzen Sie diese Informationen und reichen Sie das Manuskript erneut ein."
+                ],
+                'formal_format' => [
+                    'id' => 'formal_format',
+                    'category' => 'formal',
+                    'title' => 'Formatierung nicht korrekt',
+                    'content' => "Die Formatierung Ihres Manuskripts entspricht nicht unseren Autorenrichtlinien:\n\n- [Formatierungsfehler 1]\n- [Formatierungsfehler 2]\n\nBitte passen Sie das Manuskript entsprechend an."
+                ],
+                'review_positive' => [
+                    'id' => 'review_positive',
+                    'category' => 'review',
+                    'title' => 'Positives Feedback',
+                    'content' => "Vielen Dank für Ihre interessante Einreichung. Das Thema ist relevant für unsere Leserschaft und die Darstellung ist klar strukturiert."
+                ],
+                'review_revision_minor' => [
+                    'id' => 'review_revision_minor',
+                    'category' => 'review',
+                    'title' => 'Kleinere Revisionen nötig',
+                    'content' => "Nach Durchsicht der Gutachten empfehlen wir kleinere Überarbeitungen:\n\n[Zusammenfassung der Reviewer-Kommentare]\n\nBitte reichen Sie die überarbeitete Version innerhalb von 4 Wochen ein."
+                ],
+                'review_revision_major' => [
+                    'id' => 'review_revision_major',
+                    'category' => 'review',
+                    'title' => 'Größere Revisionen nötig',
+                    'content' => "Die Gutachter empfehlen umfangreiche Überarbeitungen:\n\n[Zusammenfassung der Haupt-Kritikpunkte]\n\nWir bitten Sie, die Punkte sorgfältig zu adressieren und eine überarbeitete Version einzureichen."
+                ],
+                'acceptance' => [
+                    'id' => 'acceptance',
+                    'category' => 'decision',
+                    'title' => 'Annahme',
+                    'content' => "Wir freuen uns, Ihnen mitteilen zu können, dass Ihr Manuskript zur Veröffentlichung in Die Perfusiologie angenommen wurde.\n\nWir werden Sie zeitnah über die nächsten Schritte (Druckfahnen, Publikationsdatum) informieren."
+                ],
+                'rejection' => [
+                    'id' => 'rejection',
+                    'category' => 'decision',
+                    'title' => 'Ablehnung',
+                    'content' => "Nach sorgfältiger Prüfung müssen wir Ihnen leider mitteilen, dass wir Ihr Manuskript nicht zur Veröffentlichung annehmen können.\n\n[Begründung]\n\nWir danken Ihnen für das Einreichen Ihrer Arbeit und wünschen Ihnen viel Erfolg bei anderen Zeitschriften."
+                ]
+            ];
+        }
+
+        /**
+         * Get text snippets
+         */
+        public function get_text_snippets() {
+            return get_option(self::OPT_TEXT_SNIPPETS, $this->get_default_snippets());
         }
 
         /**

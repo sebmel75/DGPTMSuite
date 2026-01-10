@@ -184,7 +184,34 @@ $base_url = remove_query_arg(['tab', 'status', 'editor_artikel_id']);
                                             <span class="label">Eingereicht am:</span>
                                             <span class="value"><?php echo esc_html(date_i18n('d.m.Y H:i', strtotime(get_field('submitted_at', $view_id)))); ?></span>
                                         </li>
+                                        <?php if ($orcid = get_field('hauptautor_orcid', $view_id)): ?>
+                                        <li>
+                                            <span class="label">ORCID:</span>
+                                            <span class="value">
+                                                <a href="https://orcid.org/<?php echo esc_attr($orcid); ?>" target="_blank">
+                                                    <?php echo esc_html($orcid); ?>
+                                                </a>
+                                            </span>
+                                        </li>
+                                        <?php endif; ?>
                                     </ul>
+
+                                    <!-- Email Button -->
+                                    <div style="margin-top: 15px;">
+                                        <button type="button" class="email-action-btn preview-email-btn"
+                                                data-article-id="<?php echo esc_attr($view_id); ?>"
+                                                data-email-type="status_update"
+                                                data-recipient-type="author">
+                                            &#9993; E-Mail an Autor senden
+                                        </button>
+                                    </div>
+
+                                    <?php if ($highlights = get_field('highlights', $view_id)): ?>
+                                    <h4 style="margin-top: 20px;">Highlights</h4>
+                                    <div style="background: #f0f9ff; padding: 15px; border-radius: 6px; border-left: 4px solid #3182ce;">
+                                        <pre style="white-space: pre-wrap; margin: 0; font-family: inherit; font-size: 14px;"><?php echo esc_html($highlights); ?></pre>
+                                    </div>
+                                    <?php endif; ?>
 
                                     <h4 style="margin-top: 20px;">Abstract (Deutsch)</h4>
                                     <div style="white-space: pre-wrap; background: #f7fafc; padding: 15px; border-radius: 6px; font-size: 14px;">
@@ -444,6 +471,61 @@ $base_url = remove_query_arg(['tab', 'status', 'editor_artikel_id']);
                             <?php endif; ?>
                         </div>
                     </div>
+
+                    <!-- Communication Log -->
+                    <div class="article-card" style="margin-top: 20px;">
+                        <div class="article-card-header">
+                            <h3 style="margin: 0; font-size: 16px;">Kommunikations-Verlauf</h3>
+                        </div>
+                        <div class="article-card-body">
+                            <?php
+                            $comm_log = $plugin->get_communication_log($view_id);
+                            if (empty($comm_log)):
+                            ?>
+                                <p style="color: #718096; font-style: italic; margin: 0;">Noch keine Kommunikation.</p>
+                            <?php else: ?>
+                                <div class="communication-log" style="max-height: 300px; overflow-y: auto;">
+                                    <?php
+                                    // Sort by timestamp descending (newest first)
+                                    usort($comm_log, function($a, $b) {
+                                        return ($b['timestamp'] ?? 0) - ($a['timestamp'] ?? 0);
+                                    });
+                                    foreach ($comm_log as $entry):
+                                        $timestamp = $entry['timestamp'] ?? 0;
+                                        $date = $timestamp ? date_i18n('d.m.Y H:i', $timestamp) : '-';
+                                        $type_labels = [
+                                            'status_update' => 'Status-Update',
+                                            'reviewer_request' => 'Reviewer-Anfrage',
+                                            'revision_request' => 'Revision',
+                                            'accepted' => 'Annahme',
+                                            'rejected' => 'Ablehnung',
+                                            'custom' => 'Individuelle E-Mail'
+                                        ];
+                                        $type_label = $type_labels[$entry['type'] ?? 'custom'] ?? ($entry['type'] ?? 'E-Mail');
+                                    ?>
+                                    <div class="comm-entry" style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px;">
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                            <span style="font-weight: 600; color: #1a365d;">
+                                                <?php echo esc_html($type_label); ?>
+                                            </span>
+                                            <span style="color: #718096; font-size: 12px;">
+                                                <?php echo esc_html($date); ?>
+                                            </span>
+                                        </div>
+                                        <div style="color: #4a5568; margin-bottom: 4px;">
+                                            <strong>Von:</strong> <?php echo esc_html($entry['user_name'] ?? 'System'); ?>
+                                            &bull;
+                                            <strong>An:</strong> <?php echo esc_html($entry['recipient'] ?? '-'); ?>
+                                        </div>
+                                        <div style="color: #64748b;">
+                                            <strong>Betreff:</strong> <?php echo esc_html($entry['subject'] ?? '-'); ?>
+                                        </div>
+                                    </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -467,6 +549,76 @@ $base_url = remove_query_arg(['tab', 'status', 'editor_artikel_id']);
                     </div>
                 </div>
             </div>
+
+            <!-- Email Preview Modal -->
+            <div id="email-preview-modal" class="dgptm-modal-overlay">
+                <div class="dgptm-modal" style="max-width: 800px;">
+                    <div class="dgptm-modal-header">
+                        <h3>E-Mail Vorschau</h3>
+                        <button class="dgptm-modal-close">&times;</button>
+                    </div>
+                    <div class="dgptm-modal-body">
+                        <div class="email-preview-info" style="background: #f0f9ff; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                            <p style="margin: 0;"><strong>An:</strong> <span id="email-recipient"></span></p>
+                        </div>
+                        <div class="form-row">
+                            <label>Betreff</label>
+                            <input type="text" id="email-subject" style="width: 100%; padding: 10px;">
+                        </div>
+
+                        <!-- Text Snippets -->
+                        <div class="form-row" style="background: #f0fdf4; padding: 15px; border-radius: 6px; border: 1px solid #86efac;">
+                            <label style="color: #166534;">Textbaustein einfügen</label>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <select id="snippet-category" style="padding: 8px; flex: 0 0 150px;">
+                                    <option value="">Alle Kategorien</option>
+                                    <option value="formal">Formale Prüfung</option>
+                                    <option value="review">Review-Feedback</option>
+                                    <option value="decision">Entscheidungen</option>
+                                    <option value="general">Allgemein</option>
+                                </select>
+                                <select id="snippet-select" style="padding: 8px; flex: 1;">
+                                    <option value="">-- Textbaustein wählen --</option>
+                                </select>
+                                <button type="button" class="btn btn-secondary" id="insert-snippet-btn" style="flex: 0 0 auto;">
+                                    Einfügen
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <label>Nachricht <span style="font-weight: normal; color: #718096;">(Sie können den Text vor dem Senden anpassen)</span></label>
+                            <textarea id="email-body" rows="15" style="width: 100%; padding: 10px; font-family: inherit;"></textarea>
+                        </div>
+                        <input type="hidden" id="email-article-id">
+                        <input type="hidden" id="email-type">
+                    </div>
+                    <div class="dgptm-modal-footer">
+                        <button class="btn btn-secondary modal-cancel">Abbrechen</button>
+                        <button class="btn btn-primary" id="send-email-btn">E-Mail senden</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Send Email Button (for article detail view) -->
+            <style>
+            .email-action-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 16px;
+                background: #e0f2fe;
+                color: #0369a1;
+                border: 1px solid #7dd3fc;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 13px;
+                transition: all 0.2s;
+            }
+            .email-action-btn:hover {
+                background: #bae6fd;
+            }
+            </style>
 
         <?php else: ?>
             <!-- Dashboard Overview -->

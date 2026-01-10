@@ -10,6 +10,7 @@ $plugin = DGPTM_Artikel_Einreichung::get_instance();
 
 // Current reviewers
 $current_reviewer_ids = get_option(DGPTM_Artikel_Einreichung::OPT_REVIEWERS, []);
+$reviewer_notes = get_option(DGPTM_Artikel_Einreichung::OPT_REVIEWER_NOTES, []);
 $current_reviewers = [];
 if (!empty($current_reviewer_ids)) {
     $current_reviewers = get_users([
@@ -36,25 +37,52 @@ if (!empty($current_reviewer_ids)) {
                 <?php if (empty($current_reviewers)): ?>
                     <p class="no-items">Noch keine Reviewer hinzugefügt.</p>
                 <?php else: ?>
-                    <table class="wp-list-table widefat fixed striped">
+                    <table class="wp-list-table widefat fixed striped reviewer-table">
                         <thead>
                             <tr>
-                                <th>Name</th>
-                                <th>E-Mail</th>
-                                <th style="width: 100px;">Aktion</th>
+                                <th style="width: 200px;">Name</th>
+                                <th style="width: 150px;">Fachgebiet</th>
+                                <th style="width: 120px;">Verfügbarkeit</th>
+                                <th>Notizen</th>
+                                <th style="width: 140px;">Aktion</th>
                             </tr>
                         </thead>
                         <tbody id="reviewer-list">
-                            <?php foreach ($current_reviewers as $reviewer): ?>
+                            <?php foreach ($current_reviewers as $reviewer):
+                                $notes = $reviewer_notes[$reviewer->ID] ?? ['expertise' => '', 'availability' => '', 'notes' => ''];
+                            ?>
                             <tr data-user-id="<?php echo $reviewer->ID; ?>">
                                 <td>
                                     <?php echo get_avatar($reviewer->ID, 32); ?>
-                                    <strong><?php echo esc_html($reviewer->display_name); ?></strong>
+                                    <div class="reviewer-info">
+                                        <strong><?php echo esc_html($reviewer->display_name); ?></strong>
+                                        <small><?php echo esc_html($reviewer->user_email); ?></small>
+                                    </div>
                                 </td>
-                                <td><?php echo esc_html($reviewer->user_email); ?></td>
                                 <td>
+                                    <input type="text" class="reviewer-expertise"
+                                           value="<?php echo esc_attr($notes['expertise']); ?>"
+                                           placeholder="z.B. ECMO, Kardiochirurgie">
+                                </td>
+                                <td>
+                                    <select class="reviewer-availability">
+                                        <option value="" <?php selected($notes['availability'], ''); ?>>-- wählen --</option>
+                                        <option value="verfuegbar" <?php selected($notes['availability'], 'verfuegbar'); ?>>Verfügbar</option>
+                                        <option value="begrenzt" <?php selected($notes['availability'], 'begrenzt'); ?>>Begrenzt</option>
+                                        <option value="nicht_verfuegbar" <?php selected($notes['availability'], 'nicht_verfuegbar'); ?>>Nicht verfügbar</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="text" class="reviewer-notes"
+                                           value="<?php echo esc_attr($notes['notes']); ?>"
+                                           placeholder="Interne Notizen...">
+                                </td>
+                                <td>
+                                    <button type="button" class="button button-small save-reviewer-notes" data-user-id="<?php echo $reviewer->ID; ?>">
+                                        Speichern
+                                    </button>
                                     <button type="button" class="button button-small remove-reviewer" data-user-id="<?php echo $reviewer->ID; ?>">
-                                        Entfernen
+                                        &times;
                                     </button>
                                 </td>
                             </tr>
@@ -130,6 +158,47 @@ jQuery(document).ready(function($) {
             }
         });
     }
+
+    // Save reviewer notes
+    $(document).on('click', '.save-reviewer-notes', function() {
+        var $btn = $(this);
+        var $row = $btn.closest('tr');
+        var userId = parseInt($btn.data('user-id'));
+
+        var expertise = $row.find('.reviewer-expertise').val();
+        var availability = $row.find('.reviewer-availability').val();
+        var notes = $row.find('.reviewer-notes').val();
+
+        $btn.prop('disabled', true).text('...');
+
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'dgptm_save_reviewer_notes',
+                nonce: '<?php echo wp_create_nonce(DGPTM_Artikel_Einreichung::NONCE_ACTION); ?>',
+                user_id: userId,
+                expertise: expertise,
+                availability: availability,
+                notes: notes
+            },
+            success: function(response) {
+                $btn.prop('disabled', false).text('Speichern');
+                if (response.success) {
+                    $btn.text('✓').addClass('button-primary');
+                    setTimeout(function() {
+                        $btn.text('Speichern').removeClass('button-primary');
+                    }, 1500);
+                } else {
+                    alert(response.data.message || 'Fehler beim Speichern');
+                }
+            },
+            error: function() {
+                $btn.prop('disabled', false).text('Speichern');
+                alert('Verbindungsfehler');
+            }
+        });
+    });
 
     // Add reviewer
     $('#add-reviewer-btn').on('click', function() {
@@ -249,12 +318,48 @@ jQuery(document).ready(function($) {
     color: #666;
     font-style: italic;
 }
-#reviewer-list td {
+.reviewer-table td {
     vertical-align: middle;
 }
-#reviewer-list img {
-    vertical-align: middle;
-    margin-right: 10px;
+.reviewer-table td:first-child {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.reviewer-table img {
     border-radius: 50%;
+    flex-shrink: 0;
+}
+.reviewer-info {
+    display: flex;
+    flex-direction: column;
+}
+.reviewer-info small {
+    color: #666;
+    font-size: 12px;
+}
+.reviewer-expertise,
+.reviewer-notes {
+    width: 100%;
+    padding: 4px 8px;
+}
+.reviewer-availability {
+    width: 100%;
+    padding: 4px;
+}
+.reviewer-table .button-small {
+    margin-right: 4px;
+}
+.dgptm-admin-columns {
+    display: flex;
+    gap: 30px;
+}
+.dgptm-admin-column {
+    flex: 1;
+}
+@media (max-width: 1200px) {
+    .dgptm-admin-columns {
+        flex-direction: column;
+    }
 }
 </style>

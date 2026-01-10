@@ -88,10 +88,18 @@ $publikationsarten = DGPTM_Artikel_Einreichung::PUBLIKATIONSARTEN;
             </div>
 
             <div class="form-row">
+                <label for="hauptautor_orcid">ORCID-ID</label>
+                <input type="text" id="hauptautor_orcid" name="hauptautor_orcid"
+                       placeholder="0000-0000-0000-0000"
+                       pattern="\d{4}-\d{4}-\d{4}-\d{3}[\dX]">
+                <p class="description">Optional. Format: 0000-0000-0000-0000 (<a href="https://orcid.org" target="_blank">orcid.org</a>)</p>
+            </div>
+
+            <div class="form-row">
                 <label for="koautoren">Ko-Autoren</label>
                 <textarea id="koautoren" name="koautoren" rows="4"
-                          placeholder="Ein Autor pro Zeile: Name, Institution"></textarea>
-                <p class="description">Listen Sie alle Ko-Autoren mit ihrer Zugehörigkeit auf (ein Autor pro Zeile).</p>
+                          placeholder="Ein Autor pro Zeile: Name, Institution, ORCID (optional)"></textarea>
+                <p class="description">Listen Sie alle Ko-Autoren auf. Format pro Zeile: Name, Institution, ORCID (optional)</p>
             </div>
         </div>
 
@@ -124,6 +132,32 @@ $publikationsarten = DGPTM_Artikel_Einreichung::PUBLIKATIONSARTEN;
                            placeholder="e.g. Perfusion, Cardiac Surgery, ECMO">
                     <p class="description">Comma-separated, max. 6 terms</p>
                 </div>
+            </div>
+
+            <div class="form-row highlights-section">
+                <label for="highlights">Highlights <span class="required">*</span></label>
+                <div class="highlights-info">
+                    <p>Please provide <strong>three key findings or contributions</strong> of your work in English. These highlights will be prominently displayed with your article.</p>
+                </div>
+                <div class="highlights-inputs">
+                    <div class="highlight-row">
+                        <span class="highlight-number">1.</span>
+                        <input type="text" id="highlight_1" name="highlight_1" required maxlength="150"
+                               placeholder="First key finding or contribution...">
+                    </div>
+                    <div class="highlight-row">
+                        <span class="highlight-number">2.</span>
+                        <input type="text" id="highlight_2" name="highlight_2" required maxlength="150"
+                               placeholder="Second key finding or contribution...">
+                    </div>
+                    <div class="highlight-row">
+                        <span class="highlight-number">3.</span>
+                        <input type="text" id="highlight_3" name="highlight_3" required maxlength="150"
+                               placeholder="Third key finding or contribution...">
+                    </div>
+                </div>
+                <input type="hidden" id="highlights" name="highlights">
+                <p class="description">Max. 150 characters per highlight. Write in English.</p>
             </div>
 
             <div class="form-row">
@@ -222,6 +256,54 @@ $publikationsarten = DGPTM_Artikel_Einreichung::PUBLIKATIONSARTEN;
 </div>
 
 <style>
+/* Highlights Section */
+.highlights-section {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+}
+.highlights-info {
+    background: #e0f2fe;
+    padding: 12px 15px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+}
+.highlights-info p {
+    margin: 0;
+    color: #0369a1;
+    font-size: 14px;
+}
+.highlights-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.highlight-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.highlight-number {
+    font-weight: 700;
+    color: #0369a1;
+    min-width: 24px;
+    font-size: 16px;
+}
+.highlight-row input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #7dd3fc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+.highlight-row input:focus {
+    outline: none;
+    border-color: #0284c7;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
+}
+
 .submission-success {
     text-align: center;
     padding: 60px 20px;

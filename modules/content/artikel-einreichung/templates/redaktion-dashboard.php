@@ -502,79 +502,74 @@ if ($view_id) {
         </div>
         <?php endif; ?>
 
-        <!-- Stats - Kompakte Übersicht -->
+        <!-- Stats als klickbare Filter -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 10px; margin-bottom: 25px;">
-            <div class="stat-card" style="text-align: center; padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <!-- Gesamt -->
+            <a href="<?php echo esc_url(remove_query_arg(['status', 'ausgabe'])); ?>" class="stat-filter-card <?php echo !$filter_status ? 'active' : ''; ?>" style="text-align: center; padding: 12px; background: #f8fafc; border-radius: 8px; border: 2px solid <?php echo !$filter_status ? '#1a365d' : '#e2e8f0'; ?>; text-decoration: none; display: block; transition: all 0.2s;">
                 <div style="font-size: 24px; font-weight: 700; color: #1a365d;"><?php echo $stats['total']; ?></div>
                 <div style="color: #718096; font-size: 11px;">Gesamt</div>
-            </div>
-            <div class="stat-card" style="text-align: center; padding: 12px; background: #eff6ff; border-radius: 8px; border: 1px solid #bfdbfe;">
-                <div style="font-size: 24px; font-weight: 700; color: #3182ce;"><?php echo $stats['submitted']; ?></div>
-                <div style="color: #718096; font-size: 11px;">Eingereicht</div>
-            </div>
-            <div class="stat-card" style="text-align: center; padding: 12px; background: #ecfeff; border-radius: 8px; border: 1px solid #a5f3fc;">
-                <div style="font-size: 24px; font-weight: 700; color: #0891b2;"><?php echo $stats['formal_check']; ?></div>
-                <div style="color: #718096; font-size: 11px;">Form. Prüf.</div>
-            </div>
-            <div class="stat-card" style="text-align: center; padding: 12px; background: #fefce8; border-radius: 8px; border: 1px solid #fde047;">
-                <div style="font-size: 24px; font-weight: 700; color: #ca8a04;"><?php echo $stats['in_review']; ?></div>
-                <div style="color: #718096; font-size: 11px;">Im Review</div>
-            </div>
-            <div class="stat-card" style="text-align: center; padding: 12px; background: #fef3c7; border-radius: 8px; border: 1px solid #fcd34d;">
-                <div style="font-size: 24px; font-weight: 700; color: #d97706;"><?php echo $stats['revision_required']; ?></div>
-                <div style="color: #718096; font-size: 11px;">Rev. erf.</div>
-            </div>
-            <div class="stat-card" style="text-align: center; padding: 12px; background: #dbeafe; border-radius: 8px; border: 1px solid #93c5fd;">
-                <div style="font-size: 24px; font-weight: 700; color: #2563eb;"><?php echo $stats['revision_submitted']; ?></div>
-                <div style="color: #718096; font-size: 11px;">Rev. eing.</div>
-            </div>
-            <div class="stat-card" style="text-align: center; padding: 12px; background: #dcfce7; border-radius: 8px; border: 1px solid #86efac;">
-                <div style="font-size: 24px; font-weight: 700; color: #16a34a;"><?php echo $stats['accepted']; ?></div>
-                <div style="color: #718096; font-size: 11px;">Angenommen</div>
-            </div>
-            <div class="stat-card" style="text-align: center; padding: 12px; background: #ccfbf1; border-radius: 8px; border: 1px solid #5eead4;">
-                <div style="font-size: 24px; font-weight: 700; color: #0d9488;"><?php echo $stats['exported']; ?></div>
-                <div style="color: #718096; font-size: 11px;">Exportiert</div>
-            </div>
-            <div class="stat-card" style="text-align: center; padding: 12px; background: #e0e7ff; border-radius: 8px; border: 1px solid #a5b4fc;">
-                <div style="font-size: 24px; font-weight: 700; color: #4f46e5;"><?php echo $stats['lektorat']; ?></div>
-                <div style="color: #718096; font-size: 11px;">Lektorat</div>
-            </div>
-            <div class="stat-card" style="text-align: center; padding: 12px; background: #fce7f3; border-radius: 8px; border: 1px solid #f9a8d4;">
-                <div style="font-size: 24px; font-weight: 700; color: #db2777;"><?php echo $stats['gesetzt']; ?></div>
-                <div style="color: #718096; font-size: 11px;">Gesetzt</div>
-            </div>
-            <div class="stat-card" style="text-align: center; padding: 12px; background: #f5f3ff; border-radius: 8px; border: 1px solid #c4b5fd;">
-                <div style="font-size: 24px; font-weight: 700; color: #7c3aed;"><?php echo $stats['published']; ?></div>
-                <div style="color: #718096; font-size: 11px;">Publiziert</div>
-            </div>
+            </a>
+            <!-- Eingereicht -->
+            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_SUBMITTED)); ?>" class="stat-filter-card <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_SUBMITTED ? 'active' : ''; ?>" style="text-align: center; padding: 12px; background: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_SUBMITTED ? '#3182ce' : '#eff6ff'; ?>; border-radius: 8px; border: 2px solid <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_SUBMITTED ? '#3182ce' : '#bfdbfe'; ?>; text-decoration: none; display: block; transition: all 0.2s;">
+                <div style="font-size: 24px; font-weight: 700; color: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_SUBMITTED ? '#fff' : '#3182ce'; ?>;"><?php echo $stats['submitted']; ?></div>
+                <div style="color: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_SUBMITTED ? '#e0e7ff' : '#718096'; ?>; font-size: 11px;">Eingereicht</div>
+            </a>
+            <!-- Formale Prüfung -->
+            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_FORMAL_CHECK)); ?>" class="stat-filter-card <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_FORMAL_CHECK ? 'active' : ''; ?>" style="text-align: center; padding: 12px; background: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_FORMAL_CHECK ? '#0891b2' : '#ecfeff'; ?>; border-radius: 8px; border: 2px solid <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_FORMAL_CHECK ? '#0891b2' : '#a5f3fc'; ?>; text-decoration: none; display: block; transition: all 0.2s;">
+                <div style="font-size: 24px; font-weight: 700; color: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_FORMAL_CHECK ? '#fff' : '#0891b2'; ?>;"><?php echo $stats['formal_check']; ?></div>
+                <div style="color: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_FORMAL_CHECK ? '#e0f2fe' : '#718096'; ?>; font-size: 11px;">Form. Prüf.</div>
+            </a>
+            <!-- Im Review -->
+            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_UNDER_REVIEW)); ?>" class="stat-filter-card <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_UNDER_REVIEW ? 'active' : ''; ?>" style="text-align: center; padding: 12px; background: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_UNDER_REVIEW ? '#ca8a04' : '#fefce8'; ?>; border-radius: 8px; border: 2px solid <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_UNDER_REVIEW ? '#ca8a04' : '#fde047'; ?>; text-decoration: none; display: block; transition: all 0.2s;">
+                <div style="font-size: 24px; font-weight: 700; color: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_UNDER_REVIEW ? '#fff' : '#ca8a04'; ?>;"><?php echo $stats['in_review']; ?></div>
+                <div style="color: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_UNDER_REVIEW ? '#fef9c3' : '#718096'; ?>; font-size: 11px;">Im Review</div>
+            </a>
+            <!-- Revision erforderlich -->
+            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_REVISION_REQUIRED)); ?>" class="stat-filter-card <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_REVISION_REQUIRED ? 'active' : ''; ?>" style="text-align: center; padding: 12px; background: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_REVISION_REQUIRED ? '#d97706' : '#fef3c7'; ?>; border-radius: 8px; border: 2px solid <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_REVISION_REQUIRED ? '#d97706' : '#fcd34d'; ?>; text-decoration: none; display: block; transition: all 0.2s;">
+                <div style="font-size: 24px; font-weight: 700; color: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_REVISION_REQUIRED ? '#fff' : '#d97706'; ?>;"><?php echo $stats['revision_required']; ?></div>
+                <div style="color: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_REVISION_REQUIRED ? '#fef3c7' : '#718096'; ?>; font-size: 11px;">Rev. erf.</div>
+            </a>
+            <!-- Revision eingereicht -->
+            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_REVISION_SUBMITTED)); ?>" class="stat-filter-card <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_REVISION_SUBMITTED ? 'active' : ''; ?>" style="text-align: center; padding: 12px; background: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_REVISION_SUBMITTED ? '#2563eb' : '#dbeafe'; ?>; border-radius: 8px; border: 2px solid <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_REVISION_SUBMITTED ? '#2563eb' : '#93c5fd'; ?>; text-decoration: none; display: block; transition: all 0.2s;">
+                <div style="font-size: 24px; font-weight: 700; color: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_REVISION_SUBMITTED ? '#fff' : '#2563eb'; ?>;"><?php echo $stats['revision_submitted']; ?></div>
+                <div style="color: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_REVISION_SUBMITTED ? '#dbeafe' : '#718096'; ?>; font-size: 11px;">Rev. eing.</div>
+            </a>
+            <!-- Angenommen -->
+            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_ACCEPTED)); ?>" class="stat-filter-card <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_ACCEPTED ? 'active' : ''; ?>" style="text-align: center; padding: 12px; background: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_ACCEPTED ? '#16a34a' : '#dcfce7'; ?>; border-radius: 8px; border: 2px solid <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_ACCEPTED ? '#16a34a' : '#86efac'; ?>; text-decoration: none; display: block; transition: all 0.2s;">
+                <div style="font-size: 24px; font-weight: 700; color: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_ACCEPTED ? '#fff' : '#16a34a'; ?>;"><?php echo $stats['accepted']; ?></div>
+                <div style="color: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_ACCEPTED ? '#dcfce7' : '#718096'; ?>; font-size: 11px;">Angenommen</div>
+            </a>
+            <!-- Exportiert -->
+            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_EXPORTED)); ?>" class="stat-filter-card <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_EXPORTED ? 'active' : ''; ?>" style="text-align: center; padding: 12px; background: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_EXPORTED ? '#0d9488' : '#ccfbf1'; ?>; border-radius: 8px; border: 2px solid <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_EXPORTED ? '#0d9488' : '#5eead4'; ?>; text-decoration: none; display: block; transition: all 0.2s;">
+                <div style="font-size: 24px; font-weight: 700; color: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_EXPORTED ? '#fff' : '#0d9488'; ?>;"><?php echo $stats['exported']; ?></div>
+                <div style="color: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_EXPORTED ? '#ccfbf1' : '#718096'; ?>; font-size: 11px;">Exportiert</div>
+            </a>
+            <!-- Lektorat -->
+            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_LEKTORAT)); ?>" class="stat-filter-card <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_LEKTORAT ? 'active' : ''; ?>" style="text-align: center; padding: 12px; background: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_LEKTORAT ? '#4f46e5' : '#e0e7ff'; ?>; border-radius: 8px; border: 2px solid <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_LEKTORAT ? '#4f46e5' : '#a5b4fc'; ?>; text-decoration: none; display: block; transition: all 0.2s;">
+                <div style="font-size: 24px; font-weight: 700; color: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_LEKTORAT ? '#fff' : '#4f46e5'; ?>;"><?php echo $stats['lektorat']; ?></div>
+                <div style="color: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_LEKTORAT ? '#e0e7ff' : '#718096'; ?>; font-size: 11px;">Lektorat</div>
+            </a>
+            <!-- Gesetzt -->
+            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_GESETZT)); ?>" class="stat-filter-card <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_GESETZT ? 'active' : ''; ?>" style="text-align: center; padding: 12px; background: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_GESETZT ? '#db2777' : '#fce7f3'; ?>; border-radius: 8px; border: 2px solid <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_GESETZT ? '#db2777' : '#f9a8d4'; ?>; text-decoration: none; display: block; transition: all 0.2s;">
+                <div style="font-size: 24px; font-weight: 700; color: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_GESETZT ? '#fff' : '#db2777'; ?>;"><?php echo $stats['gesetzt']; ?></div>
+                <div style="color: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_GESETZT ? '#fce7f3' : '#718096'; ?>; font-size: 11px;">Gesetzt</div>
+            </a>
+            <!-- Publiziert -->
+            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_PUBLISHED)); ?>" class="stat-filter-card <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_PUBLISHED ? 'active' : ''; ?>" style="text-align: center; padding: 12px; background: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_PUBLISHED ? '#7c3aed' : '#f5f3ff'; ?>; border-radius: 8px; border: 2px solid <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_PUBLISHED ? '#7c3aed' : '#c4b5fd'; ?>; text-decoration: none; display: block; transition: all 0.2s;">
+                <div style="font-size: 24px; font-weight: 700; color: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_PUBLISHED ? '#fff' : '#7c3aed'; ?>;"><?php echo $stats['published']; ?></div>
+                <div style="color: <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_PUBLISHED ? '#f5f3ff' : '#718096'; ?>; font-size: 11px;">Publiziert</div>
+            </a>
         </div>
 
-        <!-- Filters -->
-        <div style="display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;">
-            <a href="<?php echo esc_url(remove_query_arg(['status', 'ausgabe'])); ?>"
-               class="btn btn-sm <?php echo !$filter_status ? 'btn-primary' : 'btn-secondary'; ?>">Alle</a>
-            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_SUBMITTED)); ?>"
-               class="btn btn-sm <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_SUBMITTED ? 'btn-primary' : 'btn-secondary'; ?>">Eingereicht</a>
-            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_FORMAL_CHECK)); ?>"
-               class="btn btn-sm <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_FORMAL_CHECK ? 'btn-primary' : 'btn-secondary'; ?>">Form. Prüfung</a>
-            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_UNDER_REVIEW)); ?>"
-               class="btn btn-sm <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_UNDER_REVIEW ? 'btn-primary' : 'btn-secondary'; ?>">Im Review</a>
-            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_REVISION_REQUIRED)); ?>"
-               class="btn btn-sm <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_REVISION_REQUIRED ? 'btn-primary' : 'btn-secondary'; ?>">Rev. erf.</a>
-            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_REVISION_SUBMITTED)); ?>"
-               class="btn btn-sm <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_REVISION_SUBMITTED ? 'btn-primary' : 'btn-secondary'; ?>">Rev. eing.</a>
-            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_ACCEPTED)); ?>"
-               class="btn btn-sm <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_ACCEPTED ? 'btn-primary' : 'btn-secondary'; ?>">Angenommen</a>
-            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_EXPORTED)); ?>"
-               class="btn btn-sm <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_EXPORTED ? 'btn-primary' : 'btn-secondary'; ?>">Exportiert</a>
-            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_LEKTORAT)); ?>"
-               class="btn btn-sm <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_LEKTORAT ? 'btn-primary' : 'btn-secondary'; ?>">Lektorat</a>
-            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_GESETZT)); ?>"
-               class="btn btn-sm <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_GESETZT ? 'btn-primary' : 'btn-secondary'; ?>">Gesetzt</a>
-            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_PUBLISHED)); ?>"
-               class="btn btn-sm <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_PUBLISHED ? 'btn-primary' : 'btn-secondary'; ?>">Publiziert</a>
+        <!-- Filter-Hinweis wenn aktiv -->
+        <?php if ($filter_status): ?>
+        <div style="margin-bottom: 15px; padding: 10px 15px; background: #fef3c7; border-radius: 6px; border: 1px solid #fcd34d; display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #92400e; font-size: 13px;">
+                Filter aktiv: <strong><?php echo esc_html($plugin->get_status_label($filter_status)); ?></strong>
+            </span>
+            <a href="<?php echo esc_url(remove_query_arg('status')); ?>" style="color: #92400e; font-size: 12px; text-decoration: underline;">Filter zurücksetzen</a>
         </div>
+        <?php endif; ?>
 
         <!-- Article List -->
         <?php if (empty($articles)): ?>
@@ -906,5 +901,17 @@ jQuery(document).ready(function($) {
     border-color: #0369a1;
     outline: none;
     box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1);
+}
+/* Stat Filter Cards */
+.stat-filter-card {
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.stat-filter-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.stat-filter-card.active {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 </style>

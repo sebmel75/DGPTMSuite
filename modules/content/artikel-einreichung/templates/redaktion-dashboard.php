@@ -49,10 +49,14 @@ $articles = get_posts($query_args);
 $stats = [
     'total' => 0,
     'submitted' => 0,
+    'formal_check' => 0,
     'in_review' => 0,
-    'revision' => 0,
+    'revision_required' => 0,
+    'revision_submitted' => 0,
     'accepted' => 0,
     'exported' => 0,
+    'lektorat' => 0,
+    'gesetzt' => 0,
     'rejected' => 0,
     'published' => 0
 ];
@@ -64,18 +68,29 @@ foreach ($articles as $art) {
         case DGPTM_Artikel_Einreichung::STATUS_SUBMITTED:
             $stats['submitted']++;
             break;
+        case DGPTM_Artikel_Einreichung::STATUS_FORMAL_CHECK:
+            $stats['formal_check']++;
+            break;
         case DGPTM_Artikel_Einreichung::STATUS_UNDER_REVIEW:
             $stats['in_review']++;
             break;
         case DGPTM_Artikel_Einreichung::STATUS_REVISION_REQUIRED:
+            $stats['revision_required']++;
+            break;
         case DGPTM_Artikel_Einreichung::STATUS_REVISION_SUBMITTED:
-            $stats['revision']++;
+            $stats['revision_submitted']++;
             break;
         case DGPTM_Artikel_Einreichung::STATUS_ACCEPTED:
             $stats['accepted']++;
             break;
         case DGPTM_Artikel_Einreichung::STATUS_EXPORTED:
             $stats['exported']++;
+            break;
+        case DGPTM_Artikel_Einreichung::STATUS_LEKTORAT:
+            $stats['lektorat']++;
+            break;
+        case DGPTM_Artikel_Einreichung::STATUS_GESETZT:
+            $stats['gesetzt']++;
             break;
         case DGPTM_Artikel_Einreichung::STATUS_REJECTED:
             $stats['rejected']++;
@@ -183,6 +198,15 @@ if ($view_id) {
                                 <span class="value"><?php echo esc_html(date_i18n('d.m.Y', strtotime($decision_at))); ?></span>
                             </li>
                             <?php endif; ?>
+                            <?php
+                            $ausgabe_value = get_field('ausgabe', $view_id);
+                            ?>
+                            <li>
+                                <span class="label">Ausgabe:</span>
+                                <span class="value" style="<?php echo $ausgabe_value ? 'color: #6366f1; font-weight: 600;' : ''; ?>">
+                                    <?php echo $ausgabe_value ? esc_html($ausgabe_value) : '<em style="color: #94a3b8;">Nicht zugewiesen</em>'; ?>
+                                </span>
+                            </li>
                         </ul>
 
                         <!-- Note: Reviewer names are NOT shown to Redaktion -->
@@ -232,23 +256,71 @@ if ($view_id) {
 
                 <!-- Files (read-only) -->
                 <h4 style="margin-top: 25px;">Dateien</h4>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
                     <?php
                     $manuskript = get_field('manuskript', $view_id);
-                    if ($manuskript):
+                    $revision = get_field('revision_manuskript', $view_id);
+                    $abbildungen = get_field('abbildungen', $view_id);
+                    $tabellen = get_field('tabellen', $view_id);
+                    $supplementary = get_field('supplementary_material', $view_id);
                     ?>
-                        <a href="<?php echo esc_url($manuskript['url']); ?>" target="_blank" class="btn btn-secondary">
-                            Manuskript herunterladen
+
+                    <!-- Manuskript -->
+                    <?php if ($manuskript): ?>
+                    <div style="margin-bottom: 12px;">
+                        <strong style="color: #1e40af;">Manuskript:</strong>
+                        <a href="<?php echo esc_url($manuskript['url']); ?>" target="_blank" class="btn btn-sm btn-secondary" style="margin-left: 10px;">
+                            <?php echo esc_html($manuskript['filename']); ?> herunterladen
                         </a>
+                    </div>
                     <?php endif; ?>
 
-                    <?php
-                    $revision = get_field('revision_manuskript', $view_id);
-                    if ($revision):
-                    ?>
-                        <a href="<?php echo esc_url($revision['url']); ?>" target="_blank" class="btn btn-secondary">
-                            Revision herunterladen
+                    <!-- Revision -->
+                    <?php if ($revision): ?>
+                    <div style="margin-bottom: 12px;">
+                        <strong style="color: #7c3aed;">Revision:</strong>
+                        <a href="<?php echo esc_url($revision['url']); ?>" target="_blank" class="btn btn-sm btn-secondary" style="margin-left: 10px;">
+                            <?php echo esc_html($revision['filename']); ?> herunterladen
                         </a>
+                    </div>
+                    <?php endif; ?>
+
+                    <!-- Abbildungen (Gallery) -->
+                    <?php if ($abbildungen && is_array($abbildungen)): ?>
+                    <div style="margin-bottom: 12px;">
+                        <strong style="color: #059669;">Abbildungen (<?php echo count($abbildungen); ?>):</strong>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+                            <?php foreach ($abbildungen as $index => $img): ?>
+                                <a href="<?php echo esc_url($img['url']); ?>" target="_blank" class="btn btn-sm btn-secondary">
+                                    Abb. <?php echo ($index + 1); ?> (<?php echo esc_html(pathinfo($img['filename'], PATHINFO_EXTENSION)); ?>)
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
+                    <!-- Tabellen -->
+                    <?php if ($tabellen): ?>
+                    <div style="margin-bottom: 12px;">
+                        <strong style="color: #d97706;">Tabellen:</strong>
+                        <a href="<?php echo esc_url($tabellen['url']); ?>" target="_blank" class="btn btn-sm btn-secondary" style="margin-left: 10px;">
+                            <?php echo esc_html($tabellen['filename']); ?> herunterladen
+                        </a>
+                    </div>
+                    <?php endif; ?>
+
+                    <!-- Supplementary Material -->
+                    <?php if ($supplementary): ?>
+                    <div style="margin-bottom: 12px;">
+                        <strong style="color: #6366f1;">Zusatzmaterial:</strong>
+                        <a href="<?php echo esc_url($supplementary['url']); ?>" target="_blank" class="btn btn-sm btn-secondary" style="margin-left: 10px;">
+                            <?php echo esc_html($supplementary['filename']); ?> herunterladen
+                        </a>
+                    </div>
+                    <?php endif; ?>
+
+                    <?php if (!$manuskript && !$revision && !$abbildungen && !$tabellen && !$supplementary): ?>
+                    <p style="color: #64748b; margin: 0;">Keine Dateien vorhanden.</p>
                     <?php endif; ?>
                 </div>
 
@@ -267,64 +339,126 @@ if ($view_id) {
                 </div>
                 <?php endif; ?>
 
-                <!-- Export & Aktionen (nur für angenommene/exportierte Artikel) -->
+                <!-- Status-Workflow & Export Aktionen -->
+                <hr style="margin: 25px 0;">
+
+                <h4>Status & Workflow</h4>
+
+                <!-- Status-Änderung Panel -->
+                <div class="redaktion-status-panel" style="background: #f0f9ff; padding: 20px; border-radius: 8px; border: 1px solid #bae6fd; margin-bottom: 20px;">
+                    <h5 style="margin: 0 0 15px 0; color: #0369a1;">Status ändern</h5>
+
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-start;">
+                        <!-- Status Dropdown -->
+                        <div style="flex: 1; min-width: 250px;">
+                            <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 5px;">Neuer Status:</label>
+                            <select id="status-select" class="status-dropdown" style="width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px;">
+                                <option value="">-- Status wählen --</option>
+                                <option value="<?php echo esc_attr(DGPTM_Artikel_Einreichung::STATUS_SUBMITTED); ?>" <?php selected($status, DGPTM_Artikel_Einreichung::STATUS_SUBMITTED); ?>>Eingereicht</option>
+                                <option value="<?php echo esc_attr(DGPTM_Artikel_Einreichung::STATUS_FORMAL_CHECK); ?>" <?php selected($status, DGPTM_Artikel_Einreichung::STATUS_FORMAL_CHECK); ?>>Formale Prüfung</option>
+                                <option value="<?php echo esc_attr(DGPTM_Artikel_Einreichung::STATUS_UNDER_REVIEW); ?>" <?php selected($status, DGPTM_Artikel_Einreichung::STATUS_UNDER_REVIEW); ?>>Im Review</option>
+                                <option value="<?php echo esc_attr(DGPTM_Artikel_Einreichung::STATUS_REVISION_REQUIRED); ?>" <?php selected($status, DGPTM_Artikel_Einreichung::STATUS_REVISION_REQUIRED); ?>>Revision erforderlich</option>
+                                <option value="<?php echo esc_attr(DGPTM_Artikel_Einreichung::STATUS_REVISION_SUBMITTED); ?>" <?php selected($status, DGPTM_Artikel_Einreichung::STATUS_REVISION_SUBMITTED); ?>>Revision eingereicht</option>
+                                <option value="<?php echo esc_attr(DGPTM_Artikel_Einreichung::STATUS_ACCEPTED); ?>" <?php selected($status, DGPTM_Artikel_Einreichung::STATUS_ACCEPTED); ?>>Angenommen</option>
+                                <option value="<?php echo esc_attr(DGPTM_Artikel_Einreichung::STATUS_EXPORTED); ?>" <?php selected($status, DGPTM_Artikel_Einreichung::STATUS_EXPORTED); ?>>Exportiert</option>
+                                <option value="<?php echo esc_attr(DGPTM_Artikel_Einreichung::STATUS_LEKTORAT); ?>" <?php selected($status, DGPTM_Artikel_Einreichung::STATUS_LEKTORAT); ?>>Lektorat</option>
+                                <option value="<?php echo esc_attr(DGPTM_Artikel_Einreichung::STATUS_GESETZT); ?>" <?php selected($status, DGPTM_Artikel_Einreichung::STATUS_GESETZT); ?>>Gesetzt</option>
+                                <option value="<?php echo esc_attr(DGPTM_Artikel_Einreichung::STATUS_REJECTED); ?>" <?php selected($status, DGPTM_Artikel_Einreichung::STATUS_REJECTED); ?>>Abgelehnt</option>
+                                <option value="<?php echo esc_attr(DGPTM_Artikel_Einreichung::STATUS_PUBLISHED); ?>" <?php selected($status, DGPTM_Artikel_Einreichung::STATUS_PUBLISHED); ?>>Veröffentlicht</option>
+                            </select>
+                        </div>
+
+                        <!-- Change Button -->
+                        <div style="padding-top: 22px;">
+                            <button type="button" class="btn change-status-dropdown-btn" style="background: #0369a1; color: #fff; padding: 10px 20px;"
+                                    data-article-id="<?php echo esc_attr($view_id); ?>">
+                                Status ändern
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Ausgabe zuweisen -->
+                    <div style="margin-top: 15px; display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <label style="display: block; font-size: 12px; color: #64748b; margin-bottom: 5px;">Ausgabe zuweisen:</label>
+                            <input type="text" id="ausgabe-input" value="<?php echo esc_attr(get_field('ausgabe', $view_id) ?: ''); ?>"
+                                   placeholder="z.B. 2025-1, 2025-2"
+                                   style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px;">
+                        </div>
+                        <div>
+                            <button type="button" class="btn save-ausgabe-btn" style="background: #6366f1; color: #fff; padding: 8px 16px;"
+                                    data-article-id="<?php echo esc_attr($view_id); ?>">
+                                Ausgabe speichern
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Workflow Info -->
+                    <div style="margin-top: 15px; padding: 12px; background: #fff; border-radius: 6px; border: 1px solid #e2e8f0;">
+                        <div style="font-size: 11px; color: #64748b; margin-bottom: 8px;">Typischer Workflow:</div>
+                        <div style="font-size: 12px; color: #475569; line-height: 1.8;">
+                            Eingereicht → Form. Prüfung → Im Review → Angenommen → Exportiert → Lektorat → Gesetzt → Veröffentlicht
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Export Buttons (für angenommene+ Artikel) -->
                 <?php if (in_array($status, [
                     DGPTM_Artikel_Einreichung::STATUS_ACCEPTED,
                     DGPTM_Artikel_Einreichung::STATUS_EXPORTED,
+                    DGPTM_Artikel_Einreichung::STATUS_LEKTORAT,
+                    DGPTM_Artikel_Einreichung::STATUS_GESETZT,
                     DGPTM_Artikel_Einreichung::STATUS_PUBLISHED
                 ])): ?>
-                <hr style="margin: 25px 0;">
+                <div style="background: #ecfdf5; padding: 15px; border-radius: 8px; border: 1px solid #a7f3d0; margin-bottom: 20px;">
+                    <h5 style="margin: 0 0 12px 0; color: #047857;">Export-Funktionen</h5>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <!-- XML Export -->
+                        <button type="button" class="btn btn-secondary export-xml-btn" data-article-id="<?php echo esc_attr($view_id); ?>">
+                            XML exportieren (JATS)
+                        </button>
 
-                <h4>Export & Veröffentlichung</h4>
-
-                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
-                    <!-- XML Export -->
-                    <button type="button" class="btn btn-secondary export-xml-btn" data-article-id="<?php echo esc_attr($view_id); ?>">
-                        XML exportieren (JATS)
-                    </button>
-
-                    <!-- PDF Export -->
-                    <a href="<?php echo esc_url(add_query_arg(['dgptm_artikel_pdf' => 1, 'artikel_id' => $view_id], home_url())); ?>" target="_blank" class="btn btn-secondary">
-                        PDF herunterladen
-                    </a>
+                        <!-- PDF Export -->
+                        <a href="<?php echo esc_url(add_query_arg(['dgptm_artikel_pdf' => 1, 'artikel_id' => $view_id], home_url())); ?>" target="_blank" class="btn btn-secondary">
+                            PDF herunterladen
+                        </a>
+                    </div>
                 </div>
+                <?php endif; ?>
 
-                <!-- Status-Änderung -->
-                <div class="redaktion-status-panel" style="background: #f0f9ff; padding: 20px; border-radius: 8px; border: 1px solid #bae6fd; margin-top: 15px;">
-                    <h5 style="margin: 0 0 15px 0; color: #0369a1;">Status ändern</h5>
+                <!-- Publish Button (nur für Gesetzt-Status) -->
+                <?php if ($status === DGPTM_Artikel_Einreichung::STATUS_GESETZT): ?>
+                <div style="background: #faf5ff; padding: 15px; border-radius: 8px; border: 1px solid #d8b4fe; margin-bottom: 20px;">
+                    <h5 style="margin: 0 0 12px 0; color: #7c3aed;">Online-Veröffentlichung</h5>
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <button type="button" class="btn publish-artikel-btn" style="background: #7c3aed; color: #fff;"
+                                data-article-id="<?php echo esc_attr($view_id); ?>">
+                            Jetzt online veröffentlichen
+                        </button>
+                        <span style="color: #6b7280; font-size: 13px;">→ Erstellt Beitrag in "Publikationen" und setzt Status auf "Veröffentlicht"</span>
+                    </div>
+                </div>
+                <?php endif; ?>
 
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-                        <?php if ($status === DGPTM_Artikel_Einreichung::STATUS_ACCEPTED): ?>
-                            <button type="button" class="btn change-status-btn" style="background: #0d9488; color: #fff;"
-                                    data-article-id="<?php echo esc_attr($view_id); ?>"
-                                    data-status="<?php echo esc_attr(DGPTM_Artikel_Einreichung::STATUS_EXPORTED); ?>">
-                                Als "Exportiert" markieren
-                            </button>
-                            <span style="color: #64748b; font-size: 13px;">→ Artikel wurde für Druckversion exportiert</span>
-
-                        <?php elseif ($status === DGPTM_Artikel_Einreichung::STATUS_EXPORTED): ?>
-                            <button type="button" class="btn publish-artikel-btn" style="background: #7c3aed; color: #fff;"
-                                    data-article-id="<?php echo esc_attr($view_id); ?>">
-                                Online veröffentlichen
-                            </button>
-                            <span style="color: #64748b; font-size: 13px;">→ Erstellt Beitrag in "Publikationen" und setzt Status auf "Veröffentlicht"</span>
-
-                        <?php elseif ($status === DGPTM_Artikel_Einreichung::STATUS_PUBLISHED): ?>
-                            <?php
-                            $publikation_id = get_field('publikation_id', $view_id);
-                            $published_at = get_field('published_at', $view_id);
-                            ?>
-                            <div style="display: flex; align-items: center; gap: 15px;">
-                                <span class="status-badge status-purple" style="font-size: 14px;">✓ Veröffentlicht</span>
-                                <?php if ($published_at): ?>
-                                    <span style="color: #64748b; font-size: 13px;">am <?php echo esc_html(date_i18n('d.m.Y', strtotime($published_at))); ?></span>
-                                <?php endif; ?>
-                                <?php if ($publikation_id): ?>
-                                    <a href="<?php echo esc_url(get_permalink($publikation_id)); ?>" target="_blank" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">
-                                        Publikation ansehen →
-                                    </a>
-                                <?php endif; ?>
-                            </div>
+                <!-- Published Info -->
+                <?php if ($status === DGPTM_Artikel_Einreichung::STATUS_PUBLISHED): ?>
+                <?php
+                $publikation_id = get_field('publikation_id', $view_id);
+                $published_at = get_field('published_at', $view_id);
+                ?>
+                <div style="background: #f5f3ff; padding: 15px; border-radius: 8px; border: 1px solid #c4b5fd;">
+                    <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                        <span class="status-badge status-purple" style="font-size: 14px;">✓ Veröffentlicht</span>
+                        <?php if ($published_at): ?>
+                            <span style="color: #64748b; font-size: 13px;">am <?php echo esc_html(date_i18n('d.m.Y', strtotime($published_at))); ?></span>
+                        <?php endif; ?>
+                        <?php if ($publikation_id): ?>
+                            <a href="<?php echo esc_url(get_permalink($publikation_id)); ?>" target="_blank" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">
+                                Publikation ansehen →
+                            </a>
+                            <a href="<?php echo esc_url(admin_url('post.php?post=' . $publikation_id . '&action=edit')); ?>" target="_blank" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">
+                                Im Backend bearbeiten
+                            </a>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -340,52 +474,106 @@ if ($view_id) {
             Übersicht aller eingereichten Artikel. Reviewer-Namen werden aus Anonymitätsgründen nicht angezeigt.
         </p>
 
-        <!-- Stats -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin-bottom: 30px;">
-            <div class="article-card" style="text-align: center; padding: 15px;">
-                <div style="font-size: 28px; font-weight: 700; color: #1a365d;"><?php echo $stats['total']; ?></div>
-                <div style="color: #718096; font-size: 12px;">Gesamt</div>
+        <!-- Ausgabe Filter -->
+        <?php
+        // Get all unique Ausgaben
+        $all_ausgaben = [];
+        foreach ($articles as $art) {
+            $ausgabe = get_field('ausgabe', $art->ID);
+            if ($ausgabe && !in_array($ausgabe, $all_ausgaben)) {
+                $all_ausgaben[] = $ausgabe;
+            }
+        }
+        rsort($all_ausgaben); // Newest first
+        $filter_ausgabe = isset($_GET['ausgabe']) ? sanitize_text_field($_GET['ausgabe']) : '';
+        ?>
+
+        <?php if (!empty($all_ausgaben)): ?>
+        <div style="margin-bottom: 20px; padding: 15px; background: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd;">
+            <label style="font-weight: 600; color: #0369a1; margin-right: 10px;">Ausgabe:</label>
+            <select id="ausgabe-filter" style="padding: 8px 12px; border-radius: 4px; border: 1px solid #cbd5e1;">
+                <option value="">Alle Ausgaben</option>
+                <?php foreach ($all_ausgaben as $ausgabe): ?>
+                    <option value="<?php echo esc_attr($ausgabe); ?>" <?php selected($filter_ausgabe, $ausgabe); ?>>
+                        <?php echo esc_html($ausgabe); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <?php endif; ?>
+
+        <!-- Stats - Kompakte Übersicht -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 10px; margin-bottom: 25px;">
+            <div class="stat-card" style="text-align: center; padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <div style="font-size: 24px; font-weight: 700; color: #1a365d;"><?php echo $stats['total']; ?></div>
+                <div style="color: #718096; font-size: 11px;">Gesamt</div>
             </div>
-            <div class="article-card" style="text-align: center; padding: 15px;">
-                <div style="font-size: 28px; font-weight: 700; color: #3182ce;"><?php echo $stats['submitted']; ?></div>
-                <div style="color: #718096; font-size: 12px;">Eingereicht</div>
+            <div class="stat-card" style="text-align: center; padding: 12px; background: #eff6ff; border-radius: 8px; border: 1px solid #bfdbfe;">
+                <div style="font-size: 24px; font-weight: 700; color: #3182ce;"><?php echo $stats['submitted']; ?></div>
+                <div style="color: #718096; font-size: 11px;">Eingereicht</div>
             </div>
-            <div class="article-card" style="text-align: center; padding: 15px;">
-                <div style="font-size: 28px; font-weight: 700; color: #d69e2e;"><?php echo $stats['in_review']; ?></div>
-                <div style="color: #718096; font-size: 12px;">Im Review</div>
+            <div class="stat-card" style="text-align: center; padding: 12px; background: #ecfeff; border-radius: 8px; border: 1px solid #a5f3fc;">
+                <div style="font-size: 24px; font-weight: 700; color: #0891b2;"><?php echo $stats['formal_check']; ?></div>
+                <div style="color: #718096; font-size: 11px;">Form. Prüf.</div>
             </div>
-            <div class="article-card" style="text-align: center; padding: 15px;">
-                <div style="font-size: 28px; font-weight: 700; color: #805ad5;"><?php echo $stats['revision']; ?></div>
-                <div style="color: #718096; font-size: 12px;">Revision</div>
+            <div class="stat-card" style="text-align: center; padding: 12px; background: #fefce8; border-radius: 8px; border: 1px solid #fde047;">
+                <div style="font-size: 24px; font-weight: 700; color: #ca8a04;"><?php echo $stats['in_review']; ?></div>
+                <div style="color: #718096; font-size: 11px;">Im Review</div>
             </div>
-            <div class="article-card" style="text-align: center; padding: 15px;">
-                <div style="font-size: 28px; font-weight: 700; color: #38a169;"><?php echo $stats['accepted']; ?></div>
-                <div style="color: #718096; font-size: 12px;">Angenommen</div>
+            <div class="stat-card" style="text-align: center; padding: 12px; background: #fef3c7; border-radius: 8px; border: 1px solid #fcd34d;">
+                <div style="font-size: 24px; font-weight: 700; color: #d97706;"><?php echo $stats['revision_required']; ?></div>
+                <div style="color: #718096; font-size: 11px;">Rev. erf.</div>
             </div>
-            <div class="article-card" style="text-align: center; padding: 15px;">
-                <div style="font-size: 28px; font-weight: 700; color: #14b8a6;"><?php echo $stats['exported']; ?></div>
-                <div style="color: #718096; font-size: 12px;">Exportiert</div>
+            <div class="stat-card" style="text-align: center; padding: 12px; background: #dbeafe; border-radius: 8px; border: 1px solid #93c5fd;">
+                <div style="font-size: 24px; font-weight: 700; color: #2563eb;"><?php echo $stats['revision_submitted']; ?></div>
+                <div style="color: #718096; font-size: 11px;">Rev. eing.</div>
             </div>
-            <div class="article-card" style="text-align: center; padding: 15px;">
-                <div style="font-size: 28px; font-weight: 700; color: #9f7aea;"><?php echo $stats['published']; ?></div>
-                <div style="color: #718096; font-size: 12px;">Publiziert</div>
+            <div class="stat-card" style="text-align: center; padding: 12px; background: #dcfce7; border-radius: 8px; border: 1px solid #86efac;">
+                <div style="font-size: 24px; font-weight: 700; color: #16a34a;"><?php echo $stats['accepted']; ?></div>
+                <div style="color: #718096; font-size: 11px;">Angenommen</div>
+            </div>
+            <div class="stat-card" style="text-align: center; padding: 12px; background: #ccfbf1; border-radius: 8px; border: 1px solid #5eead4;">
+                <div style="font-size: 24px; font-weight: 700; color: #0d9488;"><?php echo $stats['exported']; ?></div>
+                <div style="color: #718096; font-size: 11px;">Exportiert</div>
+            </div>
+            <div class="stat-card" style="text-align: center; padding: 12px; background: #e0e7ff; border-radius: 8px; border: 1px solid #a5b4fc;">
+                <div style="font-size: 24px; font-weight: 700; color: #4f46e5;"><?php echo $stats['lektorat']; ?></div>
+                <div style="color: #718096; font-size: 11px;">Lektorat</div>
+            </div>
+            <div class="stat-card" style="text-align: center; padding: 12px; background: #fce7f3; border-radius: 8px; border: 1px solid #f9a8d4;">
+                <div style="font-size: 24px; font-weight: 700; color: #db2777;"><?php echo $stats['gesetzt']; ?></div>
+                <div style="color: #718096; font-size: 11px;">Gesetzt</div>
+            </div>
+            <div class="stat-card" style="text-align: center; padding: 12px; background: #f5f3ff; border-radius: 8px; border: 1px solid #c4b5fd;">
+                <div style="font-size: 24px; font-weight: 700; color: #7c3aed;"><?php echo $stats['published']; ?></div>
+                <div style="color: #718096; font-size: 11px;">Publiziert</div>
             </div>
         </div>
 
         <!-- Filters -->
-        <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-            <a href="<?php echo esc_url(remove_query_arg('status')); ?>"
-               class="btn <?php echo !$filter_status ? 'btn-primary' : 'btn-secondary'; ?>">Alle</a>
+        <div style="display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;">
+            <a href="<?php echo esc_url(remove_query_arg(['status', 'ausgabe'])); ?>"
+               class="btn btn-sm <?php echo !$filter_status ? 'btn-primary' : 'btn-secondary'; ?>">Alle</a>
             <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_SUBMITTED)); ?>"
-               class="btn <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_SUBMITTED ? 'btn-primary' : 'btn-secondary'; ?>">Eingereicht</a>
+               class="btn btn-sm <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_SUBMITTED ? 'btn-primary' : 'btn-secondary'; ?>">Eingereicht</a>
+            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_FORMAL_CHECK)); ?>"
+               class="btn btn-sm <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_FORMAL_CHECK ? 'btn-primary' : 'btn-secondary'; ?>">Form. Prüfung</a>
             <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_UNDER_REVIEW)); ?>"
-               class="btn <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_UNDER_REVIEW ? 'btn-primary' : 'btn-secondary'; ?>">Im Review</a>
+               class="btn btn-sm <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_UNDER_REVIEW ? 'btn-primary' : 'btn-secondary'; ?>">Im Review</a>
+            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_REVISION_REQUIRED)); ?>"
+               class="btn btn-sm <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_REVISION_REQUIRED ? 'btn-primary' : 'btn-secondary'; ?>">Rev. erf.</a>
+            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_REVISION_SUBMITTED)); ?>"
+               class="btn btn-sm <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_REVISION_SUBMITTED ? 'btn-primary' : 'btn-secondary'; ?>">Rev. eing.</a>
             <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_ACCEPTED)); ?>"
-               class="btn <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_ACCEPTED ? 'btn-primary' : 'btn-secondary'; ?>">Angenommen</a>
+               class="btn btn-sm <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_ACCEPTED ? 'btn-primary' : 'btn-secondary'; ?>">Angenommen</a>
             <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_EXPORTED)); ?>"
-               class="btn <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_EXPORTED ? 'btn-primary' : 'btn-secondary'; ?>">Exportiert</a>
+               class="btn btn-sm <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_EXPORTED ? 'btn-primary' : 'btn-secondary'; ?>">Exportiert</a>
+            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_LEKTORAT)); ?>"
+               class="btn btn-sm <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_LEKTORAT ? 'btn-primary' : 'btn-secondary'; ?>">Lektorat</a>
+            <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_GESETZT)); ?>"
+               class="btn btn-sm <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_GESETZT ? 'btn-primary' : 'btn-secondary'; ?>">Gesetzt</a>
             <a href="<?php echo esc_url(add_query_arg('status', DGPTM_Artikel_Einreichung::STATUS_PUBLISHED)); ?>"
-               class="btn <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_PUBLISHED ? 'btn-primary' : 'btn-secondary'; ?>">Publiziert</a>
+               class="btn btn-sm <?php echo $filter_status === DGPTM_Artikel_Einreichung::STATUS_PUBLISHED ? 'btn-primary' : 'btn-secondary'; ?>">Publiziert</a>
         </div>
 
         <!-- Article List -->
@@ -402,6 +590,7 @@ if ($view_id) {
                         <th>Titel</th>
                         <th>Autor</th>
                         <th>Art</th>
+                        <th>Ausgabe</th>
                         <th>Status</th>
                         <th>Eingereicht</th>
                         <th>Aktion</th>
@@ -413,14 +602,16 @@ if ($view_id) {
                         $submission_id = get_field('submission_id', $article->ID);
                         $submitted_at = get_field('submitted_at', $article->ID);
                         $pub_art = get_field('publikationsart', $article->ID);
+                        $ausgabe = get_field('ausgabe', $article->ID);
                     ?>
-                    <tr>
+                    <tr data-ausgabe="<?php echo esc_attr($ausgabe); ?>">
                         <td class="submission-id"><?php echo esc_html($submission_id); ?></td>
                         <td>
                             <div class="article-title"><?php echo esc_html($article->post_title); ?></div>
                         </td>
                         <td><?php echo esc_html(get_field('hauptautorin', $article->ID)); ?></td>
                         <td style="font-size: 12px;"><?php echo esc_html(DGPTM_Artikel_Einreichung::PUBLIKATIONSARTEN[$pub_art] ?? '-'); ?></td>
+                        <td style="font-size: 12px; color: #6366f1; font-weight: 500;"><?php echo esc_html($ausgabe ?: '-'); ?></td>
                         <td>
                             <span class="status-badge <?php echo esc_attr($plugin->get_status_class($status)); ?>">
                                 <?php echo esc_html($plugin->get_status_label($status)); ?>
@@ -448,6 +639,41 @@ jQuery(document).ready(function($) {
         ajaxUrl: '<?php echo admin_url('admin-ajax.php'); ?>',
         nonce: '<?php echo wp_create_nonce(DGPTM_Artikel_Einreichung::NONCE_ACTION); ?>'
     };
+
+    // Ausgabe Filter
+    $('#ausgabe-filter').on('change', function() {
+        var selectedAusgabe = $(this).val();
+        var $rows = $('.dgptm-artikel-table tbody tr');
+
+        if (!selectedAusgabe) {
+            // Show all rows
+            $rows.show();
+        } else {
+            // Filter rows by Ausgabe
+            $rows.each(function() {
+                var rowAusgabe = $(this).data('ausgabe') || '';
+                if (rowAusgabe === selectedAusgabe) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        }
+
+        // Update visible count
+        var visibleCount = $rows.filter(':visible').length;
+        var totalCount = $rows.length;
+        var $filterInfo = $('#filter-info');
+        if (selectedAusgabe) {
+            if (!$filterInfo.length) {
+                $('#ausgabe-filter').after('<span id="filter-info" style="margin-left: 15px; color: #64748b; font-size: 13px;"></span>');
+                $filterInfo = $('#filter-info');
+            }
+            $filterInfo.text('Zeige ' + visibleCount + ' von ' + totalCount + ' Artikeln');
+        } else {
+            $filterInfo.remove();
+        }
+    });
 
     // Export XML (JATS format)
     $(document).on('click', '.export-xml-btn', function() {
@@ -490,7 +716,54 @@ jQuery(document).ready(function($) {
         });
     });
 
-    // Change status
+    // Change status via dropdown
+    $(document).on('click', '.change-status-dropdown-btn', function() {
+        var $btn = $(this);
+        var articleId = $btn.data('article-id');
+        var $select = $('#status-select');
+        var newStatus = $select.val();
+        var originalText = $btn.text();
+
+        if (!newStatus) {
+            alert('Bitte wählen Sie einen Status aus.');
+            return;
+        }
+
+        // Get the label for confirmation
+        var statusLabel = $select.find('option:selected').text();
+
+        if (!confirm('Status wirklich ändern auf "' + statusLabel + '"?')) {
+            return;
+        }
+
+        $btn.prop('disabled', true).text('Wird gespeichert...');
+
+        $.ajax({
+            url: config.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'dgptm_change_artikel_status',
+                nonce: config.nonce,
+                article_id: articleId,
+                status: newStatus
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Reload page to show updated status
+                    location.reload();
+                } else {
+                    $btn.prop('disabled', false).text(originalText);
+                    alert(response.data.message || 'Fehler beim Ändern des Status.');
+                }
+            },
+            error: function() {
+                $btn.prop('disabled', false).text(originalText);
+                alert('Verbindungsfehler.');
+            }
+        });
+    });
+
+    // Change status (legacy button handler - kept for compatibility)
     $(document).on('click', '.change-status-btn', function() {
         var $btn = $(this);
         var articleId = $btn.data('article-id');
@@ -519,6 +792,43 @@ jQuery(document).ready(function($) {
                 } else {
                     $btn.prop('disabled', false).text(originalText);
                     alert(response.data.message || 'Fehler beim Ändern des Status.');
+                }
+            },
+            error: function() {
+                $btn.prop('disabled', false).text(originalText);
+                alert('Verbindungsfehler.');
+            }
+        });
+    });
+
+    // Save Ausgabe
+    $(document).on('click', '.save-ausgabe-btn', function() {
+        var $btn = $(this);
+        var articleId = $btn.data('article-id');
+        var ausgabe = $('#ausgabe-input').val().trim();
+        var originalText = $btn.text();
+
+        $btn.prop('disabled', true).text('Wird gespeichert...');
+
+        $.ajax({
+            url: config.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'dgptm_save_ausgabe',
+                nonce: config.nonce,
+                article_id: articleId,
+                ausgabe: ausgabe
+            },
+            success: function(response) {
+                $btn.prop('disabled', false).text(originalText);
+                if (response.success) {
+                    // Show success feedback
+                    $btn.text('Gespeichert!').css('background', '#10b981');
+                    setTimeout(function() {
+                        $btn.text(originalText).css('background', '#6366f1');
+                    }, 2000);
+                } else {
+                    alert(response.data.message || 'Fehler beim Speichern.');
                 }
             },
             error: function() {
@@ -571,5 +881,30 @@ jQuery(document).ready(function($) {
 .status-teal {
     background-color: #14b8a6 !important;
     color: #fff !important;
+}
+.status-indigo {
+    background-color: #4f46e5 !important;
+    color: #fff !important;
+}
+.status-pink {
+    background-color: #db2777 !important;
+    color: #fff !important;
+}
+.status-cyan {
+    background-color: #0891b2 !important;
+    color: #fff !important;
+}
+.status-lightblue {
+    background-color: #2563eb !important;
+    color: #fff !important;
+}
+.status-dropdown {
+    background-color: #fff;
+    cursor: pointer;
+}
+.status-dropdown:focus {
+    border-color: #0369a1;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1);
 }
 </style>

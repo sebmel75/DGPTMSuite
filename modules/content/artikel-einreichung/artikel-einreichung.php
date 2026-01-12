@@ -33,6 +33,8 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
         const STATUS_REVISION_SUBMITTED = 'revision_eingereicht';
         const STATUS_ACCEPTED = 'angenommen';
         const STATUS_EXPORTED = 'exportiert';
+        const STATUS_LEKTORAT = 'lektorat';
+        const STATUS_GESETZT = 'gesetzt';
         const STATUS_REJECTED = 'abgelehnt';
         const STATUS_PUBLISHED = 'veroeffentlicht';
 
@@ -88,6 +90,7 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             add_action('wp_ajax_dgptm_export_xml', [$this, 'ajax_export_xml']);
             add_action('wp_ajax_dgptm_change_artikel_status', [$this, 'ajax_change_artikel_status']);
             add_action('wp_ajax_dgptm_publish_artikel', [$this, 'ajax_publish_artikel']);
+            add_action('wp_ajax_dgptm_save_ausgabe', [$this, 'ajax_save_ausgabe']);
 
             // AJAX Handlers for non-logged in users (token-based)
             add_action('wp_ajax_nopriv_dgptm_submit_artikel', [$this, 'ajax_submit_artikel']);
@@ -159,7 +162,7 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
 
             $artikel_id = intval($_GET['artikel_id']);
 
-            if (!current_user_can('manage_options') && !$this->is_editor_in_chief()) {
+            if (!current_user_can('manage_options') && !$this->is_editor_in_chief() && !$this->is_redaktion()) {
                 wp_die('Keine Berechtigung.');
             }
 
@@ -187,8 +190,9 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             $is_author = is_user_logged_in() && $article->post_author == get_current_user_id();
             $is_valid_token = $token && $this->validate_author_token($token) === $artikel_id;
             $is_editor = $this->is_editor_in_chief();
+            $is_redaktion = $this->is_redaktion();
 
-            if (!$is_author && !$is_valid_token && !$is_editor && !current_user_can('manage_options')) {
+            if (!$is_author && !$is_valid_token && !$is_editor && !$is_redaktion && !current_user_can('manage_options')) {
                 wp_die('Keine Berechtigung.');
             }
 
@@ -436,6 +440,8 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
                             self::STATUS_REVISION_SUBMITTED => 'Revision eingereicht',
                             self::STATUS_ACCEPTED => 'Angenommen',
                             self::STATUS_EXPORTED => 'Exportiert',
+                            self::STATUS_LEKTORAT => 'Lektorat',
+                            self::STATUS_GESETZT => 'Gesetzt',
                             self::STATUS_REJECTED => 'Abgelehnt',
                             self::STATUS_PUBLISHED => 'Veröffentlicht'
                         ],
@@ -448,6 +454,14 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
                         'type' => 'select',
                         'choices' => self::PUBLIKATIONSARTEN,
                         'required' => 1
+                    ],
+                    [
+                        'key' => 'field_artikel_ausgabe',
+                        'label' => 'Ausgabe',
+                        'name' => 'ausgabe',
+                        'type' => 'text',
+                        'instructions' => 'Ausgabe der Zeitschrift (z.B. 2024-1, 2024-2)',
+                        'placeholder' => 'JJJJ-N'
                     ],
                     [
                         'key' => 'field_artikel_unterueberschrift',
@@ -1097,6 +1111,8 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
                 self::STATUS_REVISION_SUBMITTED => 'Revision eingereicht',
                 self::STATUS_ACCEPTED => 'Angenommen',
                 self::STATUS_EXPORTED => 'Exportiert',
+                self::STATUS_LEKTORAT => 'Lektorat',
+                self::STATUS_GESETZT => 'Gesetzt',
                 self::STATUS_REJECTED => 'Abgelehnt',
                 self::STATUS_PUBLISHED => 'Veröffentlicht'
             ];
@@ -1112,9 +1128,11 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
                 self::STATUS_FORMAL_CHECK => 'status-cyan',
                 self::STATUS_UNDER_REVIEW => 'status-orange',
                 self::STATUS_REVISION_REQUIRED => 'status-yellow',
-                self::STATUS_REVISION_SUBMITTED => 'status-blue',
+                self::STATUS_REVISION_SUBMITTED => 'status-lightblue',
                 self::STATUS_ACCEPTED => 'status-green',
                 self::STATUS_EXPORTED => 'status-teal',
+                self::STATUS_LEKTORAT => 'status-indigo',
+                self::STATUS_GESETZT => 'status-pink',
                 self::STATUS_REJECTED => 'status-red',
                 self::STATUS_PUBLISHED => 'status-purple'
             ];
@@ -2293,7 +2311,7 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
         public function ajax_export_xml() {
             check_ajax_referer(self::NONCE_ACTION, 'nonce');
 
-            if (!$this->is_editor_in_chief() && !current_user_can('manage_options')) {
+            if (!$this->is_redaktion() && !$this->is_editor_in_chief() && !current_user_can('manage_options')) {
                 wp_send_json_error(['message' => 'Keine Berechtigung.']);
             }
 
@@ -2642,10 +2660,18 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
                 wp_send_json_error(['message' => 'Artikel nicht gefunden.']);
             }
 
-            // Validate status
+            // Validate status - allow ALL statuses (including backwards changes for flexibility)
             $valid_statuses = [
+                self::STATUS_SUBMITTED,
+                self::STATUS_FORMAL_CHECK,
+                self::STATUS_UNDER_REVIEW,
+                self::STATUS_REVISION_REQUIRED,
+                self::STATUS_REVISION_SUBMITTED,
                 self::STATUS_ACCEPTED,
                 self::STATUS_EXPORTED,
+                self::STATUS_LEKTORAT,
+                self::STATUS_GESETZT,
+                self::STATUS_REJECTED,
                 self::STATUS_PUBLISHED
             ];
 
@@ -2653,15 +2679,19 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
                 wp_send_json_error(['message' => 'Ungültiger Status.']);
             }
 
+            // Get old status for logging
+            $old_status = get_field('artikel_status', $artikel_id);
+            $old_label = $this->get_status_label($old_status);
+
             // Update status
             update_field('artikel_status', $new_status, $artikel_id);
 
-            // Log the change
+            // Log the change with old and new status
             $this->add_communication_log($artikel_id, [
                 'type' => 'status_change',
                 'user_name' => wp_get_current_user()->display_name,
                 'recipient' => 'System',
-                'subject' => 'Status geändert zu: ' . $this->get_status_label($new_status),
+                'subject' => 'Status geändert: ' . $old_label . ' → ' . $this->get_status_label($new_status),
                 'timestamp' => time()
             ]);
 
@@ -2670,6 +2700,51 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
                 'status' => $new_status,
                 'status_label' => $this->get_status_label($new_status),
                 'status_class' => $this->get_status_class($new_status)
+            ]);
+        }
+
+        /**
+         * AJAX: Save Ausgabe (issue number) for article
+         */
+        public function ajax_save_ausgabe() {
+            check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+            if (!$this->is_redaktion() && !$this->is_editor_in_chief() && !current_user_can('manage_options')) {
+                wp_send_json_error(['message' => 'Keine Berechtigung.']);
+            }
+
+            $artikel_id = intval($_POST['article_id'] ?? 0);
+            $ausgabe = sanitize_text_field($_POST['ausgabe'] ?? '');
+
+            if (!$artikel_id) {
+                wp_send_json_error(['message' => 'Keine Artikel-ID angegeben.']);
+            }
+
+            $article = get_post($artikel_id);
+            if (!$article || $article->post_type !== self::POST_TYPE) {
+                wp_send_json_error(['message' => 'Artikel nicht gefunden.']);
+            }
+
+            // Get old value for logging
+            $old_ausgabe = get_field('ausgabe', $artikel_id);
+
+            // Update Ausgabe field
+            update_field('ausgabe', $ausgabe, $artikel_id);
+
+            // Log the change
+            if ($old_ausgabe !== $ausgabe) {
+                $this->add_communication_log($artikel_id, [
+                    'type' => 'ausgabe_change',
+                    'user_name' => wp_get_current_user()->display_name,
+                    'recipient' => 'System',
+                    'subject' => 'Ausgabe geändert: ' . ($old_ausgabe ?: '(leer)') . ' → ' . ($ausgabe ?: '(leer)'),
+                    'timestamp' => time()
+                ]);
+            }
+
+            wp_send_json_success([
+                'message' => 'Ausgabe gespeichert: ' . ($ausgabe ?: '(entfernt)'),
+                'ausgabe' => $ausgabe
             ]);
         }
 

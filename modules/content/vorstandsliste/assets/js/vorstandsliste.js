@@ -131,6 +131,13 @@
                     }
                 });
 
+                // Edit person from card view
+                $(document).on('click', '.dgptm-av-edit-person', function(e) {
+                    e.stopPropagation();
+                    var personId = $(this).data('person-id');
+                    if (personId) self.openPersonEditModal(personId);
+                });
+
                 // Person edit modal
                 $(document).on('click', '#dgptm-save-person', function() {
                     self.savePerson();
@@ -439,6 +446,38 @@
         },
 
         // ==================== PERSON EDIT ====================
+        openPersonEditModal: function(personId) {
+            var self = this;
+            var $modal = $('#dgptm-vl-person-modal');
+
+            // Reset form
+            $('#dgptm-vl-person-form')[0].reset();
+            $('#person_edit_id').val(personId);
+
+            this.openModal($modal);
+
+            // Load person data
+            $.ajax({
+                url: this.config.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'dgptm_get_person',
+                    nonce: this.config.nonce,
+                    person_id: personId
+                },
+                success: function(response) {
+                    if (response.success) {
+                        var data = response.data;
+                        $('#person_edit_id').val(data.id);
+                        $('#person_name').val(data.name);
+                        $('#person_titel').val(data.titel || '');
+                        $('#person_klinik').val(data.klinik || '');
+                        $('#person_vita').val(data.vita || '');
+                    }
+                }
+            });
+        },
+
         savePerson: function() {
             var self = this;
             $.ajax({
@@ -450,12 +489,30 @@
                     person_id: $('#person_edit_id').val(),
                     name: $('#person_name').val(),
                     titel: $('#person_titel').val(),
+                    klinik: $('#person_klinik').val(),
                     vita: $('#person_vita').val()
                 },
                 success: function(response) {
                     if (response.success) {
                         self.closeModal($('#dgptm-vl-person-modal'));
-                        location.reload();
+                        // Update card without full reload
+                        var personId = response.data.person_id;
+                        var $card = $('.dgptm-av-card[data-person-id="' + personId + '"]');
+                        if ($card.length) {
+                            $card.find('.dgptm-av-card-name').text(response.data.name);
+                            if (response.data.klinik) {
+                                var $klinik = $card.find('.dgptm-av-card-klinik');
+                                if ($klinik.length) {
+                                    $klinik.text(response.data.klinik);
+                                } else {
+                                    $card.find('.dgptm-av-card-name').after('<p class="dgptm-av-card-klinik">' + self.escapeHtml(response.data.klinik) + '</p>');
+                                }
+                            }
+                        } else {
+                            location.reload();
+                        }
+                    } else {
+                        alert('Fehler: ' + (response.data.message || 'Unbekannt'));
                     }
                 }
             });

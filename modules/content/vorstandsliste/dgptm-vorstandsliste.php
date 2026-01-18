@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('DGPTM_VORSTANDSLISTE_VERSION', '2.1.0');
+define('DGPTM_VORSTANDSLISTE_VERSION', '2.2.0');
 define('DGPTM_VORSTANDSLISTE_PATH', plugin_dir_path(__FILE__));
 define('DGPTM_VORSTANDSLISTE_URL', plugin_dir_url(__FILE__));
 
@@ -242,10 +242,12 @@ if (!class_exists('DGPTM_Vorstandsliste')) {
             wp_enqueue_style('dgptm-vorstandsliste');
             wp_enqueue_script('dgptm-vorstandsliste');
 
+            $kann_bearbeiten = $this->kann_bearbeiten();
+
             wp_localize_script('dgptm-vorstandsliste', 'dgptmVorstandsliste', [
                 'ajaxUrl' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('dgptm_vorstandsliste_nonce'),
-                'canEdit' => false,
+                'canEdit' => $kann_bearbeiten,
                 'positionen' => $this->positionen,
             ]);
 
@@ -280,14 +282,14 @@ if (!class_exists('DGPTM_Vorstandsliste')) {
 
             ob_start();
             ?>
-            <div class="dgptm-av-container dgptm-av-cols-<?php echo esc_attr($atts['columns']); ?>">
+            <div class="dgptm-vorstandsliste dgptm-av-container dgptm-av-cols-<?php echo esc_attr($atts['columns']); ?>">
                 <div class="dgptm-av-grid">
                     <?php foreach ($sortiert as $pos): ?>
-                        <?php echo $this->render_vorstand_card($pos, $atts); ?>
+                        <?php echo $this->render_vorstand_card($pos, $atts, $kann_bearbeiten); ?>
                     <?php endforeach; ?>
                 </div>
 
-                <!-- Vita Modal (wiederverwendet) -->
+                <!-- Vita Modal -->
                 <div id="dgptm-vl-vita-modal" class="dgptm-vl-modal" style="display:none;">
                     <div class="dgptm-vl-modal-overlay"></div>
                     <div class="dgptm-vl-modal-container dgptm-vl-modal-sm">
@@ -304,6 +306,48 @@ if (!class_exists('DGPTM_Vorstandsliste')) {
                         </div>
                     </div>
                 </div>
+
+                <?php if ($kann_bearbeiten): ?>
+                <!-- Person Edit Modal -->
+                <div id="dgptm-vl-person-modal" class="dgptm-vl-modal" style="display:none;">
+                    <div class="dgptm-vl-modal-overlay"></div>
+                    <div class="dgptm-vl-modal-container dgptm-vl-modal-sm">
+                        <div class="dgptm-vl-modal-header">
+                            <h3 class="dgptm-vl-modal-title">Person bearbeiten</h3>
+                            <button type="button" class="dgptm-vl-modal-close">&times;</button>
+                        </div>
+                        <div class="dgptm-vl-modal-body">
+                            <form id="dgptm-vl-person-form">
+                                <input type="hidden" name="person_id" id="person_edit_id">
+
+                                <div class="dgptm-vl-form-group">
+                                    <label>Titel (Dr., Prof., etc.)</label>
+                                    <input type="text" name="person_titel" id="person_titel">
+                                </div>
+
+                                <div class="dgptm-vl-form-group">
+                                    <label>Name *</label>
+                                    <input type="text" name="person_name" id="person_name" required>
+                                </div>
+
+                                <div class="dgptm-vl-form-group">
+                                    <label>Klinik / Arbeitsstätte</label>
+                                    <input type="text" name="person_klinik" id="person_klinik">
+                                </div>
+
+                                <div class="dgptm-vl-form-group">
+                                    <label>Vita</label>
+                                    <textarea name="person_vita" id="person_vita" rows="6"></textarea>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="dgptm-vl-modal-footer">
+                            <button type="button" class="dgptm-vl-btn dgptm-vl-btn-secondary dgptm-vl-modal-cancel">Abbrechen</button>
+                            <button type="button" class="dgptm-vl-btn dgptm-vl-btn-primary" id="dgptm-save-person">Speichern</button>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
             <?php
             return ob_get_clean();
@@ -312,7 +356,7 @@ if (!class_exists('DGPTM_Vorstandsliste')) {
         /**
          * Rendert eine einzelne Vorstandskarte
          */
-        private function render_vorstand_card($pos, $atts) {
+        private function render_vorstand_card($pos, $atts, $kann_bearbeiten = false) {
             $person_id = $pos['position_person'] ?? 0;
             if (!$person_id) return '';
 
@@ -325,14 +369,18 @@ if (!class_exists('DGPTM_Vorstandsliste')) {
             $position_label = $this->positionen[$pos['position_typ']] ?? $pos['position_typ'];
             $foto = get_the_post_thumbnail_url($person_id, 'medium');
             $hat_vita = !empty($person->post_content);
-            $show_vita = $atts['show_vita'] === 'yes' && $hat_vita;
+            $show_vita = $atts['show_vita'] === 'yes';
 
             $vollstaendiger_name = $titel ? $titel . ' ' . $name : $name;
 
             ob_start();
             ?>
-            <div class="dgptm-av-card<?php echo $show_vita ? ' has-vita' : ''; ?>"
-                 <?php echo $show_vita ? 'data-person-id="' . esc_attr($person_id) . '"' : ''; ?>>
+            <div class="dgptm-av-card" data-person-id="<?php echo esc_attr($person_id); ?>">
+                <?php if ($kann_bearbeiten): ?>
+                <button type="button" class="dgptm-av-card-edit dgptm-av-edit-person" title="Bearbeiten" data-person-id="<?php echo esc_attr($person_id); ?>">
+                    <svg viewBox="0 0 24 24" width="16" height="16"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+                </button>
+                <?php endif; ?>
                 <div class="dgptm-av-card-image">
                     <?php if ($foto): ?>
                         <img src="<?php echo esc_url($foto); ?>" alt="<?php echo esc_attr($vollstaendiger_name); ?>">
@@ -350,7 +398,7 @@ if (!class_exists('DGPTM_Vorstandsliste')) {
                     <?php if ($atts['show_klinik'] === 'yes' && $klinik): ?>
                         <p class="dgptm-av-card-klinik"><?php echo esc_html($klinik); ?></p>
                     <?php endif; ?>
-                    <?php if ($show_vita): ?>
+                    <?php if ($show_vita && $hat_vita): ?>
                         <button type="button" class="dgptm-av-card-vita-btn dgptm-vl-person has-vita" data-person-id="<?php echo esc_attr($person_id); ?>">
                             <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 16v-4m0-4h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                             Vita anzeigen
@@ -798,6 +846,7 @@ if (!class_exists('DGPTM_Vorstandsliste')) {
                 'id' => $person_id,
                 'name' => $person->post_title,
                 'titel' => get_field('person_titel', $person_id),
+                'klinik' => get_field('person_klinik', $person_id),
                 'vita' => $person->post_content,
             ]);
         }
@@ -812,6 +861,7 @@ if (!class_exists('DGPTM_Vorstandsliste')) {
             $person_id = intval($_POST['person_id'] ?? 0);
             $name = sanitize_text_field($_POST['name'] ?? '');
             $titel = sanitize_text_field($_POST['titel'] ?? '');
+            $klinik = sanitize_text_field($_POST['klinik'] ?? '');
             $vita = wp_kses_post($_POST['vita'] ?? '');
 
             if (empty($name)) {
@@ -834,10 +884,12 @@ if (!class_exists('DGPTM_Vorstandsliste')) {
             }
 
             update_field('person_titel', $titel, $person_id);
+            update_field('person_klinik', $klinik, $person_id);
 
             wp_send_json_success([
                 'person_id' => $person_id,
                 'name' => $titel ? $titel . ' ' . $name : $name,
+                'klinik' => $klinik,
             ]);
         }
 

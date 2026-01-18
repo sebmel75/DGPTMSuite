@@ -24,8 +24,8 @@ if (!class_exists('DGPTM_Vorstandsliste')) {
         private $positionen = [
             'praesident' => 'Präsident',
             'vizepraesident' => 'Vizepräsident',
-            'schriftfuehrer' => 'Schriftführer',
             'schatzmeister' => 'Schatzmeister',
+            'schriftfuehrer' => 'Schriftführer',
             'beisitzer' => 'Beisitzer',
         ];
 
@@ -283,7 +283,7 @@ if (!class_exists('DGPTM_Vorstandsliste')) {
             ob_start();
             ?>
             <div class="dgptm-vl-positionen">
-                <?php foreach (['praesident', 'vizepraesident', 'schriftfuehrer', 'schatzmeister', 'beisitzer'] as $typ): ?>
+                <?php foreach (['praesident', 'vizepraesident', 'schatzmeister', 'schriftfuehrer', 'beisitzer'] as $typ): ?>
                     <?php if (!empty($sortiert[$typ])): ?>
                         <div class="dgptm-vl-position-row">
                             <span class="dgptm-vl-position-label"><?php echo esc_html($this->positionen[$typ]); ?></span>

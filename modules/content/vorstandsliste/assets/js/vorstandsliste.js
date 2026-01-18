@@ -525,10 +525,12 @@
         },
 
         closeModal: function($modal) {
-            $modal.fadeOut(200);
-            if (!$('.dgptm-vl-modal:visible').length) {
-                $('body').css('overflow', '');
-            }
+            $modal.fadeOut(200, function() {
+                // Check after fadeOut completes
+                if (!$('.dgptm-vl-modal:visible').length) {
+                    $('body').css('overflow', '');
+                }
+            });
         },
 
         escapeHtml: function(text) {

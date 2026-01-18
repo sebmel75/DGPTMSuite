@@ -2,7 +2,7 @@
     "id": "vorstandsliste",
     "name": "DGPTM Vorstandsliste",
     "description": "Zeigt die historische Vorstandsliste und den aktuellen Vorstand. Shortcodes: [dgptm_vorstandsliste] für Historie, [dgptm_aktueller_vorstand] für Karten-Darstellung mit Bild und Vita",
-    "version": "2.2.0",
+    "version": "2.3.0",
     "author": "Sebastian Melzer / DGPTM",
     "main_file": "dgptm-vorstandsliste.php",
     "dependencies": [],

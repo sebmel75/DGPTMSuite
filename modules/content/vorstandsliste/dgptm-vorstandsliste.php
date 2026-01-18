@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('DGPTM_VORSTANDSLISTE_VERSION', '2.2.0');
+define('DGPTM_VORSTANDSLISTE_VERSION', '2.3.0');
 define('DGPTM_VORSTANDSLISTE_PATH', plugin_dir_path(__FILE__));
 define('DGPTM_VORSTANDSLISTE_URL', plugin_dir_url(__FILE__));
 
@@ -124,6 +124,22 @@ if (!class_exists('DGPTM_Vorstandsliste')) {
                         'type' => 'text',
                         'instructions' => 'Klinik oder Institution',
                         'wrapper' => ['width' => '70'],
+                    ],
+                    [
+                        'key' => 'field_person_email',
+                        'label' => 'E-Mail',
+                        'name' => 'person_email',
+                        'type' => 'email',
+                        'instructions' => 'Öffentliche E-Mail-Adresse',
+                        'wrapper' => ['width' => '50'],
+                    ],
+                    [
+                        'key' => 'field_person_linkedin',
+                        'label' => 'LinkedIn',
+                        'name' => 'person_linkedin',
+                        'type' => 'url',
+                        'instructions' => 'LinkedIn Profil-URL',
+                        'wrapper' => ['width' => '50'],
                     ],
                 ],
                 'location' => [[['param' => 'post_type', 'operator' => '==', 'value' => 'vorstand_person']]],
@@ -320,14 +336,15 @@ if (!class_exists('DGPTM_Vorstandsliste')) {
                             <form id="dgptm-vl-person-form">
                                 <input type="hidden" name="person_id" id="person_edit_id">
 
-                                <div class="dgptm-vl-form-group">
-                                    <label>Titel (Dr., Prof., etc.)</label>
-                                    <input type="text" name="person_titel" id="person_titel">
-                                </div>
-
-                                <div class="dgptm-vl-form-group">
-                                    <label>Name *</label>
-                                    <input type="text" name="person_name" id="person_name" required>
+                                <div class="dgptm-vl-form-row">
+                                    <div class="dgptm-vl-form-group">
+                                        <label>Titel (Dr., Prof., etc.)</label>
+                                        <input type="text" name="person_titel" id="person_titel">
+                                    </div>
+                                    <div class="dgptm-vl-form-group" style="flex:2;">
+                                        <label>Name *</label>
+                                        <input type="text" name="person_name" id="person_name" required>
+                                    </div>
                                 </div>
 
                                 <div class="dgptm-vl-form-group">
@@ -335,8 +352,19 @@ if (!class_exists('DGPTM_Vorstandsliste')) {
                                     <input type="text" name="person_klinik" id="person_klinik">
                                 </div>
 
+                                <div class="dgptm-vl-form-row">
+                                    <div class="dgptm-vl-form-group">
+                                        <label>E-Mail</label>
+                                        <input type="email" name="person_email" id="person_email" placeholder="name@example.com">
+                                    </div>
+                                    <div class="dgptm-vl-form-group">
+                                        <label>LinkedIn</label>
+                                        <input type="url" name="person_linkedin" id="person_linkedin" placeholder="https://linkedin.com/in/...">
+                                    </div>
+                                </div>
+
                                 <div class="dgptm-vl-form-group">
-                                    <label>Vita</label>
+                                    <label>Kurzbiographie</label>
                                     <textarea name="person_vita" id="person_vita" rows="6"></textarea>
                                 </div>
                             </form>
@@ -366,12 +394,15 @@ if (!class_exists('DGPTM_Vorstandsliste')) {
             $name = $person->post_title;
             $titel = get_field('person_titel', $person_id);
             $klinik = get_field('person_klinik', $person_id);
+            $email = get_field('person_email', $person_id);
+            $linkedin = get_field('person_linkedin', $person_id);
             $position_label = $this->positionen[$pos['position_typ']] ?? $pos['position_typ'];
             $foto = get_the_post_thumbnail_url($person_id, 'medium');
             $hat_vita = !empty($person->post_content);
             $show_vita = $atts['show_vita'] === 'yes';
 
             $vollstaendiger_name = $titel ? $titel . ' ' . $name : $name;
+            $has_social = $email || $linkedin;
 
             ob_start();
             ?>
@@ -398,10 +429,25 @@ if (!class_exists('DGPTM_Vorstandsliste')) {
                     <?php if ($atts['show_klinik'] === 'yes' && $klinik): ?>
                         <p class="dgptm-av-card-klinik"><?php echo esc_html($klinik); ?></p>
                     <?php endif; ?>
+
+                    <?php if ($has_social): ?>
+                    <div class="dgptm-av-card-social">
+                        <?php if ($email): ?>
+                        <a href="mailto:<?php echo esc_attr($email); ?>" class="dgptm-av-social-link dgptm-av-social-email" title="E-Mail senden">
+                            <svg viewBox="0 0 24 24" width="20" height="20"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </a>
+                        <?php endif; ?>
+                        <?php if ($linkedin): ?>
+                        <a href="<?php echo esc_url($linkedin); ?>" class="dgptm-av-social-link dgptm-av-social-linkedin" title="LinkedIn Profil" target="_blank" rel="noopener">
+                            <svg viewBox="0 0 24 24" width="20" height="20"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2zM4 6a2 2 0 100-4 2 2 0 000 4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </a>
+                        <?php endif; ?>
+                    </div>
+                    <?php endif; ?>
+
                     <?php if ($show_vita && $hat_vita): ?>
                         <button type="button" class="dgptm-av-card-vita-btn dgptm-vl-person has-vita" data-person-id="<?php echo esc_attr($person_id); ?>">
-                            <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 16v-4m0-4h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                            Vita anzeigen
+                            Kurzbiographie
                         </button>
                     <?php endif; ?>
                 </div>
@@ -847,6 +893,8 @@ if (!class_exists('DGPTM_Vorstandsliste')) {
                 'name' => $person->post_title,
                 'titel' => get_field('person_titel', $person_id),
                 'klinik' => get_field('person_klinik', $person_id),
+                'email' => get_field('person_email', $person_id),
+                'linkedin' => get_field('person_linkedin', $person_id),
                 'vita' => $person->post_content,
             ]);
         }
@@ -862,6 +910,8 @@ if (!class_exists('DGPTM_Vorstandsliste')) {
             $name = sanitize_text_field($_POST['name'] ?? '');
             $titel = sanitize_text_field($_POST['titel'] ?? '');
             $klinik = sanitize_text_field($_POST['klinik'] ?? '');
+            $email = sanitize_email($_POST['email'] ?? '');
+            $linkedin = esc_url_raw($_POST['linkedin'] ?? '');
             $vita = wp_kses_post($_POST['vita'] ?? '');
 
             if (empty($name)) {
@@ -885,11 +935,15 @@ if (!class_exists('DGPTM_Vorstandsliste')) {
 
             update_field('person_titel', $titel, $person_id);
             update_field('person_klinik', $klinik, $person_id);
+            update_field('person_email', $email, $person_id);
+            update_field('person_linkedin', $linkedin, $person_id);
 
             wp_send_json_success([
                 'person_id' => $person_id,
                 'name' => $titel ? $titel . ' ' . $name : $name,
                 'klinik' => $klinik,
+                'email' => $email,
+                'linkedin' => $linkedin,
             ]);
         }
 

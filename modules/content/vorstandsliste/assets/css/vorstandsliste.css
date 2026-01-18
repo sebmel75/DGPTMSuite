@@ -921,9 +921,43 @@
 .dgptm-av-card-klinik {
     font-size: 14px;
     color: var(--av-gray-600);
-    margin: 0 0 16px 0;
+    margin: 0 0 12px 0;
     line-height: 1.4;
-    flex-grow: 1;
+}
+
+/* Social Links */
+.dgptm-av-card-social {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.dgptm-av-social-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--av-gray-100);
+    color: var(--av-gray-600);
+    transition: all var(--av-transition);
+    text-decoration: none;
+}
+
+.dgptm-av-social-link:hover {
+    transform: translateY(-2px);
+}
+
+.dgptm-av-social-email:hover {
+    background: #ea4335;
+    color: var(--av-white);
+}
+
+.dgptm-av-social-linkedin:hover {
+    background: #0077b5;
+    color: var(--av-white);
 }
 
 /* Vita Button */

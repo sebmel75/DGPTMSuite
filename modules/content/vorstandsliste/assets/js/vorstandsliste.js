@@ -472,6 +472,8 @@
                         $('#person_name').val(data.name);
                         $('#person_titel').val(data.titel || '');
                         $('#person_klinik').val(data.klinik || '');
+                        $('#person_email').val(data.email || '');
+                        $('#person_linkedin').val(data.linkedin || '');
                         $('#person_vita').val(data.vita || '');
                     }
                 }
@@ -490,27 +492,15 @@
                     name: $('#person_name').val(),
                     titel: $('#person_titel').val(),
                     klinik: $('#person_klinik').val(),
+                    email: $('#person_email').val(),
+                    linkedin: $('#person_linkedin').val(),
                     vita: $('#person_vita').val()
                 },
                 success: function(response) {
                     if (response.success) {
                         self.closeModal($('#dgptm-vl-person-modal'));
-                        // Update card without full reload
-                        var personId = response.data.person_id;
-                        var $card = $('.dgptm-av-card[data-person-id="' + personId + '"]');
-                        if ($card.length) {
-                            $card.find('.dgptm-av-card-name').text(response.data.name);
-                            if (response.data.klinik) {
-                                var $klinik = $card.find('.dgptm-av-card-klinik');
-                                if ($klinik.length) {
-                                    $klinik.text(response.data.klinik);
-                                } else {
-                                    $card.find('.dgptm-av-card-name').after('<p class="dgptm-av-card-klinik">' + self.escapeHtml(response.data.klinik) + '</p>');
-                                }
-                            }
-                        } else {
-                            location.reload();
-                        }
+                        // Reload page to show updated social icons
+                        location.reload();
                     } else {
                         alert('Fehler: ' + (response.data.message || 'Unbekannt'));
                     }

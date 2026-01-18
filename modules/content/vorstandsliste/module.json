@@ -1,0 +1,21 @@
+{
+    "id": "vorstandsliste",
+    "name": "DGPTM Vorstandsliste",
+    "description": "Zeigt die historische Vorstandsliste mit allen Amtsperioden. Shortcode: [dgptm_vorstandsliste]",
+    "version": "1.0.0",
+    "author": "Sebastian Melzer / DGPTM",
+    "main_file": "dgptm-vorstandsliste.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": ["advanced-custom-fields"]
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "content",
+    "icon": "dashicons-groups",
+    "active": false,
+    "can_export": true,
+    "critical": false,
+    "flags": ["development"]
+}

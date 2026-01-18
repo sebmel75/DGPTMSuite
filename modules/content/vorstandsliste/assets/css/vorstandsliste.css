@@ -1,0 +1,595 @@
+/**
+ * DGPTM Vorstandsliste - Frontend Styles
+ */
+
+/* Gemeinsame Variablen */
+.dgptm-vorstandsliste {
+    --primary-color: #005791;
+    --primary-light: #0073aa;
+    --secondary-color: #666;
+    --border-color: #ddd;
+    --bg-light: #f9f9f9;
+    --bg-warning: #fff3cd;
+    --text-muted: #888;
+    --shadow: 0 2px 4px rgba(0,0,0,0.1);
+    --radius: 4px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+/* ========================================
+   TABELLEN-LAYOUT
+======================================== */
+
+.dgptm-vorstandsliste-table {
+    overflow-x: auto;
+    margin: 20px 0;
+}
+
+.dgptm-vorstandsliste-table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.dgptm-vorstandsliste-table th,
+.dgptm-vorstandsliste-table td {
+    padding: 12px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: top;
+}
+
+.dgptm-vorstandsliste-table th {
+    background: var(--primary-color);
+    color: #fff;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.dgptm-vorstandsliste-table tbody tr:hover {
+    background: var(--bg-light);
+}
+
+.dgptm-vorstandsliste-table .col-foto {
+    width: 60px;
+    padding: 8px;
+}
+
+.dgptm-vorstandsliste-table .col-periode {
+    width: 120px;
+    white-space: nowrap;
+}
+
+.dgptm-vorstandsliste-table .col-position {
+    min-width: 120px;
+}
+
+.dgptm-vorstandsliste-table .col-beisitzer {
+    min-width: 180px;
+}
+
+.dgptm-vorstandsliste-table .col-actions {
+    width: 40px;
+    text-align: center;
+}
+
+/* Perioden-Foto in Tabelle */
+.dgptm-periode-foto {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.dgptm-periode-foto:hover {
+    transform: scale(1.1);
+    box-shadow: var(--shadow);
+}
+
+/* ========================================
+   CARD-LAYOUT
+======================================== */
+
+.dgptm-vorstandsliste-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin: 20px 0;
+}
+
+.dgptm-vorstand-card {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.dgptm-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: var(--primary-color);
+    color: #fff;
+    cursor: pointer;
+}
+
+.dgptm-card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+}
+
+.dgptm-card-title .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+.dgptm-card-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.dgptm-card-actions button,
+.dgptm-card-actions a {
+    background: transparent;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.dgptm-card-actions button:hover,
+.dgptm-card-actions a:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+.dgptm-toggle-btn .dashicons {
+    transition: transform 0.3s;
+}
+
+.dgptm-vorstand-card.collapsed .dgptm-toggle-btn .dashicons {
+    transform: rotate(-90deg);
+}
+
+.dgptm-card-body {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.dgptm-vorstand-card.collapsed .dgptm-card-body {
+    display: none;
+}
+
+.dgptm-card-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.dgptm-card-row:last-child {
+    border-bottom: none;
+}
+
+.dgptm-position-label {
+    font-weight: 600;
+    color: var(--secondary-color);
+    min-width: 140px;
+}
+
+.dgptm-position-value {
+    flex: 1;
+}
+
+/* Ausgeschiedene Mitglieder */
+.dgptm-card-ausgeschieden {
+    background: var(--bg-warning);
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    margin-top: 8px;
+}
+
+.dgptm-ausgeschieden-item {
+    font-size: 13px;
+    color: #856404;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.dgptm-ausgeschieden-item:last-child {
+    margin-bottom: 0;
+}
+
+.dgptm-ausgeschieden-item .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: #e0a800;
+}
+
+.dgptm-card-notiz {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-style: italic;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border-color);
+}
+
+/* ========================================
+   PERSONEN-DARSTELLUNG
+======================================== */
+
+.dgptm-person {
+    display: inline;
+}
+
+.dgptm-person.dgptm-ausgeschieden {
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+
+.dgptm-person.dgptm-has-vita {
+    cursor: pointer;
+    color: var(--primary-light);
+    transition: color 0.2s;
+}
+
+.dgptm-person.dgptm-has-vita:hover {
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+
+.dgptm-vita-icon {
+    font-size: 14px !important;
+    width: 14px !important;
+    height: 14px !important;
+    vertical-align: middle;
+    margin-left: 2px;
+}
+
+.dgptm-keine-angabe {
+    color: var(--text-muted);
+}
+
+/* ========================================
+   BEARBEITEN-LINK
+======================================== */
+
+.dgptm-edit-link,
+.dgptm-edit-btn {
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.dgptm-edit-link:hover,
+.dgptm-edit-btn:hover {
+    color: var(--primary-color);
+}
+
+.dgptm-edit-link .dashicons,
+.dgptm-edit-btn .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+/* ========================================
+   VITA MODAL
+======================================== */
+
+.dgptm-vita-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.dgptm-vita-modal-content {
+    background: #fff;
+    border-radius: var(--radius);
+    max-width: 600px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.dgptm-vita-modal-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: transparent;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: var(--text-muted);
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.2s, color 0.2s;
+}
+
+.dgptm-vita-modal-close:hover {
+    background: var(--bg-light);
+    color: #333;
+}
+
+.dgptm-vita-modal-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.dgptm-vita-modal-photo {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: var(--bg-light);
+}
+
+.dgptm-vita-modal-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.dgptm-vita-modal-name {
+    margin: 0;
+    font-size: 22px;
+    color: var(--primary-color);
+}
+
+.dgptm-vita-modal-body {
+    padding: 20px;
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+.dgptm-vita-modal-body p {
+    margin: 0 0 1em;
+}
+
+.dgptm-vita-modal-body p:last-child {
+    margin-bottom: 0;
+}
+
+/* ========================================
+   FOTO LIGHTBOX
+======================================== */
+
+.dgptm-foto-lightbox {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.9);
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    box-sizing: border-box;
+}
+
+.dgptm-foto-lightbox-content {
+    position: relative;
+    max-width: 90%;
+    max-height: 90%;
+    text-align: center;
+}
+
+.dgptm-foto-lightbox-close {
+    position: absolute;
+    top: -40px;
+    right: 0;
+    background: transparent;
+    border: none;
+    font-size: 32px;
+    cursor: pointer;
+    color: #fff;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dgptm-foto-lightbox-close:hover {
+    color: #ccc;
+}
+
+.dgptm-foto-lightbox-img {
+    max-width: 100%;
+    max-height: calc(90vh - 80px);
+    object-fit: contain;
+    border-radius: var(--radius);
+}
+
+.dgptm-foto-lightbox-caption {
+    color: #fff;
+    margin-top: 16px;
+    font-size: 16px;
+}
+
+/* ========================================
+   RESPONSIVE
+======================================== */
+
+/* Tablet */
+@media screen and (max-width: 1024px) {
+    .dgptm-vorstandsliste-table {
+        font-size: 13px;
+    }
+
+    .dgptm-vorstandsliste-table th,
+    .dgptm-vorstandsliste-table td {
+        padding: 10px 8px;
+    }
+
+    .dgptm-vorstandsliste-table .col-position {
+        min-width: 100px;
+    }
+}
+
+/* Mobile */
+@media screen and (max-width: 768px) {
+    /* Tabelle zu Cards umwandeln */
+    .dgptm-vorstandsliste-table table,
+    .dgptm-vorstandsliste-table thead,
+    .dgptm-vorstandsliste-table tbody,
+    .dgptm-vorstandsliste-table th,
+    .dgptm-vorstandsliste-table td,
+    .dgptm-vorstandsliste-table tr {
+        display: block;
+    }
+
+    .dgptm-vorstandsliste-table thead {
+        display: none;
+    }
+
+    .dgptm-vorstandsliste-table tr {
+        margin-bottom: 16px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        overflow: hidden;
+    }
+
+    .dgptm-vorstandsliste-table td {
+        position: relative;
+        padding: 10px 12px 10px 45%;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .dgptm-vorstandsliste-table td:last-child {
+        border-bottom: none;
+    }
+
+    .dgptm-vorstandsliste-table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 12px;
+        width: 40%;
+        font-weight: 600;
+        color: var(--secondary-color);
+    }
+
+    .dgptm-vorstandsliste-table .col-foto {
+        width: 100%;
+        text-align: center;
+        padding: 12px;
+        background: var(--bg-light);
+    }
+
+    .dgptm-vorstandsliste-table .col-foto::before {
+        display: none;
+    }
+
+    .dgptm-vorstandsliste-table .col-actions {
+        width: 100%;
+        text-align: right;
+        padding: 12px;
+        background: var(--bg-light);
+    }
+
+    .dgptm-vorstandsliste-table .col-actions::before {
+        display: none;
+    }
+
+    /* Card-Layout Anpassungen */
+    .dgptm-position-label {
+        min-width: 100%;
+        margin-bottom: 4px;
+    }
+
+    .dgptm-card-row {
+        flex-direction: column;
+    }
+
+    /* Modal Anpassungen */
+    .dgptm-vita-modal {
+        padding: 10px;
+    }
+
+    .dgptm-vita-modal-header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .dgptm-vita-modal-name {
+        font-size: 18px;
+    }
+}
+
+/* Kleine Mobile */
+@media screen and (max-width: 480px) {
+    .dgptm-card-header {
+        padding: 10px 12px;
+    }
+
+    .dgptm-card-title {
+        font-size: 14px;
+    }
+
+    .dgptm-card-body {
+        padding: 12px;
+    }
+
+    .dgptm-foto-lightbox {
+        padding: 20px;
+    }
+}
+
+/* ========================================
+   LEERE NACHRICHT
+======================================== */
+
+.dgptm-vorstandsliste-empty {
+    text-align: center;
+    padding: 40px 20px;
+    background: var(--bg-light);
+    border-radius: var(--radius);
+    color: var(--text-muted);
+}
+
+/* ========================================
+   DASHICONS LADEN
+======================================== */
+
+.dgptm-vorstandsliste .dashicons {
+    font-family: dashicons;
+}

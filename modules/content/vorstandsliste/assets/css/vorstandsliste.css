@@ -754,3 +754,188 @@
         min-height: 60px;
     }
 }
+
+/* ========================================
+   AKTUELLER VORSTAND - CARD LAYOUT
+======================================== */
+.dgptm-av-container {
+    --av-primary: #005791;
+    --av-primary-dark: #004270;
+    --av-primary-light: #e8f4fc;
+    --av-gray-100: #f8f9fa;
+    --av-gray-200: #e9ecef;
+    --av-gray-300: #dee2e6;
+    --av-gray-500: #adb5bd;
+    --av-gray-600: #6c757d;
+    --av-gray-800: #343a40;
+    --av-white: #fff;
+    --av-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    --av-shadow-hover: 0 8px 24px rgba(0,0,0,0.12);
+    --av-radius: 12px;
+    --av-transition: 0.3s ease;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px 0;
+}
+
+.dgptm-av-grid {
+    display: grid;
+    gap: 24px;
+    grid-template-columns: 1fr;
+}
+
+/* Responsive Grid */
+@media (min-width: 500px) {
+    .dgptm-av-cols-2 .dgptm-av-grid,
+    .dgptm-av-cols-3 .dgptm-av-grid,
+    .dgptm-av-cols-4 .dgptm-av-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 768px) {
+    .dgptm-av-cols-3 .dgptm-av-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    .dgptm-av-cols-4 .dgptm-av-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .dgptm-av-cols-4 .dgptm-av-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* Card */
+.dgptm-av-card {
+    background: var(--av-white);
+    border-radius: var(--av-radius);
+    box-shadow: var(--av-shadow);
+    overflow: hidden;
+    transition: transform var(--av-transition), box-shadow var(--av-transition);
+    display: flex;
+    flex-direction: column;
+}
+
+.dgptm-av-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--av-shadow-hover);
+}
+
+/* Card Image */
+.dgptm-av-card-image {
+    position: relative;
+    width: 100%;
+    padding-top: 100%; /* 1:1 Aspect Ratio */
+    background: linear-gradient(135deg, var(--av-gray-100) 0%, var(--av-gray-200) 100%);
+    overflow: hidden;
+}
+
+.dgptm-av-card-image img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--av-transition);
+}
+
+.dgptm-av-card:hover .dgptm-av-card-image img {
+    transform: scale(1.05);
+}
+
+.dgptm-av-card-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--av-gray-500);
+}
+
+/* Card Content */
+.dgptm-av-card-content {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    text-align: center;
+}
+
+.dgptm-av-card-position {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--av-primary);
+    margin-bottom: 8px;
+}
+
+.dgptm-av-card-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--av-gray-800);
+    margin: 0 0 8px 0;
+    line-height: 1.3;
+}
+
+.dgptm-av-card-klinik {
+    font-size: 14px;
+    color: var(--av-gray-600);
+    margin: 0 0 16px 0;
+    line-height: 1.4;
+    flex-grow: 1;
+}
+
+/* Vita Button */
+.dgptm-av-card-vita-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 20px;
+    background: var(--av-primary-light);
+    color: var(--av-primary);
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--av-transition);
+    margin-top: auto;
+}
+
+.dgptm-av-card-vita-btn:hover {
+    background: var(--av-primary);
+    color: var(--av-white);
+}
+
+.dgptm-av-card-vita-btn svg {
+    flex-shrink: 0;
+}
+
+/* Large screens: Optional larger images */
+@media (min-width: 1200px) {
+    .dgptm-av-container {
+        padding: 40px 20px;
+    }
+
+    .dgptm-av-grid {
+        gap: 32px;
+    }
+
+    .dgptm-av-card-content {
+        padding: 24px;
+    }
+
+    .dgptm-av-card-name {
+        font-size: 20px;
+    }
+}

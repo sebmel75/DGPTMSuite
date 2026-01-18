@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('DGPTM_VORSTANDSLISTE_VERSION', '2.0.0');
+define('DGPTM_VORSTANDSLISTE_VERSION', '2.1.0');
 define('DGPTM_VORSTANDSLISTE_PATH', plugin_dir_path(__FILE__));
 define('DGPTM_VORSTANDSLISTE_URL', plugin_dir_url(__FILE__));
 
@@ -41,6 +41,7 @@ if (!class_exists('DGPTM_Vorstandsliste')) {
             add_action('acf/init', [$this, 'register_acf_fields']);
             add_action('wp_enqueue_scripts', [$this, 'register_assets']);
             add_shortcode('dgptm_vorstandsliste', [$this, 'render_shortcode']);
+            add_shortcode('dgptm_aktueller_vorstand', [$this, 'render_aktueller_vorstand']);
 
             // Admin
             add_filter('manage_vorstand_periode_posts_columns', [$this, 'add_admin_columns']);
@@ -113,6 +114,16 @@ if (!class_exists('DGPTM_Vorstandsliste')) {
                         'label' => 'Titel',
                         'name' => 'person_titel',
                         'type' => 'text',
+                        'instructions' => 'z.B. Prof. Dr., Dr. med., M.Sc.',
+                        'wrapper' => ['width' => '30'],
+                    ],
+                    [
+                        'key' => 'field_person_klinik',
+                        'label' => 'Klinik / Arbeitsstätte',
+                        'name' => 'person_klinik',
+                        'type' => 'text',
+                        'instructions' => 'Klinik oder Institution',
+                        'wrapper' => ['width' => '70'],
                     ],
                 ],
                 'location' => [[['param' => 'post_type', 'operator' => '==', 'value' => 'vorstand_person']]],
@@ -212,6 +223,140 @@ if (!class_exists('DGPTM_Vorstandsliste')) {
                 <?php endif; ?>
 
                 <?php echo $this->render_modals($kann_bearbeiten); ?>
+            </div>
+            <?php
+            return ob_get_clean();
+        }
+
+        /**
+         * Shortcode: [dgptm_aktueller_vorstand]
+         * Zeigt den aktuellen Vorstand in einer Karten-Darstellung mit Bild und ausklappbarer Vita
+         */
+        public function render_aktueller_vorstand($atts) {
+            $atts = shortcode_atts([
+                'columns' => '3', // Anzahl Spalten (2, 3 oder 4)
+                'show_klinik' => 'yes',
+                'show_vita' => 'yes',
+            ], $atts);
+
+            wp_enqueue_style('dgptm-vorstandsliste');
+            wp_enqueue_script('dgptm-vorstandsliste');
+
+            wp_localize_script('dgptm-vorstandsliste', 'dgptmVorstandsliste', [
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('dgptm_vorstandsliste_nonce'),
+                'canEdit' => false,
+                'positionen' => $this->positionen,
+            ]);
+
+            // Aktuellste Periode holen (ohne Ende-Datum oder größtes Start-Datum)
+            $aktuelle_periode = get_posts([
+                'post_type' => 'vorstand_periode',
+                'posts_per_page' => 1,
+                'post_status' => 'publish',
+                'meta_key' => 'periode_start',
+                'orderby' => 'meta_value',
+                'order' => 'DESC',
+            ]);
+
+            if (empty($aktuelle_periode)) {
+                return '<p class="dgptm-vl-empty">Kein aktueller Vorstand vorhanden.</p>';
+            }
+
+            $periode_id = $aktuelle_periode[0]->ID;
+            $positionen = get_field('positionen', $periode_id) ?: [];
+
+            // Positionen sortieren nach Reihenfolge
+            $sortiert = [];
+            $reihenfolge = ['praesident', 'vizepraesident', 'schatzmeister', 'schriftfuehrer', 'beisitzer'];
+
+            foreach ($reihenfolge as $typ) {
+                foreach ($positionen as $pos) {
+                    if (($pos['position_typ'] ?? '') === $typ && empty($pos['position_ausgeschieden'])) {
+                        $sortiert[] = $pos;
+                    }
+                }
+            }
+
+            ob_start();
+            ?>
+            <div class="dgptm-av-container dgptm-av-cols-<?php echo esc_attr($atts['columns']); ?>">
+                <div class="dgptm-av-grid">
+                    <?php foreach ($sortiert as $pos): ?>
+                        <?php echo $this->render_vorstand_card($pos, $atts); ?>
+                    <?php endforeach; ?>
+                </div>
+
+                <!-- Vita Modal (wiederverwendet) -->
+                <div id="dgptm-vl-vita-modal" class="dgptm-vl-modal" style="display:none;">
+                    <div class="dgptm-vl-modal-overlay"></div>
+                    <div class="dgptm-vl-modal-container dgptm-vl-modal-sm">
+                        <div class="dgptm-vl-modal-header">
+                            <h3 class="dgptm-vl-modal-title">Vita</h3>
+                            <button type="button" class="dgptm-vl-modal-close">&times;</button>
+                        </div>
+                        <div class="dgptm-vl-modal-body">
+                            <div class="dgptm-vl-vita-header">
+                                <div class="dgptm-vl-vita-photo"></div>
+                                <div class="dgptm-vl-vita-name"></div>
+                            </div>
+                            <div class="dgptm-vl-vita-content"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php
+            return ob_get_clean();
+        }
+
+        /**
+         * Rendert eine einzelne Vorstandskarte
+         */
+        private function render_vorstand_card($pos, $atts) {
+            $person_id = $pos['position_person'] ?? 0;
+            if (!$person_id) return '';
+
+            $person = get_post($person_id);
+            if (!$person) return '';
+
+            $name = $person->post_title;
+            $titel = get_field('person_titel', $person_id);
+            $klinik = get_field('person_klinik', $person_id);
+            $position_label = $this->positionen[$pos['position_typ']] ?? $pos['position_typ'];
+            $foto = get_the_post_thumbnail_url($person_id, 'medium');
+            $hat_vita = !empty($person->post_content);
+            $show_vita = $atts['show_vita'] === 'yes' && $hat_vita;
+
+            $vollstaendiger_name = $titel ? $titel . ' ' . $name : $name;
+
+            ob_start();
+            ?>
+            <div class="dgptm-av-card<?php echo $show_vita ? ' has-vita' : ''; ?>"
+                 <?php echo $show_vita ? 'data-person-id="' . esc_attr($person_id) . '"' : ''; ?>>
+                <div class="dgptm-av-card-image">
+                    <?php if ($foto): ?>
+                        <img src="<?php echo esc_url($foto); ?>" alt="<?php echo esc_attr($vollstaendiger_name); ?>">
+                    <?php else: ?>
+                        <div class="dgptm-av-card-placeholder">
+                            <svg viewBox="0 0 24 24" width="48" height="48">
+                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor"/>
+                            </svg>
+                        </div>
+                    <?php endif; ?>
+                </div>
+                <div class="dgptm-av-card-content">
+                    <div class="dgptm-av-card-position"><?php echo esc_html($position_label); ?></div>
+                    <h3 class="dgptm-av-card-name"><?php echo esc_html($vollstaendiger_name); ?></h3>
+                    <?php if ($atts['show_klinik'] === 'yes' && $klinik): ?>
+                        <p class="dgptm-av-card-klinik"><?php echo esc_html($klinik); ?></p>
+                    <?php endif; ?>
+                    <?php if ($show_vita): ?>
+                        <button type="button" class="dgptm-av-card-vita-btn dgptm-vl-person has-vita" data-person-id="<?php echo esc_attr($person_id); ?>">
+                            <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 16v-4m0-4h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                            Vita anzeigen
+                        </button>
+                    <?php endif; ?>
+                </div>
             </div>
             <?php
             return ob_get_clean();

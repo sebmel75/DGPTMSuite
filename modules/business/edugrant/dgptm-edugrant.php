@@ -769,7 +769,23 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 return $access_token;
             }
 
-            $url = 'https://www.zohoapis.eu/crm/v6/' . self::ZOHO_MODULE_EVENTS . '/' . $event_id;
+            // Must specify fields parameter for Zoho v6 API
+            $fields = [
+                'Name',              // Veranstaltungsbezeichnung
+                'From_Date',         // Von
+                'To_Date',           // Bis
+                'Budget',            // Budget
+                'Maximum_Attendees', // Max Anzahl TN
+                'EduGrant_applications', // Genehmigte EduGrant
+                'External_Event',    // Externe Veranstaltung
+                'Maximum_Promotion', // Maximale Förderung
+                'Event_Number',      // Veranstaltungsnummer
+                'Location',          // Ort (lookup)
+                'City'               // Stadt
+            ];
+
+            $url = 'https://www.zohoapis.eu/crm/v6/' . self::ZOHO_MODULE_EVENTS . '/' . $event_id
+                 . '?fields=' . implode(',', $fields);
 
             $this->log('Get Event API Request', ['url' => $url], 'info');
 

@@ -12,6 +12,29 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
 }
 
+/* Applicant Info (compact display for logged-in users) */
+.edugrant-applicant-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 15px;
+    background: linear-gradient(135deg, #f0f7ff 0%, #e7f3ff 100%);
+    border: 1px solid #cce5ff;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    color: #1e3a5f;
+}
+
+.edugrant-applicant-info .dashicons {
+    color: #0073aa;
+    font-size: 20px;
+}
+
+.edugrant-applicant-info .applicant-email {
+    color: #666;
+    font-size: 0.9em;
+}
+
 /* Section Title */
 .edugrant-section-title {
     font-size: 1.5em;

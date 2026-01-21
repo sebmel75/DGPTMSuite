@@ -172,8 +172,15 @@ if ($is_document_submission && !empty($eduid)) {
                 </div>
             </div>
         <?php else: ?>
-            <form id="edugrant-application-form" class="edugrant-form" data-event-id="<?php echo esc_attr($event_id); ?>">
+            <form id="edugrant-application-form" class="edugrant-form" data-event-id="<?php echo esc_attr($event_id); ?>" data-contact-id="<?php echo esc_attr($zoho_contact_id); ?>">
                 <?php wp_nonce_field('dgptm_edugrant_nonce', 'edugrant_nonce'); ?>
+
+                <!-- Antragsteller-Info (kompakt) -->
+                <div class="edugrant-applicant-info">
+                    <span class="dashicons dashicons-admin-users"></span>
+                    <strong><?php echo esc_html($current_user->display_name); ?></strong>
+                    <span class="applicant-email">(<?php echo esc_html($current_user->user_email); ?>)</span>
+                </div>
 
                 <div class="edugrant-event-info" id="event-info-container">
                     <div class="loading-indicator">
@@ -190,42 +197,24 @@ if ($is_document_submission && !empty($eduid)) {
                     </div>
                 </div>
 
-                <fieldset class="edugrant-fieldset">
-                    <legend>Ihre Daten</legend>
+                <input type="hidden" name="event_id" value="<?php echo esc_attr($event_id); ?>">
 
-                    <div class="form-row">
-                        <label>Name</label>
-                        <input type="text" value="<?php echo esc_attr($current_user->display_name); ?>" disabled>
-                    </div>
+                <div class="edugrant-terms">
+                    <p>Mit dem Absenden dieses Antrags bestätige ich:</p>
+                    <ul>
+                        <li>Ich bin ordentliches Mitglied der DGPTM.</li>
+                        <li>Ich nehme an der ausgewählten Veranstaltung teil.</li>
+                        <li>Ich werde die erforderlichen Nachweise nach der Veranstaltung einreichen.</li>
+                    </ul>
 
-                    <div class="form-row">
-                        <label>E-Mail</label>
-                        <input type="email" value="<?php echo esc_attr($current_user->user_email); ?>" disabled>
-                    </div>
-
-                    <input type="hidden" name="event_id" value="<?php echo esc_attr($event_id); ?>">
-                    <input type="hidden" name="contact_id" value="<?php echo esc_attr($zoho_contact_id); ?>">
-                </fieldset>
-
-                <fieldset class="edugrant-fieldset">
-                    <legend>Hinweise</legend>
-                    <div class="edugrant-terms">
-                        <p>Mit dem Absenden dieses Antrags bestätige ich:</p>
-                        <ul>
-                            <li>Ich bin ordentliches Mitglied der DGPTM.</li>
-                            <li>Ich nehme an der ausgewählten Veranstaltung teil.</li>
-                            <li>Ich werde die erforderlichen Nachweise nach der Veranstaltung einreichen.</li>
-                        </ul>
-
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="terms_accepted" name="terms_accepted" required>
-                            Ich habe die Bedingungen gelesen und akzeptiere sie.
-                        </label>
-                    </div>
-                </fieldset>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="terms_accepted" name="terms_accepted" required>
+                        Ich habe die Bedingungen gelesen und akzeptiere sie.
+                    </label>
+                </div>
 
                 <div class="form-actions">
-                    <button type="submit" class="button edugrant-submit-btn">
+                    <button type="submit" class="button edugrant-submit-btn" id="submit-application-btn">
                         <span class="dashicons dashicons-yes"></span>
                         EduGrant beantragen
                     </button>

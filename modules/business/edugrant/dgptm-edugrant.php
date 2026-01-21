@@ -758,6 +758,7 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
 
         /**
          * Get Event by Zoho Record ID
+         * Note: Single record endpoint returns all fields by default (no fields parameter needed)
          */
         private function get_event_by_id($event_id) {
             $this->log('Fetching Event by ID', ['event_id' => $event_id], 'info');
@@ -769,23 +770,8 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 return $access_token;
             }
 
-            // Must specify fields parameter for Zoho v6 API
-            $fields = [
-                'Name',              // Veranstaltungsbezeichnung
-                'From_Date',         // Von
-                'To_Date',           // Bis
-                'Budget',            // Budget
-                'Maximum_Attendees', // Max Anzahl TN
-                'EduGrant_applications', // Genehmigte EduGrant
-                'External_Event',    // Externe Veranstaltung
-                'Maximum_Promotion', // Maximale Förderung
-                'Event_Number',      // Veranstaltungsnummer
-                'Location',          // Ort (lookup)
-                'City'               // Stadt
-            ];
-
-            $url = 'https://www.zohoapis.eu/crm/v6/' . self::ZOHO_MODULE_EVENTS . '/' . $event_id
-                 . '?fields=' . implode(',', $fields);
+            // Single record endpoint - returns all fields automatically
+            $url = 'https://www.zohoapis.eu/crm/v6/' . self::ZOHO_MODULE_EVENTS . '/' . $event_id;
 
             $this->log('Get Event API Request', ['url' => $url], 'info');
 
@@ -805,16 +791,23 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
             $status_code = wp_remote_retrieve_response_code($response);
             $body = json_decode(wp_remote_retrieve_body($response), true);
 
+            $event_data = $body['data'][0] ?? [];
+
             $this->log('Get Event API Response', [
                 'status_code' => $status_code,
-                'response' => $body
+                'event_name' => $event_data['Name'] ?? 'N/A',
+                'from_date' => $event_data['From_Date'] ?? 'N/A',
+                'city' => $event_data['City'] ?? 'N/A',
+                'external_event' => $event_data['External_Event'] ?? 'N/A',
+                'max_promotion' => $event_data['Maximum_Promotion'] ?? 'N/A',
+                'all_fields' => array_keys($event_data)
             ], $status_code === 200 ? 'info' : 'error');
 
             if ($status_code !== 200) {
                 return new WP_Error('api_error', 'Veranstaltung nicht gefunden.');
             }
 
-            return $body['data'][0] ?? [];
+            return $event_data;
         }
 
         /**

@@ -19,7 +19,7 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
         private $plugin_url;
 
         // Zoho CRM API Endpoints
-        const ZOHO_COQL_ENDPOINT = 'https://www.zohoapis.eu/crm/v6/coql';
+        const ZOHO_COQL_ENDPOINT = 'https://www.zohoapis.eu/crm/v8/coql';
 
         // Zoho Module names (as they appear in API)
         const ZOHO_MODULE_EVENTS = 'DGFK_Events';
@@ -290,7 +290,7 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
             // Filter for future events only (To_Date >= today)
             $criteria = '(To_Date:greater_equal:' . $today . ')';
 
-            $url = 'https://www.zohoapis.eu/crm/v6/' . self::ZOHO_MODULE_EVENTS
+            $url = 'https://www.zohoapis.eu/crm/v8/' . self::ZOHO_MODULE_EVENTS
                  . '?fields=' . implode(',', $fields)
                  . '&criteria=' . urlencode($criteria);
 
@@ -622,7 +622,7 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 ]
             ];
 
-            $url = 'https://www.zohoapis.eu/crm/v6/' . self::ZOHO_MODULE_EDUGRANT;
+            $url = 'https://www.zohoapis.eu/crm/v8/' . self::ZOHO_MODULE_EDUGRANT;
 
             $this->log('Create EduGrant API Request', [
                 'url' => $url,
@@ -709,7 +709,7 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 return $access_token;
             }
 
-            $url = 'https://www.zohoapis.eu/crm/v6/' . self::ZOHO_MODULE_EDUGRANT . '/' . $edugrant_id;
+            $url = 'https://www.zohoapis.eu/crm/v8/' . self::ZOHO_MODULE_EDUGRANT . '/' . $edugrant_id;
 
             $response = wp_remote_get($url, [
                 'headers' => [
@@ -771,7 +771,7 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
             }
 
             // Single record endpoint - returns all fields automatically
-            $url = 'https://www.zohoapis.eu/crm/v6/' . self::ZOHO_MODULE_EVENTS . '/' . $event_id;
+            $url = 'https://www.zohoapis.eu/crm/v8/' . self::ZOHO_MODULE_EVENTS . '/' . $event_id;
 
             $this->log('Get Event API Request', ['url' => $url], 'info');
 
@@ -925,7 +925,7 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 return $access_token;
             }
 
-            $url = 'https://www.zohoapis.eu/crm/v6/' . self::ZOHO_MODULE_CONTACTS . '/' . $contact_id;
+            $url = 'https://www.zohoapis.eu/crm/v8/' . self::ZOHO_MODULE_CONTACTS . '/' . $contact_id;
 
             $response = wp_remote_get($url, [
                 'headers' => [
@@ -1090,7 +1090,7 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 return $access_token;
             }
 
-            $url = 'https://www.zohoapis.eu/crm/v6/' . self::ZOHO_MODULE_EDUGRANT . '/' . $edugrant_id;
+            $url = 'https://www.zohoapis.eu/crm/v8/' . self::ZOHO_MODULE_EDUGRANT . '/' . $edugrant_id;
 
             $response = wp_remote_request($url, [
                 'method' => 'PUT',

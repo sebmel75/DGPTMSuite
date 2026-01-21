@@ -136,6 +136,10 @@
                 event_id: eventId
             },
             success: function(response) {
+                console.log('loadEventDetails AJAX response:', response);
+                console.log('response.data:', response.data);
+                console.log('response.data.event:', response.data ? response.data.event : 'no data');
+
                 if (response.success && response.data.event) {
                     displayEventInfo($container, response.data.event);
 
@@ -208,6 +212,14 @@
      * API Field Names (DGFK_Events module): Name, From_Date, To_Date, Maximum_Promotion, External_Event, Location (lookup)
      */
     function displayEventInfo($container, event) {
+        // Debug logging
+        console.log('displayEventInfo received:', event);
+        console.log('Event keys:', Object.keys(event || {}));
+        console.log('From_Date:', event.From_Date);
+        console.log('City:', event.City);
+        console.log('External_Event:', event.External_Event);
+        console.log('Maximum_Promotion:', event.Maximum_Promotion);
+
         var eventName = event.Name || 'N/A';
         var location = (event.Location && event.Location.name) || event.City || 'Ort nicht angegeben';
         var startDate = event.From_Date ? formatDate(event.From_Date) : 'N/A';

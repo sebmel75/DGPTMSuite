@@ -608,11 +608,15 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
 
             $user = wp_get_current_user();
 
-            // Prepare record data
+            // Generate a unique name for the EduGrant record
+            $edugrant_name = 'EduGrant-' . date('Y-m-d') . '-' . $user->ID;
+
+            // Prepare record data - Name is a mandatory field
             $record_data = [
                 'data' => [
                     [
-                        'Kontakt' => $contact_id,
+                        'Name' => $edugrant_name,
+                        'Contact' => $contact_id,
                         'Veranstaltung' => $event_id,
                         'Status' => 'Beantragt',
                         'Beantragt_am' => date('Y-m-d'),

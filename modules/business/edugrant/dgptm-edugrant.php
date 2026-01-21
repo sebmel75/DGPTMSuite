@@ -287,7 +287,12 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 'City'               // Stadt
             ];
 
-            $url = 'https://www.zohoapis.eu/crm/v6/' . self::ZOHO_MODULE_EVENTS . '?fields=' . implode(',', $fields);
+            // Filter for future events only (To_Date >= today)
+            $criteria = '(To_Date:greater_equal:' . $today . ')';
+
+            $url = 'https://www.zohoapis.eu/crm/v6/' . self::ZOHO_MODULE_EVENTS
+                 . '?fields=' . implode(',', $fields)
+                 . '&criteria=' . urlencode($criteria);
 
             $this->log('Get Events API Request', ['url' => $url], 'info');
 

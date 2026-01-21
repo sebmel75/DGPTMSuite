@@ -661,7 +661,22 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 return new WP_Error('api_error', 'Fehler beim Erstellen: ' . $error_msg);
             }
 
-            // Return created record info
+            // Get the created record ID
+            $created_id = $body['data'][0]['details']['id'] ?? null;
+
+            if ($created_id) {
+                // Fetch the full record to get auto-generated fields like Nummer
+                $full_record = $this->get_edugrant_by_id($created_id);
+                if (!is_wp_error($full_record)) {
+                    $this->log('Created EduGrant full record', [
+                        'id' => $created_id,
+                        'nummer' => $full_record['Nummer'] ?? 'N/A'
+                    ], 'info');
+                    return $full_record;
+                }
+            }
+
+            // Fallback: return details from creation response
             if (isset($body['data'][0]['details'])) {
                 return $body['data'][0]['details'];
             }

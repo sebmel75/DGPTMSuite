@@ -646,6 +646,120 @@
     color: #004085;
 }
 
+/* Guest Form Styles */
+.edugrant-login-hint {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 15px;
+}
+
+.edugrant-login-hint p {
+    margin: 0;
+    flex: 1;
+    min-width: 200px;
+}
+
+.edugrant-login-hint .edugrant-login-btn {
+    flex-shrink: 0;
+}
+
+.edugrant-guest-step {
+    margin-bottom: 20px;
+}
+
+.edugrant-check-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    background: #28a745;
+    color: #fff !important;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.edugrant-check-btn:hover {
+    background: #218838;
+    color: #fff !important;
+}
+
+.edugrant-check-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+}
+
+#change-email-btn {
+    margin-left: 10px;
+    background: #6c757d;
+    color: #fff !important;
+}
+
+#change-email-btn:hover {
+    background: #5a6268;
+}
+
+.email-check-result {
+    margin-top: 15px;
+}
+
+.email-check-result .edugrant-notice,
+.email-check-result .edugrant-error {
+    margin: 0;
+}
+
+/* Form Row Variants */
+.form-row-half {
+    display: inline-block;
+    width: calc(50% - 10px);
+    vertical-align: top;
+}
+
+.form-row-half:nth-child(odd) {
+    margin-right: 20px;
+}
+
+.form-row-third {
+    display: inline-block;
+    width: calc(33% - 10px);
+    margin-right: 20px;
+    vertical-align: top;
+}
+
+.form-row-twothird {
+    display: inline-block;
+    width: calc(67% - 10px);
+    vertical-align: top;
+}
+
+/* Guest fieldset styling */
+.edugrant-guest-fields {
+    border-color: #e7f3ff;
+    background: #fafcff;
+}
+
+.edugrant-guest-fields legend {
+    color: #0073aa;
+}
+
+#fieldset-berechtigung {
+    border-color: #fff3cd;
+    background: #fffcf5;
+}
+
+#fieldset-berechtigung legend {
+    color: #856404;
+}
+
+/* Readonly input styling */
+input[readonly] {
+    background-color: #f5f5f5;
+    color: #666;
+    cursor: not-allowed;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .edugrant-events-grid {
@@ -665,5 +779,18 @@
 
     .edugrant-legend ul {
         flex-direction: column;
+    }
+
+    .edugrant-login-hint {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .form-row-half,
+    .form-row-third,
+    .form-row-twothird {
+        display: block;
+        width: 100%;
+        margin-right: 0;
     }
 }

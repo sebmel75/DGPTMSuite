@@ -49,7 +49,7 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
             // Enqueue scripts/styles
             add_action('wp_enqueue_scripts', [$this, 'enqueue_assets']);
 
-            // AJAX handlers
+            // AJAX handlers (logged in users)
             add_action('wp_ajax_dgptm_edugrant_submit', [$this, 'ajax_submit_application']);
             add_action('wp_ajax_dgptm_edugrant_get_events', [$this, 'ajax_get_events']);
             add_action('wp_ajax_dgptm_edugrant_get_user_grants', [$this, 'ajax_get_user_grants']);
@@ -57,6 +57,13 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
             add_action('wp_ajax_dgptm_edugrant_submit_documents', [$this, 'ajax_submit_documents']);
             add_action('wp_ajax_dgptm_edugrant_get_event_details', [$this, 'ajax_get_event_details']);
             add_action('wp_ajax_dgptm_edugrant_check_ticket', [$this, 'ajax_check_ticket_eligibility']);
+            add_action('wp_ajax_dgptm_edugrant_check_guest_email', [$this, 'ajax_check_guest_email']);
+
+            // AJAX handlers (non-logged-in users / guests)
+            add_action('wp_ajax_nopriv_dgptm_edugrant_get_events', [$this, 'ajax_get_events']);
+            add_action('wp_ajax_nopriv_dgptm_edugrant_get_event_details', [$this, 'ajax_get_event_details']);
+            add_action('wp_ajax_nopriv_dgptm_edugrant_check_guest_email', [$this, 'ajax_check_guest_email']);
+            add_action('wp_ajax_nopriv_dgptm_edugrant_submit', [$this, 'ajax_submit_guest_application']);
 
             // Admin menu for settings
             add_action('admin_menu', [$this, 'add_admin_menu']);
@@ -460,21 +467,21 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
 
         /**
          * Shortcode: Display application form
+         * Now supports both logged-in members and guests
          */
         public function shortcode_application_form($atts) {
-            if (!is_user_logged_in()) {
-                return '<div class="edugrant-notice">Bitte melden Sie sich an, um einen EduGrant zu beantragen.</div>';
-            }
-
             $atts = shortcode_atts([
                 'event_id' => '',
                 'edugrant_code' => ''
             ], $atts);
 
-            // Check if user has Zoho ID
-            $zoho_id = get_user_meta(get_current_user_id(), 'zoho_id', true);
-            if (empty($zoho_id)) {
-                return '<div class="edugrant-notice">Ihr Konto ist nicht mit Zoho CRM verknüpft. Bitte kontaktieren Sie den Support.</div>';
+            // For logged-in users, check if they have Zoho ID (but don't block)
+            if (is_user_logged_in()) {
+                $zoho_id = get_user_meta(get_current_user_id(), 'zoho_id', true);
+                if (empty($zoho_id)) {
+                    // Warning but don't block - they can still submit
+                    // The form will be shown but submission might require manual processing
+                }
             }
 
             // Get event_id from URL parameter if not in shortcode
@@ -587,6 +594,361 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 'edugrant_id' => $result['id'] ?? '',
                 'edugrant_number' => $result['Nummer'] ?? ''
             ]);
+        }
+
+        /**
+         * AJAX: Check guest email - find contact and check for ticket
+         */
+        public function ajax_check_guest_email() {
+            check_ajax_referer('dgptm_edugrant_nonce', 'nonce');
+
+            $email = sanitize_email($_POST['email'] ?? '');
+            $event_id = sanitize_text_field($_POST['event_id'] ?? '');
+
+            if (empty($email) || !is_email($email)) {
+                wp_send_json_error(['message' => 'Ungültige E-Mail-Adresse.']);
+            }
+
+            if (empty($event_id)) {
+                wp_send_json_error(['message' => 'Keine Veranstaltung ausgewählt.']);
+            }
+
+            $this->log('Guest email check', ['email' => $email, 'event_id' => $event_id], 'info');
+
+            // Get event details first to check if external
+            $event = $this->get_event_by_id($event_id);
+            if (is_wp_error($event)) {
+                wp_send_json_error(['message' => $event->get_error_message()]);
+            }
+
+            $is_external = $event['External_Event'] ?? false;
+            $is_external = ($is_external === true || $is_external === 'true');
+
+            // Search for contact by email
+            $contact = $this->find_contact_by_email($email);
+
+            $result = [
+                'contact_found' => false,
+                'contact_id' => '',
+                'has_ticket' => false,
+                'ticket_status' => null,
+                'is_external' => $is_external,
+                'event_name' => $event['Name'] ?? 'Unbekannt',
+                'needs_contact_data' => true,
+                'needs_eligibility_proof' => true,
+                'can_apply' => false,
+                'message' => ''
+            ];
+
+            if (!is_wp_error($contact) && !empty($contact)) {
+                $result['contact_found'] = true;
+                $result['contact_id'] = $contact['id'] ?? '';
+                $result['message'] = 'Kontakt gefunden.';
+
+                $this->log('Contact found by email', ['contact_id' => $result['contact_id']], 'info');
+
+                // Check for ticket if internal event
+                if (!$is_external) {
+                    $ticket_check = $this->check_user_has_ticket($result['contact_id'], $event_id);
+
+                    if (!is_wp_error($ticket_check) && $ticket_check['has_ticket']) {
+                        $result['has_ticket'] = true;
+                        $result['ticket_status'] = $ticket_check['status'] ?? 'Gültig';
+                        $result['needs_contact_data'] = false;
+                        $result['needs_eligibility_proof'] = false;
+                        $result['can_apply'] = true;
+                        $result['message'] = 'Kontakt und gültiges Ticket gefunden.';
+                    } else {
+                        $result['can_apply'] = false;
+                        $result['message'] = 'Kontakt gefunden, aber kein gültiges Ticket für diese Veranstaltung. Bitte buchen Sie zunächst ein Ticket.';
+                    }
+                } else {
+                    // External event: contact found, but we need eligibility proof
+                    $result['needs_contact_data'] = false; // Contact exists, no need to fill data
+                    $result['needs_eligibility_proof'] = true; // Still need proof for external
+                    $result['can_apply'] = true;
+                    $result['message'] = 'Kontakt gefunden. Bitte Berechtigung nachweisen.';
+                }
+            } else {
+                // No contact found
+                $this->log('No contact found for email', ['email' => $email], 'info');
+
+                if (!$is_external) {
+                    // Internal event: Must have ticket, which requires contact
+                    $result['can_apply'] = false;
+                    $result['message'] = 'Kein Kontakt mit dieser E-Mail-Adresse gefunden. Für interne Veranstaltungen muss zunächst ein Ticket gebucht werden.';
+                } else {
+                    // External event: Can create new contact
+                    $result['needs_contact_data'] = true;
+                    $result['needs_eligibility_proof'] = true;
+                    $result['can_apply'] = true;
+                    $result['message'] = 'Kein Kontakt gefunden. Bitte Kontaktdaten und Berechtigung angeben.';
+                }
+            }
+
+            wp_send_json_success($result);
+        }
+
+        /**
+         * Find contact by email in any of the 4 email fields
+         */
+        private function find_contact_by_email($email) {
+            $email_escaped = addslashes(strtolower(trim($email)));
+
+            // Search in all 4 email fields using COQL
+            $query = "SELECT id, First_Name, Last_Name, Email, Zweite_E_Mail_Adresse, Dritte_E_Mail_Adresse, dgptm_de_Mailadresse
+                      FROM " . self::ZOHO_MODULE_CONTACTS . "
+                      WHERE Email = '{$email_escaped}'
+                      OR Zweite_E_Mail_Adresse = '{$email_escaped}'
+                      OR Dritte_E_Mail_Adresse = '{$email_escaped}'
+                      OR dgptm_de_Mailadresse = '{$email_escaped}'
+                      LIMIT 1";
+
+            $result = $this->execute_coql_query($query);
+
+            if (is_wp_error($result)) {
+                return $result;
+            }
+
+            if (!empty($result)) {
+                return $result[0];
+            }
+
+            return null;
+        }
+
+        /**
+         * AJAX: Submit guest application (non-logged-in users)
+         */
+        public function ajax_submit_guest_application() {
+            check_ajax_referer('dgptm_edugrant_nonce', 'nonce');
+
+            $event_id = sanitize_text_field($_POST['event_id'] ?? '');
+            $email = sanitize_email($_POST['guest_email'] ?? '');
+            $contact_id = sanitize_text_field($_POST['guest_contact_id'] ?? '');
+            $contact_found = sanitize_text_field($_POST['guest_contact_found'] ?? '0') === '1';
+
+            if (empty($event_id)) {
+                wp_send_json_error(['message' => 'Keine Veranstaltung ausgewählt.']);
+            }
+
+            if (empty($email) || !is_email($email)) {
+                wp_send_json_error(['message' => 'Ungültige E-Mail-Adresse.']);
+            }
+
+            $this->log('Guest application submit', [
+                'event_id' => $event_id,
+                'email' => $email,
+                'contact_id' => $contact_id,
+                'contact_found' => $contact_found
+            ], 'info');
+
+            // Get event details
+            $event = $this->get_event_by_id($event_id);
+            if (is_wp_error($event)) {
+                wp_send_json_error(['message' => $event->get_error_message()]);
+            }
+
+            $is_external = $event['External_Event'] ?? false;
+            $is_external = ($is_external === true || $is_external === 'true');
+
+            // If no contact found, need to create one (only for external events)
+            if (!$contact_found || empty($contact_id)) {
+                if (!$is_external) {
+                    wp_send_json_error(['message' => 'Für interne Veranstaltungen muss ein gültiges Ticket vorhanden sein.']);
+                }
+
+                // Create new contact
+                $vorname = sanitize_text_field($_POST['guest_vorname'] ?? '');
+                $nachname = sanitize_text_field($_POST['guest_nachname'] ?? '');
+                $strasse = sanitize_text_field($_POST['guest_strasse'] ?? '');
+                $plz = sanitize_text_field($_POST['guest_plz'] ?? '');
+                $ort = sanitize_text_field($_POST['guest_ort'] ?? '');
+
+                if (empty($vorname) || empty($nachname) || empty($strasse) || empty($plz) || empty($ort)) {
+                    wp_send_json_error(['message' => 'Bitte alle Kontaktdaten ausfüllen.']);
+                }
+
+                $new_contact = $this->create_contact([
+                    'First_Name' => $vorname,
+                    'Last_Name' => $nachname,
+                    'Email' => $email,
+                    'Mailing_Street' => $strasse,
+                    'Mailing_Zip' => $plz,
+                    'Mailing_City' => $ort
+                ]);
+
+                if (is_wp_error($new_contact)) {
+                    wp_send_json_error(['message' => 'Fehler beim Anlegen des Kontakts: ' . $new_contact->get_error_message()]);
+                }
+
+                $contact_id = $new_contact['id'] ?? '';
+                $this->log('New contact created', ['contact_id' => $contact_id], 'info');
+            }
+
+            if (empty($contact_id)) {
+                wp_send_json_error(['message' => 'Kontakt-ID fehlt.']);
+            }
+
+            // For internal events, verify ticket exists
+            if (!$is_external) {
+                $ticket_check = $this->check_user_has_ticket($contact_id, $event_id);
+
+                if (is_wp_error($ticket_check) || !$ticket_check['has_ticket']) {
+                    wp_send_json_error([
+                        'message' => 'Für interne Veranstaltungen benötigen Sie ein gültiges Ticket.',
+                        'requires_ticket' => true
+                    ]);
+                }
+            }
+
+            // Create EduGrant record
+            $result = $this->create_edugrant_record_guest($contact_id, $event_id, $email, $is_external);
+
+            if (is_wp_error($result)) {
+                wp_send_json_error(['message' => $result->get_error_message()]);
+            }
+
+            wp_send_json_success([
+                'message' => 'EduGrant-Antrag erfolgreich eingereicht!',
+                'edugrant_id' => $result['id'] ?? '',
+                'edugrant_number' => $result['Nummer'] ?? ''
+            ]);
+        }
+
+        /**
+         * Create contact in Zoho CRM
+         */
+        private function create_contact($data) {
+            $this->log('Creating contact', $data, 'info');
+
+            $access_token = $this->get_access_token();
+
+            if (is_wp_error($access_token)) {
+                return $access_token;
+            }
+
+            $record_data = [
+                'data' => [$data]
+            ];
+
+            $url = 'https://www.zohoapis.eu/crm/v8/' . self::ZOHO_MODULE_CONTACTS;
+
+            $response = wp_remote_post($url, [
+                'headers' => [
+                    'Authorization' => 'Zoho-oauthtoken ' . $access_token,
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json'
+                ],
+                'body' => json_encode($record_data),
+                'timeout' => 30
+            ]);
+
+            if (is_wp_error($response)) {
+                $this->log('Create Contact WP Error', ['error' => $response->get_error_message()], 'error');
+                return $response;
+            }
+
+            $status_code = wp_remote_retrieve_response_code($response);
+            $body = json_decode(wp_remote_retrieve_body($response), true);
+
+            $this->log('Create Contact Response', [
+                'status_code' => $status_code,
+                'response' => $body
+            ], $status_code === 201 || $status_code === 200 ? 'info' : 'error');
+
+            if ($status_code !== 201 && $status_code !== 200) {
+                $error_msg = $body['message'] ?? ($body['data'][0]['message'] ?? 'Unbekannter Fehler');
+                return new WP_Error('api_error', $error_msg);
+            }
+
+            return $body['data'][0]['details'] ?? [];
+        }
+
+        /**
+         * Create EduGrant record for guest (non-logged-in user)
+         */
+        private function create_edugrant_record_guest($contact_id, $event_id, $email, $is_external = false) {
+            $this->log('Creating EduGrant record (guest)', [
+                'contact_id' => $contact_id,
+                'event_id' => $event_id,
+                'email' => $email,
+                'is_external' => $is_external
+            ], 'info');
+
+            $access_token = $this->get_access_token();
+
+            if (is_wp_error($access_token)) {
+                return $access_token;
+            }
+
+            // Generate a unique name for the EduGrant record
+            $edugrant_name = 'EduGrant-' . date('Y-m-d') . '-Guest-' . substr(md5($email), 0, 8);
+
+            $record_data = [
+                'data' => [
+                    [
+                        'Name' => $edugrant_name,
+                        'Contact' => $contact_id,
+                        'Veranstaltung' => $event_id,
+                        'Status' => 'Beantragt',
+                        'Beantragt_am' => date('Y-m-d'),
+                        'E_Mail' => $email,
+                        'Externe_Veranstaltung' => $is_external
+                    ]
+                ]
+            ];
+
+            $url = 'https://www.zohoapis.eu/crm/v8/' . self::ZOHO_MODULE_EDUGRANT;
+
+            $this->log('Create EduGrant Guest API Request', [
+                'url' => $url,
+                'data' => $record_data
+            ], 'info');
+
+            $response = wp_remote_post($url, [
+                'headers' => [
+                    'Authorization' => 'Zoho-oauthtoken ' . $access_token,
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json'
+                ],
+                'body' => json_encode($record_data),
+                'timeout' => 30
+            ]);
+
+            if (is_wp_error($response)) {
+                $this->log('Create EduGrant Guest WP Error', ['error' => $response->get_error_message()], 'error');
+                return $response;
+            }
+
+            $status_code = wp_remote_retrieve_response_code($response);
+            $body = json_decode(wp_remote_retrieve_body($response), true);
+
+            $this->log('Create EduGrant Guest Response', [
+                'status_code' => $status_code,
+                'response' => $body
+            ], $status_code === 201 || $status_code === 200 ? 'info' : 'error');
+
+            if ($status_code !== 201 && $status_code !== 200) {
+                $error_msg = $body['message'] ?? ($body['data'][0]['message'] ?? 'Unbekannter Fehler');
+                return new WP_Error('api_error', 'Fehler beim Erstellen: ' . $error_msg);
+            }
+
+            // Get the created record ID and fetch full record
+            $created_id = $body['data'][0]['details']['id'] ?? null;
+
+            if ($created_id) {
+                $full_record = $this->get_edugrant_by_id($created_id);
+                if (!is_wp_error($full_record)) {
+                    $this->log('Created EduGrant Guest full record', [
+                        'id' => $created_id,
+                        'nummer' => $full_record['Nummer'] ?? 'N/A'
+                    ], 'info');
+                    return $full_record;
+                }
+            }
+
+            return $body['data'][0]['details'] ?? [];
         }
 
         /**

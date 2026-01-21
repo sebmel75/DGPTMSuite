@@ -12,6 +12,7 @@
         initEventSelect();
         initCostCalculation();
         initFilePreview();
+        initGuestForm();
     });
 
     /**
@@ -484,14 +485,217 @@
     }
 
     /**
-     * Submit application
+     * Initialize guest form functionality (non-logged-in users)
+     */
+    function initGuestForm() {
+        var $form = $('#edugrant-application-form');
+        if (!$form.length) return;
+
+        var isLoggedIn = $form.data('logged-in') === 1 || $form.data('logged-in') === '1';
+
+        // If user is logged in, skip guest functionality
+        if (isLoggedIn) return;
+
+        var $emailStep = $('#guest-step-email');
+        var $contactStep = $('#guest-step-contact');
+        var $berechtigungStep = $('#guest-step-berechtigung');
+        var $checkEmailBtn = $('#check-email-btn');
+        var $emailInput = $('#guest_email');
+        var $emailResult = $('#email-check-result');
+        var $termsSection = $form.find('.edugrant-terms');
+        var $submitBtn = $('#submit-application-btn');
+
+        // Hide terms and submit initially until email is checked
+        $termsSection.hide();
+        $submitBtn.hide();
+
+        // Show "sonstiges" text field when selected
+        $('#guest_berechtigung').on('change', function() {
+            if ($(this).val() === 'sonstiges') {
+                $('#guest_berechtigung_sonstiges_row').show();
+                $('#guest_berechtigung_text').prop('required', true);
+            } else {
+                $('#guest_berechtigung_sonstiges_row').hide();
+                $('#guest_berechtigung_text').prop('required', false);
+            }
+        });
+
+        // Email check button click
+        $checkEmailBtn.on('click', function() {
+            var email = $emailInput.val().trim();
+
+            if (!email || !isValidEmail(email)) {
+                $emailResult.html('<div class="edugrant-error"><span class="dashicons dashicons-warning"></span> Bitte geben Sie eine gültige E-Mail-Adresse ein.</div>').show();
+                return;
+            }
+
+            checkGuestEmail(email);
+        });
+
+        // Enter key on email field
+        $emailInput.on('keypress', function(e) {
+            if (e.which === 13) {
+                e.preventDefault();
+                $checkEmailBtn.click();
+            }
+        });
+
+        /**
+         * Check guest email via AJAX
+         */
+        function checkGuestEmail(email) {
+            var eventId = $form.data('event-id');
+
+            $checkEmailBtn.prop('disabled', true).text('Prüfe...');
+            $emailResult.html('<div class="loading-indicator"><span class="dashicons dashicons-update spin"></span> E-Mail wird geprüft...</div>').show();
+
+            $.ajax({
+                url: dgptmEdugrant.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'dgptm_edugrant_check_guest_email',
+                    nonce: dgptmEdugrant.nonce,
+                    email: email,
+                    event_id: eventId
+                },
+                success: function(response) {
+                    $checkEmailBtn.prop('disabled', false).html('<span class="dashicons dashicons-search"></span> E-Mail prüfen');
+
+                    if (response.success) {
+                        handleEmailCheckResult(response.data);
+                    } else {
+                        $emailResult.html('<div class="edugrant-error"><span class="dashicons dashicons-warning"></span> ' + (response.data.message || 'Fehler bei der Prüfung') + '</div>');
+                    }
+                },
+                error: function() {
+                    $checkEmailBtn.prop('disabled', false).html('<span class="dashicons dashicons-search"></span> E-Mail prüfen');
+                    $emailResult.html('<div class="edugrant-error"><span class="dashicons dashicons-warning"></span> Verbindungsfehler</div>');
+                }
+            });
+        }
+
+        /**
+         * Handle email check result
+         */
+        function handleEmailCheckResult(data) {
+            console.log('Email check result:', data);
+
+            // Store contact info in hidden fields
+            $('#guest_contact_id').val(data.contact_id || '');
+            $('#guest_contact_found').val(data.contact_found ? '1' : '0');
+            $('#guest_has_ticket').val(data.has_ticket ? '1' : '0');
+
+            // Show result message
+            var resultClass = data.can_apply ? 'edugrant-notice' : 'edugrant-error';
+            var icon = data.contact_found ? (data.can_apply ? 'yes-alt' : 'warning') : 'info';
+
+            if (data.contact_found && data.can_apply) {
+                resultClass = 'edugrant-notice';
+                resultClass += ' style="background: #d4edda; border-color: #c3e6cb; color: #155724;"';
+            }
+
+            var html = '<div class="' + resultClass + '">';
+            html += '<span class="dashicons dashicons-' + icon + '"></span> ';
+            html += data.message;
+            html += '</div>';
+
+            $emailResult.html(html);
+
+            // Lock email field
+            $emailInput.prop('readonly', true);
+            $checkEmailBtn.hide();
+
+            // Add "change email" button
+            if (!$('#change-email-btn').length) {
+                $checkEmailBtn.after('<button type="button" id="change-email-btn" class="button">E-Mail ändern</button>');
+                $('#change-email-btn').on('click', function() {
+                    resetGuestForm();
+                });
+            }
+
+            if (!data.can_apply) {
+                // Cannot apply - show error and stop
+                $contactStep.hide();
+                $berechtigungStep.hide();
+                $termsSection.hide();
+                $submitBtn.hide();
+                return;
+            }
+
+            // Show/hide contact data fields
+            if (data.needs_contact_data) {
+                $contactStep.show();
+                $contactStep.find('input').prop('required', true);
+            } else {
+                $contactStep.hide();
+                $contactStep.find('input').prop('required', false);
+            }
+
+            // Show/hide eligibility proof fields
+            if (data.needs_eligibility_proof) {
+                $berechtigungStep.show();
+                $('#guest_berechtigung').prop('required', true);
+                $('#guest_nachweis').prop('required', true);
+            } else {
+                $berechtigungStep.hide();
+                $('#guest_berechtigung').prop('required', false);
+                $('#guest_nachweis').prop('required', false);
+            }
+
+            // Show terms and submit button
+            $termsSection.show();
+            $submitBtn.show();
+        }
+
+        /**
+         * Reset guest form to email step
+         */
+        function resetGuestForm() {
+            $emailInput.prop('readonly', false).val('');
+            $checkEmailBtn.show();
+            $('#change-email-btn').remove();
+            $emailResult.hide();
+            $contactStep.hide();
+            $berechtigungStep.hide();
+            $termsSection.hide();
+            $submitBtn.hide();
+
+            // Clear hidden fields
+            $('#guest_contact_id').val('');
+            $('#guest_contact_found').val('0');
+            $('#guest_has_ticket').val('0');
+        }
+
+        /**
+         * Validate email format
+         */
+        function isValidEmail(email) {
+            var re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+    }
+
+    /**
+     * Submit application (supports both logged-in and guest users)
      */
     function submitApplication($form) {
         var $submitBtn = $form.find('.edugrant-submit-btn');
         var $message = $('#edugrant-message');
 
+        // Check all required checkboxes
         if (!$('#terms_accepted').is(':checked')) {
             alert('Bitte akzeptieren Sie die Bedingungen.');
+            return;
+        }
+
+        // Check new checkboxes if they exist
+        if ($('#travel_policy_accepted').length && !$('#travel_policy_accepted').is(':checked')) {
+            alert('Bitte akzeptieren Sie die Reisekostenrichtlinie.');
+            return;
+        }
+
+        if ($('#privacy_accepted').length && !$('#privacy_accepted').is(':checked')) {
+            alert('Bitte stimmen Sie der Datenschutzerklärung zu.');
             return;
         }
 
@@ -501,30 +705,63 @@
 
         $submitBtn.prop('disabled', true).text('Wird eingereicht...');
 
-        $.ajax({
-            url: dgptmEdugrant.ajaxUrl,
-            type: 'POST',
-            data: {
-                action: 'dgptm_edugrant_submit',
-                nonce: dgptmEdugrant.nonce,
-                event_id: $form.data('event-id')
-            },
-            success: function(response) {
-                if (response.success) {
-                    $message.removeClass('error').addClass('success').html(
-                        response.data.message + '<br><strong>EduGrant-Nummer: ' + response.data.edugrant_number + '</strong>'
-                    ).show();
-                    $form.hide();
-                } else {
-                    $message.removeClass('success').addClass('error').text(response.data.message).show();
-                    $submitBtn.prop('disabled', false).html('<span class="dashicons dashicons-yes"></span> EduGrant beantragen');
+        // Determine if this is a guest submission
+        var isLoggedIn = $form.data('logged-in') === 1 || $form.data('logged-in') === '1';
+        var isGuest = !isLoggedIn;
+
+        // Build form data
+        var formData;
+        var ajaxAction;
+
+        if (isGuest) {
+            // Guest submission - use FormData for file upload support
+            formData = new FormData($form[0]);
+            formData.append('action', 'dgptm_edugrant_submit');
+            formData.append('nonce', dgptmEdugrant.nonce);
+            formData.append('event_id', $form.data('event-id'));
+
+            $.ajax({
+                url: dgptmEdugrant.ajaxUrl,
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: handleSubmitResponse,
+                error: handleSubmitError
+            });
+        } else {
+            // Logged-in user submission
+            $.ajax({
+                url: dgptmEdugrant.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'dgptm_edugrant_submit',
+                    nonce: dgptmEdugrant.nonce,
+                    event_id: $form.data('event-id')
+                },
+                success: handleSubmitResponse,
+                error: handleSubmitError
+            });
+        }
+
+        function handleSubmitResponse(response) {
+            if (response.success) {
+                var successHtml = response.data.message;
+                if (response.data.edugrant_number) {
+                    successHtml += '<br><strong>EduGrant-Nummer: ' + response.data.edugrant_number + '</strong>';
                 }
-            },
-            error: function() {
-                $message.removeClass('success').addClass('error').text(dgptmEdugrant.i18n.error).show();
+                $message.removeClass('error').addClass('success').html(successHtml).show();
+                $form.hide();
+            } else {
+                $message.removeClass('success').addClass('error').text(response.data.message).show();
                 $submitBtn.prop('disabled', false).html('<span class="dashicons dashicons-yes"></span> EduGrant beantragen');
             }
-        });
+        }
+
+        function handleSubmitError() {
+            $message.removeClass('success').addClass('error').text(dgptmEdugrant.i18n.error).show();
+            $submitBtn.prop('disabled', false).html('<span class="dashicons dashicons-yes"></span> EduGrant beantragen');
+        }
     }
 
     /**

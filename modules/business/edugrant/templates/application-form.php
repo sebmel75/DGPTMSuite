@@ -7,6 +7,8 @@
  * - event_id: Zoho Event ID for new applications
  * - eduid: Zoho EduGrant ID for document submission (from email link)
  * - edugrant_code: Alternative to eduid (EduGrant number like EDUGRANT-2023-8)
+ *
+ * Supports both logged-in members and guests (non-logged-in users)
  */
 
 if (!defined('ABSPATH')) {
@@ -22,9 +24,12 @@ $eduid = isset($_GET['eduid']) ? sanitize_text_field($_GET['eduid']) : '';
 // Determine mode: new application vs document submission
 $is_document_submission = !empty($eduid) || !empty($edugrant_code);
 
-// Get current user info
+// Check if user is logged in
+$is_logged_in = is_user_logged_in();
+
+// Get current user info (if logged in)
 $current_user = wp_get_current_user();
-$zoho_contact_id = get_user_meta(get_current_user_id(), 'zoho_id', true);
+$zoho_contact_id = $is_logged_in ? get_user_meta(get_current_user_id(), 'zoho_id', true) : '';
 
 // If we have eduid, fetch the EduGrant details
 $edugrant_data = null;
@@ -161,6 +166,18 @@ if ($is_document_submission && !empty($eduid)) {
             EduGrant beantragen
         </h3>
 
+        <!-- Login hint for guests -->
+        <?php if (!$is_logged_in): ?>
+            <div class="edugrant-info-box edugrant-login-hint">
+                <p><strong>Mitglieder:</strong> Bitte loggen Sie sich vorher ein, um das Formular automatisch auszufüllen.</p>
+                <a href="<?php echo wp_login_url(add_query_arg([])); ?>" class="button edugrant-login-btn">
+                    <span class="dashicons dashicons-admin-users"></span>
+                    Jetzt einloggen
+                </a>
+                <p style="margin-top: 10px; margin-bottom: 0;"><small>Kein Mitglied? Füllen Sie das Formular als Gast aus.</small></p>
+            </div>
+        <?php endif; ?>
+
         <?php if (empty($event_id)): ?>
             <div class="edugrant-event-select">
                 <p>Bitte wählen Sie eine Veranstaltung aus:</p>
@@ -172,15 +189,108 @@ if ($is_document_submission && !empty($eduid)) {
                 </div>
             </div>
         <?php else: ?>
-            <form id="edugrant-application-form" class="edugrant-form" data-event-id="<?php echo esc_attr($event_id); ?>" data-contact-id="<?php echo esc_attr($zoho_contact_id); ?>">
+            <form id="edugrant-application-form" class="edugrant-form" data-event-id="<?php echo esc_attr($event_id); ?>" data-contact-id="<?php echo esc_attr($zoho_contact_id); ?>" data-logged-in="<?php echo $is_logged_in ? '1' : '0'; ?>">
                 <?php wp_nonce_field('dgptm_edugrant_nonce', 'edugrant_nonce'); ?>
 
-                <!-- Antragsteller-Info (kompakt) -->
-                <div class="edugrant-applicant-info">
-                    <span class="dashicons dashicons-admin-users"></span>
-                    <strong><?php echo esc_html($current_user->display_name); ?></strong>
-                    <span class="applicant-email">(<?php echo esc_html($current_user->user_email); ?>)</span>
-                </div>
+                <?php if ($is_logged_in): ?>
+                    <!-- Antragsteller-Info (kompakt) - nur für eingeloggte Benutzer -->
+                    <div class="edugrant-applicant-info">
+                        <span class="dashicons dashicons-admin-users"></span>
+                        <strong><?php echo esc_html($current_user->display_name); ?></strong>
+                        <span class="applicant-email">(<?php echo esc_html($current_user->user_email); ?>)</span>
+                    </div>
+                <?php else: ?>
+                    <!-- SCHRITT 1: E-Mail-Prüfung -->
+                    <fieldset class="edugrant-fieldset edugrant-guest-step" id="guest-step-email">
+                        <legend>E-Mail-Adresse</legend>
+
+                        <div class="edugrant-notice" style="margin-bottom: 15px;">
+                            <span class="dashicons dashicons-info"></span>
+                            Bitte die gleiche E-Mail-Adresse wie bei der Ticketbuchung verwenden!
+                        </div>
+
+                        <div class="form-row">
+                            <label for="guest_email">E-Mail-Adresse *</label>
+                            <input type="email" id="guest_email" name="guest_email" required>
+                        </div>
+
+                        <div class="form-row">
+                            <button type="button" id="check-email-btn" class="button edugrant-check-btn">
+                                <span class="dashicons dashicons-search"></span>
+                                E-Mail prüfen
+                            </button>
+                        </div>
+
+                        <!-- Status-Anzeige nach E-Mail-Prüfung -->
+                        <div id="email-check-result" class="email-check-result" style="display: none;"></div>
+                    </fieldset>
+
+                    <!-- SCHRITT 2: Kontaktdaten (nur für externe Veranstaltungen oder neue Kontakte) -->
+                    <fieldset class="edugrant-fieldset edugrant-guest-step" id="guest-step-contact" style="display: none;">
+                        <legend>Kontaktdaten vervollständigen</legend>
+
+                        <div class="form-row form-row-half">
+                            <label for="guest_vorname">Vorname *</label>
+                            <input type="text" id="guest_vorname" name="guest_vorname">
+                        </div>
+
+                        <div class="form-row form-row-half">
+                            <label for="guest_nachname">Nachname *</label>
+                            <input type="text" id="guest_nachname" name="guest_nachname">
+                        </div>
+
+                        <div class="form-row">
+                            <label for="guest_strasse">Straße und Hausnummer *</label>
+                            <input type="text" id="guest_strasse" name="guest_strasse">
+                        </div>
+
+                        <div class="form-row form-row-third">
+                            <label for="guest_plz">PLZ *</label>
+                            <input type="text" id="guest_plz" name="guest_plz" maxlength="10">
+                        </div>
+
+                        <div class="form-row form-row-twothird">
+                            <label for="guest_ort">Ort *</label>
+                            <input type="text" id="guest_ort" name="guest_ort">
+                        </div>
+                    </fieldset>
+
+                    <!-- SCHRITT 3: Berechtigung (nur für externe Veranstaltungen oder wenn kein Kontakt gefunden) -->
+                    <fieldset class="edugrant-fieldset edugrant-guest-step" id="guest-step-berechtigung" style="display: none;">
+                        <legend>Berechtigung nachweisen</legend>
+
+                        <div class="edugrant-notice" style="margin-bottom: 15px;">
+                            <span class="dashicons dashicons-info"></span>
+                            Bei externen Veranstaltungen müssen Sie Ihre Berechtigung nachweisen.
+                        </div>
+
+                        <div class="form-row">
+                            <label for="guest_berechtigung">Ich bin antragsberechtigt, weil: *</label>
+                            <select id="guest_berechtigung" name="guest_berechtigung">
+                                <option value="">-- Bitte wählen --</option>
+                                <option value="perfusionist">Ich bin PerfusionistIn</option>
+                                <option value="student">Ich bin StudentIn eines fachbezogenen Studienganges</option>
+                                <option value="sonstiges">Ich bin aus einem anderen Grund berechtigt</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row" id="guest_berechtigung_sonstiges_row" style="display: none;">
+                            <label for="guest_berechtigung_text">Bitte erläutern Sie Ihre Berechtigung: *</label>
+                            <input type="text" id="guest_berechtigung_text" name="guest_berechtigung_text">
+                        </div>
+
+                        <div class="form-row">
+                            <label for="guest_nachweis">Nachweis hochladen (PDF, JPG, PNG) *</label>
+                            <input type="file" id="guest_nachweis" name="guest_nachweis" accept=".pdf,.jpg,.jpeg,.png">
+                            <small>Z.B. Arbeitsvertrag, Studentenausweis, Zertifikat</small>
+                        </div>
+                    </fieldset>
+
+                    <!-- Versteckte Felder für Kontakt-ID und Status -->
+                    <input type="hidden" id="guest_contact_id" name="guest_contact_id" value="">
+                    <input type="hidden" id="guest_contact_found" name="guest_contact_found" value="0">
+                    <input type="hidden" id="guest_has_ticket" name="guest_has_ticket" value="0">
+                <?php endif; ?>
 
                 <div class="edugrant-event-info" id="event-info-container">
                     <div class="loading-indicator">
@@ -198,14 +308,29 @@ if ($is_document_submission && !empty($eduid)) {
                 </div>
 
                 <input type="hidden" name="event_id" value="<?php echo esc_attr($event_id); ?>">
+                <input type="hidden" name="is_guest" value="<?php echo $is_logged_in ? '0' : '1'; ?>">
 
                 <div class="edugrant-terms">
                     <p>Mit dem Absenden dieses Antrags bestätige ich:</p>
                     <ul>
-                        <li>Ich bin ordentliches Mitglied der DGPTM.</li>
+                        <?php if ($is_logged_in): ?>
+                            <li>Ich bin ordentliches Mitglied der DGPTM.</li>
+                        <?php else: ?>
+                            <li>Ich bin berechtigt, einen EduGrant zu beantragen.</li>
+                        <?php endif; ?>
                         <li>Ich nehme an der ausgewählten Veranstaltung teil.</li>
                         <li>Ich werde die erforderlichen Nachweise nach der Veranstaltung einreichen.</li>
                     </ul>
+
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="travel_policy_accepted" name="travel_policy_accepted" required>
+                        Ich erkenne die <a href="https://dgptm.de/download/17887/" target="_blank">Reisekostenrichtlinie</a> an.
+                    </label>
+
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="privacy_accepted" name="privacy_accepted" required>
+                        Ich stimme der <a href="https://dgptm.de/datenschutz" target="_blank">Datenschutzerklärung</a> und der Verarbeitung meiner Daten zu.
+                    </label>
 
                     <label class="checkbox-label">
                         <input type="checkbox" id="terms_accepted" name="terms_accepted" required>

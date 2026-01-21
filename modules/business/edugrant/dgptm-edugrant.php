@@ -264,11 +264,15 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
             $three_days_later = date('Y-m-d', strtotime('+3 days'));
 
             // COQL Query: Get events that have Budget, end date is in future
-            // Note: Zoho field names must match API field names exactly (check Zoho CRM settings)
-            // Minimal query to test - add more fields once we know the correct API names
-            $query = "SELECT id, Name
+            // Field names from Events.csv - converted to API names (spaces→underscores, ö→o)
+            $query = "SELECT id, Veranstaltungsbezeichnung, Von, Bis, Budget,
+                      Max_Anzahl_TN, Genehmigte_EduGrant, Externe_Veranstaltung,
+                      Veranstaltungsnummer
                       FROM " . self::ZOHO_MODULE_EVENTS . "
-                      LIMIT 10";
+                      WHERE Bis >= '{$today}'
+                      AND Budget is not null
+                      ORDER BY Von ASC
+                      LIMIT 100";
 
             $events = $this->execute_coql_query($query);
 

@@ -1054,10 +1054,12 @@ class DGPTM_Zoho_Plugin {
                         $redirect_uri = admin_url('options-general.php?page=dgptm-zoho-api-settings');
                         // Extended scopes for:
                         // - functions.execute: Custom CRM functions (existing)
-                        // - modules.READ: Direct access to CRM modules like Contacts, Accounts (for daten-bearbeiten)
-                        // - modules.ALL: Full module access including update operations
+                        // - modules.READ/ALL: Direct access to standard CRM modules like Contacts, Accounts
+                        // - modules.custom: Access to custom modules (EduGrant, DGFK_Events, TN_Tickets, etc.)
+                        // - modules.contacts: Specifically for Contacts module access
+                        // - coql.READ: For COQL queries used by EduGrant and other modules
                         // - files.READ/CREATE: File upload operations (for student certificates)
-                        $scope = 'ZohoCRM.functions.execute.READ,ZohoCRM.functions.execute.CREATE,ZohoCRM.modules.READ,ZohoCRM.modules.ALL,ZohoCRM.files.READ,ZohoCRM.files.CREATE';
+                        $scope = 'ZohoCRM.functions.execute.READ,ZohoCRM.functions.execute.CREATE,ZohoCRM.modules.READ,ZohoCRM.modules.ALL,ZohoCRM.modules.custom.READ,ZohoCRM.modules.custom.CREATE,ZohoCRM.modules.custom.UPDATE,ZohoCRM.modules.contacts.READ,ZohoCRM.coql.READ,ZohoCRM.files.READ,ZohoCRM.files.CREATE';
                         $auth_url = 'https://accounts.zoho.eu/oauth/v2/auth?scope=' . urlencode($scope) . '&client_id=' . urlencode($client_id) . '&response_type=code&access_type=offline&redirect_uri=' . urlencode($redirect_uri);
                         echo '<p><a class="button" href="' . esc_url($auth_url) . '">' . esc_html__('Mit Zoho verbinden','dgptm-zoho') . '</a></p>';
                     } else {

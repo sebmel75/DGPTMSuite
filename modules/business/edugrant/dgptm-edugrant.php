@@ -271,8 +271,23 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 return $access_token;
             }
 
-            // Use Records API to get all events - it returns actual field names
-            $url = 'https://www.zohoapis.eu/crm/v6/' . self::ZOHO_MODULE_EVENTS;
+            // Use Records API to get all events - must specify fields parameter
+            // API Field Names from Modules.json
+            $fields = [
+                'Name',              // Veranstaltungsbezeichnung
+                'From_Date',         // Von
+                'To_Date',           // Bis
+                'Budget',            // Budget
+                'Maximum_Attendees', // Max Anzahl TN
+                'EduGrant_applications', // Genehmigte EduGrant
+                'External_Event',    // Externe Veranstaltung
+                'Maximum_Promotion', // Maximale Förderung
+                'Event_Number',      // Veranstaltungsnummer
+                'Location',          // Ort (lookup)
+                'City'               // Stadt
+            ];
+
+            $url = 'https://www.zohoapis.eu/crm/v6/' . self::ZOHO_MODULE_EVENTS . '?fields=' . implode(',', $fields);
 
             $this->log('Get Events API Request', ['url' => $url], 'info');
 

@@ -1,0 +1,25 @@
+{
+    "id": "edugrant",
+    "name": "DGPTM - EduGrant Manager",
+    "description": "EduGrant-Verwaltung mit Zoho CRM Integration. Zeigt Events an und ermöglicht Beantragung von EduGrants.",
+    "version": "1.0.0",
+    "author": "Sebastian Melzer",
+    "main_file": "dgptm-edugrant.php",
+    "dependencies": ["crm-abruf"],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": []
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "business",
+    "icon": "dashicons-awards",
+    "active": false,
+    "critical": false,
+    "flags": ["development"],
+    "comment": {
+        "text": "Neu erstellt - Integration mit Zoho CRM Module EduGrant und DGFK_Events",
+        "timestamp": 1737475200,
+        "user_id": 1
+    }
+}

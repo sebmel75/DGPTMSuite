@@ -1,0 +1,1010 @@
+<?php
+/**
+ * Plugin Name: DGPTM - EduGrant Manager
+ * Description: EduGrant-Verwaltung mit Zoho CRM Integration. Zeigt Events an und ermöglicht Beantragung von EduGrants.
+ * Version: 1.0.0
+ * Author: Sebastian Melzer
+ */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+if (!class_exists('DGPTM_EduGrant_Manager')) {
+
+    class DGPTM_EduGrant_Manager {
+
+        private static $instance = null;
+        private $plugin_path;
+        private $plugin_url;
+
+        // Zoho CRM API Endpoints
+        const ZOHO_COQL_ENDPOINT = 'https://www.zohoapis.eu/crm/v6/coql';
+
+        // Zoho Module names (as they appear in API)
+        const ZOHO_MODULE_EVENTS = 'DGFK_Events';
+        const ZOHO_MODULE_EDUGRANT = 'EduGrant';
+        const ZOHO_MODULE_TICKETS = 'TN_Tickets';
+        const ZOHO_MODULE_CONTACTS = 'Contacts';
+
+        // Valid ticket statuses for EduGrant eligibility
+        const VALID_TICKET_STATUSES = ['Bezahlt', 'Freiticket', 'ReferentIn'];
+
+        public static function get_instance() {
+            if (null === self::$instance) {
+                self::$instance = new self();
+            }
+            return self::$instance;
+        }
+
+        private function __construct() {
+            $this->plugin_path = plugin_dir_path(__FILE__);
+            $this->plugin_url = plugin_dir_url(__FILE__);
+
+            // Register shortcodes
+            add_shortcode('edugrant_events', [$this, 'shortcode_events']);
+            add_shortcode('meine_edugrantes', [$this, 'shortcode_user_edugrantes']);
+            add_shortcode('edugrant_antragsformular', [$this, 'shortcode_application_form']);
+
+            // Enqueue scripts/styles
+            add_action('wp_enqueue_scripts', [$this, 'enqueue_assets']);
+
+            // AJAX handlers
+            add_action('wp_ajax_dgptm_edugrant_submit', [$this, 'ajax_submit_application']);
+            add_action('wp_ajax_dgptm_edugrant_get_events', [$this, 'ajax_get_events']);
+            add_action('wp_ajax_dgptm_edugrant_get_user_grants', [$this, 'ajax_get_user_grants']);
+            add_action('wp_ajax_dgptm_edugrant_get_grant_details', [$this, 'ajax_get_grant_details']);
+            add_action('wp_ajax_dgptm_edugrant_submit_documents', [$this, 'ajax_submit_documents']);
+            add_action('wp_ajax_dgptm_edugrant_get_event_details', [$this, 'ajax_get_event_details']);
+            add_action('wp_ajax_dgptm_edugrant_check_ticket', [$this, 'ajax_check_ticket_eligibility']);
+
+            // Admin menu for settings
+            add_action('admin_menu', [$this, 'add_admin_menu']);
+            add_action('admin_init', [$this, 'register_settings']);
+        }
+
+        /**
+         * Enqueue frontend assets
+         */
+        public function enqueue_assets() {
+            if (!is_admin()) {
+                wp_enqueue_style(
+                    'dgptm-edugrant-style',
+                    $this->plugin_url . 'assets/css/edugrant.css',
+                    [],
+                    '1.0.0'
+                );
+
+                wp_enqueue_script(
+                    'dgptm-edugrant-script',
+                    $this->plugin_url . 'assets/js/edugrant.js',
+                    ['jquery'],
+                    '1.0.0',
+                    true
+                );
+
+                wp_localize_script('dgptm-edugrant-script', 'dgptmEdugrant', [
+                    'ajaxUrl' => admin_url('admin-ajax.php'),
+                    'nonce' => wp_create_nonce('dgptm_edugrant_nonce'),
+                    'i18n' => [
+                        'loading' => __('Laden...', 'dgptm-edugrant'),
+                        'error' => __('Ein Fehler ist aufgetreten.', 'dgptm-edugrant'),
+                        'success' => __('Antrag erfolgreich eingereicht!', 'dgptm-edugrant'),
+                        'confirmSubmit' => __('Möchten Sie diesen EduGrant-Antrag wirklich einreichen?', 'dgptm-edugrant'),
+                    ]
+                ]);
+            }
+        }
+
+        /**
+         * Get valid OAuth access token from crm-abruf module
+         */
+        private function get_access_token() {
+            // Check if crm-abruf class exists
+            if (class_exists('DGPTM_CRM_Abruf')) {
+                $crm = DGPTM_CRM_Abruf::get_instance();
+                if (method_exists($crm, 'get_oauth_token')) {
+                    return $crm->get_oauth_token();
+                }
+            }
+
+            // Fallback: Try to get token directly from options
+            $access_token = get_option('dgptm_zoho_access_token', '');
+            $expires_at = (int) get_option('dgptm_zoho_token_expires', 0);
+
+            if (!empty($access_token) && time() < $expires_at) {
+                return $access_token;
+            }
+
+            // Try to refresh token
+            return $this->refresh_access_token();
+        }
+
+        /**
+         * Refresh OAuth token
+         */
+        private function refresh_access_token() {
+            $refresh_token = get_option('dgptm_zoho_refresh_token', '');
+            $client_id = get_option('dgptm_zoho_client_id', '');
+            $client_secret = get_option('dgptm_zoho_client_secret', '');
+
+            if (empty($refresh_token) || empty($client_id) || empty($client_secret)) {
+                error_log('EduGrant: Missing OAuth2 configuration');
+                return new WP_Error('oauth_error', 'Fehlende OAuth2-Konfiguration.');
+            }
+
+            $response = wp_remote_post('https://accounts.zoho.eu/oauth/v2/token', [
+                'body' => [
+                    'refresh_token' => $refresh_token,
+                    'client_id' => $client_id,
+                    'client_secret' => $client_secret,
+                    'grant_type' => 'refresh_token'
+                ],
+                'timeout' => 20
+            ]);
+
+            if (is_wp_error($response)) {
+                error_log('EduGrant: Token refresh failed: ' . $response->get_error_message());
+                return $response;
+            }
+
+            $body = json_decode(wp_remote_retrieve_body($response), true);
+
+            if (isset($body['access_token'])) {
+                $access_token = sanitize_text_field($body['access_token']);
+                $expires_in = isset($body['expires_in']) ? (int) $body['expires_in'] : 3600;
+
+                update_option('dgptm_zoho_access_token', $access_token);
+                update_option('dgptm_zoho_token_expires', time() + $expires_in - 60);
+
+                return $access_token;
+            }
+
+            error_log('EduGrant: No access token in response: ' . print_r($body, true));
+            return new WP_Error('oauth_error', 'Kein Zugriffstoken erhalten.');
+        }
+
+        /**
+         * Execute COQL query against Zoho CRM
+         */
+        private function execute_coql_query($query) {
+            $access_token = $this->get_access_token();
+
+            if (is_wp_error($access_token)) {
+                return $access_token;
+            }
+
+            $response = wp_remote_post(self::ZOHO_COQL_ENDPOINT, [
+                'headers' => [
+                    'Authorization' => 'Zoho-oauthtoken ' . $access_token,
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json'
+                ],
+                'body' => json_encode(['select_query' => $query]),
+                'timeout' => 30
+            ]);
+
+            if (is_wp_error($response)) {
+                error_log('EduGrant COQL Error: ' . $response->get_error_message());
+                return $response;
+            }
+
+            $status_code = wp_remote_retrieve_response_code($response);
+            $body = json_decode(wp_remote_retrieve_body($response), true);
+
+            if ($status_code !== 200) {
+                error_log('EduGrant COQL HTTP Error: ' . $status_code . ' - ' . print_r($body, true));
+                return new WP_Error('api_error', 'API-Fehler: ' . ($body['message'] ?? 'Unbekannter Fehler'));
+            }
+
+            return $body['data'] ?? [];
+        }
+
+        /**
+         * Get events with EduGrant budget available
+         */
+        public function get_available_events() {
+            $today = date('Y-m-d');
+            $three_days_later = date('Y-m-d', strtotime('+3 days'));
+
+            // COQL Query: Get events that have Budget, end date is in future
+            // Note: Zoho field names might need adjustment based on actual API field names
+            $query = "SELECT id, Name, Veranstaltungsbezeichnung, Von, Bis, Budget, Max_Anzahl_TN,
+                      Genehmigte_EduGrant, Ort, Maximale_Forderung, Status, Veranstaltungsnummer
+                      FROM " . self::ZOHO_MODULE_EVENTS . "
+                      WHERE Bis >= '{$today}'
+                      AND Budget is not null
+                      ORDER BY Von ASC
+                      LIMIT 100";
+
+            $events = $this->execute_coql_query($query);
+
+            if (is_wp_error($events)) {
+                return $events;
+            }
+
+            // Filter events where applications are still possible
+            $filtered_events = [];
+            foreach ($events as $event) {
+                // Application deadline: 3 days before event start
+                $event_start = $event['Von'] ?? '';
+                if (!empty($event_start)) {
+                    $deadline = strtotime($event_start . ' -3 days');
+                    $event['application_deadline'] = date('Y-m-d', $deadline);
+                    $event['can_apply'] = (time() < $deadline);
+                } else {
+                    $event['can_apply'] = false;
+                }
+
+                // Check if spots are available
+                $max_attendees = (int) ($event['Max_Anzahl_TN'] ?? 0);
+                $approved_grants = (int) ($event['Genehmigte_EduGrant'] ?? 0);
+                $event['spots_available'] = $max_attendees > 0 ? max(0, $max_attendees - $approved_grants) : 999;
+                $event['has_spots'] = $event['spots_available'] > 0;
+
+                $filtered_events[] = $event;
+            }
+
+            return $filtered_events;
+        }
+
+        /**
+         * Get EduGrants for a specific user (by Zoho Contact ID)
+         */
+        public function get_user_edugrantes($user_id = null) {
+            if (!$user_id) {
+                $user_id = get_current_user_id();
+            }
+
+            if (!$user_id) {
+                return new WP_Error('not_logged_in', 'Benutzer nicht angemeldet.');
+            }
+
+            // Get Zoho Contact ID from user meta
+            $zoho_contact_id = get_user_meta($user_id, 'zoho_id', true);
+
+            if (empty($zoho_contact_id)) {
+                return new WP_Error('no_zoho_id', 'Keine Zoho-Kontakt-ID gefunden.');
+            }
+
+            // COQL Query: Get EduGrants for this contact
+            $query = "SELECT id, Name, Kontakt, Veranstaltung, Status, Nummer,
+                      Beantragt_am, Genehmigt_am, Maximale_Forderung, Summe,
+                      Unterkunft, Fahrtkosten, Teilnahmegebuehren, Ordner_mit_Nachweisen,
+                      Text_Ablehnung
+                      FROM " . self::ZOHO_MODULE_EDUGRANT . "
+                      WHERE Kontakt = '{$zoho_contact_id}'
+                      ORDER BY Beantragt_am DESC
+                      LIMIT 50";
+
+            return $this->execute_coql_query($query);
+        }
+
+        /**
+         * Shortcode: Display available events
+         */
+        public function shortcode_events($atts) {
+            $atts = shortcode_atts([
+                'show_past' => 'false',
+                'limit' => 20
+            ], $atts);
+
+            $events = $this->get_available_events();
+
+            if (is_wp_error($events)) {
+                return '<div class="edugrant-error">' . esc_html($events->get_error_message()) . '</div>';
+            }
+
+            if (empty($events)) {
+                return '<div class="edugrant-notice">Aktuell sind keine Veranstaltungen mit EduGrant-Budget verfügbar.</div>';
+            }
+
+            ob_start();
+            include $this->plugin_path . 'templates/events-list.php';
+            return ob_get_clean();
+        }
+
+        /**
+         * Shortcode: Display user's EduGrants
+         */
+        public function shortcode_user_edugrantes($atts) {
+            if (!is_user_logged_in()) {
+                return '<div class="edugrant-notice">Bitte melden Sie sich an, um Ihre EduGrants zu sehen.</div>';
+            }
+
+            $atts = shortcode_atts([
+                'show_form_link' => 'true'
+            ], $atts);
+
+            $grants = $this->get_user_edugrantes();
+
+            if (is_wp_error($grants)) {
+                if ($grants->get_error_code() === 'no_zoho_id') {
+                    return '<div class="edugrant-notice">Ihr Konto ist nicht mit Zoho CRM verknüpft. Bitte kontaktieren Sie den Support.</div>';
+                }
+                return '<div class="edugrant-error">' . esc_html($grants->get_error_message()) . '</div>';
+            }
+
+            ob_start();
+            include $this->plugin_path . 'templates/user-grants.php';
+            return ob_get_clean();
+        }
+
+        /**
+         * Shortcode: Display application form
+         */
+        public function shortcode_application_form($atts) {
+            if (!is_user_logged_in()) {
+                return '<div class="edugrant-notice">Bitte melden Sie sich an, um einen EduGrant zu beantragen.</div>';
+            }
+
+            $atts = shortcode_atts([
+                'event_id' => '',
+                'edugrant_code' => ''
+            ], $atts);
+
+            // Check if user has Zoho ID
+            $zoho_id = get_user_meta(get_current_user_id(), 'zoho_id', true);
+            if (empty($zoho_id)) {
+                return '<div class="edugrant-notice">Ihr Konto ist nicht mit Zoho CRM verknüpft. Bitte kontaktieren Sie den Support.</div>';
+            }
+
+            // Get event_id from URL parameter if not in shortcode
+            if (empty($atts['event_id'])) {
+                $atts['event_id'] = isset($_GET['event_id']) ? sanitize_text_field($_GET['event_id']) : '';
+            }
+
+            // Get edugrant_code from URL parameter
+            if (empty($atts['edugrant_code'])) {
+                $atts['edugrant_code'] = isset($_GET['edugrant_code']) ? sanitize_text_field($_GET['edugrant_code']) : '';
+            }
+
+            ob_start();
+            include $this->plugin_path . 'templates/application-form.php';
+            return ob_get_clean();
+        }
+
+        /**
+         * AJAX: Get events list
+         */
+        public function ajax_get_events() {
+            check_ajax_referer('dgptm_edugrant_nonce', 'nonce');
+
+            $events = $this->get_available_events();
+
+            if (is_wp_error($events)) {
+                wp_send_json_error(['message' => $events->get_error_message()]);
+            }
+
+            wp_send_json_success(['events' => $events]);
+        }
+
+        /**
+         * AJAX: Get user grants
+         */
+        public function ajax_get_user_grants() {
+            check_ajax_referer('dgptm_edugrant_nonce', 'nonce');
+
+            if (!is_user_logged_in()) {
+                wp_send_json_error(['message' => 'Nicht angemeldet.']);
+            }
+
+            $grants = $this->get_user_edugrantes();
+
+            if (is_wp_error($grants)) {
+                wp_send_json_error(['message' => $grants->get_error_message()]);
+            }
+
+            wp_send_json_success(['grants' => $grants]);
+        }
+
+        /**
+         * AJAX: Submit application
+         * Note: This creates a record in Zoho CRM EduGrant module
+         */
+        public function ajax_submit_application() {
+            check_ajax_referer('dgptm_edugrant_nonce', 'nonce');
+
+            if (!is_user_logged_in()) {
+                wp_send_json_error(['message' => 'Nicht angemeldet.']);
+            }
+
+            $user_id = get_current_user_id();
+            $zoho_contact_id = get_user_meta($user_id, 'zoho_id', true);
+
+            if (empty($zoho_contact_id)) {
+                wp_send_json_error(['message' => 'Keine Zoho-Kontakt-ID gefunden.']);
+            }
+
+            $event_id = sanitize_text_field($_POST['event_id'] ?? '');
+
+            if (empty($event_id)) {
+                wp_send_json_error(['message' => 'Keine Veranstaltung ausgewählt.']);
+            }
+
+            // Check if event is internal or external
+            $event = $this->get_event_by_id($event_id);
+            if (is_wp_error($event)) {
+                wp_send_json_error(['message' => $event->get_error_message()]);
+            }
+
+            $is_external = $event['Externe_Veranstaltung'] ?? $event['Externe Veranstaltung'] ?? false;
+            $is_external = ($is_external === true || $is_external === 'true');
+
+            // For INTERNAL events: Verify ticket exists
+            if (!$is_external) {
+                $ticket_check = $this->check_user_has_ticket($zoho_contact_id, $event_id);
+
+                if (is_wp_error($ticket_check)) {
+                    wp_send_json_error(['message' => $ticket_check->get_error_message()]);
+                }
+
+                if (!$ticket_check['has_ticket']) {
+                    wp_send_json_error([
+                        'message' => 'Für interne Veranstaltungen benötigen Sie ein gültiges Ticket. Bitte erwerben Sie zunächst ein Ticket für diese Veranstaltung.',
+                        'requires_ticket' => true
+                    ]);
+                }
+            }
+
+            // Create EduGrant record in Zoho CRM (pass is_external flag)
+            $result = $this->create_edugrant_record($zoho_contact_id, $event_id, $is_external);
+
+            if (is_wp_error($result)) {
+                wp_send_json_error(['message' => $result->get_error_message()]);
+            }
+
+            wp_send_json_success([
+                'message' => 'EduGrant-Antrag erfolgreich eingereicht!',
+                'edugrant_id' => $result['id'] ?? '',
+                'edugrant_number' => $result['Nummer'] ?? ''
+            ]);
+        }
+
+        /**
+         * Create EduGrant record in Zoho CRM
+         */
+        private function create_edugrant_record($contact_id, $event_id, $is_external = false) {
+            $access_token = $this->get_access_token();
+
+            if (is_wp_error($access_token)) {
+                return $access_token;
+            }
+
+            $user = wp_get_current_user();
+
+            // Prepare record data
+            $record_data = [
+                'data' => [
+                    [
+                        'Kontakt' => $contact_id,
+                        'Veranstaltung' => $event_id,
+                        'Status' => 'Beantragt',
+                        'Beantragt_am' => date('Y-m-d'),
+                        'E_Mail' => $user->user_email,
+                        'Externe_Veranstaltung' => $is_external
+                    ]
+                ]
+            ];
+
+            $response = wp_remote_post(
+                'https://www.zohoapis.eu/crm/v6/' . self::ZOHO_MODULE_EDUGRANT,
+                [
+                    'headers' => [
+                        'Authorization' => 'Zoho-oauthtoken ' . $access_token,
+                        'Content-Type' => 'application/json',
+                        'Accept' => 'application/json'
+                    ],
+                    'body' => json_encode($record_data),
+                    'timeout' => 30
+                ]
+            );
+
+            if (is_wp_error($response)) {
+                error_log('EduGrant Create Error: ' . $response->get_error_message());
+                return $response;
+            }
+
+            $status_code = wp_remote_retrieve_response_code($response);
+            $body = json_decode(wp_remote_retrieve_body($response), true);
+
+            if ($status_code !== 201 && $status_code !== 200) {
+                error_log('EduGrant Create HTTP Error: ' . $status_code . ' - ' . print_r($body, true));
+                return new WP_Error('api_error', 'Fehler beim Erstellen: ' . ($body['message'] ?? 'Unbekannter Fehler'));
+            }
+
+            // Return created record info
+            if (isset($body['data'][0]['details'])) {
+                return $body['data'][0]['details'];
+            }
+
+            return $body['data'][0] ?? [];
+        }
+
+        /**
+         * AJAX: Get specific EduGrant details by ID (eduid parameter)
+         */
+        public function ajax_get_grant_details() {
+            check_ajax_referer('dgptm_edugrant_nonce', 'nonce');
+
+            if (!is_user_logged_in()) {
+                wp_send_json_error(['message' => 'Nicht angemeldet.']);
+            }
+
+            $eduid = sanitize_text_field($_POST['eduid'] ?? '');
+
+            if (empty($eduid)) {
+                wp_send_json_error(['message' => 'Keine EduGrant-ID angegeben.']);
+            }
+
+            // Fetch EduGrant record from Zoho
+            $grant = $this->get_edugrant_by_id($eduid);
+
+            if (is_wp_error($grant)) {
+                wp_send_json_error(['message' => $grant->get_error_message()]);
+            }
+
+            // Verify that this grant belongs to the current user
+            $user_zoho_id = get_user_meta(get_current_user_id(), 'zoho_id', true);
+            $grant_contact_id = $grant['Kontakt']['id'] ?? $grant['Kontakt'] ?? '';
+
+            if ($grant_contact_id !== $user_zoho_id) {
+                wp_send_json_error(['message' => 'Zugriff verweigert.']);
+            }
+
+            wp_send_json_success(['grant' => $grant]);
+        }
+
+        /**
+         * Get EduGrant by Zoho Record ID
+         */
+        private function get_edugrant_by_id($edugrant_id) {
+            $access_token = $this->get_access_token();
+
+            if (is_wp_error($access_token)) {
+                return $access_token;
+            }
+
+            $url = 'https://www.zohoapis.eu/crm/v6/' . self::ZOHO_MODULE_EDUGRANT . '/' . $edugrant_id;
+
+            $response = wp_remote_get($url, [
+                'headers' => [
+                    'Authorization' => 'Zoho-oauthtoken ' . $access_token,
+                    'Accept' => 'application/json'
+                ],
+                'timeout' => 30
+            ]);
+
+            if (is_wp_error($response)) {
+                error_log('EduGrant Get Error: ' . $response->get_error_message());
+                return $response;
+            }
+
+            $status_code = wp_remote_retrieve_response_code($response);
+            $body = json_decode(wp_remote_retrieve_body($response), true);
+
+            if ($status_code !== 200) {
+                error_log('EduGrant Get HTTP Error: ' . $status_code . ' - ' . print_r($body, true));
+                return new WP_Error('api_error', 'EduGrant nicht gefunden.');
+            }
+
+            return $body['data'][0] ?? [];
+        }
+
+        /**
+         * AJAX: Get specific event details
+         */
+        public function ajax_get_event_details() {
+            check_ajax_referer('dgptm_edugrant_nonce', 'nonce');
+
+            $event_id = sanitize_text_field($_POST['event_id'] ?? '');
+
+            if (empty($event_id)) {
+                wp_send_json_error(['message' => 'Keine Event-ID angegeben.']);
+            }
+
+            $event = $this->get_event_by_id($event_id);
+
+            if (is_wp_error($event)) {
+                wp_send_json_error(['message' => $event->get_error_message()]);
+            }
+
+            wp_send_json_success(['event' => $event]);
+        }
+
+        /**
+         * Get Event by Zoho Record ID
+         */
+        private function get_event_by_id($event_id) {
+            $access_token = $this->get_access_token();
+
+            if (is_wp_error($access_token)) {
+                return $access_token;
+            }
+
+            $url = 'https://www.zohoapis.eu/crm/v6/' . self::ZOHO_MODULE_EVENTS . '/' . $event_id;
+
+            $response = wp_remote_get($url, [
+                'headers' => [
+                    'Authorization' => 'Zoho-oauthtoken ' . $access_token,
+                    'Accept' => 'application/json'
+                ],
+                'timeout' => 30
+            ]);
+
+            if (is_wp_error($response)) {
+                return $response;
+            }
+
+            $status_code = wp_remote_retrieve_response_code($response);
+            $body = json_decode(wp_remote_retrieve_body($response), true);
+
+            if ($status_code !== 200) {
+                return new WP_Error('api_error', 'Veranstaltung nicht gefunden.');
+            }
+
+            return $body['data'][0] ?? [];
+        }
+
+        /**
+         * AJAX: Check ticket eligibility for internal events
+         */
+        public function ajax_check_ticket_eligibility() {
+            check_ajax_referer('dgptm_edugrant_nonce', 'nonce');
+
+            if (!is_user_logged_in()) {
+                wp_send_json_error(['message' => 'Nicht angemeldet.']);
+            }
+
+            $event_id = sanitize_text_field($_POST['event_id'] ?? '');
+
+            if (empty($event_id)) {
+                wp_send_json_error(['message' => 'Keine Event-ID angegeben.']);
+            }
+
+            $user_id = get_current_user_id();
+            $zoho_contact_id = get_user_meta($user_id, 'zoho_id', true);
+
+            if (empty($zoho_contact_id)) {
+                wp_send_json_error(['message' => 'Keine Zoho-Kontakt-ID gefunden.']);
+            }
+
+            // Get event to check if external
+            $event = $this->get_event_by_id($event_id);
+            if (is_wp_error($event)) {
+                wp_send_json_error(['message' => $event->get_error_message()]);
+            }
+
+            $is_external = $event['Externe_Veranstaltung'] ?? $event['Externe Veranstaltung'] ?? false;
+
+            // External events: no ticket check needed
+            if ($is_external === true || $is_external === 'true') {
+                wp_send_json_success([
+                    'eligible' => true,
+                    'is_external' => true,
+                    'message' => 'Externe Veranstaltung - keine Ticket-Prüfung erforderlich.'
+                ]);
+            }
+
+            // Internal event: check for valid ticket
+            $ticket_check = $this->check_user_has_ticket($zoho_contact_id, $event_id);
+
+            if (is_wp_error($ticket_check)) {
+                wp_send_json_error(['message' => $ticket_check->get_error_message()]);
+            }
+
+            wp_send_json_success([
+                'eligible' => $ticket_check['has_ticket'],
+                'is_external' => false,
+                'ticket_status' => $ticket_check['status'] ?? null,
+                'message' => $ticket_check['has_ticket']
+                    ? 'Ticket gefunden: ' . ($ticket_check['status'] ?? 'Gültig')
+                    : 'Kein gültiges Ticket für diese Veranstaltung gefunden. Bitte erwerben Sie zunächst ein Ticket.'
+            ]);
+        }
+
+        /**
+         * Check if user has a valid ticket for the event
+         * Checks all 4 email fields from Contact against Ticket emails
+         */
+        private function check_user_has_ticket($contact_id, $event_id) {
+            // Step 1: Get contact with all email fields
+            $contact = $this->get_contact_by_id($contact_id);
+            if (is_wp_error($contact)) {
+                return $contact;
+            }
+
+            // Collect all email addresses from contact (4 fields)
+            $emails = [];
+            // API field names (underscore format)
+            $email_fields = ['Email', 'Zweite_E_Mail_Adresse', 'Dritte_E_Mail_Adresse', 'dgptm_de_Mailadresse'];
+
+            foreach ($email_fields as $field) {
+                $email = $contact[$field] ?? '';
+                if (!empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    $emails[] = strtolower(trim($email));
+                }
+            }
+
+            // Also check API field name variants (display format with spaces/hyphens)
+            $alt_fields = ['E-Mail', 'Zweite E-Mail-Adresse', 'Dritte E-Mail-Adresse', 'dgptm.de - Mailadresse'];
+            foreach ($alt_fields as $field) {
+                $email = $contact[$field] ?? '';
+                if (!empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    $emails[] = strtolower(trim($email));
+                }
+            }
+
+            $emails = array_unique($emails);
+
+            if (empty($emails)) {
+                return new WP_Error('no_email', 'Keine E-Mail-Adresse im Kontakt gefunden.');
+            }
+
+            // Step 2: Search for tickets matching any of these emails AND the event
+            $ticket = $this->find_ticket_by_emails_and_event($emails, $event_id, $contact_id);
+
+            if (is_wp_error($ticket)) {
+                return $ticket;
+            }
+
+            return $ticket;
+        }
+
+        /**
+         * Get Contact by Zoho Record ID
+         */
+        private function get_contact_by_id($contact_id) {
+            $access_token = $this->get_access_token();
+
+            if (is_wp_error($access_token)) {
+                return $access_token;
+            }
+
+            $url = 'https://www.zohoapis.eu/crm/v6/' . self::ZOHO_MODULE_CONTACTS . '/' . $contact_id;
+
+            $response = wp_remote_get($url, [
+                'headers' => [
+                    'Authorization' => 'Zoho-oauthtoken ' . $access_token,
+                    'Accept' => 'application/json'
+                ],
+                'timeout' => 30
+            ]);
+
+            if (is_wp_error($response)) {
+                error_log('EduGrant Contact Get Error: ' . $response->get_error_message());
+                return $response;
+            }
+
+            $status_code = wp_remote_retrieve_response_code($response);
+            $body = json_decode(wp_remote_retrieve_body($response), true);
+
+            if ($status_code !== 200) {
+                error_log('EduGrant Contact HTTP Error: ' . $status_code);
+                return new WP_Error('api_error', 'Kontakt nicht gefunden.');
+            }
+
+            return $body['data'][0] ?? [];
+        }
+
+        /**
+         * Find ticket by email addresses and event ID
+         */
+        private function find_ticket_by_emails_and_event($emails, $event_id, $contact_id) {
+            // Build COQL query to find tickets
+            // First try by TN (Contact) lookup
+            $valid_statuses = implode("', '", self::VALID_TICKET_STATUSES);
+
+            $query = "SELECT id, Ticket_Nr, E_Mail, Zweite_E_Mail_Adresse, TN, Veranstaltung, Status_Abrechnung
+                      FROM " . self::ZOHO_MODULE_TICKETS . "
+                      WHERE Veranstaltung = '{$event_id}'
+                      AND TN = '{$contact_id}'
+                      AND Status_Abrechnung IN ('{$valid_statuses}')
+                      LIMIT 1";
+
+            $result = $this->execute_coql_query($query);
+
+            // If found by contact ID, return success
+            if (!is_wp_error($result) && !empty($result)) {
+                return [
+                    'has_ticket' => true,
+                    'status' => $result[0]['Status_Abrechnung'] ?? 'Gültig',
+                    'ticket_id' => $result[0]['id'] ?? ''
+                ];
+            }
+
+            // Fallback: Search by email addresses
+            foreach ($emails as $email) {
+                $email_escaped = addslashes($email);
+
+                $query = "SELECT id, Ticket_Nr, E_Mail, Zweite_E_Mail_Adresse, TN, Veranstaltung, Status_Abrechnung
+                          FROM " . self::ZOHO_MODULE_TICKETS . "
+                          WHERE Veranstaltung = '{$event_id}'
+                          AND (E_Mail = '{$email_escaped}' OR Zweite_E_Mail_Adresse = '{$email_escaped}')
+                          AND Status_Abrechnung IN ('{$valid_statuses}')
+                          LIMIT 1";
+
+                $result = $this->execute_coql_query($query);
+
+                if (!is_wp_error($result) && !empty($result)) {
+                    return [
+                        'has_ticket' => true,
+                        'status' => $result[0]['Status_Abrechnung'] ?? 'Gültig',
+                        'ticket_id' => $result[0]['id'] ?? '',
+                        'matched_email' => $email
+                    ];
+                }
+            }
+
+            // No ticket found
+            return [
+                'has_ticket' => false,
+                'status' => null
+            ];
+        }
+
+        /**
+         * Check if event is external (no ticket verification needed)
+         */
+        public function is_external_event($event_id) {
+            $event = $this->get_event_by_id($event_id);
+            if (is_wp_error($event)) {
+                return false;
+            }
+            return ($event['Externe_Veranstaltung'] ?? $event['Externe Veranstaltung'] ?? false) === true;
+        }
+
+        /**
+         * AJAX: Submit documents for EduGrant settlement
+         */
+        public function ajax_submit_documents() {
+            check_ajax_referer('dgptm_edugrant_nonce', 'nonce');
+
+            if (!is_user_logged_in()) {
+                wp_send_json_error(['message' => 'Nicht angemeldet.']);
+            }
+
+            $eduid = sanitize_text_field($_POST['eduid'] ?? '');
+
+            if (empty($eduid)) {
+                wp_send_json_error(['message' => 'Keine EduGrant-ID angegeben.']);
+            }
+
+            // Verify ownership
+            $grant = $this->get_edugrant_by_id($eduid);
+            if (is_wp_error($grant)) {
+                wp_send_json_error(['message' => $grant->get_error_message()]);
+            }
+
+            $user_zoho_id = get_user_meta(get_current_user_id(), 'zoho_id', true);
+            $grant_contact_id = $grant['Kontakt']['id'] ?? $grant['Kontakt'] ?? '';
+
+            if ($grant_contact_id !== $user_zoho_id) {
+                wp_send_json_error(['message' => 'Zugriff verweigert.']);
+            }
+
+            // Prepare update data
+            $update_data = [
+                'Unterkunft' => floatval($_POST['unterkunft'] ?? 0),
+                'Fahrtkosten' => floatval($_POST['fahrtkosten'] ?? 0),
+                'Kilometer' => intval($_POST['kilometer'] ?? 0),
+                'Hin_und_Rueckfahrt_mit_PKW' => ($_POST['hin_rueck'] ?? '0') === '1',
+                'Teilnahmegebuehren' => floatval($_POST['teilnahmegebuehren'] ?? 0),
+                'IBAN' => sanitize_text_field($_POST['iban'] ?? ''),
+                'Kontoinhaber' => sanitize_text_field($_POST['kontoinhaber'] ?? ''),
+                'Status' => 'Abrechnung eingereicht',
+                'Abrechnung_eingereicht' => date('Y-m-d')
+            ];
+
+            // Calculate total
+            $kilometer_cost = $update_data['Kilometer'] * 0.2;
+            if ($update_data['Hin_und_Rueckfahrt_mit_PKW']) {
+                $kilometer_cost *= 2;
+            }
+            $update_data['Summe_Eingaben'] = $update_data['Unterkunft'] + $update_data['Fahrtkosten'] + $kilometer_cost + $update_data['Teilnahmegebuehren'];
+
+            // Update record in Zoho
+            $result = $this->update_edugrant_record($eduid, $update_data);
+
+            if (is_wp_error($result)) {
+                wp_send_json_error(['message' => $result->get_error_message()]);
+            }
+
+            wp_send_json_success([
+                'message' => 'Abrechnung erfolgreich eingereicht!',
+                'total' => $update_data['Summe_Eingaben']
+            ]);
+        }
+
+        /**
+         * Update EduGrant record in Zoho CRM
+         */
+        private function update_edugrant_record($edugrant_id, $data) {
+            $access_token = $this->get_access_token();
+
+            if (is_wp_error($access_token)) {
+                return $access_token;
+            }
+
+            $url = 'https://www.zohoapis.eu/crm/v6/' . self::ZOHO_MODULE_EDUGRANT . '/' . $edugrant_id;
+
+            $response = wp_remote_request($url, [
+                'method' => 'PUT',
+                'headers' => [
+                    'Authorization' => 'Zoho-oauthtoken ' . $access_token,
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json'
+                ],
+                'body' => json_encode(['data' => [$data]]),
+                'timeout' => 30
+            ]);
+
+            if (is_wp_error($response)) {
+                error_log('EduGrant Update Error: ' . $response->get_error_message());
+                return $response;
+            }
+
+            $status_code = wp_remote_retrieve_response_code($response);
+            $body = json_decode(wp_remote_retrieve_body($response), true);
+
+            if ($status_code !== 200) {
+                error_log('EduGrant Update HTTP Error: ' . $status_code . ' - ' . print_r($body, true));
+                return new WP_Error('api_error', 'Fehler beim Aktualisieren: ' . ($body['message'] ?? 'Unbekannter Fehler'));
+            }
+
+            return $body;
+        }
+
+        /**
+         * Admin menu
+         */
+        public function add_admin_menu() {
+            add_submenu_page(
+                'dgptm-suite',
+                'EduGrant Einstellungen',
+                'EduGrant',
+                'manage_options',
+                'dgptm-edugrant-settings',
+                [$this, 'render_settings_page']
+            );
+        }
+
+        /**
+         * Register settings
+         */
+        public function register_settings() {
+            register_setting('dgptm_edugrant_settings', 'dgptm_edugrant_form_page');
+            register_setting('dgptm_edugrant_settings', 'dgptm_edugrant_field_mapping');
+        }
+
+        /**
+         * Render settings page
+         */
+        public function render_settings_page() {
+            include $this->plugin_path . 'templates/admin-settings.php';
+        }
+
+        /**
+         * Get status label and color
+         */
+        public static function get_status_info($status) {
+            $statuses = [
+                'Beantragt' => ['label' => 'Beantragt', 'color' => '#f0ad4e', 'icon' => 'clock'],
+                'Genehmigt' => ['label' => 'Genehmigt', 'color' => '#5cb85c', 'icon' => 'yes'],
+                'Unterlagen angefordert' => ['label' => 'Unterlagen angefordert', 'color' => '#5bc0de', 'icon' => 'upload'],
+                'Abrechnung eingereicht' => ['label' => 'Abrechnung eingereicht', 'color' => '#337ab7', 'icon' => 'media-document'],
+                'Überwiesen' => ['label' => 'Überwiesen', 'color' => '#5cb85c', 'icon' => 'yes-alt'],
+                'Abgelehnt' => ['label' => 'Abgelehnt', 'color' => '#d9534f', 'icon' => 'no'],
+                'Nachberechnen' => ['label' => 'Nachberechnung', 'color' => '#f0ad4e', 'icon' => 'warning']
+            ];
+
+            return $statuses[$status] ?? ['label' => $status, 'color' => '#999', 'icon' => 'marker'];
+        }
+    }
+}
+
+// Prevent double initialization
+if (!isset($GLOBALS['dgptm_edugrant_initialized'])) {
+    $GLOBALS['dgptm_edugrant_initialized'] = true;
+    DGPTM_EduGrant_Manager::get_instance();
+}

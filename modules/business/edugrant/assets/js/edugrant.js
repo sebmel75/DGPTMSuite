@@ -280,21 +280,21 @@
             return;
         }
 
-        // Filter events that can be applied for
-        var availableEvents = events.filter(function(event) {
-            return event.can_apply && event.has_spots;
+        // Filter events where application deadline hasn't passed
+        var displayEvents = events.filter(function(event) {
+            return event.can_apply; // Show even if no spots (limit reached)
         });
 
-        console.log('Available events after filter:', availableEvents.length);
+        console.log('Events to display:', displayEvents.length);
 
-        if (!availableEvents.length) {
-            $container.html('<div class="edugrant-notice"><span class="dashicons dashicons-info"></span> Aktuell sind keine Veranstaltungen mit offenen Plätzen verfügbar.</div>');
+        if (!displayEvents.length) {
+            $container.html('<div class="edugrant-notice"><span class="dashicons dashicons-info"></span> Aktuell sind keine Veranstaltungen mit offener Antragsfrist verfügbar.</div>');
             return;
         }
 
         var html = '<div class="edugrant-events-grid">';
 
-        availableEvents.forEach(function(event) {
+        displayEvents.forEach(function(event) {
             // API fields from Modules.json
             var name = event.Name || 'Veranstaltung';
             var startDate = event.From_Date ? formatDate(event.From_Date) : '';
@@ -302,6 +302,7 @@
             var location = (event.Location && event.Location.name) || event.City || '';
             var maxFunding = event.Maximum_Promotion || '';
             var spotsAvailable = event.spots_available || 0;
+            var hasSpots = event.has_spots !== false && spotsAvailable > 0;
             var isExternal = event.External_Event === true || event.External_Event === 'true';
 
             var dateStr = startDate;
@@ -309,9 +310,21 @@
                 dateStr += ' - ' + endDate;
             }
 
-            html += '<div class="edugrant-event-card selectable" data-event-id="' + event.id + '">';
+            // Card classes - add disabled class if no spots
+            var cardClass = 'edugrant-event-card';
+            if (hasSpots) {
+                cardClass += ' selectable';
+            } else {
+                cardClass += ' disabled';
+            }
+
+            html += '<div class="' + cardClass + '" data-event-id="' + event.id + '">';
             html += '<div class="event-header">';
-            html += '<h4 class="event-title">' + escapeHtml(name) + '</h4>';
+            html += '<h4 class="event-title">' + escapeHtml(name);
+            if (!hasSpots) {
+                html += ' <span class="limit-reached">(Limit erreicht)</span>';
+            }
+            html += '</h4>';
             html += '<span class="event-type-badge ' + (isExternal ? 'external' : 'internal') + '">' + (isExternal ? 'Extern' : 'Intern') + '</span>';
             html += '</div>';
 
@@ -326,13 +339,19 @@
                 html += '<div class="event-detail highlight"><span class="dashicons dashicons-awards"></span> Max. Förderung: <strong>' + formatCurrency(maxFunding) + '</strong></div>';
             }
             if (spotsAvailable < 999) {
-                html += '<div class="event-detail"><span class="dashicons dashicons-groups"></span> Noch ' + spotsAvailable + ' Plätze</div>';
+                var spotsText = hasSpots ? 'Noch ' + spotsAvailable + ' Plätze' : 'Ausgebucht';
+                var spotsClass = hasSpots ? '' : ' warning';
+                html += '<div class="event-detail' + spotsClass + '"><span class="dashicons dashicons-groups"></span> ' + spotsText + '</div>';
             }
             html += '</div>';
 
             html += '<div class="event-actions">';
-            html += '<a href="' + window.location.pathname + '?event_id=' + event.id + '" class="button edugrant-apply-btn">';
-            html += '<span class="dashicons dashicons-yes"></span> Auswählen</a>';
+            if (hasSpots) {
+                html += '<a href="' + window.location.pathname + '?event_id=' + event.id + '" class="button edugrant-apply-btn">';
+                html += '<span class="dashicons dashicons-yes"></span> Auswählen</a>';
+            } else {
+                html += '<span class="edugrant-unavailable"><span class="dashicons dashicons-no"></span> Ausgebucht</span>';
+            }
             html += '</div>';
 
             html += '</div>';
@@ -342,7 +361,7 @@
 
         $container.html(html);
 
-        // Make entire card clickable
+        // Make selectable cards clickable
         $container.find('.edugrant-event-card.selectable').on('click', function(e) {
             if (!$(e.target).is('a, button')) {
                 var eventId = $(this).data('event-id');

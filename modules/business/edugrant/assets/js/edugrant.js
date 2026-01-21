@@ -64,11 +64,14 @@
 
     /**
      * Display grant information
+     * API Field Names (EduGrant module): Name=Bezeichnung, Veranstaltung=lookup, Status, MaxSupport, Nummer
      */
     function displayGrantInfo($container, grant) {
         var eventName = grant.Veranstaltung ? (grant.Veranstaltung.name || grant.Veranstaltung) : 'N/A';
-        var maxFunding = grant.Maximale_Forderung || grant['Maximale Förderung'] || 'Keine Angabe';
-        var isExternal = grant.Externe_Veranstaltung || grant['Externe Veranstaltung'] || false;
+        // MaxSupport is calculated from event's Maximum_Promotion
+        var maxFunding = grant.MaxSupport || grant.Maximum_Promotion || 'Keine Angabe';
+        // External_Event comes from the linked event
+        var isExternal = grant.External_Event || (grant.Veranstaltung && grant.Veranstaltung.External_Event) || false;
         isExternal = (isExternal === true || isExternal === 'true');
 
         var html = '<div class="grant-info-grid">';
@@ -136,9 +139,8 @@
                 if (response.success && response.data.event) {
                     displayEventInfo($container, response.data.event);
 
-                    // Check if external or internal
-                    var isExternal = response.data.event.Externe_Veranstaltung ||
-                                     response.data.event['Externe Veranstaltung'] || false;
+                    // Check if external or internal (API field: External_Event)
+                    var isExternal = response.data.event.External_Event || false;
                     isExternal = (isExternal === true || isExternal === 'true');
                     currentEventIsExternal = isExternal;
 
@@ -203,14 +205,15 @@
 
     /**
      * Display event information
+     * API Field Names (DGFK_Events module): Name, From_Date, To_Date, Maximum_Promotion, External_Event, Location (lookup)
      */
     function displayEventInfo($container, event) {
-        var eventName = event.Veranstaltungsbezeichnung || event.Name || 'N/A';
-        var location = event.Ort || 'Ort nicht angegeben';
-        var startDate = event.Von ? formatDate(event.Von) : 'N/A';
-        var endDate = event.Bis ? formatDate(event.Bis) : '';
-        var maxFunding = event.Maximale_Forderung || event['Maximale Förderung'] || 'Keine Angabe';
-        var isExternal = event.Externe_Veranstaltung || event['Externe Veranstaltung'] || false;
+        var eventName = event.Name || 'N/A';
+        var location = (event.Location && event.Location.name) || event.City || 'Ort nicht angegeben';
+        var startDate = event.From_Date ? formatDate(event.From_Date) : 'N/A';
+        var endDate = event.To_Date ? formatDate(event.To_Date) : '';
+        var maxFunding = event.Maximum_Promotion || 'Keine Angabe';
+        var isExternal = event.External_Event || false;
         isExternal = (isExternal === true || isExternal === 'true');
 
         var dateStr = startDate;
@@ -280,8 +283,9 @@
 
         events.forEach(function(event) {
             if (event.can_apply && event.has_spots) {
-                var name = event.Veranstaltungsbezeichnung || event.Name || 'Veranstaltung';
-                var date = event.Von ? formatDate(event.Von) : '';
+                // API field: Name = Veranstaltungsbezeichnung, From_Date = Von
+                var name = event.Name || 'Veranstaltung';
+                var date = event.From_Date ? formatDate(event.From_Date) : '';
                 html += '<option value="' + event.id + '">' + escapeHtml(name) + ' (' + date + ')</option>';
             }
         });

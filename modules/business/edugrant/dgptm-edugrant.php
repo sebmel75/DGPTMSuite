@@ -296,30 +296,41 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 'status_code' => $status_code,
                 'record_count' => isset($body['data']) ? count($body['data']) : 0,
                 'first_record_fields' => isset($body['data'][0]) ? array_keys($body['data'][0]) : [],
-                'info' => $body['info'] ?? null
+                'info' => $body['info'] ?? null,
+                'full_response' => $body // Log full response for debugging
             ], $status_code === 200 ? 'info' : 'error');
 
             if ($status_code !== 200) {
-                $error_msg = $body['message'] ?? 'Fehler beim Abrufen der Events';
+                $error_msg = $body['message'] ?? $body['code'] ?? 'Fehler beim Abrufen der Events';
                 return new WP_Error('api_error', $error_msg);
             }
 
             $events = $body['data'] ?? [];
 
             // Filter events where applications are still possible
+            // API Field Names from Modules.json:
+            // - Name = Veranstaltungsbezeichnung
+            // - From_Date = Von
+            // - To_Date = Bis
+            // - Budget = Budget
+            // - Maximum_Attendees = Max Anzahl TN
+            // - EduGrant_applications = Genehmigte EduGrant
+            // - External_Event = Externe Veranstaltung
+            // - Maximum_Promotion = Maximale Förderung
+            // - Event_Number = Veranstaltungsnummer
             $filtered_events = [];
             foreach ($events as $event) {
-                // Get end date - try different field name patterns
-                $end_date = $event['Bis'] ?? $event['End_Date'] ?? $event['end_date'] ?? '';
+                // Get end date using correct API field name
+                $end_date = $event['To_Date'] ?? '';
                 $budget = $event['Budget'] ?? null;
 
                 // Skip events without budget or past events
-                if (empty($budget) || (strtotime($end_date) < strtotime($today))) {
+                if (empty($budget) || (!empty($end_date) && strtotime($end_date) < strtotime($today))) {
                     continue;
                 }
 
                 // Application deadline: 3 days before event start
-                $event_start = $event['Von'] ?? $event['Start_Date'] ?? $event['start_date'] ?? '';
+                $event_start = $event['From_Date'] ?? '';
                 if (!empty($event_start)) {
                     $deadline = strtotime($event_start . ' -3 days');
                     $event['application_deadline'] = date('Y-m-d', $deadline);
@@ -328,9 +339,9 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                     $event['can_apply'] = false;
                 }
 
-                // Check if spots are available - try different field patterns
-                $max_attendees = (int) ($event['Max_Anzahl_TN'] ?? $event['Max_Participants'] ?? 0);
-                $approved_grants = (int) ($event['Genehmigte_EduGrant'] ?? $event['Approved_Grants'] ?? 0);
+                // Check if spots are available using correct API field names
+                $max_attendees = (int) ($event['Maximum_Attendees'] ?? 0);
+                $approved_grants = (int) ($event['EduGrant_applications'] ?? 0);
                 $event['spots_available'] = $max_attendees > 0 ? max(0, $max_attendees - $approved_grants) : 999;
                 $event['has_spots'] = $event['spots_available'] > 0;
 
@@ -525,7 +536,7 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 wp_send_json_error(['message' => $event->get_error_message()]);
             }
 
-            $is_external = $event['Externe_Veranstaltung'] ?? $event['Externe Veranstaltung'] ?? false;
+            $is_external = $event['External_Event'] ?? false;
             $is_external = ($is_external === true || $is_external === 'true');
 
             // For INTERNAL events: Verify ticket exists
@@ -799,7 +810,7 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 wp_send_json_error(['message' => $event->get_error_message()]);
             }
 
-            $is_external = $event['Externe_Veranstaltung'] ?? $event['Externe Veranstaltung'] ?? false;
+            $is_external = $event['External_Event'] ?? false;
 
             // External events: no ticket check needed
             if ($is_external === true || $is_external === 'true') {
@@ -975,7 +986,7 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
             if (is_wp_error($event)) {
                 return false;
             }
-            return ($event['Externe_Veranstaltung'] ?? $event['Externe Veranstaltung'] ?? false) === true;
+            return ($event['External_Event'] ?? false) === true;
         }
 
         /**

@@ -21,17 +21,21 @@ $today = date('Y-m-d');
 
     <div class="edugrant-events-grid">
         <?php foreach ($events as $event):
-            $event_name = $event['Veranstaltungsbezeichnung'] ?? $event['Name'] ?? 'Unbenannte Veranstaltung';
+            // API Field Names from Modules.json:
+            // Name = Veranstaltungsbezeichnung, From_Date = Von, To_Date = Bis
+            // Maximum_Promotion = Maximale Förderung, External_Event = Externe Veranstaltung
+            // Location = Ort (lookup), Maximum_Attendees = Max Anzahl TN
+            $event_name = $event['Name'] ?? 'Unbenannte Veranstaltung';
             $event_id = $event['id'] ?? '';
-            $location = $event['Ort'] ?? 'Ort nicht angegeben';
-            $start_date = !empty($event['Von']) ? date_i18n('d.m.Y', strtotime($event['Von'])) : '';
-            $end_date = !empty($event['Bis']) ? date_i18n('d.m.Y', strtotime($event['Bis'])) : '';
-            $max_funding = $event['Maximale_Forderung'] ?? $event['Maximale Förderung'] ?? '';
+            $location = $event['Location']['name'] ?? $event['City'] ?? 'Ort nicht angegeben';
+            $start_date = !empty($event['From_Date']) ? date_i18n('d.m.Y', strtotime($event['From_Date'])) : '';
+            $end_date = !empty($event['To_Date']) ? date_i18n('d.m.Y', strtotime($event['To_Date'])) : '';
+            $max_funding = $event['Maximum_Promotion'] ?? '';
             $spots_available = $event['spots_available'] ?? 0;
             $can_apply = $event['can_apply'] ?? false;
             $has_spots = $event['has_spots'] ?? false;
             $deadline = !empty($event['application_deadline']) ? date_i18n('d.m.Y', strtotime($event['application_deadline'])) : '';
-            $is_external = $event['Externe_Veranstaltung'] ?? $event['Externe Veranstaltung'] ?? false;
+            $is_external = $event['External_Event'] ?? false;
             $is_external = ($is_external === true || $is_external === 'true');
         ?>
             <div class="edugrant-event-card <?php echo (!$can_apply || !$has_spots) ? 'disabled' : ''; ?>">

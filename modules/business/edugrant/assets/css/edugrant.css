@@ -83,6 +83,16 @@
     background: #f9f9f9;
 }
 
+.edugrant-event-card.selectable {
+    cursor: pointer;
+    border: 2px solid transparent;
+}
+
+.edugrant-event-card.selectable:hover {
+    border-color: #0073aa;
+    box-shadow: 0 6px 16px rgba(0,115,170,0.15);
+}
+
 .event-header {
     display: flex;
     justify-content: space-between;

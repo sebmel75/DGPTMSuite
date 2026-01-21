@@ -270,38 +270,83 @@
     }
 
     /**
-     * Display event selection
+     * Display event selection as card list
      */
     function displayEventSelect($container, events) {
+        console.log('displayEventSelect called with', events.length, 'events');
+
         if (!events.length) {
-            $container.html('<div class="edugrant-notice">Aktuell sind keine Veranstaltungen mit EduGrant-Budget verfügbar.</div>');
+            $container.html('<div class="edugrant-notice"><span class="dashicons dashicons-info"></span> Aktuell sind keine Veranstaltungen mit EduGrant-Budget verfügbar.</div>');
             return;
         }
 
-        var html = '<select id="event-selector" class="event-selector">';
-        html += '<option value="">-- Bitte wählen --</option>';
-
-        events.forEach(function(event) {
-            if (event.can_apply && event.has_spots) {
-                // API field: Name = Veranstaltungsbezeichnung, From_Date = Von
-                var name = event.Name || 'Veranstaltung';
-                var date = event.From_Date ? formatDate(event.From_Date) : '';
-                html += '<option value="' + event.id + '">' + escapeHtml(name) + ' (' + date + ')</option>';
-            }
+        // Filter events that can be applied for
+        var availableEvents = events.filter(function(event) {
+            return event.can_apply && event.has_spots;
         });
 
-        html += '</select>';
-        html += '<button type="button" id="select-event-btn" class="button" style="margin-left: 10px;">Auswählen</button>';
+        console.log('Available events after filter:', availableEvents.length);
+
+        if (!availableEvents.length) {
+            $container.html('<div class="edugrant-notice"><span class="dashicons dashicons-info"></span> Aktuell sind keine Veranstaltungen mit offenen Plätzen verfügbar.</div>');
+            return;
+        }
+
+        var html = '<div class="edugrant-events-grid">';
+
+        availableEvents.forEach(function(event) {
+            // API fields from Modules.json
+            var name = event.Name || 'Veranstaltung';
+            var startDate = event.From_Date ? formatDate(event.From_Date) : '';
+            var endDate = event.To_Date ? formatDate(event.To_Date) : '';
+            var location = (event.Location && event.Location.name) || event.City || '';
+            var maxFunding = event.Maximum_Promotion || '';
+            var spotsAvailable = event.spots_available || 0;
+            var isExternal = event.External_Event === true || event.External_Event === 'true';
+
+            var dateStr = startDate;
+            if (endDate && endDate !== startDate) {
+                dateStr += ' - ' + endDate;
+            }
+
+            html += '<div class="edugrant-event-card selectable" data-event-id="' + event.id + '">';
+            html += '<div class="event-header">';
+            html += '<h4 class="event-title">' + escapeHtml(name) + '</h4>';
+            html += '<span class="event-type-badge ' + (isExternal ? 'external' : 'internal') + '">' + (isExternal ? 'Extern' : 'Intern') + '</span>';
+            html += '</div>';
+
+            html += '<div class="event-details">';
+            if (dateStr) {
+                html += '<div class="event-detail"><span class="dashicons dashicons-calendar-alt"></span> ' + dateStr + '</div>';
+            }
+            if (location) {
+                html += '<div class="event-detail"><span class="dashicons dashicons-location"></span> ' + escapeHtml(location) + '</div>';
+            }
+            if (maxFunding) {
+                html += '<div class="event-detail highlight"><span class="dashicons dashicons-awards"></span> Max. Förderung: <strong>' + formatCurrency(maxFunding) + '</strong></div>';
+            }
+            if (spotsAvailable < 999) {
+                html += '<div class="event-detail"><span class="dashicons dashicons-groups"></span> Noch ' + spotsAvailable + ' Plätze</div>';
+            }
+            html += '</div>';
+
+            html += '<div class="event-actions">';
+            html += '<a href="' + window.location.pathname + '?event_id=' + event.id + '" class="button edugrant-apply-btn">';
+            html += '<span class="dashicons dashicons-yes"></span> Auswählen</a>';
+            html += '</div>';
+
+            html += '</div>';
+        });
+
+        html += '</div>';
 
         $container.html(html);
 
-        // Handle event selection
-        $('#select-event-btn').on('click', function() {
-            var eventId = $('#event-selector').val();
-            if (eventId) {
+        // Make entire card clickable
+        $container.find('.edugrant-event-card.selectable').on('click', function(e) {
+            if (!$(e.target).is('a, button')) {
+                var eventId = $(this).data('event-id');
                 window.location.href = window.location.pathname + '?event_id=' + eventId;
-            } else {
-                alert('Bitte wählen Sie eine Veranstaltung aus.');
             }
         });
     }

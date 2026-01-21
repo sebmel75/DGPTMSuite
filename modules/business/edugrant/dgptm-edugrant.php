@@ -258,33 +258,68 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
 
         /**
          * Get events with EduGrant budget available
+         * Uses Zoho Records API instead of COQL for better field compatibility
          */
         public function get_available_events() {
             $today = date('Y-m-d');
-            $three_days_later = date('Y-m-d', strtotime('+3 days'));
 
-            // COQL Query: Get events that have Budget, end date is in future
-            // Field names from Events.csv - converted to API names (spaces→underscores, ö→o)
-            $query = "SELECT id, Veranstaltungsbezeichnung, Von, Bis, Budget,
-                      Max_Anzahl_TN, Genehmigte_EduGrant, Externe_Veranstaltung,
-                      Veranstaltungsnummer
-                      FROM " . self::ZOHO_MODULE_EVENTS . "
-                      WHERE Bis >= '{$today}'
-                      AND Budget is not null
-                      ORDER BY Von ASC
-                      LIMIT 100";
+            $this->log('Fetching events via Records API', ['module' => self::ZOHO_MODULE_EVENTS], 'info');
 
-            $events = $this->execute_coql_query($query);
-
-            if (is_wp_error($events)) {
-                return $events;
+            $access_token = $this->get_access_token();
+            if (is_wp_error($access_token)) {
+                $this->log('Get Events failed - no token', ['error' => $access_token->get_error_message()], 'error');
+                return $access_token;
             }
+
+            // Use Records API to get all events - it returns actual field names
+            $url = 'https://www.zohoapis.eu/crm/v6/' . self::ZOHO_MODULE_EVENTS;
+
+            $this->log('Get Events API Request', ['url' => $url], 'info');
+
+            $response = wp_remote_get($url, [
+                'headers' => [
+                    'Authorization' => 'Zoho-oauthtoken ' . $access_token,
+                    'Accept' => 'application/json'
+                ],
+                'timeout' => 30
+            ]);
+
+            if (is_wp_error($response)) {
+                $this->log('Get Events WP Error', ['error' => $response->get_error_message()], 'error');
+                return $response;
+            }
+
+            $status_code = wp_remote_retrieve_response_code($response);
+            $body = json_decode(wp_remote_retrieve_body($response), true);
+
+            $this->log('Get Events API Response', [
+                'status_code' => $status_code,
+                'record_count' => isset($body['data']) ? count($body['data']) : 0,
+                'first_record_fields' => isset($body['data'][0]) ? array_keys($body['data'][0]) : [],
+                'info' => $body['info'] ?? null
+            ], $status_code === 200 ? 'info' : 'error');
+
+            if ($status_code !== 200) {
+                $error_msg = $body['message'] ?? 'Fehler beim Abrufen der Events';
+                return new WP_Error('api_error', $error_msg);
+            }
+
+            $events = $body['data'] ?? [];
 
             // Filter events where applications are still possible
             $filtered_events = [];
             foreach ($events as $event) {
+                // Get end date - try different field name patterns
+                $end_date = $event['Bis'] ?? $event['End_Date'] ?? $event['end_date'] ?? '';
+                $budget = $event['Budget'] ?? null;
+
+                // Skip events without budget or past events
+                if (empty($budget) || (strtotime($end_date) < strtotime($today))) {
+                    continue;
+                }
+
                 // Application deadline: 3 days before event start
-                $event_start = $event['Von'] ?? '';
+                $event_start = $event['Von'] ?? $event['Start_Date'] ?? $event['start_date'] ?? '';
                 if (!empty($event_start)) {
                     $deadline = strtotime($event_start . ' -3 days');
                     $event['application_deadline'] = date('Y-m-d', $deadline);
@@ -293,14 +328,19 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                     $event['can_apply'] = false;
                 }
 
-                // Check if spots are available
-                $max_attendees = (int) ($event['Max_Anzahl_TN'] ?? 0);
-                $approved_grants = (int) ($event['Genehmigte_EduGrant'] ?? 0);
+                // Check if spots are available - try different field patterns
+                $max_attendees = (int) ($event['Max_Anzahl_TN'] ?? $event['Max_Participants'] ?? 0);
+                $approved_grants = (int) ($event['Genehmigte_EduGrant'] ?? $event['Approved_Grants'] ?? 0);
                 $event['spots_available'] = $max_attendees > 0 ? max(0, $max_attendees - $approved_grants) : 999;
                 $event['has_spots'] = $event['spots_available'] > 0;
 
                 $filtered_events[] = $event;
             }
+
+            $this->log('Events filtered', [
+                'total_events' => count($events),
+                'filtered_events' => count($filtered_events)
+            ], 'info');
 
             return $filtered_events;
         }

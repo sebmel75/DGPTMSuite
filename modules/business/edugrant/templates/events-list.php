@@ -31,7 +31,6 @@ $today = date('Y-m-d');
             $can_apply = $event['can_apply'] ?? false;
             $has_spots = $event['has_spots'] ?? false;
             $deadline = !empty($event['application_deadline']) ? date_i18n('d.m.Y', strtotime($event['application_deadline'])) : '';
-            $status = $event['Status'] ?? '';
             $is_external = $event['Externe_Veranstaltung'] ?? $event['Externe Veranstaltung'] ?? false;
             $is_external = ($is_external === true || $is_external === 'true');
         ?>
@@ -42,9 +41,6 @@ $today = date('Y-m-d');
                         <span class="event-type-badge <?php echo $is_external ? 'external' : 'internal'; ?>">
                             <?php echo $is_external ? 'Extern' : 'Intern'; ?>
                         </span>
-                        <?php if (!empty($status)): ?>
-                            <span class="event-status"><?php echo esc_html($status); ?></span>
-                        <?php endif; ?>
                     </div>
                 </div>
 

@@ -165,14 +165,43 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
         }
 
         /**
+         * Log message to DGPTM Suite Logger or error_log
+         */
+        private function log($message, $context = [], $level = 'info') {
+            $log_entry = '[EduGrant] ' . $message;
+            if (!empty($context)) {
+                $log_entry .= ' | Context: ' . json_encode($context, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            }
+
+            // Try DGPTM Suite Logger first
+            if (function_exists('dgptm_log')) {
+                dgptm_log($message, array_merge(['module' => 'edugrant'], $context), $level);
+            }
+
+            // Always also log to error_log for immediate debugging
+            error_log($log_entry);
+        }
+
+        /**
          * Execute COQL query against Zoho CRM
          */
         private function execute_coql_query($query) {
+            // Log the query being executed
+            $this->log('COQL Query executing', [
+                'query' => $query,
+                'endpoint' => self::ZOHO_COQL_ENDPOINT
+            ], 'info');
+
             $access_token = $this->get_access_token();
 
             if (is_wp_error($access_token)) {
+                $this->log('COQL Query failed - no access token', [
+                    'error' => $access_token->get_error_message()
+                ], 'error');
                 return $access_token;
             }
+
+            $request_body = json_encode(['select_query' => $query]);
 
             $response = wp_remote_post(self::ZOHO_COQL_ENDPOINT, [
                 'headers' => [
@@ -180,22 +209,49 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                     'Content-Type' => 'application/json',
                     'Accept' => 'application/json'
                 ],
-                'body' => json_encode(['select_query' => $query]),
+                'body' => $request_body,
                 'timeout' => 30
             ]);
 
             if (is_wp_error($response)) {
-                error_log('EduGrant COQL Error: ' . $response->get_error_message());
+                $this->log('COQL Query WP Error', [
+                    'query' => $query,
+                    'error' => $response->get_error_message()
+                ], 'error');
                 return $response;
             }
 
             $status_code = wp_remote_retrieve_response_code($response);
-            $body = json_decode(wp_remote_retrieve_body($response), true);
+            $response_body = wp_remote_retrieve_body($response);
+            $body = json_decode($response_body, true);
+
+            // Log the full response for debugging
+            $this->log('COQL Query Response', [
+                'query' => $query,
+                'status_code' => $status_code,
+                'response' => $body
+            ], $status_code === 200 ? 'info' : 'error');
 
             if ($status_code !== 200) {
-                error_log('EduGrant COQL HTTP Error: ' . $status_code . ' - ' . print_r($body, true));
-                return new WP_Error('api_error', 'API-Fehler: ' . ($body['message'] ?? 'Unbekannter Fehler'));
+                $error_message = $body['message'] ?? ($body['error']['message'] ?? 'Unbekannter Fehler');
+                $error_details = $body['details'] ?? ($body['error']['details'] ?? []);
+
+                $this->log('COQL Query API Error', [
+                    'query' => $query,
+                    'status_code' => $status_code,
+                    'error_message' => $error_message,
+                    'error_details' => $error_details,
+                    'full_response' => $body
+                ], 'error');
+
+                return new WP_Error('api_error', 'API-Fehler: ' . $error_message);
             }
+
+            $result_count = isset($body['data']) ? count($body['data']) : 0;
+            $this->log('COQL Query Success', [
+                'query' => substr($query, 0, 100) . '...',
+                'result_count' => $result_count
+            ], 'info');
 
             return $body['data'] ?? [];
         }
@@ -208,9 +264,10 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
             $three_days_later = date('Y-m-d', strtotime('+3 days'));
 
             // COQL Query: Get events that have Budget, end date is in future
-            // Note: Zoho field names might need adjustment based on actual API field names
+            // Note: Zoho field names must match API field names exactly (check Zoho CRM settings)
             $query = "SELECT id, Name, Veranstaltungsbezeichnung, Von, Bis, Budget, Max_Anzahl_TN,
-                      Genehmigte_EduGrant, Ort, Maximale_Forderung, Status, Veranstaltungsnummer
+                      Genehmigte_EduGrant, Ort, Maximale_Forderung, Status, Veranstaltungsnummer,
+                      Externe_Veranstaltung
                       FROM " . self::ZOHO_MODULE_EVENTS . "
                       WHERE Bis >= '{$today}'
                       AND Budget is not null
@@ -465,9 +522,16 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
          * Create EduGrant record in Zoho CRM
          */
         private function create_edugrant_record($contact_id, $event_id, $is_external = false) {
+            $this->log('Creating EduGrant record', [
+                'contact_id' => $contact_id,
+                'event_id' => $event_id,
+                'is_external' => $is_external
+            ], 'info');
+
             $access_token = $this->get_access_token();
 
             if (is_wp_error($access_token)) {
+                $this->log('Create EduGrant failed - no token', ['error' => $access_token->get_error_message()], 'error');
                 return $access_token;
             }
 
@@ -487,30 +551,39 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 ]
             ];
 
-            $response = wp_remote_post(
-                'https://www.zohoapis.eu/crm/v6/' . self::ZOHO_MODULE_EDUGRANT,
-                [
-                    'headers' => [
-                        'Authorization' => 'Zoho-oauthtoken ' . $access_token,
-                        'Content-Type' => 'application/json',
-                        'Accept' => 'application/json'
-                    ],
-                    'body' => json_encode($record_data),
-                    'timeout' => 30
-                ]
-            );
+            $url = 'https://www.zohoapis.eu/crm/v6/' . self::ZOHO_MODULE_EDUGRANT;
+
+            $this->log('Create EduGrant API Request', [
+                'url' => $url,
+                'data' => $record_data
+            ], 'info');
+
+            $response = wp_remote_post($url, [
+                'headers' => [
+                    'Authorization' => 'Zoho-oauthtoken ' . $access_token,
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json'
+                ],
+                'body' => json_encode($record_data),
+                'timeout' => 30
+            ]);
 
             if (is_wp_error($response)) {
-                error_log('EduGrant Create Error: ' . $response->get_error_message());
+                $this->log('Create EduGrant WP Error', ['error' => $response->get_error_message()], 'error');
                 return $response;
             }
 
             $status_code = wp_remote_retrieve_response_code($response);
             $body = json_decode(wp_remote_retrieve_body($response), true);
 
+            $this->log('Create EduGrant API Response', [
+                'status_code' => $status_code,
+                'response' => $body
+            ], $status_code === 201 || $status_code === 200 ? 'info' : 'error');
+
             if ($status_code !== 201 && $status_code !== 200) {
-                error_log('EduGrant Create HTTP Error: ' . $status_code . ' - ' . print_r($body, true));
-                return new WP_Error('api_error', 'Fehler beim Erstellen: ' . ($body['message'] ?? 'Unbekannter Fehler'));
+                $error_msg = $body['message'] ?? ($body['data'][0]['message'] ?? 'Unbekannter Fehler');
+                return new WP_Error('api_error', 'Fehler beim Erstellen: ' . $error_msg);
             }
 
             // Return created record info
@@ -616,13 +689,18 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
          * Get Event by Zoho Record ID
          */
         private function get_event_by_id($event_id) {
+            $this->log('Fetching Event by ID', ['event_id' => $event_id], 'info');
+
             $access_token = $this->get_access_token();
 
             if (is_wp_error($access_token)) {
+                $this->log('Get Event failed - no token', ['error' => $access_token->get_error_message()], 'error');
                 return $access_token;
             }
 
             $url = 'https://www.zohoapis.eu/crm/v6/' . self::ZOHO_MODULE_EVENTS . '/' . $event_id;
+
+            $this->log('Get Event API Request', ['url' => $url], 'info');
 
             $response = wp_remote_get($url, [
                 'headers' => [
@@ -633,11 +711,17 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
             ]);
 
             if (is_wp_error($response)) {
+                $this->log('Get Event WP Error', ['error' => $response->get_error_message()], 'error');
                 return $response;
             }
 
             $status_code = wp_remote_retrieve_response_code($response);
             $body = json_decode(wp_remote_retrieve_body($response), true);
+
+            $this->log('Get Event API Response', [
+                'status_code' => $status_code,
+                'response' => $body
+            ], $status_code === 200 ? 'info' : 'error');
 
             if ($status_code !== 200) {
                 return new WP_Error('api_error', 'Veranstaltung nicht gefunden.');

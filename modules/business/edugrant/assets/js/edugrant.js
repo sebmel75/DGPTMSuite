@@ -128,10 +128,7 @@
         var $container = $('#event-info-container');
         var $ticketContainer = $('#ticket-status-container');
         var $form = $('#edugrant-application-form');
-        var loggedInAttr = $form.data('logged-in');
-        var isLoggedIn = loggedInAttr === 1 || loggedInAttr === '1';
-
-        console.log('loadEventDetails - logged-in attribute:', loggedInAttr, 'type:', typeof loggedInAttr, 'isLoggedIn:', isLoggedIn);
+        var isLoggedIn = $form.data('logged-in') === 1 || $form.data('logged-in') === '1';
 
         $.ajax({
             url: dgptmEdugrant.ajaxUrl,
@@ -156,8 +153,7 @@
 
                     // For internal events: check ticket (only for logged-in users)
                     // Guests handle ticket check through email verification flow
-                    console.log('Ticket check decision - isExternal:', isExternal, 'isLoggedIn:', isLoggedIn, 'will check:', !isExternal && isLoggedIn);
-                    if (!isExternal && isLoggedIn) {
+                    if (!isExternal && isLoggedIn && $ticketContainer.length) {
                         checkTicketEligibility(eventId, $ticketContainer);
                     }
                 } else {

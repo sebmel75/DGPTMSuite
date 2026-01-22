@@ -295,13 +295,15 @@ if ($is_document_submission && !empty($eduid)) {
                     </div>
                 </div>
 
-                <!-- Ticket-Prüfung für interne Veranstaltungen -->
+                <?php if ($is_logged_in): ?>
+                <!-- Ticket-Prüfung für interne Veranstaltungen (nur für eingeloggte Benutzer) -->
                 <div id="ticket-status-container" class="edugrant-ticket-status" style="display: none;">
                     <div class="loading-indicator">
                         <span class="dashicons dashicons-update spin"></span>
                         Prüfe Ticketstatus...
                     </div>
                 </div>
+                <?php endif; ?>
 
                 <input type="hidden" name="event_id" value="<?php echo esc_attr($event_id); ?>">
                 <input type="hidden" name="is_guest" value="<?php echo $is_logged_in ? '0' : '1'; ?>">

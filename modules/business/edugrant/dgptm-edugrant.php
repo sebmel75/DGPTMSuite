@@ -1048,14 +1048,25 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
         }
 
         /**
-         * Upload file to a record's file upload field
+         * Upload file to a record's file upload field using curl
+         * Zoho File Upload API: POST /crm/v8/{module}/{record_id}/{field_api_name}
          */
         private function upload_file_to_record($record_id, $field_name, $file) {
             $this->log('Uploading file to record', [
                 'record_id' => $record_id,
                 'field_name' => $field_name,
-                'file_name' => $file['name'] ?? 'unknown'
+                'file_name' => $file['name'] ?? 'unknown',
+                'file_tmp' => $file['tmp_name'] ?? 'no tmp_name',
+                'file_size' => $file['size'] ?? 0
             ], 'info');
+
+            // Validate file exists
+            if (empty($file['tmp_name']) || !file_exists($file['tmp_name'])) {
+                $this->log('File upload error - file not found', [
+                    'tmp_name' => $file['tmp_name'] ?? 'empty'
+                ], 'error');
+                return new WP_Error('file_not_found', 'Uploaded file not found');
+            }
 
             $access_token = $this->get_access_token();
 
@@ -1066,44 +1077,48 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
             // Zoho File Upload API endpoint for upload fields
             $url = 'https://www.zohoapis.eu/crm/v8/' . self::ZOHO_MODULE_EDUGRANT . '/' . $record_id . '/' . $field_name;
 
-            // Prepare multipart form data
-            $boundary = wp_generate_password(24, false);
+            $this->log('File upload URL', ['url' => $url], 'info');
 
-            $file_content = file_get_contents($file['tmp_name']);
-            $file_name = $file['name'];
-            $file_type = $file['type'] ?: 'application/octet-stream';
+            // Use curl for reliable multipart file upload
+            $ch = curl_init();
 
-            $body = '';
-            $body .= '--' . $boundary . "\r\n";
-            $body .= 'Content-Disposition: form-data; name="file"; filename="' . $file_name . '"' . "\r\n";
-            $body .= 'Content-Type: ' . $file_type . "\r\n\r\n";
-            $body .= $file_content . "\r\n";
-            $body .= '--' . $boundary . '--';
+            // Create CURLFile object for the upload
+            $cfile = new CURLFile($file['tmp_name'], $file['type'] ?: 'application/octet-stream', $file['name']);
 
-            $response = wp_remote_post($url, [
-                'headers' => [
-                    'Authorization' => 'Zoho-oauthtoken ' . $access_token,
-                    'Content-Type' => 'multipart/form-data; boundary=' . $boundary
+            $post_data = [
+                'file' => $cfile
+            ];
+
+            curl_setopt_array($ch, [
+                CURLOPT_URL => $url,
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => $post_data,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HTTPHEADER => [
+                    'Authorization: Zoho-oauthtoken ' . $access_token
                 ],
-                'body' => $body,
-                'timeout' => 60
+                CURLOPT_TIMEOUT => 60
             ]);
 
-            if (is_wp_error($response)) {
-                $this->log('File upload WP Error', ['error' => $response->get_error_message()], 'error');
-                return $response;
+            $response = curl_exec($ch);
+            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curl_error = curl_error($ch);
+            curl_close($ch);
+
+            if ($curl_error) {
+                $this->log('File upload curl error', ['error' => $curl_error], 'error');
+                return new WP_Error('curl_error', $curl_error);
             }
 
-            $status_code = wp_remote_retrieve_response_code($response);
-            $response_body = json_decode(wp_remote_retrieve_body($response), true);
+            $response_body = json_decode($response, true);
 
             $this->log('File upload response', [
-                'status_code' => $status_code,
+                'http_code' => $http_code,
                 'response' => $response_body
-            ], $status_code === 200 || $status_code === 201 ? 'info' : 'error');
+            ], ($http_code === 200 || $http_code === 201) ? 'info' : 'error');
 
-            if ($status_code !== 200 && $status_code !== 201) {
-                $error_msg = $response_body['message'] ?? 'Fehler beim Datei-Upload';
+            if ($http_code !== 200 && $http_code !== 201) {
+                $error_msg = $response_body['message'] ?? ($response_body['data'][0]['message'] ?? 'Fehler beim Datei-Upload');
                 return new WP_Error('upload_error', $error_msg);
             }
 

@@ -627,6 +627,16 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 wp_send_json_error(['message' => $event->get_error_message()]);
             }
 
+            // Check event eligibility (deadline + quota) BEFORE allowing any application
+            $eligibility = $this->check_event_eligibility($event);
+            if (!$eligibility['eligible']) {
+                wp_send_json_error([
+                    'message' => $eligibility['message'],
+                    'reason' => $eligibility['reason'],
+                    'can_apply' => false
+                ]);
+            }
+
             $is_external = $event['External_Event'] ?? false;
             $is_external = ($is_external === true || $is_external === 'true');
 
@@ -1490,6 +1500,16 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
             $event = $this->get_event_by_id($event_id);
             if (is_wp_error($event)) {
                 wp_send_json_error(['message' => $event->get_error_message()]);
+            }
+
+            // Check event eligibility (deadline + quota)
+            $eligibility = $this->check_event_eligibility($event);
+            if (!$eligibility['eligible']) {
+                wp_send_json_success([
+                    'eligible' => false,
+                    'message' => $eligibility['message'],
+                    'reason' => $eligibility['reason']
+                ]);
             }
 
             $is_external = $event['External_Event'] ?? false;

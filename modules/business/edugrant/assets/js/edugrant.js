@@ -100,6 +100,7 @@
 
     // Global state
     var currentEventIsExternal = false;
+    var eventIsEligible = true; // Tracks if event is eligible for applications
 
     /**
      * Initialize application form (new application)
@@ -156,6 +157,8 @@
                     }
                 } else {
                     // Event not eligible or error - show message and disable form
+                    eventIsEligible = false; // Mark as not eligible globally
+
                     var errorMsg = response.data && response.data.message ? response.data.message : 'Fehler beim Laden der Veranstaltung.';
                     var html = '<div class="edugrant-error">';
                     html += '<span class="dashicons dashicons-warning"></span> ';
@@ -658,9 +661,11 @@
                 $('#guest_nachweis').prop('required', false);
             }
 
-            // Show terms and submit button
-            $termsSection.show();
-            $submitBtn.show();
+            // Show terms and submit button ONLY if event is still eligible
+            if (eventIsEligible) {
+                $termsSection.show();
+                $submitBtn.show();
+            }
         }
 
         /**

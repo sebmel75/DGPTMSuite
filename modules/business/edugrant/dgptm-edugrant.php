@@ -563,6 +563,12 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 wp_send_json_error(['message' => $event->get_error_message()]);
             }
 
+            // Server-side eligibility check (deadline + quota)
+            $eligibility = $this->check_event_eligibility($event);
+            if (!$eligibility['eligible']) {
+                wp_send_json_error(['message' => $eligibility['message']]);
+            }
+
             $is_external = $event['External_Event'] ?? false;
             $is_external = ($is_external === true || $is_external === 'true');
 
@@ -576,7 +582,7 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
 
                 if (!$ticket_check['has_ticket']) {
                     wp_send_json_error([
-                        'message' => 'Für interne Veranstaltungen benötigen Sie ein gültiges Ticket. Bitte erwerben Sie zunächst ein Ticket für diese Veranstaltung.',
+                        'message' => 'Für diese Veranstaltung ist vor Beantragung ein gültiges Ticket erforderlich.',
                         'requires_ticket' => true
                     ]);
                 }
@@ -794,13 +800,19 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 wp_send_json_error(['message' => $event->get_error_message()]);
             }
 
+            // Server-side eligibility check (deadline + quota)
+            $eligibility = $this->check_event_eligibility($event);
+            if (!$eligibility['eligible']) {
+                wp_send_json_error(['message' => $eligibility['message']]);
+            }
+
             $is_external = $event['External_Event'] ?? false;
             $is_external = ($is_external === true || $is_external === 'true');
 
             // If no contact found, need to create one (only for external events)
             if (!$contact_found || empty($contact_id)) {
                 if (!$is_external) {
-                    wp_send_json_error(['message' => 'Für interne Veranstaltungen muss ein gültiges Ticket vorhanden sein.']);
+                    wp_send_json_error(['message' => 'Für diese Veranstaltung ist vor Beantragung ein gültiges Ticket erforderlich.']);
                 }
 
                 // Create new contact

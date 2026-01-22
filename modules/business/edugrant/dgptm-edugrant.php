@@ -24,7 +24,7 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
         // Zoho Module names (as they appear in API)
         const ZOHO_MODULE_EVENTS = 'DGFK_Events';
         const ZOHO_MODULE_EDUGRANT = 'EduGrant';
-        const ZOHO_MODULE_TICKETS = 'TN_Tickets';
+        const ZOHO_MODULE_TICKETS = 'Ticket';
         const ZOHO_MODULE_CONTACTS = 'Contacts';
 
         // Valid ticket statuses for EduGrant eligibility

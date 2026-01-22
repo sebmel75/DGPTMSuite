@@ -28,7 +28,7 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
         const ZOHO_MODULE_CONTACTS = 'Contacts';
 
         // Valid ticket statuses for EduGrant eligibility
-        const VALID_TICKET_STATUSES = ['Bezahlt', 'Freiticket', 'ReferentIn'];
+        const VALID_TICKET_STATUSES = ['Bezahlt', 'Freiticket', 'ReferentIn', 'Nicht abgerechnet'];
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -1419,6 +1419,11 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
          * Checks all 4 email fields from Contact against Ticket emails
          */
         private function check_user_has_ticket($contact_id, $event_id) {
+            $this->log('Checking ticket for contact', [
+                'contact_id' => $contact_id,
+                'event_id' => $event_id
+            ], 'info');
+
             // Step 1: Get contact with all email fields
             $contact = $this->get_contact_by_id($contact_id);
             if (is_wp_error($contact)) {
@@ -1426,9 +1431,9 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
             }
 
             // Collect all email addresses from contact (4 fields)
+            // API field names: Email, Secondary_Email, Third_Email, DGPTMMail
             $emails = [];
-            // API field names (underscore format)
-            $email_fields = ['Email', 'Zweite_E_Mail_Adresse', 'Dritte_E_Mail_Adresse', 'dgptm_de_Mailadresse'];
+            $email_fields = ['Email', 'Secondary_Email', 'Third_Email', 'DGPTMMail'];
 
             foreach ($email_fields as $field) {
                 $email = $contact[$field] ?? '';
@@ -1437,22 +1442,18 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 }
             }
 
-            // Also check API field name variants (display format with spaces/hyphens)
-            $alt_fields = ['E-Mail', 'Zweite E-Mail-Adresse', 'Dritte E-Mail-Adresse', 'dgptm.de - Mailadresse'];
-            foreach ($alt_fields as $field) {
-                $email = $contact[$field] ?? '';
-                if (!empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                    $emails[] = strtolower(trim($email));
-                }
-            }
-
             $emails = array_unique($emails);
+
+            $this->log('Contact emails collected', [
+                'contact_id' => $contact_id,
+                'emails' => $emails
+            ], 'info');
 
             if (empty($emails)) {
                 return new WP_Error('no_email', 'Keine E-Mail-Adresse im Kontakt gefunden.');
             }
 
-            // Step 2: Search for tickets matching any of these emails AND the event
+            // Step 2: Search for tickets matching contact ID AND event, or fallback to email
             $ticket = $this->find_ticket_by_emails_and_event($emails, $event_id, $contact_id);
 
             if (is_wp_error($ticket)) {
@@ -1503,17 +1504,33 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
          */
         private function find_ticket_by_emails_and_event($emails, $event_id, $contact_id) {
             // Build COQL query to find tickets
-            // First try by TN (Contact) lookup
+            // Note: Ticket fields are 'event' (not Veranstaltung) and 'TN' for Contact lookup
+            // Email field is 'Email' (not E_Mail)
             $valid_statuses = implode("', '", self::VALID_TICKET_STATUSES);
 
-            $query = "SELECT id, Ticket_Nr, E_Mail, Zweite_E_Mail_Adresse, TN, Veranstaltung, Status_Abrechnung
+            $this->log('Searching for ticket', [
+                'contact_id' => $contact_id,
+                'event_id' => $event_id,
+                'valid_statuses' => self::VALID_TICKET_STATUSES
+            ], 'info');
+
+            // First try by TN (Contact) lookup - using correct field name 'event'
+            $query = "SELECT id, Name, Email, Secondary_Email, TN, event, Status_Abrechnung
                       FROM " . self::ZOHO_MODULE_TICKETS . "
-                      WHERE Veranstaltung = '{$event_id}'
+                      WHERE event = '{$event_id}'
                       AND TN = '{$contact_id}'
                       AND Status_Abrechnung IN ('{$valid_statuses}')
                       LIMIT 1";
 
+            $this->log('Ticket COQL query (by contact)', ['query' => $query], 'info');
+
             $result = $this->execute_coql_query($query);
+
+            $this->log('Ticket query result (by contact)', [
+                'is_error' => is_wp_error($result),
+                'count' => is_array($result) ? count($result) : 0,
+                'result' => $result
+            ], 'info');
 
             // If found by contact ID, return success
             if (!is_wp_error($result) && !empty($result)) {
@@ -1528,12 +1545,14 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
             foreach ($emails as $email) {
                 $email_escaped = addslashes($email);
 
-                $query = "SELECT id, Ticket_Nr, E_Mail, Zweite_E_Mail_Adresse, TN, Veranstaltung, Status_Abrechnung
+                $query = "SELECT id, Name, Email, Secondary_Email, TN, event, Status_Abrechnung
                           FROM " . self::ZOHO_MODULE_TICKETS . "
-                          WHERE Veranstaltung = '{$event_id}'
-                          AND (E_Mail = '{$email_escaped}' OR Zweite_E_Mail_Adresse = '{$email_escaped}')
+                          WHERE event = '{$event_id}'
+                          AND (Email = '{$email_escaped}' OR Secondary_Email = '{$email_escaped}')
                           AND Status_Abrechnung IN ('{$valid_statuses}')
                           LIMIT 1";
+
+                $this->log('Ticket COQL query (by email)', ['email' => $email, 'query' => $query], 'info');
 
                 $result = $this->execute_coql_query($query);
 
@@ -1548,6 +1567,12 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
             }
 
             // No ticket found
+            $this->log('No ticket found', [
+                'contact_id' => $contact_id,
+                'event_id' => $event_id,
+                'emails_checked' => $emails
+            ], 'info');
+
             return [
                 'has_ticket' => false,
                 'status' => null

@@ -127,6 +127,8 @@
     function loadEventDetails(eventId) {
         var $container = $('#event-info-container');
         var $ticketContainer = $('#ticket-status-container');
+        var $form = $('#edugrant-application-form');
+        var isLoggedIn = $form.data('logged-in') === 1 || $form.data('logged-in') === '1';
 
         $.ajax({
             url: dgptmEdugrant.ajaxUrl,
@@ -149,8 +151,9 @@
                     isExternal = (isExternal === true || isExternal === 'true');
                     currentEventIsExternal = isExternal;
 
-                    // For internal events: check ticket
-                    if (!isExternal) {
+                    // For internal events: check ticket (only for logged-in users)
+                    // Guests handle ticket check through email verification flow
+                    if (!isExternal && isLoggedIn) {
                         checkTicketEligibility(eventId, $ticketContainer);
                     }
                 } else {

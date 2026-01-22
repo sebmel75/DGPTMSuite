@@ -1503,66 +1503,92 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
          * Find ticket by email addresses and event ID
          */
         private function find_ticket_by_emails_and_event($emails, $event_id, $contact_id) {
-            // Build COQL query to find tickets
-            // Note: Ticket fields are 'event' (not Veranstaltung) and 'TN' for Contact lookup
-            // Email field is 'Email' (not E_Mail)
-            $valid_statuses = implode("', '", self::VALID_TICKET_STATUSES);
+            // Use Search API instead of COQL (COQL has issues with IN operator)
+            // Ticket fields: 'event' for event lookup, 'TN' for contact lookup
 
-            $this->log('Searching for ticket', [
+            $this->log('Searching for ticket via Search API', [
                 'contact_id' => $contact_id,
                 'event_id' => $event_id,
                 'valid_statuses' => self::VALID_TICKET_STATUSES
             ], 'info');
 
-            // First try by TN (Contact) lookup - using correct field name 'event'
-            $query = "SELECT id, Name, Email, Secondary_Email, TN, event, Status_Abrechnung
-                      FROM " . self::ZOHO_MODULE_TICKETS . "
-                      WHERE event = '{$event_id}'
-                      AND TN = '{$contact_id}'
-                      AND Status_Abrechnung IN ('{$valid_statuses}')
-                      LIMIT 1";
+            $access_token = $this->get_access_token();
+            if (is_wp_error($access_token)) {
+                return $access_token;
+            }
 
-            $this->log('Ticket COQL query (by contact)', ['query' => $query], 'info');
+            // Build status criteria with OR conditions
+            $status_conditions = [];
+            foreach (self::VALID_TICKET_STATUSES as $status) {
+                $status_conditions[] = '(Status_Abrechnung:equals:' . $status . ')';
+            }
+            $status_criteria = '(' . implode('or', $status_conditions) . ')';
 
-            $result = $this->execute_coql_query($query);
+            // First try by TN (Contact) AND event
+            $criteria = '((TN:equals:' . $contact_id . ')and(event:equals:' . $event_id . ')and' . $status_criteria . ')';
+            $url = 'https://www.zohoapis.eu/crm/v8/' . self::ZOHO_MODULE_TICKETS . '/search?criteria=' . urlencode($criteria);
 
-            $this->log('Ticket query result (by contact)', [
-                'is_error' => is_wp_error($result),
-                'count' => is_array($result) ? count($result) : 0,
-                'result' => $result
+            $this->log('Ticket Search API (by contact)', ['url' => $url, 'criteria' => $criteria], 'info');
+
+            $response = wp_remote_get($url, [
+                'headers' => [
+                    'Authorization' => 'Zoho-oauthtoken ' . $access_token,
+                    'Accept' => 'application/json'
+                ],
+                'timeout' => 30
+            ]);
+
+            if (is_wp_error($response)) {
+                $this->log('Ticket Search WP Error', ['error' => $response->get_error_message()], 'error');
+                return $response;
+            }
+
+            $status_code = wp_remote_retrieve_response_code($response);
+            $body = json_decode(wp_remote_retrieve_body($response), true);
+
+            $this->log('Ticket Search response (by contact)', [
+                'status_code' => $status_code,
+                'count' => isset($body['data']) ? count($body['data']) : 0
             ], 'info');
 
-            // If found by contact ID, return success
-            if (!is_wp_error($result) && !empty($result)) {
+            // 200 = found, 204 = no content
+            if ($status_code === 200 && !empty($body['data'])) {
+                $ticket = $body['data'][0];
                 return [
                     'has_ticket' => true,
-                    'status' => $result[0]['Status_Abrechnung'] ?? 'Gültig',
-                    'ticket_id' => $result[0]['id'] ?? ''
+                    'status' => $ticket['Status_Abrechnung'] ?? 'Gültig',
+                    'ticket_id' => $ticket['id'] ?? ''
                 ];
             }
 
             // Fallback: Search by email addresses
             foreach ($emails as $email) {
-                $email_escaped = addslashes($email);
+                $criteria = '(((Email:equals:' . $email . ')or(Secondary_Email:equals:' . $email . '))and(event:equals:' . $event_id . ')and' . $status_criteria . ')';
+                $url = 'https://www.zohoapis.eu/crm/v8/' . self::ZOHO_MODULE_TICKETS . '/search?criteria=' . urlencode($criteria);
 
-                $query = "SELECT id, Name, Email, Secondary_Email, TN, event, Status_Abrechnung
-                          FROM " . self::ZOHO_MODULE_TICKETS . "
-                          WHERE event = '{$event_id}'
-                          AND (Email = '{$email_escaped}' OR Secondary_Email = '{$email_escaped}')
-                          AND Status_Abrechnung IN ('{$valid_statuses}')
-                          LIMIT 1";
+                $this->log('Ticket Search API (by email)', ['email' => $email, 'url' => $url], 'info');
 
-                $this->log('Ticket COQL query (by email)', ['email' => $email, 'query' => $query], 'info');
+                $response = wp_remote_get($url, [
+                    'headers' => [
+                        'Authorization' => 'Zoho-oauthtoken ' . $access_token,
+                        'Accept' => 'application/json'
+                    ],
+                    'timeout' => 30
+                ]);
 
-                $result = $this->execute_coql_query($query);
+                if (!is_wp_error($response)) {
+                    $status_code = wp_remote_retrieve_response_code($response);
+                    $body = json_decode(wp_remote_retrieve_body($response), true);
 
-                if (!is_wp_error($result) && !empty($result)) {
-                    return [
-                        'has_ticket' => true,
-                        'status' => $result[0]['Status_Abrechnung'] ?? 'Gültig',
-                        'ticket_id' => $result[0]['id'] ?? '',
-                        'matched_email' => $email
-                    ];
+                    if ($status_code === 200 && !empty($body['data'])) {
+                        $ticket = $body['data'][0];
+                        return [
+                            'has_ticket' => true,
+                            'status' => $ticket['Status_Abrechnung'] ?? 'Gültig',
+                            'ticket_id' => $ticket['id'] ?? '',
+                            'matched_email' => $email
+                        ];
+                    }
                 }
             }
 

@@ -645,7 +645,15 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 $result['contact_id'] = $contact['id'] ?? '';
                 $result['message'] = 'Kontakt gefunden.';
 
-                $this->log('Contact found by email', ['contact_id' => $result['contact_id']], 'info');
+                // Check if contact is a member (Mitglied = true)
+                $is_member = $contact['Mitglied'] ?? false;
+                $is_member = ($is_member === true || $is_member === 'true');
+                $result['is_member'] = $is_member;
+
+                $this->log('Contact found by email', [
+                    'contact_id' => $result['contact_id'],
+                    'is_member' => $is_member
+                ], 'info');
 
                 // Check for ticket if internal event
                 if (!$is_external) {
@@ -655,7 +663,7 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                         $result['has_ticket'] = true;
                         $result['ticket_status'] = $ticket_check['status'] ?? 'Gültig';
                         $result['needs_contact_data'] = false;
-                        $result['needs_eligibility_proof'] = false;
+                        $result['needs_eligibility_proof'] = false; // Has ticket = no proof needed
                         $result['can_apply'] = true;
                         $result['message'] = 'Kontakt und gültiges Ticket gefunden.';
                     } else {
@@ -663,11 +671,19 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                         $result['message'] = 'Kontakt gefunden, aber kein gültiges Ticket für diese Veranstaltung. Bitte buchen Sie zunächst ein Ticket.';
                     }
                 } else {
-                    // External event: contact found, but we need eligibility proof
+                    // External event: contact found
                     $result['needs_contact_data'] = false; // Contact exists, no need to fill data
-                    $result['needs_eligibility_proof'] = true; // Still need proof for external
-                    $result['can_apply'] = true;
-                    $result['message'] = 'Kontakt gefunden. Bitte Berechtigung nachweisen.';
+
+                    // Members don't need eligibility proof
+                    if ($is_member) {
+                        $result['needs_eligibility_proof'] = false;
+                        $result['can_apply'] = true;
+                        $result['message'] = 'Kontakt gefunden. Sie sind als Mitglied registriert.';
+                    } else {
+                        $result['needs_eligibility_proof'] = true; // Non-members need proof
+                        $result['can_apply'] = true;
+                        $result['message'] = 'Kontakt gefunden. Bitte Berechtigung nachweisen.';
+                    }
                 }
             } else {
                 // No contact found
@@ -831,8 +847,47 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 }
             }
 
+            // Check if contact is a member to determine if proof was required
+            $nachweis_erforderlich = false;
+            $nachweis_file = null;
+
+            if ($contact_found && !empty($contact_id)) {
+                // Re-fetch contact to check Mitglied status
+                $contact = $this->find_contact_by_email($email);
+                $is_member = false;
+
+                if (!is_wp_error($contact) && !empty($contact)) {
+                    $is_member = $contact['Mitglied'] ?? false;
+                    $is_member = ($is_member === true || $is_member === 'true');
+                }
+
+                // Non-members need proof
+                if (!$is_member) {
+                    $nachweis_erforderlich = true;
+
+                    // Check for uploaded proof file
+                    if (!empty($_FILES['guest_nachweis']) && $_FILES['guest_nachweis']['error'] === UPLOAD_ERR_OK) {
+                        $nachweis_file = $_FILES['guest_nachweis'];
+                    }
+                }
+
+                $this->log('Proof requirement check', [
+                    'contact_id' => $contact_id,
+                    'is_member' => $is_member,
+                    'nachweis_erforderlich' => $nachweis_erforderlich,
+                    'has_file' => !empty($nachweis_file)
+                ], 'info');
+            } else {
+                // New contact (external event) always needs proof
+                $nachweis_erforderlich = true;
+
+                if (!empty($_FILES['guest_nachweis']) && $_FILES['guest_nachweis']['error'] === UPLOAD_ERR_OK) {
+                    $nachweis_file = $_FILES['guest_nachweis'];
+                }
+            }
+
             // Create EduGrant record
-            $result = $this->create_edugrant_record_guest($contact_id, $event_id, $email, $is_external);
+            $result = $this->create_edugrant_record_guest($contact_id, $event_id, $email, $is_external, $nachweis_erforderlich, $nachweis_file);
 
             if (is_wp_error($result)) {
                 wp_send_json_error(['message' => $result->get_error_message()]);
@@ -897,12 +952,14 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
         /**
          * Create EduGrant record for guest (non-logged-in user)
          */
-        private function create_edugrant_record_guest($contact_id, $event_id, $email, $is_external = false) {
+        private function create_edugrant_record_guest($contact_id, $event_id, $email, $is_external = false, $nachweis_erforderlich = false, $nachweis_file = null) {
             $this->log('Creating EduGrant record (guest)', [
                 'contact_id' => $contact_id,
                 'event_id' => $event_id,
                 'email' => $email,
-                'is_external' => $is_external
+                'is_external' => $is_external,
+                'nachweis_erforderlich' => $nachweis_erforderlich,
+                'has_nachweis_file' => !empty($nachweis_file)
             ], 'info');
 
             $access_token = $this->get_access_token();
@@ -923,7 +980,8 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                         'Status' => 'Beantragt',
                         'Beantragt_am' => date('Y-m-d'),
                         'E_Mail' => $email,
-                        'Externe_Veranstaltung' => $is_external
+                        'Externe_Veranstaltung' => $is_external,
+                        'Nachweis_erforderlich' => $nachweis_erforderlich
                     ]
                 ]
             ];
@@ -967,6 +1025,22 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
             $created_id = $body['data'][0]['details']['id'] ?? null;
 
             if ($created_id) {
+                // Upload proof file if provided
+                if (!empty($nachweis_file)) {
+                    $upload_result = $this->upload_file_to_record($created_id, 'Berechtigungsnachweis', $nachweis_file);
+
+                    if (is_wp_error($upload_result)) {
+                        $this->log('Failed to upload Berechtigungsnachweis', [
+                            'edugrant_id' => $created_id,
+                            'error' => $upload_result->get_error_message()
+                        ], 'error');
+                    } else {
+                        $this->log('Berechtigungsnachweis uploaded successfully', [
+                            'edugrant_id' => $created_id
+                        ], 'info');
+                    }
+                }
+
                 $full_record = $this->get_edugrant_by_id($created_id);
                 if (!is_wp_error($full_record)) {
                     $this->log('Created EduGrant Guest full record', [
@@ -978,6 +1052,69 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
             }
 
             return $body['data'][0]['details'] ?? [];
+        }
+
+        /**
+         * Upload file to a record's file upload field
+         */
+        private function upload_file_to_record($record_id, $field_name, $file) {
+            $this->log('Uploading file to record', [
+                'record_id' => $record_id,
+                'field_name' => $field_name,
+                'file_name' => $file['name'] ?? 'unknown'
+            ], 'info');
+
+            $access_token = $this->get_access_token();
+
+            if (is_wp_error($access_token)) {
+                return $access_token;
+            }
+
+            // Zoho File Upload API endpoint for upload fields
+            $url = 'https://www.zohoapis.eu/crm/v8/' . self::ZOHO_MODULE_EDUGRANT . '/' . $record_id . '/' . $field_name;
+
+            // Prepare multipart form data
+            $boundary = wp_generate_password(24, false);
+
+            $file_content = file_get_contents($file['tmp_name']);
+            $file_name = $file['name'];
+            $file_type = $file['type'] ?: 'application/octet-stream';
+
+            $body = '';
+            $body .= '--' . $boundary . "\r\n";
+            $body .= 'Content-Disposition: form-data; name="file"; filename="' . $file_name . '"' . "\r\n";
+            $body .= 'Content-Type: ' . $file_type . "\r\n\r\n";
+            $body .= $file_content . "\r\n";
+            $body .= '--' . $boundary . '--';
+
+            $response = wp_remote_post($url, [
+                'headers' => [
+                    'Authorization' => 'Zoho-oauthtoken ' . $access_token,
+                    'Content-Type' => 'multipart/form-data; boundary=' . $boundary
+                ],
+                'body' => $body,
+                'timeout' => 60
+            ]);
+
+            if (is_wp_error($response)) {
+                $this->log('File upload WP Error', ['error' => $response->get_error_message()], 'error');
+                return $response;
+            }
+
+            $status_code = wp_remote_retrieve_response_code($response);
+            $response_body = json_decode(wp_remote_retrieve_body($response), true);
+
+            $this->log('File upload response', [
+                'status_code' => $status_code,
+                'response' => $response_body
+            ], $status_code === 200 || $status_code === 201 ? 'info' : 'error');
+
+            if ($status_code !== 200 && $status_code !== 201) {
+                $error_msg = $response_body['message'] ?? 'Fehler beim Datei-Upload';
+                return new WP_Error('upload_error', $error_msg);
+            }
+
+            return $response_body;
         }
 
         /**

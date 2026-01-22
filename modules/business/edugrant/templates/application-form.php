@@ -259,11 +259,6 @@ if ($is_document_submission && !empty($eduid)) {
                     <fieldset class="edugrant-fieldset edugrant-guest-step" id="guest-step-berechtigung" style="display: none;">
                         <legend>Berechtigung nachweisen</legend>
 
-                        <div class="edugrant-notice" style="margin-bottom: 15px;">
-                            <span class="dashicons dashicons-info"></span>
-                            Nichtmitglieder müssen Ihre Berechtigung nachweisen.
-                        </div>
-
                         <div class="form-row">
                             <label for="guest_berechtigung">Ich bin antragsberechtigt, weil: *</label>
                             <select id="guest_berechtigung" name="guest_berechtigung">

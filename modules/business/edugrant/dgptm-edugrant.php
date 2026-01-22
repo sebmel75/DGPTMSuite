@@ -691,30 +691,59 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
 
         /**
          * Find contact by email in any of the 4 email fields
+         * Uses Zoho Search API with correct field names: Email, Secondary_Email, Third_Email, DGPTMMail
          */
         private function find_contact_by_email($email) {
-            $email_escaped = addslashes(strtolower(trim($email)));
+            $email_clean = trim($email);
 
-            // Search in all 4 email fields using COQL
-            $query = "SELECT id, First_Name, Last_Name, Email, Zweite_E_Mail_Adresse, Dritte_E_Mail_Adresse, dgptm_de_Mailadresse
-                      FROM " . self::ZOHO_MODULE_CONTACTS . "
-                      WHERE Email = '{$email_escaped}'
-                      OR Zweite_E_Mail_Adresse = '{$email_escaped}'
-                      OR Dritte_E_Mail_Adresse = '{$email_escaped}'
-                      OR dgptm_de_Mailadresse = '{$email_escaped}'
-                      LIMIT 1";
+            $this->log('Searching contact by email', ['email' => $email_clean], 'info');
 
-            $result = $this->execute_coql_query($query);
+            $access_token = $this->get_access_token();
 
-            if (is_wp_error($result)) {
-                return $result;
+            if (is_wp_error($access_token)) {
+                return $access_token;
             }
 
-            if (!empty($result)) {
-                return $result[0];
+            // Build search criteria for all 4 email fields
+            $criteria = '((Email:equals:' . $email_clean . ')or(Third_Email:equals:' . $email_clean . ')or(Secondary_Email:equals:' . $email_clean . ')or(DGPTMMail:equals:' . $email_clean . '))';
+
+            $url = 'https://www.zohoapis.eu/crm/v8/' . self::ZOHO_MODULE_CONTACTS . '/search?criteria=' . urlencode($criteria);
+
+            $this->log('Contact search API request', ['url' => $url], 'info');
+
+            $response = wp_remote_get($url, [
+                'headers' => [
+                    'Authorization' => 'Zoho-oauthtoken ' . $access_token,
+                    'Accept' => 'application/json'
+                ],
+                'timeout' => 30
+            ]);
+
+            if (is_wp_error($response)) {
+                $this->log('Contact search WP Error', ['error' => $response->get_error_message()], 'error');
+                return $response;
             }
 
-            return null;
+            $status_code = wp_remote_retrieve_response_code($response);
+            $body = json_decode(wp_remote_retrieve_body($response), true);
+
+            $this->log('Contact search response', [
+                'status_code' => $status_code,
+                'count' => isset($body['data']) ? count($body['data']) : 0
+            ], $status_code === 200 ? 'info' : 'error');
+
+            // 200 = found, 204 = no content (not found)
+            if ($status_code === 204 || empty($body['data'])) {
+                return null;
+            }
+
+            if ($status_code !== 200) {
+                $error_msg = $body['message'] ?? 'Fehler bei der Kontaktsuche';
+                return new WP_Error('api_error', $error_msg);
+            }
+
+            // Return the first matching contact
+            return $body['data'][0] ?? null;
         }
 
         /**

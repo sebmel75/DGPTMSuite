@@ -255,13 +255,13 @@ if ($is_document_submission && !empty($eduid)) {
                         </div>
                     </fieldset>
 
-                    <!-- SCHRITT 3: Berechtigung (nur für externe Veranstaltungen oder wenn kein Kontakt gefunden) -->
+                    <!-- SCHRITT 3: Berechtigung (für alle Nichtmitglieder / nicht eingeloggte Nutzer) -->
                     <fieldset class="edugrant-fieldset edugrant-guest-step" id="guest-step-berechtigung" style="display: none;">
                         <legend>Berechtigung nachweisen</legend>
 
                         <div class="edugrant-notice" style="margin-bottom: 15px;">
                             <span class="dashicons dashicons-info"></span>
-                            Bei externen Veranstaltungen müssen Sie Ihre Berechtigung nachweisen.
+                            Nichtmitglieder müssen Ihre Berechtigung nachweisen.
                         </div>
 
                         <div class="form-row">

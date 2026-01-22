@@ -140,8 +140,6 @@
             },
             success: function(response) {
                 console.log('loadEventDetails AJAX response:', response);
-                console.log('response.data:', response.data);
-                console.log('response.data.event:', response.data ? response.data.event : 'no data');
 
                 if (response.success && response.data.event) {
                     displayEventInfo($container, response.data.event);
@@ -157,7 +155,21 @@
                         checkTicketEligibility(eventId, $ticketContainer);
                     }
                 } else {
-                    $container.html('<div class="edugrant-error">' + (response.data.message || 'Fehler beim Laden') + '</div>');
+                    // Event not eligible or error - show message and disable form
+                    var errorMsg = response.data && response.data.message ? response.data.message : 'Fehler beim Laden der Veranstaltung.';
+                    var html = '<div class="edugrant-error">';
+                    html += '<span class="dashicons dashicons-warning"></span> ';
+                    html += errorMsg;
+                    html += '</div>';
+                    $container.html(html);
+
+                    // Disable the entire form
+                    $form.find('input, select, textarea, button').prop('disabled', true);
+                    $form.find('.edugrant-submit-btn').hide();
+                    $form.find('.edugrant-terms').hide();
+
+                    // Hide guest form steps
+                    $('.edugrant-guest-step').hide();
                 }
             },
             error: function() {
@@ -251,7 +263,7 @@
         if (!isExternal) {
             html += '<div class="edugrant-notice" style="margin-top: 15px;">';
             html += '<span class="dashicons dashicons-tickets-alt"></span> ';
-            html += 'Für diese interne Veranstaltung ist ein gültiges Ticket erforderlich.';
+            html += 'Für diese Veranstaltung ist vor Beantragung ein gültiges Ticket erforderlich.';
             html += '</div>';
         }
 

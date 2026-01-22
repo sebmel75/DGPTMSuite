@@ -1254,7 +1254,7 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
         }
 
         /**
-         * AJAX: Get specific event details
+         * AJAX: Get specific event details with eligibility check
          */
         public function ajax_get_event_details() {
             check_ajax_referer('dgptm_edugrant_nonce', 'nonce');
@@ -1271,7 +1271,130 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 wp_send_json_error(['message' => $event->get_error_message()]);
             }
 
+            // Check event eligibility for EduGrant application
+            $eligibility = $this->check_event_eligibility($event);
+
+            if (!$eligibility['eligible']) {
+                wp_send_json_error([
+                    'message' => $eligibility['message'],
+                    'reason' => $eligibility['reason']
+                ]);
+            }
+
+            // Add eligibility info to event data
+            $event['edugrant_eligible'] = true;
+            $event['application_deadline'] = $eligibility['deadline'];
+            $event['spots_remaining'] = $eligibility['spots_remaining'];
+
             wp_send_json_success(['event' => $event]);
+        }
+
+        /**
+         * Check if event is eligible for EduGrant applications
+         * - Must be at least 3 days before event start
+         * - Must have EduGrant quota available
+         */
+        private function check_event_eligibility($event) {
+            $event_name = $event['Name'] ?? 'Unbekannte Veranstaltung';
+            $from_date = $event['From_Date'] ?? null;
+            $max_attendees = intval($event['Maximum_Attendees'] ?? 0);
+            $event_id = $event['id'] ?? '';
+
+            $this->log('Checking event eligibility', [
+                'event_id' => $event_id,
+                'event_name' => $event_name,
+                'from_date' => $from_date,
+                'max_attendees' => $max_attendees
+            ], 'info');
+
+            // Check 1: Deadline - must be at least 3 days before event start
+            if (!empty($from_date)) {
+                $event_start = strtotime($from_date);
+                $deadline = strtotime('-3 days', $event_start);
+                $now = time();
+
+                if ($now > $deadline) {
+                    $deadline_date = date('d.m.Y', $deadline);
+                    return [
+                        'eligible' => false,
+                        'reason' => 'deadline_passed',
+                        'message' => "Die Antragsfrist für diese Veranstaltung ist abgelaufen (Frist: {$deadline_date}).",
+                        'deadline' => $deadline_date,
+                        'spots_remaining' => 0
+                    ];
+                }
+            }
+
+            // Check 2: Quota - count existing EduGrant applications
+            if ($max_attendees > 0) {
+                $current_applications = $this->count_edugrant_applications($event_id);
+
+                if ($current_applications >= $max_attendees) {
+                    return [
+                        'eligible' => false,
+                        'reason' => 'quota_exhausted',
+                        'message' => "Das EduGrant-Kontingent für diese Veranstaltung ist ausgeschöpft ({$current_applications}/{$max_attendees} Plätze belegt).",
+                        'deadline' => !empty($from_date) ? date('d.m.Y', strtotime('-3 days', strtotime($from_date))) : null,
+                        'spots_remaining' => 0
+                    ];
+                }
+
+                $spots_remaining = $max_attendees - $current_applications;
+            } else {
+                // No quota limit set
+                $spots_remaining = 999;
+            }
+
+            return [
+                'eligible' => true,
+                'reason' => null,
+                'message' => null,
+                'deadline' => !empty($from_date) ? date('d.m.Y', strtotime('-3 days', strtotime($from_date))) : null,
+                'spots_remaining' => $spots_remaining
+            ];
+        }
+
+        /**
+         * Count existing EduGrant applications for an event
+         */
+        private function count_edugrant_applications($event_id) {
+            $access_token = $this->get_access_token();
+
+            if (is_wp_error($access_token)) {
+                return 0;
+            }
+
+            // Search for EduGrant records linked to this event
+            $criteria = '(Veranstaltung:equals:' . $event_id . ')';
+            $url = 'https://www.zohoapis.eu/crm/v8/' . self::ZOHO_MODULE_EDUGRANT . '/search?criteria=' . urlencode($criteria);
+
+            $response = wp_remote_get($url, [
+                'headers' => [
+                    'Authorization' => 'Zoho-oauthtoken ' . $access_token,
+                    'Accept' => 'application/json'
+                ],
+                'timeout' => 30
+            ]);
+
+            if (is_wp_error($response)) {
+                $this->log('Count EduGrant WP Error', ['error' => $response->get_error_message()], 'error');
+                return 0;
+            }
+
+            $status_code = wp_remote_retrieve_response_code($response);
+            $body = json_decode(wp_remote_retrieve_body($response), true);
+
+            // 200 = found results, 204 = no content
+            if ($status_code === 200 && isset($body['info']['count'])) {
+                $count = intval($body['info']['count']);
+                $this->log('EduGrant applications count', [
+                    'event_id' => $event_id,
+                    'count' => $count
+                ], 'info');
+                return $count;
+            }
+
+            return 0;
         }
 
         /**

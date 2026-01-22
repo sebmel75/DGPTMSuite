@@ -285,6 +285,7 @@ if ($is_document_submission && !empty($eduid)) {
                     <input type="hidden" id="guest_contact_id" name="guest_contact_id" value="">
                     <input type="hidden" id="guest_contact_found" name="guest_contact_found" value="0">
                     <input type="hidden" id="guest_has_ticket" name="guest_has_ticket" value="0">
+                    <input type="hidden" id="guest_is_member" name="guest_is_member" value="0">
                 <?php endif; ?>
 
                 <div class="edugrant-event-info" id="event-info-container">

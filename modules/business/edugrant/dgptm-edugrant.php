@@ -835,56 +835,27 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 wp_send_json_error(['message' => 'Kontakt-ID fehlt.']);
             }
 
-            // For internal events, verify ticket exists
-            if (!$is_external) {
-                $ticket_check = $this->check_user_has_ticket($contact_id, $event_id);
+            // Note: Ticket verification already done in ajax_check_guest_email()
+            // No need to check again here - the form is only shown if ticket was verified
 
-                if (is_wp_error($ticket_check) || !$ticket_check['has_ticket']) {
-                    wp_send_json_error([
-                        'message' => 'Für interne Veranstaltungen benötigen Sie ein gültiges Ticket.',
-                        'requires_ticket' => true
-                    ]);
-                }
-            }
+            // Get member status from form (was determined during email check)
+            $is_member = sanitize_text_field($_POST['guest_is_member'] ?? '0') === '1';
 
-            // Check if contact is a member to determine if proof was required
-            $nachweis_erforderlich = false;
+            // Determine if proof is required (non-members need proof)
+            $nachweis_erforderlich = !$is_member;
             $nachweis_file = null;
 
-            if ($contact_found && !empty($contact_id)) {
-                // Re-fetch contact to check Mitglied status
-                $contact = $this->find_contact_by_email($email);
-                $is_member = false;
-
-                if (!is_wp_error($contact) && !empty($contact)) {
-                    $is_member = $contact['Mitglied'] ?? false;
-                    $is_member = ($is_member === true || $is_member === 'true');
-                }
-
-                // Non-members need proof
-                if (!$is_member) {
-                    $nachweis_erforderlich = true;
-
-                    // Check for uploaded proof file
-                    if (!empty($_FILES['guest_nachweis']) && $_FILES['guest_nachweis']['error'] === UPLOAD_ERR_OK) {
-                        $nachweis_file = $_FILES['guest_nachweis'];
-                    }
-                }
-
-                $this->log('Proof requirement check', [
-                    'contact_id' => $contact_id,
-                    'is_member' => $is_member,
-                    'nachweis_erforderlich' => $nachweis_erforderlich,
-                    'has_file' => !empty($nachweis_file)
-                ], 'info');
-            } else {
-                // New contact (external event) always needs proof
-                $nachweis_erforderlich = true;
-
-                if (!empty($_FILES['guest_nachweis']) && $_FILES['guest_nachweis']['error'] === UPLOAD_ERR_OK) {
-                    $nachweis_file = $_FILES['guest_nachweis'];
-                }
+            // Check for uploaded proof file
+            if ($nachweis_erforderlich && !empty($_FILES['guest_nachweis']) && $_FILES['guest_nachweis']['error'] === UPLOAD_ERR_OK) {
+                $nachweis_file = $_FILES['guest_nachweis'];
             }
+
+            $this->log('Proof requirement check', [
+                'contact_id' => $contact_id,
+                'is_member' => $is_member,
+                'nachweis_erforderlich' => $nachweis_erforderlich,
+                'has_file' => !empty($nachweis_file)
+            ], 'info');
 
             // Create EduGrant record
             $result = $this->create_edugrant_record_guest($contact_id, $event_id, $email, $is_external, $nachweis_erforderlich, $nachweis_file);

@@ -587,6 +587,7 @@
             $('#guest_contact_id').val(data.contact_id || '');
             $('#guest_contact_found').val(data.contact_found ? '1' : '0');
             $('#guest_has_ticket').val(data.has_ticket ? '1' : '0');
+            $('#guest_is_member').val(data.is_member ? '1' : '0');
 
             // Show result message
             var resultClass = data.can_apply ? 'edugrant-notice' : 'edugrant-error';
@@ -667,6 +668,7 @@
             $('#guest_contact_id').val('');
             $('#guest_contact_found').val('0');
             $('#guest_has_ticket').val('0');
+            $('#guest_is_member').val('0');
         }
 
         /**

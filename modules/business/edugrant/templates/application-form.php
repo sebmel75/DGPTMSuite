@@ -311,11 +311,7 @@ if ($is_document_submission && !empty($eduid)) {
                 <div class="edugrant-terms">
                     <p>Mit dem Absenden dieses Antrags bestätige ich:</p>
                     <ul>
-                        <?php if ($is_logged_in): ?>
-                            <li>Ich bin ordentliches Mitglied der DGPTM.</li>
-                        <?php else: ?>
-                            <li>Ich bin berechtigt, einen EduGrant zu beantragen.</li>
-                        <?php endif; ?>
+                        <li>Ich erfülle die Förderbedingungen.</li>
                         <li>Ich nehme an der ausgewählten Veranstaltung teil.</li>
                         <li>Ich werde die erforderlichen Nachweise nach der Veranstaltung einreichen.</li>
                     </ul>

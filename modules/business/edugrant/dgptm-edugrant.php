@@ -1296,6 +1296,13 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
             // Check event eligibility for EduGrant application
             $eligibility = $this->check_event_eligibility($event);
 
+            $this->log('Event eligibility check result in ajax_get_event_details', [
+                'event_id' => $event_id,
+                'eligible' => $eligibility['eligible'],
+                'reason' => $eligibility['reason'] ?? null,
+                'message' => $eligibility['message'] ?? null
+            ], 'info');
+
             if (!$eligibility['eligible']) {
                 wp_send_json_error([
                     'message' => $eligibility['message'],
@@ -1334,6 +1341,17 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 $event_start = strtotime($from_date);
                 $deadline = strtotime('-3 days', $event_start);
                 $now = time();
+
+                $this->log('Deadline check', [
+                    'from_date' => $from_date,
+                    'event_start_timestamp' => $event_start,
+                    'event_start_formatted' => date('Y-m-d H:i:s', $event_start),
+                    'deadline_timestamp' => $deadline,
+                    'deadline_formatted' => date('Y-m-d H:i:s', $deadline),
+                    'now_timestamp' => $now,
+                    'now_formatted' => date('Y-m-d H:i:s', $now),
+                    'is_past_deadline' => ($now > $deadline)
+                ], 'info');
 
                 if ($now > $deadline) {
                     $deadline_date = date('d.m.Y', $deadline);

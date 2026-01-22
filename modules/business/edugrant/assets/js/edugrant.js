@@ -141,8 +141,12 @@
             },
             success: function(response) {
                 console.log('loadEventDetails AJAX response:', response);
+                console.log('response.success:', response.success);
+                console.log('response.data:', response.data);
+                console.log('isLoggedIn:', isLoggedIn);
 
                 if (response.success && response.data.event) {
+                    console.log('Event loaded successfully - form will be enabled');
                     displayEventInfo($container, response.data.event);
 
                     // Check if external or internal (API field: External_Event)
@@ -157,6 +161,7 @@
                     }
                 } else {
                     // Event not eligible or error - show message and disable form
+                    console.log('Event NOT eligible or error - disabling form');
                     eventIsEligible = false; // Mark as not eligible globally
 
                     var errorMsg = response.data && response.data.message ? response.data.message : 'Fehler beim Laden der Veranstaltung.';

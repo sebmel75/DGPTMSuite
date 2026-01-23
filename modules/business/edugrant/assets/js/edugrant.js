@@ -290,7 +290,7 @@
         if (overQuotaWarning) {
             html += '<div class="edugrant-notice edugrant-over-quota-warning" style="margin-top: 15px; background: #fff3cd; border-color: #ffeeba;">';
             html += '<span class="dashicons dashicons-warning"></span> ';
-            html += 'Ihr Antrag wird noch entgegengenommen. Allerdings liegt die Anzahl beantragter EduGrant-Förderungen bereits über der Anzahl vom Vorstand beschlossener Förderungen.';
+            html += '<strong>Ihr Antrag wird noch entgegengenommen. Allerdings liegt die Anzahl beantragter EduGrant-Förderungen bereits über der Anzahl der vom Vorstand beschlossenen Förderungen.</strong>';
             html += '</div>';
         }
 

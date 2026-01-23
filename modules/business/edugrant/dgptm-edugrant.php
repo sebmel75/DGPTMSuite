@@ -1116,21 +1116,21 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
         }
 
         /**
-         * Upload file to a record's file upload field using curl
-         * Zoho File Upload API: POST /crm/v8/{module}/{record_id}/{field_api_name}
+         * Upload file to a record's file upload field
          *
-         * IMPORTANT: Zoho's file upload fields are only available AFTER the record
-         * is fully committed. This function includes a retry mechanism with delays
-         * to handle this timing issue.
+         * Zoho CRM File Upload requires a two-step process:
+         * 1. Upload file to ZFS (Zoho File System): POST /crm/v8/files
+         * 2. Update the record with the file ID: PUT /crm/v8/{module}/{record_id}
+         *
+         * @see https://www.zoho.com/crm/developer/docs/api/v8/upload-files-to-zfs.html
          */
-        private function upload_file_to_record($record_id, $field_name, $file, $max_retries = 5) {
-            $this->log('Uploading file to record (with retry)', [
+        private function upload_file_to_record($record_id, $field_name, $file) {
+            $this->log('Uploading file to record (two-step ZFS process)', [
                 'record_id' => $record_id,
                 'field_name' => $field_name,
                 'file_name' => $file['name'] ?? 'unknown',
                 'file_tmp' => $file['tmp_name'] ?? 'no tmp_name',
-                'file_size' => $file['size'] ?? 0,
-                'max_retries' => $max_retries
+                'file_size' => $file['size'] ?? 0
             ], 'info');
 
             // Validate file exists
@@ -1147,109 +1147,121 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 return $access_token;
             }
 
-            // Zoho File Upload API endpoint for upload fields
-            $url = 'https://www.zohoapis.eu/crm/v8/' . self::ZOHO_MODULE_EDUGRANT . '/' . $record_id . '/' . $field_name;
+            // Step 1: Upload file to ZFS (Zoho File System)
+            $zfs_url = 'https://www.zohoapis.eu/crm/v8/files';
 
-            $this->log('File upload URL', ['url' => $url], 'info');
+            $this->log('Step 1: Uploading to ZFS', ['url' => $zfs_url], 'info');
 
-            // Initial delay before first attempt (record needs time to be fully committed)
-            sleep(2);
+            $ch = curl_init();
 
-            $last_error = null;
-            $delays = [2, 3, 5, 8, 10]; // Delays between retries in seconds
+            // Create CURLFile object for the upload
+            $cfile = new CURLFile($file['tmp_name'], $file['type'] ?: 'application/octet-stream', $file['name']);
 
-            for ($attempt = 1; $attempt <= $max_retries; $attempt++) {
-                $this->log('File upload attempt', [
-                    'attempt' => $attempt,
-                    'max_retries' => $max_retries
-                ], 'info');
+            $post_data = [
+                'file' => $cfile
+            ];
 
-                // Use curl for reliable multipart file upload
-                $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL => $zfs_url,
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => $post_data,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HTTPHEADER => [
+                    'Authorization: Zoho-oauthtoken ' . $access_token
+                ],
+                CURLOPT_TIMEOUT => 60
+            ]);
 
-                // Create CURLFile object for the upload
-                $cfile = new CURLFile($file['tmp_name'], $file['type'] ?: 'application/octet-stream', $file['name']);
+            $response = curl_exec($ch);
+            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curl_error = curl_error($ch);
+            curl_close($ch);
 
-                $post_data = [
-                    'file' => $cfile
-                ];
-
-                curl_setopt_array($ch, [
-                    CURLOPT_URL => $url,
-                    CURLOPT_POST => true,
-                    CURLOPT_POSTFIELDS => $post_data,
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_HTTPHEADER => [
-                        'Authorization: Zoho-oauthtoken ' . $access_token
-                    ],
-                    CURLOPT_TIMEOUT => 60
-                ]);
-
-                $response = curl_exec($ch);
-                $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                $curl_error = curl_error($ch);
-                curl_close($ch);
-
-                if ($curl_error) {
-                    $this->log('File upload curl error', [
-                        'attempt' => $attempt,
-                        'error' => $curl_error
-                    ], 'error');
-                    $last_error = new WP_Error('curl_error', $curl_error);
-                } else {
-                    $response_body = json_decode($response, true);
-
-                    $this->log('File upload response', [
-                        'attempt' => $attempt,
-                        'http_code' => $http_code,
-                        'response' => $response_body
-                    ], ($http_code === 200 || $http_code === 201) ? 'info' : 'warning');
-
-                    // Success!
-                    if ($http_code === 200 || $http_code === 201) {
-                        $this->log('File upload SUCCESS', [
-                            'attempt' => $attempt,
-                            'record_id' => $record_id,
-                            'field_name' => $field_name
-                        ], 'info');
-                        return $response_body;
-                    }
-
-                    // Check if it's a "field not ready" type error (record not yet committed)
-                    $error_code = $response_body['code'] ?? ($response_body['data'][0]['code'] ?? '');
-                    $error_msg = $response_body['message'] ?? ($response_body['data'][0]['message'] ?? 'Fehler beim Datei-Upload');
-
-                    $last_error = new WP_Error('upload_error', $error_msg . ' (Code: ' . $error_code . ')');
-
-                    // Log the specific error for debugging
-                    $this->log('File upload failed, will retry', [
-                        'attempt' => $attempt,
-                        'http_code' => $http_code,
-                        'error_code' => $error_code,
-                        'error_msg' => $error_msg
-                    ], 'warning');
-                }
-
-                // Wait before next attempt (unless this was the last attempt)
-                if ($attempt < $max_retries) {
-                    $delay = $delays[$attempt - 1] ?? 10;
-                    $this->log('Waiting before retry', [
-                        'delay_seconds' => $delay,
-                        'next_attempt' => $attempt + 1
-                    ], 'info');
-                    sleep($delay);
-                }
+            if ($curl_error) {
+                $this->log('ZFS upload curl error', ['error' => $curl_error], 'error');
+                return new WP_Error('curl_error', $curl_error);
             }
 
-            // All retries exhausted
-            $this->log('File upload FAILED after all retries', [
+            $response_body = json_decode($response, true);
+
+            $this->log('ZFS upload response', [
+                'http_code' => $http_code,
+                'response' => $response_body
+            ], ($http_code === 200 || $http_code === 201) ? 'info' : 'error');
+
+            if ($http_code !== 200 && $http_code !== 201) {
+                $error_msg = $response_body['message'] ?? 'Fehler beim Hochladen in ZFS';
+                return new WP_Error('zfs_upload_error', $error_msg);
+            }
+
+            // Extract the file ID from the ZFS response
+            $file_id = $response_body['data'][0]['details']['id'] ?? null;
+
+            if (empty($file_id)) {
+                $this->log('ZFS upload - no file ID returned', ['response' => $response_body], 'error');
+                return new WP_Error('zfs_no_file_id', 'Keine Datei-ID von ZFS erhalten');
+            }
+
+            $this->log('ZFS upload SUCCESS', [
+                'file_id' => $file_id,
+                'file_name' => $response_body['data'][0]['details']['name'] ?? 'unknown'
+            ], 'info');
+
+            // Step 2: Update the record with the file ID
+            $update_url = 'https://www.zohoapis.eu/crm/v8/' . self::ZOHO_MODULE_EDUGRANT . '/' . $record_id;
+
+            $update_data = [
+                'data' => [
+                    [
+                        $field_name => [
+                            ['file_id' => $file_id]
+                        ]
+                    ]
+                ]
+            ];
+
+            $this->log('Step 2: Updating record with file ID', [
+                'url' => $update_url,
+                'field_name' => $field_name,
+                'file_id' => $file_id
+            ], 'info');
+
+            $update_response = wp_remote_request($update_url, [
+                'method' => 'PUT',
+                'headers' => [
+                    'Authorization' => 'Zoho-oauthtoken ' . $access_token,
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json'
+                ],
+                'body' => json_encode($update_data),
+                'timeout' => 30
+            ]);
+
+            if (is_wp_error($update_response)) {
+                $this->log('Record update WP Error', ['error' => $update_response->get_error_message()], 'error');
+                return $update_response;
+            }
+
+            $update_status = wp_remote_retrieve_response_code($update_response);
+            $update_body = json_decode(wp_remote_retrieve_body($update_response), true);
+
+            $this->log('Record update response', [
+                'http_code' => $update_status,
+                'response' => $update_body
+            ], ($update_status === 200) ? 'info' : 'error');
+
+            if ($update_status !== 200) {
+                $error_msg = $update_body['message'] ?? ($update_body['data'][0]['message'] ?? 'Fehler beim Aktualisieren des Records');
+                return new WP_Error('record_update_error', $error_msg);
+            }
+
+            $this->log('File upload to record SUCCESS', [
                 'record_id' => $record_id,
                 'field_name' => $field_name,
-                'total_attempts' => $max_retries,
-                'last_error' => $last_error ? $last_error->get_error_message() : 'Unknown'
-            ], 'error');
+                'file_id' => $file_id
+            ], 'info');
 
-            return $last_error ?? new WP_Error('upload_error', 'Datei-Upload fehlgeschlagen nach ' . $max_retries . ' Versuchen');
+            return $update_body;
         }
 
         /**

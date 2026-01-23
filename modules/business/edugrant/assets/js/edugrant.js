@@ -275,6 +275,15 @@
             html += '</div>';
         }
 
+        // Show over quota warning if applicable
+        var overQuotaWarning = event.over_quota_warning || false;
+        if (overQuotaWarning) {
+            html += '<div class="edugrant-notice edugrant-over-quota-warning" style="margin-top: 15px; background: #fff3cd; border-color: #ffeeba;">';
+            html += '<span class="dashicons dashicons-warning"></span> ';
+            html += 'Ihr Antrag wird noch entgegengenommen. Allerdings liegt die Anzahl beantragter EduGrant-Förderungen bereits über der Anzahl vom Vorstand beschlossener Förderungen.';
+            html += '</div>';
+        }
+
         $container.html(html);
     }
 
@@ -338,7 +347,9 @@
             var location = (event.Location && event.Location.name) || event.City || '';
             var maxFunding = event.Maximum_Promotion || '';
             var spotsAvailable = event.spots_available || 0;
-            var hasSpots = event.has_spots !== false && spotsAvailable > 0;
+            var maxReached = event.max_reached === true;
+            var hasSpots = !maxReached;
+            var overQuotaWarning = event.over_quota_warning === true;
             var isExternal = event.External_Event === true || event.External_Event === 'true';
 
             var dateStr = startDate;
@@ -346,7 +357,7 @@
                 dateStr += ' - ' + endDate;
             }
 
-            // Card classes - add disabled class if no spots
+            // Card classes - add disabled class if max reached
             var cardClass = 'edugrant-event-card';
             if (hasSpots) {
                 cardClass += ' selectable';
@@ -357,8 +368,8 @@
             html += '<div class="' + cardClass + '" data-event-id="' + event.id + '">';
             html += '<div class="event-header">';
             html += '<h4 class="event-title">' + escapeHtml(name);
-            if (!hasSpots) {
-                html += ' <span class="limit-reached">(Limit erreicht)</span>';
+            if (maxReached) {
+                html += ' <span class="limit-reached">(Maximum erreicht)</span>';
             }
             html += '</h4>';
             html += '<span class="event-type-badge ' + (isExternal ? 'external' : 'internal') + '">' + (isExternal ? 'Extern' : 'Intern') + '</span>';
@@ -374,10 +385,9 @@
             if (maxFunding) {
                 html += '<div class="event-detail highlight"><span class="dashicons dashicons-awards"></span> Max. Förderung: <strong>' + formatCurrency(maxFunding) + '</strong></div>';
             }
-            if (spotsAvailable < 999) {
-                var spotsText = hasSpots ? 'Noch ' + spotsAvailable + ' Plätze' : 'Ausgebucht';
-                var spotsClass = hasSpots ? '' : ' warning';
-                html += '<div class="event-detail' + spotsClass + '"><span class="dashicons dashicons-groups"></span> ' + spotsText + '</div>';
+            // Only show spots info if max_reached (hard block)
+            if (maxReached) {
+                html += '<div class="event-detail warning"><span class="dashicons dashicons-no"></span> Maximum erreicht</div>';
             }
             html += '</div>';
 
@@ -386,7 +396,7 @@
                 html += '<a href="' + window.location.pathname + '?event_id=' + event.id + '" class="button edugrant-apply-btn">';
                 html += '<span class="dashicons dashicons-yes"></span> Auswählen</a>';
             } else {
-                html += '<span class="edugrant-unavailable"><span class="dashicons dashicons-no"></span> Ausgebucht</span>';
+                html += '<span class="edugrant-unavailable"><span class="dashicons dashicons-no"></span> Maximum erreicht</span>';
             }
             html += '</div>';
 

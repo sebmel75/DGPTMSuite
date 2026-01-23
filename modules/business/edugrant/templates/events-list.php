@@ -25,6 +25,8 @@ $today = date('Y-m-d');
             // Name = Veranstaltungsbezeichnung, From_Date = Von, To_Date = Bis
             // Maximum_Promotion = Maximale Förderung, External_Event = Externe Veranstaltung
             // Location = Ort (lookup), Maximum_Attendees = Max Anzahl TN
+            // EduBeantragt = Anzahl beantragter EduGrants
+            // EduGrant_applications = Anzahl genehmigter EduGrants
             $event_name = $event['Name'] ?? 'Unbenannte Veranstaltung';
             $event_id = $event['id'] ?? '';
             $location = $event['Location']['name'] ?? $event['City'] ?? 'Ort nicht angegeben';
@@ -34,11 +36,13 @@ $today = date('Y-m-d');
             $spots_available = $event['spots_available'] ?? 0;
             $can_apply = $event['can_apply'] ?? false;
             $has_spots = $event['has_spots'] ?? false;
+            $max_reached = $event['max_reached'] ?? false;
+            $over_quota_warning = $event['over_quota_warning'] ?? false;
             $deadline = !empty($event['application_deadline']) ? date_i18n('d.m.Y', strtotime($event['application_deadline'])) : '';
             $is_external = $event['External_Event'] ?? false;
             $is_external = ($is_external === true || $is_external === 'true');
         ?>
-            <div class="edugrant-event-card <?php echo (!$can_apply || !$has_spots) ? 'disabled' : ''; ?>">
+            <div class="edugrant-event-card <?php echo (!$can_apply || $max_reached) ? 'disabled' : ''; ?>">
                 <div class="event-header">
                     <h4 class="event-title"><?php echo esc_html($event_name); ?></h4>
                     <div class="event-badges">
@@ -81,16 +85,10 @@ $today = date('Y-m-d');
                         </div>
                     <?php endif; ?>
 
-                    <?php if ($spots_available < 999): ?>
-                        <div class="event-detail <?php echo $spots_available <= 3 ? 'warning' : ''; ?>">
-                            <span class="dashicons dashicons-groups"></span>
-                            <span>
-                                <?php if ($has_spots): ?>
-                                    Noch <?php echo esc_html($spots_available); ?> Plätze verfügbar
-                                <?php else: ?>
-                                    <strong>Ausgebucht</strong>
-                                <?php endif; ?>
-                            </span>
+                    <?php if ($max_reached): ?>
+                        <div class="event-detail warning">
+                            <span class="dashicons dashicons-no"></span>
+                            <span><strong>Maximum erreicht</strong></span>
                         </div>
                     <?php endif; ?>
 
@@ -103,7 +101,7 @@ $today = date('Y-m-d');
                 </div>
 
                 <div class="event-actions">
-                    <?php if ($can_apply && $has_spots): ?>
+                    <?php if ($can_apply && !$max_reached): ?>
                         <?php if (is_user_logged_in()): ?>
                             <a href="<?php echo esc_url(add_query_arg('event_id', $event_id, get_option('dgptm_edugrant_form_page', '/veranstaltungen/educational-grant-der-dgptm/educational-grant-abrechnung/'))); ?>"
                                class="button edugrant-apply-btn">
@@ -115,9 +113,9 @@ $today = date('Y-m-d');
                                 Anmelden um zu beantragen
                             </a>
                         <?php endif; ?>
-                    <?php elseif (!$has_spots): ?>
+                    <?php elseif ($max_reached): ?>
                         <span class="edugrant-unavailable">
-                            <span class="dashicons dashicons-no"></span> Ausgebucht
+                            <span class="dashicons dashicons-no"></span> Maximum erreicht
                         </span>
                     <?php else: ?>
                         <span class="edugrant-unavailable">

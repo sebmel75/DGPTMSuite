@@ -287,6 +287,7 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 'Budget',            // Budget
                 'Maximum_Attendees', // Max Anzahl TN
                 'EduGrant_applications', // Genehmigte EduGrant
+                'EduBeantragt',      // Anzahl beantragter EduGrants
                 'External_Event',    // Externe Veranstaltung
                 'Maximum_Promotion', // Maximale Förderung
                 'Event_Number',      // Veranstaltungsnummer
@@ -341,7 +342,8 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
             // - To_Date = Bis
             // - Budget = Budget
             // - Maximum_Attendees = Max Anzahl TN
-            // - EduGrant_applications = Genehmigte EduGrant
+            // - EduGrant_applications = Genehmigte EduGrant (approved)
+            // - EduBeantragt = Anzahl beantragt (applied, not yet approved)
             // - External_Event = Externe Veranstaltung
             // - Maximum_Promotion = Maximale Förderung
             // - Event_Number = Veranstaltungsnummer
@@ -366,11 +368,23 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                     $event['can_apply'] = false;
                 }
 
-                // Check if spots are available using correct API field names
+                // Tiered availability check:
+                // - Maximum_Attendees = hard limit set by board
+                // - EduGrant_applications = approved grants (hard block when >= max)
+                // - EduBeantragt = submitted applications (soft warning when >= max but approved < max)
                 $max_attendees = (int) ($event['Maximum_Attendees'] ?? 0);
                 $approved_grants = (int) ($event['EduGrant_applications'] ?? 0);
+                $applied_grants = (int) ($event['EduBeantragt'] ?? 0);
+
+                // Hard block: approved >= max
+                $event['max_reached'] = ($max_attendees > 0 && $approved_grants >= $max_attendees);
+
+                // Soft warning: applied >= max but approved < max
+                $event['over_quota_warning'] = ($max_attendees > 0 && $applied_grants >= $max_attendees && $approved_grants < $max_attendees);
+
+                // For display purposes
                 $event['spots_available'] = $max_attendees > 0 ? max(0, $max_attendees - $approved_grants) : 999;
-                $event['has_spots'] = $event['spots_available'] > 0;
+                $event['has_spots'] = !$event['max_reached'];
 
                 $filtered_events[] = $event;
             }
@@ -1055,6 +1069,11 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
             } else {
                 // Get the created record ID
                 $created_id = $body['data'][0]['details']['id'] ?? null;
+
+                // Increment EduBeantragt counter on the event (only for new applications)
+                if ($created_id) {
+                    $this->increment_edubeantragt($event_id);
+                }
             }
 
             if ($created_id) {
@@ -1309,6 +1328,9 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
             $created_id = $body['data'][0]['details']['id'] ?? null;
 
             if ($created_id) {
+                // Increment EduBeantragt counter on the event
+                $this->increment_edubeantragt($event_id);
+
                 // Fetch the full record to get auto-generated fields like Nummer
                 $full_record = $this->get_edugrant_by_id($created_id);
                 if (!is_wp_error($full_record)) {
@@ -1484,6 +1506,7 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
             $event['edugrant_eligible'] = true;
             $event['application_deadline'] = $eligibility['deadline'];
             $event['spots_remaining'] = $eligibility['spots_remaining'];
+            $event['over_quota_warning'] = $eligibility['over_quota_warning'] ?? false;
 
             wp_send_json_success(['event' => $event]);
         }
@@ -1491,19 +1514,25 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
         /**
          * Check if event is eligible for EduGrant applications
          * - Must be at least 3 days before event start
-         * - Must have EduGrant quota available
+         * - Tiered quota check:
+         *   - Hard block: EduGrant_applications >= Maximum_Attendees
+         *   - Soft warning: EduBeantragt >= Maximum_Attendees but approved < max
          */
         private function check_event_eligibility($event) {
             $event_name = $event['Name'] ?? 'Unbekannte Veranstaltung';
             $from_date = $event['From_Date'] ?? null;
             $max_attendees = intval($event['Maximum_Attendees'] ?? 0);
+            $approved_grants = intval($event['EduGrant_applications'] ?? 0);
+            $applied_grants = intval($event['EduBeantragt'] ?? 0);
             $event_id = $event['id'] ?? '';
 
             $this->log('Checking event eligibility', [
                 'event_id' => $event_id,
                 'event_name' => $event_name,
                 'from_date' => $from_date,
-                'max_attendees' => $max_attendees
+                'max_attendees' => $max_attendees,
+                'approved_grants' => $approved_grants,
+                'applied_grants' => $applied_grants
             ], 'info');
 
             // Check 1: Deadline - must be at least 3 days before event start
@@ -1530,29 +1559,34 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                         'reason' => 'deadline_passed',
                         'message' => "Die Antragsfrist für diese Veranstaltung ist abgelaufen (Frist: {$deadline_date}).",
                         'deadline' => $deadline_date,
-                        'spots_remaining' => 0
+                        'spots_remaining' => 0,
+                        'over_quota_warning' => false
                     ];
                 }
             }
 
-            // Check 2: Quota - count existing EduGrant applications
+            // Check 2: Tiered quota check
             if ($max_attendees > 0) {
-                $current_applications = $this->count_edugrant_applications($event_id);
-
-                if ($current_applications >= $max_attendees) {
+                // Hard block: approved grants >= max
+                if ($approved_grants >= $max_attendees) {
                     return [
                         'eligible' => false,
                         'reason' => 'quota_exhausted',
-                        'message' => "Das EduGrant-Kontingent für diese Veranstaltung ist ausgeschöpft ({$current_applications}/{$max_attendees} Plätze belegt).",
+                        'message' => "Das EduGrant-Kontingent für diese Veranstaltung ist ausgeschöpft.",
                         'deadline' => !empty($from_date) ? date('d.m.Y', strtotime('-3 days', strtotime($from_date))) : null,
-                        'spots_remaining' => 0
+                        'spots_remaining' => 0,
+                        'over_quota_warning' => false
                     ];
                 }
 
-                $spots_remaining = $max_attendees - $current_applications;
+                // Soft warning: applied >= max but approved < max
+                $over_quota_warning = ($applied_grants >= $max_attendees && $approved_grants < $max_attendees);
+
+                $spots_remaining = $max_attendees - $approved_grants;
             } else {
                 // No quota limit set
                 $spots_remaining = 999;
+                $over_quota_warning = false;
             }
 
             return [
@@ -1560,7 +1594,8 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 'reason' => null,
                 'message' => null,
                 'deadline' => !empty($from_date) ? date('d.m.Y', strtotime('-3 days', strtotime($from_date))) : null,
-                'spots_remaining' => $spots_remaining
+                'spots_remaining' => $spots_remaining,
+                'over_quota_warning' => $over_quota_warning
             ];
         }
 
@@ -2029,6 +2064,79 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
             }
 
             return $body;
+        }
+
+        /**
+         * Increment EduBeantragt counter on event after successful application
+         * This tracks the number of submitted (not yet approved) applications
+         */
+        private function increment_edubeantragt($event_id) {
+            $this->log('Incrementing EduBeantragt for event', ['event_id' => $event_id], 'info');
+
+            $access_token = $this->get_access_token();
+
+            if (is_wp_error($access_token)) {
+                $this->log('Increment EduBeantragt failed - no token', ['error' => $access_token->get_error_message()], 'error');
+                return $access_token;
+            }
+
+            // First, get current value
+            $event = $this->get_event_by_id($event_id);
+            if (is_wp_error($event)) {
+                $this->log('Increment EduBeantragt failed - event not found', ['event_id' => $event_id], 'error');
+                return $event;
+            }
+
+            $current_value = intval($event['EduBeantragt'] ?? 0);
+            $new_value = $current_value + 1;
+
+            $this->log('EduBeantragt values', [
+                'event_id' => $event_id,
+                'current' => $current_value,
+                'new' => $new_value
+            ], 'info');
+
+            // Update the event record
+            $url = 'https://www.zohoapis.eu/crm/v8/' . self::ZOHO_MODULE_EVENTS . '/' . $event_id;
+
+            $update_data = [
+                'data' => [
+                    [
+                        'EduBeantragt' => $new_value
+                    ]
+                ]
+            ];
+
+            $response = wp_remote_request($url, [
+                'method' => 'PUT',
+                'headers' => [
+                    'Authorization' => 'Zoho-oauthtoken ' . $access_token,
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json'
+                ],
+                'body' => json_encode($update_data),
+                'timeout' => 30
+            ]);
+
+            if (is_wp_error($response)) {
+                $this->log('Increment EduBeantragt WP Error', ['error' => $response->get_error_message()], 'error');
+                return $response;
+            }
+
+            $status_code = wp_remote_retrieve_response_code($response);
+            $body = json_decode(wp_remote_retrieve_body($response), true);
+
+            $this->log('Increment EduBeantragt response', [
+                'status_code' => $status_code,
+                'response' => $body
+            ], $status_code === 200 ? 'info' : 'error');
+
+            if ($status_code !== 200) {
+                $error_msg = $body['message'] ?? 'Unbekannter Fehler';
+                return new WP_Error('api_error', 'Fehler beim Aktualisieren von EduBeantragt: ' . $error_msg);
+            }
+
+            return $new_value;
         }
 
         /**

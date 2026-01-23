@@ -308,7 +308,7 @@ if ($is_document_submission && !empty($eduid)) {
                 <input type="hidden" name="event_id" value="<?php echo esc_attr($event_id); ?>">
                 <input type="hidden" name="is_guest" value="<?php echo $is_logged_in ? '0' : '1'; ?>">
 
-                <div class="edugrant-terms">
+                <div class="edugrant-terms" style="display: none;">
                     <p>Mit dem Absenden dieses Antrags bestätige ich:</p>
                     <ul>
                         <li>Ich erfülle die Förderbedingungen.</li>
@@ -333,7 +333,7 @@ if ($is_document_submission && !empty($eduid)) {
                 </div>
 
                 <div class="form-actions">
-                    <button type="submit" class="button edugrant-submit-btn" id="submit-application-btn">
+                    <button type="submit" class="button edugrant-submit-btn" id="submit-application-btn" style="display: none;">
                         <span class="dashicons dashicons-yes"></span>
                         EduGrant beantragen
                     </button>

@@ -158,7 +158,12 @@
                     // Guests handle ticket check through email verification flow
                     if (!isExternal && isLoggedIn && $ticketContainer.length) {
                         checkTicketEligibility(eventId, $ticketContainer);
+                    } else if (isLoggedIn) {
+                        // External event for logged-in user: show terms and submit button immediately
+                        $form.find('.edugrant-terms').show();
+                        $form.find('.edugrant-submit-btn').show();
                     }
+                    // For guests: terms are shown in handleEmailCheckResult after email verification
                 } else {
                     // Event not eligible or error - show message and disable form
                     console.log('Event NOT eligible or error - disabling form');
@@ -209,6 +214,10 @@
                         html += response.data.message;
                         html += '</div>';
                         $container.html(html);
+
+                        // Show terms and submit button for logged-in users with valid ticket
+                        $('#edugrant-application-form').find('.edugrant-terms').show();
+                        $('#edugrant-application-form').find('.edugrant-submit-btn').show();
                     } else {
                         // No ticket - show error and disable form
                         var html = '<div class="edugrant-error">';
@@ -217,8 +226,9 @@
                         html += '</div>';
                         $container.html(html);
 
-                        // Disable form submission
-                        $('#edugrant-application-form').find('.edugrant-submit-btn').prop('disabled', true);
+                        // Disable form submission and hide terms
+                        $('#edugrant-application-form').find('.edugrant-submit-btn').prop('disabled', true).hide();
+                        $('#edugrant-application-form').find('.edugrant-terms').hide();
                         $('#edugrant-application-form').find('input, select').prop('disabled', true);
                     }
                 } else {

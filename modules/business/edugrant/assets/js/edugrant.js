@@ -773,14 +773,27 @@
 
         function handleSubmitResponse(response) {
             if (response.success) {
-                var successHtml = response.data.message;
+                var successHtml = '';
+                var messageClass = 'success';
+
+                // Check if this was an existing record (duplicate application)
+                if (response.data._is_existing) {
+                    // Existing record found - show info message
+                    messageClass = 'info';
+                    successHtml = response.data._message || 'Ihr Antrag für diese Veranstaltung ist bereits bei uns eingegangen.';
+                } else {
+                    // New record created
+                    successHtml = response.data.message;
+                }
+
                 if (response.data.edugrant_number) {
                     successHtml += '<br><strong>EduGrant-Nummer: ' + response.data.edugrant_number + '</strong>';
                 }
-                $message.removeClass('error').addClass('success').html(successHtml).show();
+
+                $message.removeClass('error success info').addClass(messageClass).html(successHtml).show();
                 $form.hide();
             } else {
-                $message.removeClass('success').addClass('error').text(response.data.message).show();
+                $message.removeClass('success info').addClass('error').text(response.data.message).show();
                 $submitBtn.prop('disabled', false).html('<span class="dashicons dashicons-yes"></span> EduGrant beantragen');
             }
         }

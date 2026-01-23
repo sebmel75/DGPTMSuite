@@ -886,11 +886,19 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 wp_send_json_error(['message' => $result->get_error_message()]);
             }
 
-            wp_send_json_success([
+            $response_data = [
                 'message' => 'EduGrant-Antrag erfolgreich eingereicht!',
                 'edugrant_id' => $result['id'] ?? '',
                 'edugrant_number' => $result['Nummer'] ?? ''
-            ]);
+            ];
+
+            // Include existing record info if applicable (duplicate application)
+            if (!empty($result['_is_existing'])) {
+                $response_data['_is_existing'] = true;
+                $response_data['_message'] = $result['_message'] ?? 'Ihr Antrag für diese Veranstaltung ist bereits bei uns eingegangen.';
+            }
+
+            wp_send_json_success($response_data);
         }
 
         /**
@@ -1009,16 +1017,48 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                 'response' => $body
             ], $status_code === 201 || $status_code === 200 ? 'info' : 'error');
 
+            // Check for duplicate data error
+            $is_duplicate = false;
+            $error_code = $body['data'][0]['code'] ?? ($body['code'] ?? '');
+            $error_msg = $body['message'] ?? ($body['data'][0]['message'] ?? 'Unbekannter Fehler');
+
             if ($status_code !== 201 && $status_code !== 200) {
-                $error_msg = $body['message'] ?? ($body['data'][0]['message'] ?? 'Unbekannter Fehler');
-                return new WP_Error('api_error', 'Fehler beim Erstellen: ' . $error_msg);
+                // Check if it's a duplicate error
+                if (stripos($error_code, 'DUPLICATE') !== false || stripos($error_msg, 'duplicate') !== false) {
+                    $is_duplicate = true;
+                    $this->log('Duplicate EduGrant detected, searching for existing record', [
+                        'contact_id' => $contact_id,
+                        'event_id' => $event_id
+                    ], 'info');
+                } else {
+                    return new WP_Error('api_error', 'Fehler beim Erstellen: ' . $error_msg);
+                }
             }
 
-            // Get the created record ID and fetch full record
-            $created_id = $body['data'][0]['details']['id'] ?? null;
+            $created_id = null;
+            $is_existing_record = false;
+
+            if ($is_duplicate) {
+                // Find existing EduGrant record
+                $existing = $this->find_existing_edugrant($contact_id, $event_id);
+
+                if ($existing && !is_wp_error($existing)) {
+                    $created_id = $existing['id'];
+                    $is_existing_record = true;
+                    $this->log('Found existing EduGrant', [
+                        'id' => $created_id,
+                        'nummer' => $existing['Nummer'] ?? 'N/A'
+                    ], 'info');
+                } else {
+                    return new WP_Error('api_error', 'Ein Antrag für diese Veranstaltung ist bereits bei uns eingegangen, konnte aber nicht gefunden werden.');
+                }
+            } else {
+                // Get the created record ID
+                $created_id = $body['data'][0]['details']['id'] ?? null;
+            }
 
             if ($created_id) {
-                // Upload proof file if provided
+                // Upload proof file if provided (works for both new and existing records)
                 if (!empty($nachweis_file)) {
                     $upload_result = $this->upload_file_to_record($created_id, 'Berechtigungsnachweis', $nachweis_file);
 
@@ -1029,16 +1069,25 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                         ], 'error');
                     } else {
                         $this->log('Berechtigungsnachweis uploaded successfully', [
-                            'edugrant_id' => $created_id
+                            'edugrant_id' => $created_id,
+                            'is_existing_record' => $is_existing_record
                         ], 'info');
                     }
                 }
 
                 $full_record = $this->get_edugrant_by_id($created_id);
                 if (!is_wp_error($full_record)) {
-                    $this->log('Created EduGrant Guest full record', [
+                    // Mark as existing record if it was a duplicate
+                    if ($is_existing_record) {
+                        $full_record['_is_existing'] = true;
+                        $full_record['_message'] = 'Ihr Antrag für diese Veranstaltung ist bereits bei uns eingegangen.' .
+                            (!empty($nachweis_file) ? ' Der Berechtigungsnachweis wurde aktualisiert.' : '');
+                    }
+
+                    $this->log('EduGrant Guest record processed', [
                         'id' => $created_id,
-                        'nummer' => $full_record['Nummer'] ?? 'N/A'
+                        'nummer' => $full_record['Nummer'] ?? 'N/A',
+                        'is_existing' => $is_existing_record
                     ], 'info');
                     return $full_record;
                 }
@@ -1050,14 +1099,19 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
         /**
          * Upload file to a record's file upload field using curl
          * Zoho File Upload API: POST /crm/v8/{module}/{record_id}/{field_api_name}
+         *
+         * IMPORTANT: Zoho's file upload fields are only available AFTER the record
+         * is fully committed. This function includes a retry mechanism with delays
+         * to handle this timing issue.
          */
-        private function upload_file_to_record($record_id, $field_name, $file) {
-            $this->log('Uploading file to record', [
+        private function upload_file_to_record($record_id, $field_name, $file, $max_retries = 5) {
+            $this->log('Uploading file to record (with retry)', [
                 'record_id' => $record_id,
                 'field_name' => $field_name,
                 'file_name' => $file['name'] ?? 'unknown',
                 'file_tmp' => $file['tmp_name'] ?? 'no tmp_name',
-                'file_size' => $file['size'] ?? 0
+                'file_size' => $file['size'] ?? 0,
+                'max_retries' => $max_retries
             ], 'info');
 
             // Validate file exists
@@ -1079,50 +1133,104 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
 
             $this->log('File upload URL', ['url' => $url], 'info');
 
-            // Use curl for reliable multipart file upload
-            $ch = curl_init();
+            // Initial delay before first attempt (record needs time to be fully committed)
+            sleep(2);
 
-            // Create CURLFile object for the upload
-            $cfile = new CURLFile($file['tmp_name'], $file['type'] ?: 'application/octet-stream', $file['name']);
+            $last_error = null;
+            $delays = [2, 3, 5, 8, 10]; // Delays between retries in seconds
 
-            $post_data = [
-                'file' => $cfile
-            ];
+            for ($attempt = 1; $attempt <= $max_retries; $attempt++) {
+                $this->log('File upload attempt', [
+                    'attempt' => $attempt,
+                    'max_retries' => $max_retries
+                ], 'info');
 
-            curl_setopt_array($ch, [
-                CURLOPT_URL => $url,
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => $post_data,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_HTTPHEADER => [
-                    'Authorization: Zoho-oauthtoken ' . $access_token
-                ],
-                CURLOPT_TIMEOUT => 60
-            ]);
+                // Use curl for reliable multipart file upload
+                $ch = curl_init();
 
-            $response = curl_exec($ch);
-            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $curl_error = curl_error($ch);
-            curl_close($ch);
+                // Create CURLFile object for the upload
+                $cfile = new CURLFile($file['tmp_name'], $file['type'] ?: 'application/octet-stream', $file['name']);
 
-            if ($curl_error) {
-                $this->log('File upload curl error', ['error' => $curl_error], 'error');
-                return new WP_Error('curl_error', $curl_error);
+                $post_data = [
+                    'file' => $cfile
+                ];
+
+                curl_setopt_array($ch, [
+                    CURLOPT_URL => $url,
+                    CURLOPT_POST => true,
+                    CURLOPT_POSTFIELDS => $post_data,
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_HTTPHEADER => [
+                        'Authorization: Zoho-oauthtoken ' . $access_token
+                    ],
+                    CURLOPT_TIMEOUT => 60
+                ]);
+
+                $response = curl_exec($ch);
+                $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                $curl_error = curl_error($ch);
+                curl_close($ch);
+
+                if ($curl_error) {
+                    $this->log('File upload curl error', [
+                        'attempt' => $attempt,
+                        'error' => $curl_error
+                    ], 'error');
+                    $last_error = new WP_Error('curl_error', $curl_error);
+                } else {
+                    $response_body = json_decode($response, true);
+
+                    $this->log('File upload response', [
+                        'attempt' => $attempt,
+                        'http_code' => $http_code,
+                        'response' => $response_body
+                    ], ($http_code === 200 || $http_code === 201) ? 'info' : 'warning');
+
+                    // Success!
+                    if ($http_code === 200 || $http_code === 201) {
+                        $this->log('File upload SUCCESS', [
+                            'attempt' => $attempt,
+                            'record_id' => $record_id,
+                            'field_name' => $field_name
+                        ], 'info');
+                        return $response_body;
+                    }
+
+                    // Check if it's a "field not ready" type error (record not yet committed)
+                    $error_code = $response_body['code'] ?? ($response_body['data'][0]['code'] ?? '');
+                    $error_msg = $response_body['message'] ?? ($response_body['data'][0]['message'] ?? 'Fehler beim Datei-Upload');
+
+                    $last_error = new WP_Error('upload_error', $error_msg . ' (Code: ' . $error_code . ')');
+
+                    // Log the specific error for debugging
+                    $this->log('File upload failed, will retry', [
+                        'attempt' => $attempt,
+                        'http_code' => $http_code,
+                        'error_code' => $error_code,
+                        'error_msg' => $error_msg
+                    ], 'warning');
+                }
+
+                // Wait before next attempt (unless this was the last attempt)
+                if ($attempt < $max_retries) {
+                    $delay = $delays[$attempt - 1] ?? 10;
+                    $this->log('Waiting before retry', [
+                        'delay_seconds' => $delay,
+                        'next_attempt' => $attempt + 1
+                    ], 'info');
+                    sleep($delay);
+                }
             }
 
-            $response_body = json_decode($response, true);
+            // All retries exhausted
+            $this->log('File upload FAILED after all retries', [
+                'record_id' => $record_id,
+                'field_name' => $field_name,
+                'total_attempts' => $max_retries,
+                'last_error' => $last_error ? $last_error->get_error_message() : 'Unknown'
+            ], 'error');
 
-            $this->log('File upload response', [
-                'http_code' => $http_code,
-                'response' => $response_body
-            ], ($http_code === 200 || $http_code === 201) ? 'info' : 'error');
-
-            if ($http_code !== 200 && $http_code !== 201) {
-                $error_msg = $response_body['message'] ?? ($response_body['data'][0]['message'] ?? 'Fehler beim Datei-Upload');
-                return new WP_Error('upload_error', $error_msg);
-            }
-
-            return $response_body;
+            return $last_error ?? new WP_Error('upload_error', 'Datei-Upload fehlgeschlagen nach ' . $max_retries . ' Versuchen');
         }
 
         /**
@@ -1288,6 +1396,53 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
             }
 
             return $body['data'][0] ?? [];
+        }
+
+        /**
+         * Find existing EduGrant for a contact and event
+         */
+        private function find_existing_edugrant($contact_id, $event_id) {
+            $access_token = $this->get_access_token();
+
+            if (is_wp_error($access_token)) {
+                return $access_token;
+            }
+
+            // Search for EduGrant with this contact and event
+            $criteria = '((Contact:equals:' . $contact_id . ')and(Veranstaltung:equals:' . $event_id . '))';
+            $url = 'https://www.zohoapis.eu/crm/v8/' . self::ZOHO_MODULE_EDUGRANT . '/search?criteria=' . urlencode($criteria);
+
+            $this->log('Searching for existing EduGrant', [
+                'contact_id' => $contact_id,
+                'event_id' => $event_id,
+                'url' => $url
+            ], 'info');
+
+            $response = wp_remote_get($url, [
+                'headers' => [
+                    'Authorization' => 'Zoho-oauthtoken ' . $access_token,
+                    'Accept' => 'application/json'
+                ],
+                'timeout' => 30
+            ]);
+
+            if (is_wp_error($response)) {
+                return $response;
+            }
+
+            $status_code = wp_remote_retrieve_response_code($response);
+            $body = json_decode(wp_remote_retrieve_body($response), true);
+
+            $this->log('Existing EduGrant search result', [
+                'status_code' => $status_code,
+                'found' => !empty($body['data'])
+            ], 'info');
+
+            if ($status_code === 200 && !empty($body['data'])) {
+                return $body['data'][0]; // Return first match
+            }
+
+            return null; // Not found
         }
 
         /**

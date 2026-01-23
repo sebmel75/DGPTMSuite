@@ -994,7 +994,7 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                         'Veranstaltung' => $event_id,
                         'Status' => 'Beantragt',
                         'Beantragt_am' => date('Y-m-d'),
-                        'E_Mail' => $email,
+                        'Email' => $email,
                         'Externe_Veranstaltung' => $is_external,
                         'Nachweis_erforderlich' => $nachweis_erforderlich
                     ]
@@ -1295,7 +1295,7 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                         'Veranstaltung' => $event_id,
                         'Status' => 'Beantragt',
                         'Beantragt_am' => date('Y-m-d'),
-                        'E_Mail' => $user->user_email,
+                        'Email' => $user->user_email,
                         'Externe_Veranstaltung' => $is_external
                     ]
                 ]

@@ -403,7 +403,7 @@
 
             html += '<div class="event-actions">';
             if (hasSpots) {
-                html += '<a href="' + window.location.pathname + '?event_id=' + event.id + '" class="button edugrant-apply-btn">';
+                html += '<a href="' + window.location.pathname + '?event_id=' + event.id + '#antrag" class="button edugrant-apply-btn">';
                 html += '<span class="dashicons dashicons-yes"></span> Auswählen</a>';
             } else {
                 html += '<span class="edugrant-unavailable"><span class="dashicons dashicons-no"></span> Maximum erreicht</span>';
@@ -421,7 +421,7 @@
         $container.find('.edugrant-event-card.selectable').on('click', function(e) {
             if (!$(e.target).is('a, button')) {
                 var eventId = $(this).data('event-id');
-                window.location.href = window.location.pathname + '?event_id=' + eventId;
+                window.location.href = window.location.pathname + '?event_id=' + eventId + '#antrag';
             }
         });
     }

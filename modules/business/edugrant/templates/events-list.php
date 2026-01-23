@@ -103,12 +103,12 @@ $today = date('Y-m-d');
                 <div class="event-actions">
                     <?php if ($can_apply && !$max_reached): ?>
                         <?php if (is_user_logged_in()): ?>
-                            <a href="<?php echo esc_url(add_query_arg('event_id', $event_id, get_option('dgptm_edugrant_form_page', '/veranstaltungen/educational-grant-der-dgptm/educational-grant-abrechnung/'))); ?>"
+                            <a href="<?php echo esc_url(add_query_arg('event_id', $event_id, get_option('dgptm_edugrant_form_page', '/veranstaltungen/educational-grant-der-dgptm/educational-grant-abrechnung/')) . '#antrag'); ?>"
                                class="button edugrant-apply-btn">
                                 <span class="dashicons dashicons-yes"></span> EduGrant beantragen
                             </a>
                         <?php else: ?>
-                            <a href="<?php echo wp_login_url(add_query_arg('event_id', $event_id, get_option('dgptm_edugrant_form_page', '/veranstaltungen/educational-grant-der-dgptm/educational-grant-abrechnung/'))); ?>"
+                            <a href="<?php echo wp_login_url(add_query_arg('event_id', $event_id, get_option('dgptm_edugrant_form_page', '/veranstaltungen/educational-grant-der-dgptm/educational-grant-abrechnung/') . '#antrag')); ?>"
                                class="button edugrant-login-btn">
                                 Anmelden um zu beantragen
                             </a>

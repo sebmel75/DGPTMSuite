@@ -86,7 +86,7 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                     'dgptm-edugrant-script',
                     $this->plugin_url . 'assets/js/edugrant.js',
                     ['jquery'],
-                    '1.0.0',
+                    '1.0.1',
                     true
                 );
 

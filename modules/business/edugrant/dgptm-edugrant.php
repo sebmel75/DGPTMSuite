@@ -1208,14 +1208,13 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
             ], 'info');
 
             // Step 2: Update the record with the file ID
+            // IMPORTANT: file_id must be in a simple array, not as {'file_id': 'xxx'}
             $update_url = 'https://www.zohoapis.eu/crm/v8/' . self::ZOHO_MODULE_EDUGRANT . '/' . $record_id;
 
             $update_data = [
                 'data' => [
                     [
-                        $field_name => [
-                            ['file_id' => $file_id]
-                        ]
+                        $field_name => [$file_id]
                     ]
                 ]
             ];

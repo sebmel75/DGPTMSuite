@@ -170,7 +170,7 @@ if ($is_document_submission && !empty($eduid)) {
         <?php if (!$is_logged_in): ?>
             <div class="edugrant-info-box edugrant-login-hint">
                 <p><strong>Mitglieder:</strong> Bitte loggen Sie sich vorher ein, um das Formular automatisch auszufüllen.</p>
-                <a href="<?php echo wp_login_url(add_query_arg([])); ?>" class="button edugrant-login-btn">
+                <a href="#" class="button edugrant-login-btn" onclick="elementorProFrontend.modules.popup.showPopup({id: 32160}); return false;">
                     <span class="dashicons dashicons-admin-users"></span>
                     Jetzt einloggen
                 </a>

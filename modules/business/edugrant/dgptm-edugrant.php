@@ -708,11 +708,11 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                     if ($is_member) {
                         $result['needs_eligibility_proof'] = false;
                         $result['can_apply'] = true;
-                        $result['message'] = 'Kontakt gefunden. Sie sind als Mitglied registriert.';
+                        $result['message'] = 'Kontakt gefunden.';
                     } else {
                         $result['needs_eligibility_proof'] = true; // Non-members need proof
                         $result['can_apply'] = true;
-                        $result['message'] = 'Kontakt gefunden. Bitte Berechtigung nachweisen.';
+                        $result['message'] = 'Kontakt gefunden.';
                     }
                 }
             } else {

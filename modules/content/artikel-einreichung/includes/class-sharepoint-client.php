@@ -1,6 +1,6 @@
 <?php
 /**
- * Publication Frontend Manager - SharePoint Client
+ * DGPTM Artikel-Einreichung - SharePoint Client
  * Microsoft Graph API integration for SharePoint file storage
  */
 
@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class PFM_SharePoint_Client {
+class DGPTM_Artikel_SharePoint_Client {
 
     /**
      * @var string Tenant ID
@@ -53,7 +53,7 @@ class PFM_SharePoint_Client {
     /**
      * Cache key prefix
      */
-    const CACHE_PREFIX = 'pfm_sp_';
+    const CACHE_PREFIX = 'dgptm_artikel_sp_';
 
     /**
      * Large file threshold (4 MB)
@@ -87,9 +87,9 @@ class PFM_SharePoint_Client {
             'client_id' => '',
             'client_secret' => '',
             'site_url' => '',
-            'base_folder' => 'Zeitschrift Perfusion',
+            'base_folder' => 'Zeitschrift Perfusiologie',
         );
-        $settings = get_option('pfm_sharepoint_settings', array());
+        $settings = get_option('dgptm_artikel_sharepoint_settings', array());
         return wp_parse_args($settings, $defaults);
     }
 
@@ -118,7 +118,7 @@ class PFM_SharePoint_Client {
         }
 
         if (!$this->is_configured()) {
-            return new WP_Error('sharepoint_not_configured', __('SharePoint ist nicht konfiguriert.', PFM_TD));
+            return new WP_Error('sharepoint_not_configured', __('SharePoint ist nicht konfiguriert.', 'dgptm-artikel-einreichung'));
         }
 
         $token_url = "https://login.microsoftonline.com/{$this->tenant_id}/oauth2/v2.0/token";
@@ -142,16 +142,16 @@ class PFM_SharePoint_Client {
         if (isset($body['error'])) {
             return new WP_Error(
                 'sharepoint_auth_error',
-                sprintf(__('SharePoint Authentifizierung fehlgeschlagen: %s', PFM_TD), $body['error_description'] ?? $body['error'])
+                sprintf(__('SharePoint Authentifizierung fehlgeschlagen: %s', 'dgptm-artikel-einreichung'), $body['error_description'] ?? $body['error'])
             );
         }
 
         if (!isset($body['access_token'])) {
-            return new WP_Error('sharepoint_no_token', __('Kein Access Token erhalten.', PFM_TD));
+            return new WP_Error('sharepoint_no_token', __('Kein Access Token erhalten.', 'dgptm-artikel-einreichung'));
         }
 
         $this->access_token = $body['access_token'];
-        $expires_in = isset($body['expires_in']) ? intval($body['expires_in']) - 300 : 3300; // Buffer of 5 minutes
+        $expires_in = isset($body['expires_in']) ? intval($body['expires_in']) - 300 : 3300;
 
         // Cache token
         set_transient(self::CACHE_PREFIX . 'access_token', $this->access_token, $expires_in);
@@ -165,7 +165,6 @@ class PFM_SharePoint_Client {
      * @return string|WP_Error Site ID or error
      */
     public function get_site_id() {
-        // Check cache
         $cached_site_id = get_transient(self::CACHE_PREFIX . 'site_id');
         if ($cached_site_id) {
             return $cached_site_id;
@@ -176,13 +175,12 @@ class PFM_SharePoint_Client {
             return $token;
         }
 
-        // Parse site URL to get hostname and path
         $parsed = wp_parse_url($this->site_url);
         $hostname = $parsed['host'] ?? '';
         $path = trim($parsed['path'] ?? '', '/');
 
         if (empty($hostname)) {
-            return new WP_Error('sharepoint_invalid_url', __('Ungültige SharePoint URL.', PFM_TD));
+            return new WP_Error('sharepoint_invalid_url', __('Ungültige SharePoint URL.', 'dgptm-artikel-einreichung'));
         }
 
         $api_url = "https://graph.microsoft.com/v1.0/sites/{$hostname}:/{$path}";
@@ -205,13 +203,11 @@ class PFM_SharePoint_Client {
         if ($code !== 200) {
             return new WP_Error(
                 'sharepoint_site_error',
-                sprintf(__('SharePoint Site nicht gefunden: %s', PFM_TD), $body['error']['message'] ?? 'Unknown error')
+                sprintf(__('SharePoint Site nicht gefunden: %s', 'dgptm-artikel-einreichung'), $body['error']['message'] ?? 'Unknown error')
             );
         }
 
         $this->site_id = $body['id'];
-
-        // Cache for 1 day
         set_transient(self::CACHE_PREFIX . 'site_id', $this->site_id, DAY_IN_SECONDS);
 
         return $this->site_id;
@@ -223,7 +219,6 @@ class PFM_SharePoint_Client {
      * @return string|WP_Error Drive ID or error
      */
     public function get_drive_id() {
-        // Check cache
         $cached_drive_id = get_transient(self::CACHE_PREFIX . 'drive_id');
         if ($cached_drive_id) {
             return $cached_drive_id;
@@ -239,7 +234,6 @@ class PFM_SharePoint_Client {
             return $token;
         }
 
-        // Get default drive (document library)
         $api_url = "https://graph.microsoft.com/v1.0/sites/{$site_id}/drive";
 
         $response = wp_remote_get($api_url, array(
@@ -260,13 +254,11 @@ class PFM_SharePoint_Client {
         if ($code !== 200) {
             return new WP_Error(
                 'sharepoint_drive_error',
-                sprintf(__('SharePoint Drive nicht gefunden: %s', PFM_TD), $body['error']['message'] ?? 'Unknown error')
+                sprintf(__('SharePoint Drive nicht gefunden: %s', 'dgptm-artikel-einreichung'), $body['error']['message'] ?? 'Unknown error')
             );
         }
 
         $this->drive_id = $body['id'];
-
-        // Cache for 1 day
         set_transient(self::CACHE_PREFIX . 'drive_id', $this->drive_id, DAY_IN_SECONDS);
 
         return $this->drive_id;
@@ -289,7 +281,6 @@ class PFM_SharePoint_Client {
             return $token;
         }
 
-        // Clean and split path
         $folder_path = trim($folder_path, '/');
         $parts = explode('/', $folder_path);
         $current_path = '';
@@ -302,7 +293,6 @@ class PFM_SharePoint_Client {
             $parent_path = $current_path;
             $current_path = $current_path ? $current_path . '/' . $folder_name : $folder_name;
 
-            // Check if folder exists
             $check_url = "https://graph.microsoft.com/v1.0/drives/{$drive_id}/root:/{$current_path}";
 
             $response = wp_remote_get($check_url, array(
@@ -315,11 +305,9 @@ class PFM_SharePoint_Client {
             $code = wp_remote_retrieve_response_code($response);
 
             if ($code === 200) {
-                // Folder exists, continue
                 continue;
             }
 
-            // Create folder
             if ($parent_path) {
                 $create_url = "https://graph.microsoft.com/v1.0/drives/{$drive_id}/root:/{$parent_path}:/children";
             } else {
@@ -346,16 +334,14 @@ class PFM_SharePoint_Client {
             $create_code = wp_remote_retrieve_response_code($create_response);
             $create_body = json_decode(wp_remote_retrieve_body($create_response), true);
 
-            // 201 = created, 409 = already exists (race condition)
             if ($create_code !== 201 && $create_code !== 409) {
                 return new WP_Error(
                     'sharepoint_folder_error',
-                    sprintf(__('Ordner konnte nicht erstellt werden: %s', PFM_TD), $create_body['error']['message'] ?? 'Unknown error')
+                    sprintf(__('Ordner konnte nicht erstellt werden: %s', 'dgptm-artikel-einreichung'), $create_body['error']['message'] ?? 'Unknown error')
                 );
             }
         }
 
-        // Get final folder info
         $final_url = "https://graph.microsoft.com/v1.0/drives/{$drive_id}/root:/{$folder_path}";
         $final_response = wp_remote_get($final_url, array(
             'headers' => array(
@@ -382,12 +368,11 @@ class PFM_SharePoint_Client {
      */
     public function upload_file($local_path, $remote_path) {
         if (!file_exists($local_path)) {
-            return new WP_Error('file_not_found', __('Lokale Datei nicht gefunden.', PFM_TD));
+            return new WP_Error('file_not_found', __('Lokale Datei nicht gefunden.', 'dgptm-artikel-einreichung'));
         }
 
         $file_size = filesize($local_path);
 
-        // Use simple upload for small files, upload session for large files
         if ($file_size <= self::LARGE_FILE_THRESHOLD) {
             return $this->upload_small_file($local_path, $remote_path);
         } else {
@@ -397,10 +382,6 @@ class PFM_SharePoint_Client {
 
     /**
      * Upload small file (< 4MB) directly
-     *
-     * @param string $local_path Local file path
-     * @param string $remote_path Remote path
-     * @return array|WP_Error
      */
     private function upload_small_file($local_path, $remote_path) {
         $drive_id = $this->get_drive_id();
@@ -413,7 +394,6 @@ class PFM_SharePoint_Client {
             return $token;
         }
 
-        // Ensure parent folder exists
         $folder_path = dirname($remote_path);
         if ($folder_path !== '.') {
             $folder_result = $this->ensure_folder_exists($folder_path);
@@ -448,7 +428,7 @@ class PFM_SharePoint_Client {
         if ($code !== 200 && $code !== 201) {
             return new WP_Error(
                 'sharepoint_upload_error',
-                sprintf(__('Upload fehlgeschlagen: %s', PFM_TD), $body['error']['message'] ?? 'Unknown error')
+                sprintf(__('Upload fehlgeschlagen: %s', 'dgptm-artikel-einreichung'), $body['error']['message'] ?? 'Unknown error')
             );
         }
 
@@ -463,10 +443,6 @@ class PFM_SharePoint_Client {
 
     /**
      * Upload large file (>= 4MB) using upload session
-     *
-     * @param string $local_path Local file path
-     * @param string $remote_path Remote path
-     * @return array|WP_Error
      */
     private function upload_large_file($local_path, $remote_path) {
         $drive_id = $this->get_drive_id();
@@ -479,7 +455,6 @@ class PFM_SharePoint_Client {
             return $token;
         }
 
-        // Ensure parent folder exists
         $folder_path = dirname($remote_path);
         if ($folder_path !== '.') {
             $folder_result = $this->ensure_folder_exists($folder_path);
@@ -491,7 +466,6 @@ class PFM_SharePoint_Client {
         $remote_path = trim($remote_path, '/');
         $file_size = filesize($local_path);
 
-        // Create upload session
         $session_url = "https://graph.microsoft.com/v1.0/drives/{$drive_id}/root:/{$remote_path}:/createUploadSession";
 
         $session_response = wp_remote_post($session_url, array(
@@ -514,12 +488,11 @@ class PFM_SharePoint_Client {
         $session_body = json_decode(wp_remote_retrieve_body($session_response), true);
 
         if (!isset($session_body['uploadUrl'])) {
-            return new WP_Error('sharepoint_session_error', __('Upload-Session konnte nicht erstellt werden.', PFM_TD));
+            return new WP_Error('sharepoint_session_error', __('Upload-Session konnte nicht erstellt werden.', 'dgptm-artikel-einreichung'));
         }
 
         $upload_url = $session_body['uploadUrl'];
 
-        // Upload in chunks
         $handle = fopen($local_path, 'rb');
         $offset = 0;
         $result = null;
@@ -548,7 +521,6 @@ class PFM_SharePoint_Client {
             $body = json_decode(wp_remote_retrieve_body($chunk_response), true);
 
             if ($code === 200 || $code === 201) {
-                // Upload complete
                 $result = array(
                     'id' => $body['id'],
                     'name' => $body['name'],
@@ -558,13 +530,12 @@ class PFM_SharePoint_Client {
                 );
                 break;
             } elseif ($code === 202) {
-                // Continue uploading
                 $offset += $chunk_size;
             } else {
                 fclose($handle);
                 return new WP_Error(
                     'sharepoint_chunk_error',
-                    sprintf(__('Chunk-Upload fehlgeschlagen: %s', PFM_TD), $body['error']['message'] ?? 'Unknown error')
+                    sprintf(__('Chunk-Upload fehlgeschlagen: %s', 'dgptm-artikel-einreichung'), $body['error']['message'] ?? 'Unknown error')
                 );
             }
         }
@@ -572,7 +543,7 @@ class PFM_SharePoint_Client {
         fclose($handle);
 
         if (!$result) {
-            return new WP_Error('sharepoint_upload_incomplete', __('Upload wurde nicht abgeschlossen.', PFM_TD));
+            return new WP_Error('sharepoint_upload_incomplete', __('Upload wurde nicht abgeschlossen.', 'dgptm-artikel-einreichung'));
         }
 
         return $result;
@@ -580,9 +551,6 @@ class PFM_SharePoint_Client {
 
     /**
      * Delete a file from SharePoint
-     *
-     * @param string $remote_path Remote path or item ID
-     * @return bool|WP_Error True on success or error
      */
     public function delete_file($remote_path) {
         $drive_id = $this->get_drive_id();
@@ -595,12 +563,10 @@ class PFM_SharePoint_Client {
             return $token;
         }
 
-        // Determine if it's an item ID or path
         if (strpos($remote_path, '/') !== false) {
             $remote_path = trim($remote_path, '/');
             $api_url = "https://graph.microsoft.com/v1.0/drives/{$drive_id}/root:/{$remote_path}";
         } else {
-            // Assume it's an item ID
             $api_url = "https://graph.microsoft.com/v1.0/drives/{$drive_id}/items/{$remote_path}";
         }
 
@@ -625,17 +591,12 @@ class PFM_SharePoint_Client {
         $body = json_decode(wp_remote_retrieve_body($response), true);
         return new WP_Error(
             'sharepoint_delete_error',
-            sprintf(__('Löschen fehlgeschlagen: %s', PFM_TD), $body['error']['message'] ?? 'Unknown error')
+            sprintf(__('Löschen fehlgeschlagen: %s', 'dgptm-artikel-einreichung'), $body['error']['message'] ?? 'Unknown error')
         );
     }
 
     /**
      * Get a sharing link for file download
-     *
-     * @param string $item_id SharePoint item ID
-     * @param string $type Link type: 'view' or 'embed'
-     * @param string $scope Link scope: 'anonymous', 'organization', or 'users'
-     * @return string|WP_Error Download URL or error
      */
     public function get_download_url($item_id, $type = 'view', $scope = 'organization') {
         $drive_id = $this->get_drive_id();
@@ -648,7 +609,6 @@ class PFM_SharePoint_Client {
             return $token;
         }
 
-        // First try to get direct download URL from item
         $item_url = "https://graph.microsoft.com/v1.0/drives/{$drive_id}/items/{$item_id}";
         $item_response = wp_remote_get($item_url, array(
             'headers' => array(
@@ -664,7 +624,6 @@ class PFM_SharePoint_Client {
             }
         }
 
-        // Create a sharing link
         $api_url = "https://graph.microsoft.com/v1.0/drives/{$drive_id}/items/{$item_id}/createLink";
 
         $response = wp_remote_post($api_url, array(
@@ -689,7 +648,7 @@ class PFM_SharePoint_Client {
         if ($code !== 200 && $code !== 201) {
             return new WP_Error(
                 'sharepoint_link_error',
-                sprintf(__('Download-Link konnte nicht erstellt werden: %s', PFM_TD), $body['error']['message'] ?? 'Unknown error')
+                sprintf(__('Download-Link konnte nicht erstellt werden: %s', 'dgptm-artikel-einreichung'), $body['error']['message'] ?? 'Unknown error')
             );
         }
 
@@ -698,9 +657,6 @@ class PFM_SharePoint_Client {
 
     /**
      * Get file info by path
-     *
-     * @param string $remote_path Remote file path
-     * @return array|WP_Error File info or error
      */
     public function get_file_info($remote_path) {
         $drive_id = $this->get_drive_id();
@@ -733,7 +689,7 @@ class PFM_SharePoint_Client {
         if ($code !== 200) {
             return new WP_Error(
                 'sharepoint_file_not_found',
-                sprintf(__('Datei nicht gefunden: %s', PFM_TD), $body['error']['message'] ?? 'Unknown error')
+                sprintf(__('Datei nicht gefunden: %s', 'dgptm-artikel-einreichung'), $body['error']['message'] ?? 'Unknown error')
             );
         }
 
@@ -750,15 +706,12 @@ class PFM_SharePoint_Client {
 
     /**
      * Test connection to SharePoint
-     *
-     * @return array|WP_Error Site info on success or error
      */
     public function test_connection() {
         if (!$this->is_configured()) {
-            return new WP_Error('sharepoint_not_configured', __('SharePoint ist nicht konfiguriert.', PFM_TD));
+            return new WP_Error('sharepoint_not_configured', __('SharePoint ist nicht konfiguriert.', 'dgptm-artikel-einreichung'));
         }
 
-        // Clear cached values to force fresh check
         delete_transient(self::CACHE_PREFIX . 'access_token');
         delete_transient(self::CACHE_PREFIX . 'site_id');
         delete_transient(self::CACHE_PREFIX . 'drive_id');
@@ -780,7 +733,7 @@ class PFM_SharePoint_Client {
 
         return array(
             'success' => true,
-            'message' => __('Verbindung erfolgreich!', PFM_TD),
+            'message' => __('Verbindung erfolgreich!', 'dgptm-artikel-einreichung'),
             'site_id' => $site_id,
             'drive_id' => $drive_id,
         );

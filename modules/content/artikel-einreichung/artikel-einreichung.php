@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: DGPTM - Artikel-Einreichung Perfusiologie
- * Description: Einreichungssystem für wissenschaftliche Artikel der Fachzeitschrift "Die Perfusiologie" mit Peer-Review-Workflow
- * Version: 1.0.0
+ * Description: Einreichungssystem für wissenschaftliche Artikel der Fachzeitschrift "Die Perfusiologie" mit Peer-Review-Workflow, SharePoint-Integration und Token-basiertem Gutachter-Upload
+ * Version: 2.0.0
  * Author: Sebastian Melzer
  * Text Domain: dgptm-artikel-einreichung
  */
@@ -10,6 +10,32 @@
 if (!defined('ABSPATH')) {
     exit;
 }
+
+// Define version constant
+define('DGPTM_ARTIKEL_VERSION', '2.0.0');
+
+// Include SharePoint and Upload Token classes
+require_once __DIR__ . '/includes/class-db-installer.php';
+require_once __DIR__ . '/includes/class-sharepoint-client.php';
+require_once __DIR__ . '/includes/class-sharepoint-uploader.php';
+require_once __DIR__ . '/includes/class-upload-token.php';
+require_once __DIR__ . '/includes/class-reviewer-shortcode.php';
+
+// Initialize database tables
+register_activation_hook(__FILE__, array('DGPTM_Artikel_DB_Installer', 'install'));
+add_action('plugins_loaded', array('DGPTM_Artikel_DB_Installer', 'install'));
+
+// Initialize reviewer shortcode
+add_action('init', function() {
+    new DGPTM_Artikel_Reviewer_Shortcode();
+});
+
+// Schedule token cleanup
+add_action('init', array('DGPTM_Artikel_Upload_Token', 'schedule_cleanup'));
+add_action('dgptm_artikel_token_cleanup', function() {
+    $token_manager = new DGPTM_Artikel_Upload_Token();
+    $token_manager->cleanup_expired(30);
+});
 
 if (!class_exists('DGPTM_Artikel_Einreichung')) {
 

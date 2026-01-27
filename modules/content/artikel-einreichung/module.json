@@ -1,8 +1,8 @@
 {
     "id": "artikel-einreichung",
     "name": "DGPTM - Artikel-Einreichung Perfusiologie",
-    "description": "Einreichungssystem für wissenschaftliche Artikel der Fachzeitschrift 'Die Perfusiologie' mit Peer-Review-Workflow, Editor-in-Chief Dashboard und Reviewer-Management",
-    "version": "1.0.0",
+    "description": "Einreichungssystem für wissenschaftliche Artikel der Fachzeitschrift 'Die Perfusiologie' mit Peer-Review-Workflow, Editor-in-Chief Dashboard, SharePoint-Integration und Token-basiertem Gutachter-Upload",
+    "version": "2.0.0",
     "author": "Sebastian Melzer",
     "main_file": "artikel-einreichung.php",
     "dependencies": [],
@@ -16,5 +16,10 @@
     "icon": "dashicons-media-document",
     "active": false,
     "can_export": true,
-    "critical": false
+    "critical": false,
+    "comment": {
+        "text": "v2.0.0: SharePoint-Integration und Token-basiertes Gutachter-Upload-System hinzugefügt",
+        "timestamp": 1737993600,
+        "user_id": 1
+    }
 }

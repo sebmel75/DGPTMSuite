@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Publikation Frontend Manager (Medical Enhanced)
  * Description: Professionelles medizinisches Publikations-Management-System mit Review-Workflow, Editorial Decision Interface, Analytics, ACF-Integration für Kardiotechnik
- * Version: 3.0.0
+ * Version: 3.1.0
  * Author: Sebastian Melzer
  * Text Domain: publikation-frontend-manager
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('PFM_VERSION', '3.0.0');
+define('PFM_VERSION', '3.1.0');
 define('PFM_TD', 'publikation-frontend-manager');
 define('PFM_PATH', plugin_dir_path(__FILE__));
 define('PFM_URL', plugin_dir_url(__FILE__));
@@ -30,6 +30,29 @@ require_once PFM_PATH . 'includes/class-pfm-analytics.php';
 require_once PFM_PATH . 'includes/class-pfm-reminders.php';
 require_once PFM_PATH . 'includes/class-pfm-medical-fields.php';
 require_once PFM_PATH . 'includes/class-pfm-dashboard.php';
+
+// SharePoint and Token-based Upload System
+require_once PFM_PATH . 'includes/class-pfm-db-installer.php';
+require_once PFM_PATH . 'includes/class-pfm-sharepoint-client.php';
+require_once PFM_PATH . 'includes/class-pfm-sharepoint-uploader.php';
+require_once PFM_PATH . 'includes/class-pfm-upload-token.php';
+require_once PFM_PATH . 'includes/class-pfm-reviewer-shortcode.php';
+
+// Initialize database tables
+register_activation_hook(__FILE__, array('PFM_DB_Installer', 'install'));
+add_action('plugins_loaded', array('PFM_DB_Installer', 'install'));
+
+// Initialize reviewer shortcode
+add_action('init', function() {
+    new PFM_Reviewer_Shortcode();
+});
+
+// Schedule token cleanup
+add_action('init', array('PFM_Upload_Token', 'schedule_cleanup'));
+add_action('pfm_token_cleanup', function() {
+    $token_manager = new PFM_Upload_Token();
+    $token_manager->cleanup_expired(30);
+});
 
 /**
  * Enqueue Styles und Scripts
@@ -556,6 +579,7 @@ add_action('admin_menu', function () {
 
 add_action('admin_init', function () {
     register_setting('pfm_settings_group', 'pfm_crossref_settings', 'pfm_sanitize_settings');
+    register_setting('pfm_settings_group', 'pfm_sharepoint_settings', 'pfm_sanitize_sharepoint_settings');
 
     add_settings_section('pfm_crossref_main', __('Crossref & Journal', PFM_TD), '__return_false', 'pfm-settings');
 
@@ -579,6 +603,21 @@ add_action('admin_init', function () {
     foreach ($fields as $key => $label) {
         add_settings_field("pfm_{$key}", $label, 'pfm_render_field', 'pfm-settings', 'pfm_crossref_main', array('key'=>$key));
     }
+
+    // SharePoint Settings Section
+    add_settings_section('pfm_sharepoint_main', __('SharePoint Integration', PFM_TD), 'pfm_sharepoint_section_callback', 'pfm-settings');
+
+    $sp_fields = array(
+        'tenant_id'     => __('Azure Tenant ID', PFM_TD),
+        'client_id'     => __('Azure App Client ID', PFM_TD),
+        'client_secret' => __('Azure App Client Secret', PFM_TD),
+        'site_url'      => __('SharePoint Site URL (z.B. https://dgptm.sharepoint.com/sites/Zeitschriften)', PFM_TD),
+        'base_folder'   => __('Basis-Ordner (z.B. Zeitschrift Perfusion)', PFM_TD),
+    );
+
+    foreach ($sp_fields as $key => $label) {
+        add_settings_field("pfm_sp_{$key}", $label, 'pfm_render_sharepoint_field', 'pfm-settings', 'pfm_sharepoint_main', array('key'=>$key));
+    }
 });
 function pfm_sanitize_settings($input) {
     $out = array();
@@ -599,6 +638,49 @@ function pfm_render_field($args) {
     }
     $type = ($key==='crossref_password') ? 'password' : 'text';
     printf('<input type="%s" name="pfm_crossref_settings[%s]" value="%s" class="regular-text">', esc_attr($type), esc_attr($key), esc_attr($val));
+}
+
+/**
+ * SharePoint Settings Section Callback
+ */
+function pfm_sharepoint_section_callback() {
+    echo '<p>' . __('Konfigurieren Sie die SharePoint-Integration für die Speicherung von Manuskripten und Gutachten.', PFM_TD) . '</p>';
+    echo '<p class="description">' . __('Benötigt eine Azure AD App-Registrierung mit Microsoft Graph API Berechtigungen (Sites.ReadWrite.All).', PFM_TD) . '</p>';
+}
+
+/**
+ * Render SharePoint settings field
+ */
+function pfm_render_sharepoint_field($args) {
+    $key = $args['key'];
+    $options = get_option('pfm_sharepoint_settings', array());
+    $val = $options[$key] ?? '';
+    $type = ($key === 'client_secret') ? 'password' : 'text';
+    printf(
+        '<input type="%s" name="pfm_sharepoint_settings[%s]" value="%s" class="regular-text">',
+        esc_attr($type),
+        esc_attr($key),
+        esc_attr($val)
+    );
+
+    // Add test connection button after site_url field
+    if ($key === 'site_url') {
+        echo '<button type="button" id="pfm-test-sharepoint" class="button" style="margin-left:10px;">' . __('Verbindung testen', PFM_TD) . '</button>';
+        echo '<span id="pfm-sharepoint-test-result" style="margin-left:10px;"></span>';
+    }
+}
+
+/**
+ * Sanitize SharePoint settings
+ */
+function pfm_sanitize_sharepoint_settings($input) {
+    $output = array();
+    $output['tenant_id'] = sanitize_text_field($input['tenant_id'] ?? '');
+    $output['client_id'] = sanitize_text_field($input['client_id'] ?? '');
+    $output['client_secret'] = $input['client_secret'] ?? ''; // Don't sanitize password
+    $output['site_url'] = esc_url_raw($input['site_url'] ?? '');
+    $output['base_folder'] = sanitize_text_field($input['base_folder'] ?? 'Zeitschrift Perfusion');
+    return $output;
 }
 function pfm_render_settings_page() {
     ?>
@@ -2203,6 +2285,232 @@ function pfm_get_status_label($status) {
     return $labels[$status] ?? $status;
 }
 
+/* =========================================================================
+ * SharePoint & Token AJAX Handlers
+ * ========================================================================= */
+
+/**
+ * AJAX: Test SharePoint Connection
+ */
+add_action('wp_ajax_pfm_test_sharepoint', 'pfm_ajax_test_sharepoint');
+function pfm_ajax_test_sharepoint() {
+    check_ajax_referer('pfm_ajax_nonce', 'nonce');
+
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(array('message' => __('Keine Berechtigung.', PFM_TD)));
+    }
+
+    $client = new PFM_SharePoint_Client();
+    $result = $client->test_connection();
+
+    if (is_wp_error($result)) {
+        wp_send_json_error(array('message' => $result->get_error_message()));
+    }
+
+    wp_send_json_success($result);
+}
+
+/**
+ * AJAX: Generate Upload Token
+ */
+add_action('wp_ajax_pfm_generate_token', 'pfm_ajax_generate_token');
+function pfm_ajax_generate_token() {
+    check_ajax_referer('pfm_ajax_nonce', 'nonce');
+
+    if (!current_user_can('edit_posts')) {
+        wp_send_json_error(array('message' => __('Keine Berechtigung.', PFM_TD)));
+    }
+
+    $publication_id = intval($_POST['publication_id'] ?? 0);
+    $token_type = sanitize_text_field($_POST['token_type'] ?? 'gutachten');
+    $reviewer_name = sanitize_text_field($_POST['reviewer_name'] ?? '');
+    $reviewer_email = sanitize_email($_POST['reviewer_email'] ?? '');
+
+    $token_manager = new PFM_Upload_Token();
+    $result = $token_manager->generate($publication_id, $token_type, array(
+        'reviewer_name' => $reviewer_name,
+        'reviewer_email' => $reviewer_email,
+    ));
+
+    if (is_wp_error($result)) {
+        wp_send_json_error(array('message' => $result->get_error_message()));
+    }
+
+    wp_send_json_success($result);
+}
+
+/**
+ * AJAX: Revoke Token
+ */
+add_action('wp_ajax_pfm_revoke_token', 'pfm_ajax_revoke_token');
+function pfm_ajax_revoke_token() {
+    check_ajax_referer('pfm_ajax_nonce', 'nonce');
+
+    if (!current_user_can('edit_posts')) {
+        wp_send_json_error(array('message' => __('Keine Berechtigung.', PFM_TD)));
+    }
+
+    $token_id = intval($_POST['token_id'] ?? 0);
+
+    $token_manager = new PFM_Upload_Token();
+    $result = $token_manager->revoke($token_id);
+
+    if (is_wp_error($result)) {
+        wp_send_json_error(array('message' => $result->get_error_message()));
+    }
+
+    wp_send_json_success(array('message' => __('Token widerrufen.', PFM_TD)));
+}
+
+/**
+ * AJAX: Delete Token
+ */
+add_action('wp_ajax_pfm_delete_token', 'pfm_ajax_delete_token');
+function pfm_ajax_delete_token() {
+    check_ajax_referer('pfm_ajax_nonce', 'nonce');
+
+    if (!current_user_can('edit_posts')) {
+        wp_send_json_error(array('message' => __('Keine Berechtigung.', PFM_TD)));
+    }
+
+    $token_id = intval($_POST['token_id'] ?? 0);
+
+    $token_manager = new PFM_Upload_Token();
+    $result = $token_manager->delete($token_id);
+
+    if (is_wp_error($result)) {
+        wp_send_json_error(array('message' => $result->get_error_message()));
+    }
+
+    wp_send_json_success(array('message' => __('Token gelöscht.', PFM_TD)));
+}
+
+/**
+ * AJAX: Get SharePoint Download URL
+ */
+add_action('wp_ajax_pfm_get_sp_download_url', 'pfm_ajax_get_sp_download_url');
+function pfm_ajax_get_sp_download_url() {
+    check_ajax_referer('pfm_ajax_nonce', 'nonce');
+
+    if (!current_user_can('edit_posts')) {
+        wp_send_json_error(array('message' => __('Keine Berechtigung.', PFM_TD)));
+    }
+
+    $version_id = intval($_POST['version_id'] ?? 0);
+
+    $uploader = new PFM_SharePoint_Uploader();
+    $url = $uploader->get_version_download_url($version_id);
+
+    if (is_wp_error($url)) {
+        wp_send_json_error(array('message' => $url->get_error_message()));
+    }
+
+    wp_send_json_success(array('url' => $url));
+}
+
+/**
+ * AJAX: Upload to SharePoint
+ */
+add_action('wp_ajax_pfm_upload_to_sharepoint', 'pfm_ajax_upload_to_sharepoint');
+function pfm_ajax_upload_to_sharepoint() {
+    check_ajax_referer('pfm_ajax_nonce', 'nonce');
+
+    if (!current_user_can('edit_posts')) {
+        wp_send_json_error(array('message' => __('Keine Berechtigung.', PFM_TD)));
+    }
+
+    $publication_id = intval($_POST['publication_id'] ?? 0);
+    $version_type = sanitize_text_field($_POST['version_type'] ?? 'revision');
+    $notes = sanitize_textarea_field($_POST['notes'] ?? '');
+
+    if (!isset($_FILES['file'])) {
+        wp_send_json_error(array('message' => __('Keine Datei hochgeladen.', PFM_TD)));
+    }
+
+    $uploader = new PFM_SharePoint_Uploader();
+    $result = $uploader->upload_publication_file($publication_id, $_FILES['file'], $version_type, array(
+        'notes' => $notes,
+    ));
+
+    if (is_wp_error($result)) {
+        wp_send_json_error(array('message' => $result->get_error_message()));
+    }
+
+    wp_send_json_success($result);
+}
+
+/**
+ * Add SharePoint versions metabox to publication edit screen
+ */
+add_action('add_meta_boxes', 'pfm_add_sharepoint_metabox');
+function pfm_add_sharepoint_metabox() {
+    add_meta_box(
+        'pfm_sharepoint_versions',
+        __('SharePoint Versionen & Upload-Links', PFM_TD),
+        'pfm_render_sharepoint_metabox',
+        'publikation',
+        'normal',
+        'default'
+    );
+}
+
+function pfm_render_sharepoint_metabox($post) {
+    $uploader = new PFM_SharePoint_Uploader();
+    $token_manager = new PFM_Upload_Token();
+
+    // Check if SharePoint is configured
+    $sp_configured = $uploader->is_available();
+    $sp_enabled = get_post_meta($post->ID, '_pfm_sharepoint_enabled', true);
+
+    echo '<div class="pfm-sharepoint-metabox">';
+
+    // SharePoint toggle
+    echo '<p>';
+    echo '<label>';
+    echo '<input type="checkbox" name="_pfm_sharepoint_enabled" value="1" ' . checked($sp_enabled, '1', false) . ' ' . disabled(!$sp_configured, true, false) . '>';
+    echo ' ' . __('SharePoint für diese Publikation aktivieren', PFM_TD);
+    echo '</label>';
+    if (!$sp_configured) {
+        echo ' <span class="description">(' . __('SharePoint nicht konfiguriert', PFM_TD) . ')</span>';
+    }
+    echo '</p>';
+
+    // SharePoint versions
+    if ($sp_configured) {
+        echo '<h4>' . __('SharePoint Versionen', PFM_TD) . '</h4>';
+        echo $uploader->render_version_history($post->ID);
+    }
+
+    // Token management
+    echo '<hr style="margin: 20px 0;">';
+    echo $token_manager->render_token_management($post->ID);
+
+    echo '</div>';
+
+    wp_nonce_field('pfm_sharepoint_metabox', 'pfm_sharepoint_nonce');
+}
+
+/**
+ * Save SharePoint metabox data
+ */
+add_action('save_post_publikation', 'pfm_save_sharepoint_metabox');
+function pfm_save_sharepoint_metabox($post_id) {
+    if (!isset($_POST['pfm_sharepoint_nonce']) || !wp_verify_nonce($_POST['pfm_sharepoint_nonce'], 'pfm_sharepoint_metabox')) {
+        return;
+    }
+
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+        return;
+    }
+
+    if (!current_user_can('edit_post', $post_id)) {
+        return;
+    }
+
+    $sp_enabled = isset($_POST['_pfm_sharepoint_enabled']) ? '1' : '0';
+    update_post_meta($post_id, '_pfm_sharepoint_enabled', $sp_enabled);
+}
+
 /* -------------------------------------------------------------------------
- * Ende Plugin - Medical Enhanced Version 3.0.0
+ * Ende Plugin - Medical Enhanced Version 3.1.0 (SharePoint + Token Upload)
  * ------------------------------------------------------------------------- */

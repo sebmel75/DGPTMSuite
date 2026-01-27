@@ -19,7 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **GitHub Repository:** https://github.com/sebmel75/DGPTMSuite
 
-**Global Constants:**
+**Global Constants:** (defined in `dgptm-master.php`)
 - `DGPTM_SUITE_VERSION` - Current version (3.0.0)
 - `DGPTM_SUITE_PATH` - Plugin directory path
 - `DGPTM_SUITE_URL` - Plugin URL
@@ -27,6 +27,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `DGPTM_SUITE_BASENAME` - Plugin basename
 
 **Global Accessor:** `dgptm_suite()` returns the main plugin instance (`DGPTM_Plugin_Suite`)
+
+## Commands
+
+**PHP Syntax Check (local):**
+```bash
+php -l path/to/file.php
+```
+
+**Dependency Analysis:**
+```bash
+php analyze-dependencies.php
+```
+
+**Deployment:** Push to `main` branch triggers automatic CI/CD deployment to perfusiologie.de via GitHub Actions
 
 ## Project Overview
 
@@ -332,18 +346,18 @@ public function register_acf_fields() {
 
 ## Development Notes
 
-- German language strings are common (DGPTM is a German organization)
-- Version numbers extracted from plugin headers, not module.json
-- Logs stored in database with auto-cleanup (configurable max entries)
+- German language strings are common (DGPTM is a German medical organization)
+- Version numbers extracted from plugin headers, not module.json (see `class-version-extractor.php`)
+- Logs stored in database with auto-cleanup (configurable max entries, default 100000)
 - CSS/JS assets are in `admin/assets/` directory
-- Platform: Windows development (use Windows path separators when needed)
-- Production: Linux server (perfusiologie.de)
+- Platform: Windows development, Production: Linux server (perfusiologie.de)
+- Default active modules on fresh install: `crm-abruf`, `rest-api-extension`, `webhook-trigger`, `menu-control`, `side-restrict`
 
 ## Important Files
 
-- `dgptm-master.php` - Main plugin file, initialization
-- `categories.json` - Category and flag definitions
-- `DEPENDENCIES.md` - Comprehensive dependency matrix
+- `dgptm-master.php` - Main plugin file, initialization, defines constants and loads core classes
+- `categories.json` - Category and flag definitions (8 categories, 6 flags)
+- `DEPENDENCIES.md` - Comprehensive dependency matrix with all external API integrations
 - `README.md` - Project overview and module list (German)
 - `analyze-dependencies.php` - Standalone dependency analysis script
-- `.github/workflows/deploy.yml` - CI/CD pipeline
+- `.github/workflows/deploy.yml` - CI/CD pipeline (rsync over SSH, auto-backup before deploy)

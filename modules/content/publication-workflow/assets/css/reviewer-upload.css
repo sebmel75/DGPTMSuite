@@ -1,0 +1,557 @@
+/**
+ * Reviewer Upload Form Styles
+ * Publication Frontend Manager
+ */
+
+/* Container */
+.pfm-reviewer-upload {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 30px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+/* Header */
+.pfm-reviewer-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #0073aa;
+}
+
+.pfm-reviewer-header h2 {
+    margin: 0;
+    color: #23282d;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+/* Publication Info */
+.pfm-reviewer-publication-info {
+    background: #f7f7f7;
+    padding: 20px;
+    border-radius: 6px;
+    margin-bottom: 25px;
+}
+
+.pfm-reviewer-publication-info > div {
+    margin-bottom: 12px;
+}
+
+.pfm-reviewer-publication-info > div:last-child {
+    margin-bottom: 0;
+}
+
+.pfm-reviewer-publication-info label {
+    display: inline-block;
+    min-width: 110px;
+    font-weight: 600;
+    color: #555;
+}
+
+.pfm-reviewer-publication-info .publication-title span {
+    font-size: 18px;
+    font-weight: 600;
+    color: #23282d;
+}
+
+.pfm-reviewer-publication-info .abstract-text {
+    margin-top: 8px;
+    padding: 12px;
+    background: #fff;
+    border-radius: 4px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #444;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+/* Download Section */
+.pfm-reviewer-download {
+    margin-bottom: 25px;
+}
+
+.pfm-reviewer-download h3 {
+    margin: 0 0 10px 0;
+    font-size: 16px;
+    color: #23282d;
+}
+
+.pfm-reviewer-download .description {
+    margin: 0 0 15px 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.pfm-download-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #0073aa, #005a87);
+    color: #fff;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.pfm-download-button:hover {
+    background: linear-gradient(135deg, #005a87, #004466);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 115, 170, 0.3);
+}
+
+.pfm-download-button .dashicons {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+}
+
+.pfm-download-button .version {
+    opacity: 0.8;
+    font-size: 13px;
+}
+
+/* Divider */
+.pfm-reviewer-divider {
+    height: 1px;
+    background: #ddd;
+    margin: 25px 0;
+}
+
+/* Form Section */
+.pfm-reviewer-form-section h3 {
+    margin: 0 0 20px 0;
+    font-size: 18px;
+    color: #23282d;
+}
+
+/* Form Fields */
+.pfm-reviewer-form .form-field {
+    margin-bottom: 20px;
+}
+
+.pfm-reviewer-form label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #23282d;
+    font-size: 14px;
+}
+
+.pfm-reviewer-form label .required {
+    color: #d63638;
+}
+
+.pfm-reviewer-form input[type="text"],
+.pfm-reviewer-form input[type="email"],
+.pfm-reviewer-form textarea {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #fff;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pfm-reviewer-form input[type="text"]:focus,
+.pfm-reviewer-form input[type="email"]:focus,
+.pfm-reviewer-form textarea:focus {
+    border-color: #0073aa;
+    box-shadow: 0 0 0 2px rgba(0, 115, 170, 0.15);
+    outline: none;
+}
+
+.pfm-reviewer-form textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.pfm-reviewer-form .description {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #666;
+}
+
+/* Readonly Field */
+.form-field-readonly .field-value {
+    display: inline-block;
+    padding: 8px 12px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    font-size: 15px;
+}
+
+/* File Upload */
+.file-upload-wrapper {
+    position: relative;
+    border: 2px dashed #ddd;
+    border-radius: 6px;
+    background: #fafafa;
+    transition: all 0.2s ease;
+}
+
+.file-upload-wrapper:hover,
+.file-upload-wrapper.dragover {
+    border-color: #0073aa;
+    background: #f0f7fc;
+}
+
+.file-upload-wrapper input[type="file"] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.file-upload-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+    text-align: center;
+}
+
+.file-upload-info .dashicons {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+    color: #0073aa;
+    margin-bottom: 10px;
+}
+
+.file-upload-info .upload-text {
+    color: #666;
+    font-size: 14px;
+}
+
+.file-upload-info .file-name {
+    display: none;
+    font-weight: 600;
+    color: #23282d;
+    margin-top: 10px;
+}
+
+.file-upload-wrapper.has-file .upload-text {
+    display: none;
+}
+
+.file-upload-wrapper.has-file .file-name {
+    display: block;
+}
+
+.file-upload-wrapper.has-file {
+    border-color: #46b450;
+    background: #f0faf0;
+}
+
+.file-upload-wrapper.has-file .dashicons {
+    color: #46b450;
+}
+
+/* Submit Button */
+.pfm-submit-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 30px;
+    background: linear-gradient(135deg, #0073aa, #005a87);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 200px;
+}
+
+.pfm-submit-button:hover:not(:disabled) {
+    background: linear-gradient(135deg, #005a87, #004466);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 115, 170, 0.3);
+}
+
+.pfm-submit-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.pfm-submit-button .spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    margin-right: 10px;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Success Message */
+.pfm-reviewer-success {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.pfm-reviewer-success .success-icon {
+    margin-bottom: 20px;
+}
+
+.pfm-reviewer-success .success-icon .dashicons {
+    font-size: 80px;
+    width: 80px;
+    height: 80px;
+    color: #46b450;
+}
+
+.pfm-reviewer-success h3 {
+    margin: 0 0 10px 0;
+    font-size: 24px;
+    color: #23282d;
+}
+
+.pfm-reviewer-success p {
+    margin: 0 0 10px 0;
+    font-size: 16px;
+    color: #555;
+}
+
+.pfm-reviewer-success .success-note {
+    font-size: 14px;
+    color: #888;
+}
+
+/* Error States */
+.pfm-reviewer-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 30px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    max-width: 500px;
+    margin: 40px auto;
+}
+
+.pfm-reviewer-error .error-icon .dashicons {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: #d63638;
+}
+
+.pfm-reviewer-error-expired .error-icon .dashicons {
+    color: #dba617;
+}
+
+.pfm-reviewer-error-used .error-icon .dashicons {
+    color: #46b450;
+}
+
+.pfm-reviewer-error h3 {
+    margin: 0 0 10px 0;
+    font-size: 20px;
+    color: #23282d;
+}
+
+.pfm-reviewer-error p {
+    margin: 0 0 10px 0;
+    color: #555;
+}
+
+.pfm-reviewer-error .error-hint {
+    font-size: 13px;
+    color: #888;
+}
+
+/* Footer */
+.pfm-reviewer-footer {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+    text-align: center;
+}
+
+.pfm-privacy-note {
+    font-size: 12px;
+    color: #888;
+    margin: 0;
+}
+
+/* Token Management Styles (Admin) */
+.pfm-token-management {
+    margin-top: 20px;
+}
+
+.pfm-generate-token-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-end;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 4px;
+}
+
+.pfm-generate-token-form label {
+    font-weight: 600;
+    margin-right: 10px;
+}
+
+.pfm-generate-token-form select,
+.pfm-generate-token-form input {
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.pfm-tokens-table tr.active {
+    background: #f0faf0;
+}
+
+.pfm-tokens-table tr.used {
+    background: #f0f0f0;
+    opacity: 0.8;
+}
+
+.pfm-tokens-table tr.expired {
+    background: #fef7f1;
+    opacity: 0.7;
+}
+
+.token-type-badge,
+.status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.token-type-badge.gutachten {
+    background: #e8f4fd;
+    color: #0073aa;
+}
+
+.token-type-badge.revision {
+    background: #fef7e7;
+    color: #996800;
+}
+
+.token-type-badge.autor {
+    background: #f0e8fd;
+    color: #6c0099;
+}
+
+.status-badge.active {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-badge.used {
+    background: #e2e3e5;
+    color: #383d41;
+}
+
+.status-badge.expired {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* SharePoint Versions Styles */
+.pfm-sp-versions {
+    margin-top: 20px;
+}
+
+.pfm-sp-versions .version-type-badge {
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.pfm-sp-versions .version-type-badge.einreichung {
+    background: #e8f4fd;
+    color: #0073aa;
+}
+
+.pfm-sp-versions .version-type-badge.gutachten {
+    background: #fef7e7;
+    color: #996800;
+}
+
+.pfm-sp-versions .version-type-badge.revision {
+    background: #f0e8fd;
+    color: #6c0099;
+}
+
+.pfm-sp-versions .version-type-badge.final {
+    background: #d4edda;
+    color: #155724;
+}
+
+.pfm-sp-versions .version-notes td {
+    font-size: 13px;
+    color: #666;
+    background: #fafafa;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .pfm-reviewer-upload {
+        padding: 20px;
+        margin: 10px;
+    }
+
+    .pfm-reviewer-header h2 {
+        font-size: 20px;
+    }
+
+    .pfm-reviewer-publication-info label {
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .pfm-download-button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .pfm-submit-button {
+        width: 100%;
+    }
+
+    .pfm-reviewer-error {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .pfm-generate-token-form {
+        flex-direction: column;
+    }
+
+    .pfm-generate-token-form select,
+    .pfm-generate-token-form input,
+    .pfm-generate-token-form button {
+        width: 100%;
+    }
+}

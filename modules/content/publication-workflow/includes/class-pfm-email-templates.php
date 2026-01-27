@@ -18,10 +18,14 @@ class PFM_Email_Templates {
             'submission_received' => __('Einreichung erhalten (an Autor)', PFM_TD),
             'submission_notification' => __('Neue Einreichung (an Redaktion)', PFM_TD),
             'reviewer_assigned' => __('Review-Zuweisung (an Reviewer)', PFM_TD),
+            'reviewer_invitation_link' => __('Review-Einladung mit Upload-Link (an Reviewer)', PFM_TD),
             'review_reminder' => __('Review-Erinnerung (an Reviewer)', PFM_TD),
+            'review_reminder_link' => __('Review-Erinnerung mit Upload-Link (an Reviewer)', PFM_TD),
             'review_received' => __('Review erhalten (an Redaktion)', PFM_TD),
+            'review_received_sp' => __('Review via SharePoint erhalten (an Redaktion)', PFM_TD),
             'decision_accept' => __('Akzeptiert (an Autor)', PFM_TD),
             'decision_revision' => __('Revision erforderlich (an Autor)', PFM_TD),
+            'decision_revision_link' => __('Revision erforderlich mit Upload-Link (an Autor)', PFM_TD),
             'decision_reject' => __('Abgelehnt (an Autor)', PFM_TD),
             'revision_received' => __('Revision erhalten (an Redaktion)', PFM_TD),
             'published' => __('Veröffentlicht (an Autor)', PFM_TD),
@@ -40,11 +44,14 @@ class PFM_Email_Templates {
             '{submission_date}' => __('Einreichungsdatum', PFM_TD),
             '{reviewer_name}' => __('Name des Reviewers', PFM_TD),
             '{review_deadline}' => __('Review-Deadline', PFM_TD),
+            '{reviewer_deadline}' => __('Reviewer-Frist (Alias für review_deadline)', PFM_TD),
             '{editor_name}' => __('Name des Editors', PFM_TD),
             '{journal_name}' => __('Name des Journals', PFM_TD),
             '{doi}' => __('DOI', PFM_TD),
             '{decision_date}' => __('Entscheidungsdatum', PFM_TD),
             '{comments}' => __('Kommentare/Feedback', PFM_TD),
+            '{upload_link}' => __('Token-basierter Upload-Link', PFM_TD),
+            '{download_link}' => __('SharePoint Download-Link', PFM_TD),
         );
     }
 
@@ -207,6 +214,88 @@ Mit freundlichen Grüßen
 {editor_name}
 {journal_name}', PFM_TD),
             ),
+
+            // New templates for SharePoint and token-based uploads
+            'reviewer_invitation_link' => array(
+                'subject' => __('Review-Anfrage: {publication_title}', PFM_TD),
+                'body' => __('Sehr geehrte/r {reviewer_name},
+
+wir würden Sie gerne als Gutachter für folgende Publikation gewinnen:
+
+Titel: {publication_title}
+Autor: {author_name}
+Eingereicht am: {submission_date}
+
+Bitte laden Sie das Manuskript über folgenden Link herunter, begutachten Sie es und reichen Sie Ihr Gutachten über denselben Link ein:
+
+{upload_link}
+
+Review-Deadline: {review_deadline}
+
+Der Link ist {reviewer_deadline} Tage gültig und kann nur einmal verwendet werden.
+
+Vielen Dank für Ihre Unterstützung des Peer-Review-Prozesses.
+
+Mit freundlichen Grüßen
+{editor_name}
+{journal_name}', PFM_TD),
+            ),
+
+            'review_reminder_link' => array(
+                'subject' => __('Erinnerung: Review-Deadline für {publication_title}', PFM_TD),
+                'body' => __('Sehr geehrte/r {reviewer_name},
+
+dies ist eine freundliche Erinnerung an Ihre ausstehende Begutachtung für "{publication_title}".
+
+Review-Deadline: {review_deadline}
+
+Falls Sie das Review noch nicht eingereicht haben, nutzen Sie bitte folgenden Link:
+
+{upload_link}
+
+Bei Problemen oder Zeitverzögerungen kontaktieren Sie uns bitte.
+
+Mit freundlichen Grüßen
+{editor_name}
+{journal_name}', PFM_TD),
+            ),
+
+            'review_received_sp' => array(
+                'subject' => __('Gutachten eingereicht: {publication_title}', PFM_TD),
+                'body' => __('Ein Gutachten für "{publication_title}" wurde via Upload-Link eingereicht.
+
+Gutachter: {reviewer_name}
+
+Das Gutachten wurde in SharePoint gespeichert:
+{download_link}
+
+Zur Publikationsübersicht:
+{publication_url}', PFM_TD),
+            ),
+
+            'decision_revision_link' => array(
+                'subject' => __('Revision erforderlich: {publication_title}', PFM_TD),
+                'body' => __('Sehr geehrte/r {author_name},
+
+vielen Dank für Ihre Einreichung "{publication_title}".
+
+Nach sorgfältiger Prüfung durch unsere Gutachter benötigt Ihre Publikation Überarbeitungen, bevor wir eine finale Entscheidung treffen können.
+
+Feedback der Gutachter:
+{comments}
+
+Bitte laden Sie die überarbeitete Version über folgenden Link hoch:
+
+{upload_link}
+
+Der Link ist 28 Tage gültig.
+
+Wir freuen uns auf Ihre überarbeitete Einreichung.
+
+Mit freundlichen Grüßen
+{editor_name}
+{journal_name}', PFM_TD),
+            ),
         );
 
         return isset($templates[$template_key]) ? $templates[$template_key] : null;
@@ -349,6 +438,72 @@ Mit freundlichen Grüßen
         ));
 
         return self::send_email($data['author_email'], $template_map[$decision], $data);
+    }
+
+    /**
+     * Sende Reviewer-Einladung mit Upload-Link
+     *
+     * @param int    $post_id      Publication ID
+     * @param string $email        Reviewer email
+     * @param string $name         Reviewer name
+     * @param string $upload_link  Token-based upload URL
+     * @param string $deadline     Review deadline (formatted)
+     * @return bool
+     */
+    public static function send_reviewer_invitation_with_link($post_id, $email, $name, $upload_link, $deadline) {
+        $data = self::get_email_data($post_id, array(
+            'reviewer_name' => $name,
+            'review_deadline' => $deadline,
+            'reviewer_deadline' => $deadline,
+            'upload_link' => $upload_link,
+        ));
+
+        return self::send_email($email, 'reviewer_invitation_link', $data);
+    }
+
+    /**
+     * Sende Revisions-Aufforderung mit Upload-Link
+     *
+     * @param int    $post_id      Publication ID
+     * @param string $upload_link  Token-based upload URL
+     * @param string $comments     Review comments/feedback
+     * @return bool
+     */
+    public static function send_revision_request_with_link($post_id, $upload_link, $comments = '') {
+        $data = self::get_email_data($post_id, array(
+            'upload_link' => $upload_link,
+            'comments' => $comments,
+        ));
+
+        return self::send_email($data['author_email'], 'decision_revision_link', $data);
+    }
+
+    /**
+     * Sende Benachrichtigung über erhaltenes Review (SharePoint)
+     *
+     * @param int    $post_id       Publication ID
+     * @param string $reviewer_name Reviewer name
+     * @param string $download_link SharePoint download URL
+     * @return bool
+     */
+    public static function send_review_received_notification_sp($post_id, $reviewer_name, $download_link) {
+        $data = self::get_email_data($post_id, array(
+            'reviewer_name' => $reviewer_name,
+            'download_link' => $download_link,
+        ));
+
+        // Send to all editors
+        $editors = pfm_get_editors();
+        $success = true;
+
+        foreach ($editors as $editor) {
+            $result = self::send_email($editor->user_email, 'review_received_sp', $data);
+            if (!$result) {
+                $success = false;
+            }
+        }
+
+        return $success;
     }
 
     /**

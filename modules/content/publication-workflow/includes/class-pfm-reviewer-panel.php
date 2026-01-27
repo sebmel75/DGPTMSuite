@@ -22,6 +22,7 @@ class PFM_Reviewer_Panel {
         // Register shortcodes
         add_shortcode('pfm_reviewer_panel', array(__CLASS__, 'render_reviewer_panel'));
         add_shortcode('pfm_review_form', array(__CLASS__, 'render_review_form'));
+        add_shortcode('pfm_is_assigned_reviewer', array(__CLASS__, 'render_is_assigned_reviewer'));
 
         // AJAX handlers
         add_action('wp_ajax_pfm_add_reviewer', array(__CLASS__, 'ajax_add_reviewer'));
@@ -769,6 +770,50 @@ class PFM_Reviewer_Panel {
         </div>
         <?php
         return ob_get_clean();
+    }
+
+    /**
+     * Shortcode: Check if current user is assigned as reviewer
+     * Returns "1" if user has pending review assignments, "0" otherwise
+     *
+     * Usage: [pfm_is_assigned_reviewer]
+     * Use in Elementor with condition: Shortcode equals "1"
+     *
+     * @param array $atts Shortcode attributes
+     * @return string "1" or "0"
+     */
+    public static function render_is_assigned_reviewer($atts) {
+        // Not logged in = not assigned
+        if (!is_user_logged_in()) {
+            return '0';
+        }
+
+        $user_id = get_current_user_id();
+
+        // Check if user is marked as reviewer
+        $is_reviewer = get_user_meta($user_id, 'pfm_is_reviewer', true) === '1';
+        if (!$is_reviewer) {
+            return '0';
+        }
+
+        // Check if user has any publication assignments
+        $args = array(
+            'post_type' => 'publikation',
+            'posts_per_page' => 1,
+            'post_status' => 'any',
+            'fields' => 'ids',
+            'meta_query' => array(
+                array(
+                    'key' => 'pfm_assigned_reviewers',
+                    'value' => serialize(strval($user_id)),
+                    'compare' => 'LIKE',
+                ),
+            ),
+        );
+
+        $query = new WP_Query($args);
+
+        return $query->have_posts() ? '1' : '0';
     }
 
     /**

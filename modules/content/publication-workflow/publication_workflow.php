@@ -37,6 +37,7 @@ require_once PFM_PATH . 'includes/class-pfm-sharepoint-client.php';
 require_once PFM_PATH . 'includes/class-pfm-sharepoint-uploader.php';
 require_once PFM_PATH . 'includes/class-pfm-upload-token.php';
 require_once PFM_PATH . 'includes/class-pfm-reviewer-shortcode.php';
+require_once PFM_PATH . 'includes/class-pfm-reviewer-panel.php';
 
 // Initialize database tables
 register_activation_hook(__FILE__, array('PFM_DB_Installer', 'install'));

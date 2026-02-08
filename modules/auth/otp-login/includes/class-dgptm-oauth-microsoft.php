@@ -148,6 +148,14 @@ if ( ! class_exists( 'DGPTM_OAuth_Microsoft' ) ) {
             $error = $request->get_param( 'error' );
             if ( $error ) {
                 $error_desc = $request->get_param( 'error_description' ) ?: $error;
+
+                // Spezifische Fehlermeldung für Admin-Consent-Anforderung
+                if ( $error === 'consent_required' || strpos( $error_desc, 'admin' ) !== false || strpos( $error_desc, 'consent' ) !== false ) {
+                    return $this->redirect_with_error(
+                        __( 'Ihre Organisation erfordert eine Administrator-Genehmigung für externe Apps. Bitte verwenden Sie stattdessen die OTP-Anmeldung per E-Mail oder kontaktieren Sie Ihren IT-Administrator.', 'dgptm' )
+                    );
+                }
+
                 return $this->redirect_with_error( __( 'Microsoft Login fehlgeschlagen: ', 'dgptm' ) . $error_desc );
             }
 

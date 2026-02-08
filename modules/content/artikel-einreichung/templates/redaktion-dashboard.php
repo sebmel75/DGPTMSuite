@@ -25,27 +25,15 @@ if (!$is_redaktion && !$is_editor) {
 // Get filter parameters
 $filter_status = isset($_GET['status']) ? sanitize_text_field($_GET['status']) : '';
 
-// Build query
-$query_args = [
+// Query ALL articles for statistics (without filter)
+$all_articles = get_posts([
     'post_type' => DGPTM_Artikel_Einreichung::POST_TYPE,
     'posts_per_page' => -1,
     'orderby' => 'date',
     'order' => 'DESC'
-];
+]);
 
-if ($filter_status) {
-    $query_args['meta_query'] = [
-        [
-            'key' => 'artikel_status',
-            'value' => $filter_status,
-            'compare' => '='
-        ]
-    ];
-}
-
-$articles = get_posts($query_args);
-
-// Statistics
+// Statistics - always count ALL articles
 $stats = [
     'total' => 0,
     'submitted' => 0,
@@ -61,7 +49,7 @@ $stats = [
     'published' => 0
 ];
 
-foreach ($articles as $art) {
+foreach ($all_articles as $art) {
     $stats['total']++;
     $st = get_field('artikel_status', $art->ID);
     switch ($st) {
@@ -99,6 +87,16 @@ foreach ($articles as $art) {
             $stats['published']++;
             break;
     }
+}
+
+// Get filtered articles for display (apply filter if set)
+if ($filter_status) {
+    $articles = array_filter($all_articles, function($art) use ($filter_status) {
+        return get_field('artikel_status', $art->ID) === $filter_status;
+    });
+    $articles = array_values($articles); // Re-index array
+} else {
+    $articles = $all_articles;
 }
 
 // Check if viewing single article
@@ -255,6 +253,12 @@ if ($view_id) {
                 </div>
 
                 <!-- Files (read-only) -->
+                <!--
+                    DATEISPEICHERORT:
+                    Alle hochgeladenen Dateien werden als WordPress Media Library Attachments gespeichert.
+                    Physischer Pfad: wp-content/uploads/YYYY/MM/filename.ext
+                    Die Attachments werden mit dem Artikel-Post verknüpft.
+                -->
                 <h4 style="margin-top: 25px;">Dateien</h4>
                 <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
                     <?php
@@ -263,36 +267,88 @@ if ($view_id) {
                     $abbildungen = get_field('abbildungen', $view_id);
                     $tabellen = get_field('tabellen', $view_id);
                     $supplementary = get_field('supplementary_material', $view_id);
+
+                    // Helper function to get upload date
+                    $get_upload_date = function($attachment) {
+                        if (!$attachment || !isset($attachment['ID'])) return '';
+                        $post = get_post($attachment['ID']);
+                        return $post ? date_i18n('d.m.Y H:i', strtotime($post->post_date)) : '';
+                    };
+
+                    // Helper function to format file size
+                    $format_size = function($attachment) {
+                        if (!$attachment || !isset($attachment['filesize'])) return '';
+                        $bytes = $attachment['filesize'];
+                        if ($bytes >= 1048576) return round($bytes / 1048576, 1) . ' MB';
+                        if ($bytes >= 1024) return round($bytes / 1024, 1) . ' KB';
+                        return $bytes . ' Bytes';
+                    };
+
+                    // Determine current version
+                    $current_version = $revision ? 'Revision' : ($manuskript ? 'Original' : 'Keine');
                     ?>
 
-                    <!-- Manuskript -->
+                    <!-- Version Info -->
+                    <div style="margin-bottom: 15px; padding: 10px; background: #e0f2fe; border-radius: 6px; border-left: 4px solid #0284c7;">
+                        <strong style="color: #0369a1;">Aktuelle Version:</strong>
+                        <span style="color: #0c4a6e; font-weight: 600; margin-left: 8px;">
+                            <?php echo esc_html($current_version); ?>
+                            <?php if ($revision): ?>
+                                (hochgeladen: <?php echo esc_html($get_upload_date($revision)); ?>)
+                            <?php elseif ($manuskript): ?>
+                                (hochgeladen: <?php echo esc_html($get_upload_date($manuskript)); ?>)
+                            <?php endif; ?>
+                        </span>
+                    </div>
+
+                    <!-- Manuskript (Original) -->
                     <?php if ($manuskript): ?>
-                    <div style="margin-bottom: 12px;">
-                        <strong style="color: #1e40af;">Manuskript:</strong>
-                        <a href="<?php echo esc_url($manuskript['url']); ?>" target="_blank" class="btn btn-sm btn-secondary" style="margin-left: 10px;">
-                            <?php echo esc_html($manuskript['filename']); ?> herunterladen
-                        </a>
+                    <div style="margin-bottom: 12px; padding: 10px; background: <?php echo $revision ? '#f1f5f9' : '#dbeafe'; ?>; border-radius: 6px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                            <div>
+                                <strong style="color: #1e40af;">
+                                    Manuskript <?php echo $revision ? '(Original)' : '(Aktuell)'; ?>:
+                                </strong>
+                                <span style="color: #64748b; font-size: 12px; margin-left: 8px;">
+                                    <?php echo esc_html($format_size($manuskript)); ?> | <?php echo esc_html($get_upload_date($manuskript)); ?>
+                                </span>
+                            </div>
+                            <a href="<?php echo esc_url($manuskript['url']); ?>" target="_blank" class="btn btn-sm btn-secondary">
+                                <?php echo esc_html($manuskript['filename']); ?>
+                            </a>
+                        </div>
                     </div>
                     <?php endif; ?>
 
-                    <!-- Revision -->
+                    <!-- Revision (wenn vorhanden = aktuelle Version) -->
                     <?php if ($revision): ?>
-                    <div style="margin-bottom: 12px;">
-                        <strong style="color: #7c3aed;">Revision:</strong>
-                        <a href="<?php echo esc_url($revision['url']); ?>" target="_blank" class="btn btn-sm btn-secondary" style="margin-left: 10px;">
-                            <?php echo esc_html($revision['filename']); ?> herunterladen
-                        </a>
+                    <div style="margin-bottom: 12px; padding: 10px; background: #f3e8ff; border-radius: 6px; border-left: 4px solid #7c3aed;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                            <div>
+                                <strong style="color: #7c3aed;">
+                                    Revision (Aktuell):
+                                </strong>
+                                <span style="color: #64748b; font-size: 12px; margin-left: 8px;">
+                                    <?php echo esc_html($format_size($revision)); ?> | <?php echo esc_html($get_upload_date($revision)); ?>
+                                </span>
+                            </div>
+                            <a href="<?php echo esc_url($revision['url']); ?>" target="_blank" class="btn btn-sm" style="background: #7c3aed; color: #fff;">
+                                <?php echo esc_html($revision['filename']); ?>
+                            </a>
+                        </div>
                     </div>
                     <?php endif; ?>
 
                     <!-- Abbildungen (Gallery) -->
                     <?php if ($abbildungen && is_array($abbildungen)): ?>
-                    <div style="margin-bottom: 12px;">
+                    <div style="margin-bottom: 12px; padding: 10px; background: #ecfdf5; border-radius: 6px;">
                         <strong style="color: #059669;">Abbildungen (<?php echo count($abbildungen); ?>):</strong>
                         <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
-                            <?php foreach ($abbildungen as $index => $img): ?>
-                                <a href="<?php echo esc_url($img['url']); ?>" target="_blank" class="btn btn-sm btn-secondary">
-                                    Abb. <?php echo ($index + 1); ?> (<?php echo esc_html(pathinfo($img['filename'], PATHINFO_EXTENSION)); ?>)
+                            <?php foreach ($abbildungen as $index => $img):
+                                $img_date = $get_upload_date($img);
+                            ?>
+                                <a href="<?php echo esc_url($img['url']); ?>" target="_blank" class="btn btn-sm btn-secondary" title="Hochgeladen: <?php echo esc_attr($img_date); ?>">
+                                    Abb. <?php echo ($index + 1); ?> (<?php echo esc_html(strtoupper(pathinfo($img['filename'], PATHINFO_EXTENSION))); ?>)
                                 </a>
                             <?php endforeach; ?>
                         </div>
@@ -301,26 +357,47 @@ if ($view_id) {
 
                     <!-- Tabellen -->
                     <?php if ($tabellen): ?>
-                    <div style="margin-bottom: 12px;">
-                        <strong style="color: #d97706;">Tabellen:</strong>
-                        <a href="<?php echo esc_url($tabellen['url']); ?>" target="_blank" class="btn btn-sm btn-secondary" style="margin-left: 10px;">
-                            <?php echo esc_html($tabellen['filename']); ?> herunterladen
-                        </a>
+                    <div style="margin-bottom: 12px; padding: 10px; background: #fef3c7; border-radius: 6px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                            <div>
+                                <strong style="color: #d97706;">Tabellen:</strong>
+                                <span style="color: #64748b; font-size: 12px; margin-left: 8px;">
+                                    <?php echo esc_html($format_size($tabellen)); ?> | <?php echo esc_html($get_upload_date($tabellen)); ?>
+                                </span>
+                            </div>
+                            <a href="<?php echo esc_url($tabellen['url']); ?>" target="_blank" class="btn btn-sm btn-secondary">
+                                <?php echo esc_html($tabellen['filename']); ?>
+                            </a>
+                        </div>
                     </div>
                     <?php endif; ?>
 
                     <!-- Supplementary Material -->
                     <?php if ($supplementary): ?>
-                    <div style="margin-bottom: 12px;">
-                        <strong style="color: #6366f1;">Zusatzmaterial:</strong>
-                        <a href="<?php echo esc_url($supplementary['url']); ?>" target="_blank" class="btn btn-sm btn-secondary" style="margin-left: 10px;">
-                            <?php echo esc_html($supplementary['filename']); ?> herunterladen
-                        </a>
+                    <div style="margin-bottom: 12px; padding: 10px; background: #e0e7ff; border-radius: 6px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                            <div>
+                                <strong style="color: #6366f1;">Zusatzmaterial:</strong>
+                                <span style="color: #64748b; font-size: 12px; margin-left: 8px;">
+                                    <?php echo esc_html($format_size($supplementary)); ?> | <?php echo esc_html($get_upload_date($supplementary)); ?>
+                                </span>
+                            </div>
+                            <a href="<?php echo esc_url($supplementary['url']); ?>" target="_blank" class="btn btn-sm btn-secondary">
+                                <?php echo esc_html($supplementary['filename']); ?>
+                            </a>
+                        </div>
                     </div>
                     <?php endif; ?>
 
                     <?php if (!$manuskript && !$revision && !$abbildungen && !$tabellen && !$supplementary): ?>
                     <p style="color: #64748b; margin: 0;">Keine Dateien vorhanden.</p>
+                    <?php else: ?>
+                    <!-- Download All as ZIP -->
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+                        <button type="button" class="btn download-all-files-btn" style="background: #0891b2; color: #fff;" data-article-id="<?php echo esc_attr($view_id); ?>">
+                            📦 Alle Dateien als ZIP herunterladen
+                        </button>
+                    </div>
                     <?php endif; ?>
                 </div>
 
@@ -461,6 +538,23 @@ if ($view_id) {
                             </a>
                         <?php endif; ?>
                     </div>
+                </div>
+                <?php endif; ?>
+
+                <!-- Danger Zone (nur für Chefredakteure/Admins) -->
+                <?php if ($plugin->is_editor_in_chief() || current_user_can('manage_options')): ?>
+                <hr style="margin: 30px 0; border-color: #fecaca;">
+                <div style="background: #fef2f2; padding: 15px; border-radius: 8px; border: 1px solid #fecaca;">
+                    <h5 style="margin: 0 0 10px 0; color: #b91c1c;">⚠️ Gefahrenzone</h5>
+                    <p style="color: #7f1d1d; font-size: 13px; margin-bottom: 15px;">
+                        Das Löschen eines Artikels entfernt alle zugehörigen Dateien und kann nicht rückgängig gemacht werden.
+                    </p>
+                    <button type="button" class="btn delete-artikel-btn" style="background: #dc2626; color: #fff; border: none;"
+                            data-article-id="<?php echo esc_attr($view_id); ?>"
+                            data-article-title="<?php echo esc_attr($view_article->post_title); ?>"
+                            data-submission-id="<?php echo esc_attr(get_field('submission_id', $view_id)); ?>">
+                        🗑️ Artikel endgültig löschen
+                    </button>
                 </div>
                 <?php endif; ?>
 
@@ -671,10 +765,20 @@ jQuery(document).ready(function($) {
     });
 
     // Export XML (JATS format)
-    $(document).on('click', '.export-xml-btn', function() {
+    $(document).on('click', '.export-xml-btn', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
         var $btn = $(this);
         var articleId = $btn.data('article-id');
         var originalText = $btn.text();
+
+        console.log('JATS Export gestartet für Artikel:', articleId);
+
+        if (!articleId) {
+            alert('Fehler: Keine Artikel-ID gefunden.');
+            return;
+        }
 
         $btn.prop('disabled', true).text('Wird generiert...');
 
@@ -687,26 +791,33 @@ jQuery(document).ready(function($) {
                 article_id: articleId
             },
             success: function(response) {
+                console.log('JATS Export Response:', response);
                 $btn.prop('disabled', false).text(originalText);
 
-                if (response.success) {
+                if (response.success && response.data && response.data.xml) {
                     // Create blob and download
-                    var blob = new Blob([response.data.xml], { type: 'application/xml' });
+                    var blob = new Blob([response.data.xml], { type: 'application/xml; charset=utf-8' });
                     var url = window.URL.createObjectURL(blob);
                     var a = document.createElement('a');
+                    a.style.display = 'none';
                     a.href = url;
-                    a.download = response.data.filename;
+                    a.download = response.data.filename || 'artikel-export.xml';
                     document.body.appendChild(a);
                     a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
+                    setTimeout(function() {
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                    }, 100);
+                    console.log('JATS Export erfolgreich:', response.data.filename);
                 } else {
-                    alert(response.data.message || 'Fehler beim Exportieren.');
+                    console.error('JATS Export Fehler:', response);
+                    alert(response.data && response.data.message ? response.data.message : 'Fehler beim Exportieren.');
                 }
             },
-            error: function() {
+            error: function(xhr, status, error) {
+                console.error('JATS Export AJAX Fehler:', status, error, xhr.responseText);
                 $btn.prop('disabled', false).text(originalText);
-                alert('Verbindungsfehler.');
+                alert('Verbindungsfehler: ' + error);
             }
         });
     });
@@ -865,6 +976,94 @@ jQuery(document).ready(function($) {
             },
             error: function() {
                 $btn.prop('disabled', false).text(originalText);
+                alert('Verbindungsfehler.');
+            }
+        });
+    });
+
+    // Download all files as ZIP
+    $(document).on('click', '.download-all-files-btn', function() {
+        var $btn = $(this);
+        var articleId = $btn.data('article-id');
+        var originalText = $btn.text();
+
+        $btn.prop('disabled', true).text('ZIP wird erstellt...');
+
+        $.ajax({
+            url: config.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'dgptm_download_all_files',
+                nonce: config.nonce,
+                article_id: articleId
+            },
+            success: function(response) {
+                $btn.prop('disabled', false).text(originalText);
+
+                if (response.success && response.data.download_url) {
+                    // Start download
+                    var a = document.createElement('a');
+                    a.href = response.data.download_url;
+                    a.download = response.data.filename;
+                    a.style.display = 'none';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+
+                    console.log('ZIP Download gestartet:', response.data.filename, response.data.file_count + ' Dateien');
+                } else {
+                    alert(response.data && response.data.message ? response.data.message : 'Fehler beim Erstellen der ZIP-Datei.');
+                }
+            },
+            error: function() {
+                $btn.prop('disabled', false).text(originalText);
+                alert('Verbindungsfehler.');
+            }
+        });
+    });
+
+    // Delete article (with confirmation)
+    $(document).on('click', '.delete-artikel-btn', function() {
+        var $btn = $(this);
+        var articleId = $btn.data('article-id');
+        var articleTitle = $btn.data('article-title');
+        var submissionId = $btn.data('submission-id');
+
+        // First confirmation
+        if (!confirm('ACHTUNG: Sie sind dabei, den Artikel "' + articleTitle + '" (' + submissionId + ') unwiderruflich zu löschen.\n\nAlle zugehörigen Dateien werden ebenfalls gelöscht.\n\nFortfahren?')) {
+            return;
+        }
+
+        // Second confirmation with text input
+        var confirmText = prompt('Zur Bestätigung geben Sie bitte "DELETE" ein:');
+        if (confirmText !== 'DELETE') {
+            alert('Löschvorgang abgebrochen. Die Bestätigung war nicht korrekt.');
+            return;
+        }
+
+        $btn.prop('disabled', true).text('Wird gelöscht...');
+
+        $.ajax({
+            url: config.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'dgptm_delete_artikel',
+                nonce: config.nonce,
+                article_id: articleId,
+                confirm: 'DELETE'
+            },
+            success: function(response) {
+                if (response.success) {
+                    alert(response.data.message);
+                    // Redirect to overview
+                    window.location.href = window.location.pathname;
+                } else {
+                    $btn.prop('disabled', false).text('🗑️ Artikel endgültig löschen');
+                    alert(response.data && response.data.message ? response.data.message : 'Fehler beim Löschen.');
+                }
+            },
+            error: function() {
+                $btn.prop('disabled', false).text('🗑️ Artikel endgültig löschen');
                 alert('Verbindungsfehler.');
             }
         });

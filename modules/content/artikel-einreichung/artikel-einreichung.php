@@ -117,6 +117,8 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             add_action('wp_ajax_dgptm_change_artikel_status', [$this, 'ajax_change_artikel_status']);
             add_action('wp_ajax_dgptm_publish_artikel', [$this, 'ajax_publish_artikel']);
             add_action('wp_ajax_dgptm_save_ausgabe', [$this, 'ajax_save_ausgabe']);
+            add_action('wp_ajax_dgptm_delete_artikel', [$this, 'ajax_delete_artikel']);
+            add_action('wp_ajax_dgptm_download_all_files', [$this, 'ajax_download_all_files']);
 
             // AJAX Handlers for non-logged in users (token-based)
             add_action('wp_ajax_nopriv_dgptm_submit_artikel', [$this, 'ajax_submit_artikel']);
@@ -158,6 +160,10 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             }
 
             if (!current_user_can('manage_options')) {
+                return;
+            }
+
+            if (!isset($_GET['_wpnonce']) || !wp_verify_nonce($_GET['_wpnonce'], 'dgptm_generate_testdata')) {
                 return;
             }
 
@@ -396,7 +402,14 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             ];
             $string = str_replace(array_keys($replacements), array_values($replacements), $string);
             $result = @iconv('UTF-8', 'ISO-8859-1//TRANSLIT//IGNORE', $string);
-            return $result !== false ? $result : $string;
+            if ($result !== false) {
+                return $result;
+            }
+            // Fallback: try mb_convert_encoding for German umlauts
+            if (function_exists('mb_convert_encoding')) {
+                return mb_convert_encoding($string, 'ISO-8859-1', 'UTF-8');
+            }
+            return $string;
         }
 
         private function define_constants() {
@@ -2771,6 +2784,217 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             wp_send_json_success([
                 'message' => 'Ausgabe gespeichert: ' . ($ausgabe ?: '(entfernt)'),
                 'ausgabe' => $ausgabe
+            ]);
+        }
+
+        /**
+         * AJAX: Delete article completely (including all attachments)
+         * Only for Redaktion/Editor-in-Chief with confirmation
+         */
+        public function ajax_delete_artikel() {
+            check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+            // Only allow admins and editor-in-chief to delete
+            if (!$this->is_editor_in_chief() && !current_user_can('manage_options')) {
+                wp_send_json_error(['message' => 'Nur Chefredakteure können Artikel löschen.']);
+            }
+
+            $artikel_id = intval($_POST['article_id'] ?? 0);
+            $confirm = sanitize_text_field($_POST['confirm'] ?? '');
+
+            if (!$artikel_id) {
+                wp_send_json_error(['message' => 'Keine Artikel-ID angegeben.']);
+            }
+
+            // Safety check - require explicit confirmation
+            if ($confirm !== 'DELETE') {
+                wp_send_json_error(['message' => 'Sicherheitsbestätigung fehlt. Bitte geben Sie "DELETE" ein.']);
+            }
+
+            $article = get_post($artikel_id);
+            if (!$article || $article->post_type !== self::POST_TYPE) {
+                wp_send_json_error(['message' => 'Artikel nicht gefunden.']);
+            }
+
+            // Store info for logging
+            $submission_id = get_field('submission_id', $artikel_id);
+            $title = $article->post_title;
+
+            // Collect all attachment IDs to delete
+            $attachment_ids = [];
+
+            // Manuskript
+            $manuskript = get_field('manuskript', $artikel_id);
+            if ($manuskript && isset($manuskript['ID'])) {
+                $attachment_ids[] = $manuskript['ID'];
+            }
+
+            // Revision
+            $revision = get_field('revision_manuskript', $artikel_id);
+            if ($revision && isset($revision['ID'])) {
+                $attachment_ids[] = $revision['ID'];
+            }
+
+            // Abbildungen (Gallery)
+            $abbildungen = get_field('abbildungen', $artikel_id);
+            if ($abbildungen && is_array($abbildungen)) {
+                foreach ($abbildungen as $img) {
+                    if (isset($img['ID'])) {
+                        $attachment_ids[] = $img['ID'];
+                    }
+                }
+            }
+
+            // Tabellen
+            $tabellen = get_field('tabellen', $artikel_id);
+            if ($tabellen && isset($tabellen['ID'])) {
+                $attachment_ids[] = $tabellen['ID'];
+            }
+
+            // Supplementary Material
+            $supplement = get_field('supplementary_material', $artikel_id);
+            if ($supplement && isset($supplement['ID'])) {
+                $attachment_ids[] = $supplement['ID'];
+            }
+
+            // Delete all attachments (files will be removed from disk)
+            $deleted_files = 0;
+            foreach ($attachment_ids as $att_id) {
+                if (wp_delete_attachment($att_id, true)) {
+                    $deleted_files++;
+                }
+            }
+
+            // Delete the article post
+            $result = wp_delete_post($artikel_id, true); // true = force delete, bypass trash
+
+            if ($result) {
+                // Log the deletion (to error_log since article is deleted)
+                error_log(sprintf(
+                    'DGPTM Artikel-Einreichung: Artikel gelöscht - ID: %d, Submission-ID: %s, Titel: %s, Dateien: %d, Durch: %s',
+                    $artikel_id,
+                    $submission_id,
+                    $title,
+                    $deleted_files,
+                    wp_get_current_user()->display_name
+                ));
+
+                wp_send_json_success([
+                    'message' => sprintf('Artikel "%s" (%s) wurde gelöscht. %d Dateien entfernt.', $title, $submission_id, $deleted_files),
+                    'deleted_files' => $deleted_files
+                ]);
+            } else {
+                wp_send_json_error(['message' => 'Fehler beim Löschen des Artikels.']);
+            }
+        }
+
+        /**
+         * AJAX: Download all files of an article as ZIP
+         */
+        public function ajax_download_all_files() {
+            check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+            if (!$this->is_redaktion() && !$this->is_editor_in_chief() && !current_user_can('manage_options')) {
+                wp_send_json_error(['message' => 'Keine Berechtigung.']);
+            }
+
+            $artikel_id = intval($_POST['article_id'] ?? 0);
+            if (!$artikel_id) {
+                wp_send_json_error(['message' => 'Keine Artikel-ID angegeben.']);
+            }
+
+            $article = get_post($artikel_id);
+            if (!$article || $article->post_type !== self::POST_TYPE) {
+                wp_send_json_error(['message' => 'Artikel nicht gefunden.']);
+            }
+
+            // Check if ZipArchive is available
+            if (!class_exists('ZipArchive')) {
+                wp_send_json_error(['message' => 'ZIP-Erstellung nicht verfügbar (ZipArchive fehlt).']);
+            }
+
+            $submission_id = get_field('submission_id', $artikel_id);
+            $files_to_zip = [];
+
+            // Collect all files
+            $manuskript = get_field('manuskript', $artikel_id);
+            if ($manuskript && isset($manuskript['ID'])) {
+                $path = get_attached_file($manuskript['ID']);
+                if ($path && file_exists($path)) {
+                    $files_to_zip['Manuskript_' . $manuskript['filename']] = $path;
+                }
+            }
+
+            $revision = get_field('revision_manuskript', $artikel_id);
+            if ($revision && isset($revision['ID'])) {
+                $path = get_attached_file($revision['ID']);
+                if ($path && file_exists($path)) {
+                    $files_to_zip['Revision_' . $revision['filename']] = $path;
+                }
+            }
+
+            $abbildungen = get_field('abbildungen', $artikel_id);
+            if ($abbildungen && is_array($abbildungen)) {
+                foreach ($abbildungen as $index => $img) {
+                    if (isset($img['ID'])) {
+                        $path = get_attached_file($img['ID']);
+                        if ($path && file_exists($path)) {
+                            $files_to_zip['Abbildung_' . ($index + 1) . '_' . $img['filename']] = $path;
+                        }
+                    }
+                }
+            }
+
+            $tabellen = get_field('tabellen', $artikel_id);
+            if ($tabellen && isset($tabellen['ID'])) {
+                $path = get_attached_file($tabellen['ID']);
+                if ($path && file_exists($path)) {
+                    $files_to_zip['Tabellen_' . $tabellen['filename']] = $path;
+                }
+            }
+
+            $supplement = get_field('supplementary_material', $artikel_id);
+            if ($supplement && isset($supplement['ID'])) {
+                $path = get_attached_file($supplement['ID']);
+                if ($path && file_exists($path)) {
+                    $files_to_zip['Zusatzmaterial_' . $supplement['filename']] = $path;
+                }
+            }
+
+            if (empty($files_to_zip)) {
+                wp_send_json_error(['message' => 'Keine Dateien zum Download vorhanden.']);
+            }
+
+            // Create ZIP file
+            $upload_dir = wp_upload_dir();
+            $zip_filename = 'artikel-' . $submission_id . '-' . date('Ymd-His') . '.zip';
+            $zip_path = $upload_dir['basedir'] . '/artikel-exports/' . $zip_filename;
+
+            // Create exports directory if needed
+            $export_dir = $upload_dir['basedir'] . '/artikel-exports';
+            if (!file_exists($export_dir)) {
+                wp_mkdir_p($export_dir);
+            }
+
+            $zip = new ZipArchive();
+            if ($zip->open($zip_path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+                wp_send_json_error(['message' => 'Fehler beim Erstellen der ZIP-Datei.']);
+            }
+
+            foreach ($files_to_zip as $name => $path) {
+                $zip->addFile($path, $name);
+            }
+
+            $zip->close();
+
+            // Return download URL
+            $zip_url = $upload_dir['baseurl'] . '/artikel-exports/' . $zip_filename;
+
+            wp_send_json_success([
+                'message' => count($files_to_zip) . ' Dateien als ZIP bereitgestellt.',
+                'download_url' => $zip_url,
+                'filename' => $zip_filename,
+                'file_count' => count($files_to_zip)
             ]);
         }
 

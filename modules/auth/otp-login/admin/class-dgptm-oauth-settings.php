@@ -61,6 +61,7 @@ function dgptm_admin_oauth_page() {
         }
 
         dgptm_update_option( 'dgptm_oauth_login_page', sanitize_url( wp_unslash( $_POST['dgptm_oauth_login_page'] ?? '' ) ) );
+        dgptm_update_option( 'dgptm_oauth_popup_id', absint( $_POST['dgptm_oauth_popup_id'] ?? 0 ) );
 
         echo '<div class="notice notice-success"><p>' . esc_html__( 'Einstellungen gespeichert.', 'dgptm' ) . '</p></div>';
     }
@@ -70,6 +71,7 @@ function dgptm_admin_oauth_page() {
     $client_id    = trim( (string) dgptm_get_option( 'dgptm_oauth_microsoft_client_id', '' ) );
     $client_secret = trim( (string) dgptm_get_option( 'dgptm_oauth_microsoft_client_secret', '' ) );
     $login_page   = trim( (string) dgptm_get_option( 'dgptm_oauth_login_page', '' ) );
+    $popup_id     = (int) dgptm_get_option( 'dgptm_oauth_popup_id', 32160 );
 
     // Callback URL für Azure-Konfiguration
     $callback_url = rest_url( 'dgptm/v1/oauth/microsoft/callback' );
@@ -168,6 +170,26 @@ function dgptm_admin_oauth_page() {
                         />
                         <p class="description">
                             <?php esc_html_e( 'URL der Seite mit dem [dgptm_otp_login] Shortcode. Wird für Fehler-Redirects verwendet.', 'dgptm' ); ?>
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row">
+                        <label for="dgptm_oauth_popup_id"><?php esc_html_e( 'Elementor Popup ID', 'dgptm' ); ?></label>
+                    </th>
+                    <td>
+                        <input type="number"
+                               id="dgptm_oauth_popup_id"
+                               name="dgptm_oauth_popup_id"
+                               value="<?php echo esc_attr( $popup_id ); ?>"
+                               class="small-text"
+                               min="0"
+                        />
+                        <p class="description">
+                            <?php esc_html_e( 'Post-ID des Elementor Popups mit dem Login-Formular. Bei OAuth-Fehlern wird dieses Popup automatisch geöffnet.', 'dgptm' ); ?>
+                            <br>
+                            <?php esc_html_e( 'Leer lassen oder 0 = Popup nicht automatisch öffnen.', 'dgptm' ); ?>
                         </p>
                     </td>
                 </tr>

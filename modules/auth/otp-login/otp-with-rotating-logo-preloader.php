@@ -111,8 +111,43 @@ add_action( 'login_init', function () {
     if ( ! dgptm_get_option( 'dgptm_disable_wp_login', 0 ) ) return;
     $action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : '';
     if ( $action === 'logout' ) return; // allow
-    if ( isset( $_GET['otp_bypass'] ) && $_GET['otp_bypass'] == '1' ) return;
+    if ( isset( $_GET['otp_bypass'] ) && $_GET['otp_bypass'] === '1' ) return;
     if ( is_user_logged_in() && current_user_can( 'manage_options' ) ) return;
     wp_safe_redirect( home_url() );
     exit;
 } );
+
+// Auto-open Elementor Popup on OAuth error
+add_action( 'wp_footer', function () {
+    // Nur wenn oauth_error Parameter vorhanden
+    if ( ! isset( $_GET['oauth_error'] ) ) {
+        return;
+    }
+
+    // Popup ID aus Einstellungen oder Standard
+    $popup_id = (int) dgptm_get_option( 'dgptm_oauth_popup_id', 32160 );
+    if ( ! $popup_id ) {
+        return;
+    }
+    ?>
+    <script>
+    (function() {
+        // Warten bis Elementor Pro geladen ist
+        function openPopup() {
+            if (typeof elementorProFrontend !== 'undefined' && elementorProFrontend.modules && elementorProFrontend.modules.popup) {
+                elementorProFrontend.modules.popup.showPopup({ id: <?php echo $popup_id; ?> });
+            }
+        }
+
+        // Bei DOMContentLoaded oder sofort wenn bereits geladen
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                setTimeout(openPopup, 500);
+            });
+        } else {
+            setTimeout(openPopup, 500);
+        }
+    })();
+    </script>
+    <?php
+}, 99 );

@@ -260,11 +260,11 @@ class DGPTM_Update_Manager {
         $files = scandir($backup_dir);
 
         foreach ($files as $file) {
-            if ($file === '.' || $file === '..' || !str_ends_with($file, '.zip')) {
+            if ($file === '.' || $file === '..' || substr($file, -4) !== '.zip') {
                 continue;
             }
 
-            if ($module_id && !str_starts_with($file, $module_id . '_')) {
+            if ($module_id && strpos($file, $module_id . '_') !== 0) {
                 continue;
             }
 

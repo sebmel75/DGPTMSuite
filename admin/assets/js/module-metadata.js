@@ -137,12 +137,10 @@
 
         flags.forEach(function(flag) {
             const badgeClass = getFlagBadgeClass(flag.type);
-            const $flag = $(`
-                <span class="dgptm-flag ${badgeClass}">
-                    ${flag.label}
-                    <button type="button" class="dgptm-flag-remove" data-flag-type="${flag.type}">×</button>
-                </span>
-            `);
+            const $flag = $('<span class="dgptm-flag"></span>').addClass(badgeClass);
+            $flag.append(document.createTextNode(flag.label + ' '));
+            const $removeBtn = $('<button type="button" class="dgptm-flag-remove">×</button>').attr('data-flag-type', flag.type);
+            $flag.append($removeBtn);
             $container.append($flag);
         });
     }
@@ -236,6 +234,9 @@
                 } else {
                     alert('Fehler: ' + response.data.message);
                 }
+            },
+            error: function() {
+                alert('AJAX-Fehler beim Hinzufügen des Flags.');
             }
         });
     }
@@ -258,6 +259,9 @@
                     displayFlags(response.data.flags);
                     showNotice('Flag entfernt');
                 }
+            },
+            error: function() {
+                alert('AJAX-Fehler beim Entfernen des Flags.');
             }
         });
     }
@@ -279,6 +283,9 @@
                 if (response.success) {
                     showNotice('Kommentar gespeichert');
                 }
+            },
+            error: function() {
+                alert('AJAX-Fehler beim Speichern des Kommentars.');
             }
         });
     }
@@ -306,6 +313,9 @@
                 } else {
                     alert('Fehler: ' + response.data.message);
                 }
+            },
+            error: function() {
+                alert('AJAX-Fehler beim Versionswechsel.');
             }
         });
     }
@@ -328,6 +338,9 @@
                     showNotice('Test-Version verknüpft');
                     loadModuleMetadata(mainModuleId); // Reload
                 }
+            },
+            error: function() {
+                alert('AJAX-Fehler beim Verknüpfen der Test-Version.');
             }
         });
     }

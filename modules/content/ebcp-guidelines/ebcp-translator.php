@@ -983,7 +983,7 @@ final class EBCPDGPTM_Guidelines_Translator_Addon {
     public function admin_assets($hook) {
         // PHP 8: native str_starts_with
         $page = isset($_GET['page']) ? (string)$_GET['page'] : '';
-        if ($page !== '' && str_starts_with($page, self::PARENT_MENU_SLUG)) {
+        if ($page !== '' && strpos($page, self::PARENT_MENU_SLUG) === 0) {
             // keine externen Assets – Styles/JS inline
         }
     }

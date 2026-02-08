@@ -452,7 +452,7 @@
             $button.prop('disabled', true).addClass('dgptm-test-loading');
 
             $.ajax({
-                url: ajaxurl,
+                url: dgptmSuite.ajaxUrl,
                 type: 'POST',
                 data: {
                     action: 'dgptm_create_test_version',
@@ -491,7 +491,7 @@
             $button.prop('disabled', true).addClass('dgptm-test-loading');
 
             $.ajax({
-                url: ajaxurl,
+                url: dgptmSuite.ajaxUrl,
                 type: 'POST',
                 data: {
                     action: 'dgptm_merge_test_version',
@@ -530,7 +530,7 @@
             $button.prop('disabled', true).addClass('dgptm-test-loading');
 
             $.ajax({
-                url: ajaxurl,
+                url: dgptmSuite.ajaxUrl,
                 type: 'POST',
                 data: {
                     action: 'dgptm_delete_test_version',

@@ -362,10 +362,11 @@ class DGPTM_Safe_Loader {
 
                 // WICHTIG: Prüfe ob der Fehler wirklich vom Modul kommt!
                 $error_file = $error['file'] ?? '';
-                $module_dir = dirname($module_file_path);
+                $module_dir = wp_normalize_path(dirname($module_file_path)) . '/';
 
                 // Nur wenn der Fehler aus dem Modul-Verzeichnis stammt
-                $is_module_error = (strpos($error_file, $module_dir) !== false);
+                $normalized_error_file = wp_normalize_path($error_file);
+                $is_module_error = (strpos($normalized_error_file, $module_dir) === 0);
 
                 if ($is_module_error) {
                     dgptm_log("Safe Loader: Fatal Error im Modul '$module_id' erkannt", 'critical');

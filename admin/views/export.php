@@ -13,7 +13,7 @@ $exports = [];
 if (is_dir($export_dir)) {
     $files = scandir($export_dir);
     foreach ($files as $file) {
-        if ($file === '.' || $file === '..' || !str_ends_with($file, '.zip')) {
+        if ($file === '.' || $file === '..' || substr($file, -4) !== '.zip') {
             continue;
         }
         $exports[] = [

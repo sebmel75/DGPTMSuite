@@ -1164,10 +1164,20 @@ jQuery(document).ready(function($) {
     });
 
     // Export XML (JATS format)
-    $(document).on('click', '.export-xml-btn', function() {
+    $(document).on('click', '.export-xml-btn', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
         const $btn = $(this);
         const articleId = $btn.data('article-id');
         const originalText = $btn.text();
+
+        console.log('JATS Export gestartet für Artikel:', articleId);
+
+        if (!articleId) {
+            alert('Fehler: Keine Artikel-ID gefunden.');
+            return;
+        }
 
         $btn.prop('disabled', true).text('Wird generiert...');
 
@@ -1180,26 +1190,33 @@ jQuery(document).ready(function($) {
                 article_id: articleId
             },
             success: function(response) {
+                console.log('JATS Export Response:', response);
                 $btn.prop('disabled', false).text(originalText);
 
-                if (response.success) {
+                if (response.success && response.data && response.data.xml) {
                     // Create blob and download
-                    const blob = new Blob([response.data.xml], { type: 'application/xml' });
+                    const blob = new Blob([response.data.xml], { type: 'application/xml; charset=utf-8' });
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
+                    a.style.display = 'none';
                     a.href = url;
-                    a.download = response.data.filename;
+                    a.download = response.data.filename || 'artikel-export.xml';
                     document.body.appendChild(a);
                     a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
+                    setTimeout(function() {
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                    }, 100);
+                    console.log('JATS Export erfolgreich:', response.data.filename);
                 } else {
-                    alert(response.data.message || 'Fehler beim Exportieren.');
+                    console.error('JATS Export Fehler:', response);
+                    alert(response.data && response.data.message ? response.data.message : 'Fehler beim Exportieren.');
                 }
             },
-            error: function() {
+            error: function(xhr, status, error) {
+                console.error('JATS Export AJAX Fehler:', status, error, xhr.responseText);
                 $btn.prop('disabled', false).text(originalText);
-                alert('Verbindungsfehler.');
+                alert('Verbindungsfehler: ' + error);
             }
         });
     });

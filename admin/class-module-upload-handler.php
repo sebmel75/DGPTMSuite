@@ -236,8 +236,14 @@ class DGPTM_Module_Upload_Handler {
 
         $temp_path = sanitize_text_field($_POST['temp_path'] ?? '');
 
+        // Validate temp path is within the expected upload directory
         if ($temp_path && strpos($temp_path, 'dgptm-temp-') !== false) {
-            $this->cleanup_temp($temp_path);
+            $upload_dir = wp_upload_dir();
+            $expected_base = wp_normalize_path($upload_dir['basedir']);
+            $normalized_path = wp_normalize_path(realpath($temp_path) ?: $temp_path);
+            if (strpos($normalized_path, $expected_base) === 0) {
+                $this->cleanup_temp($temp_path);
+            }
         }
 
         wp_send_json_success(array('message' => __('Upload canceled', 'dgptm-suite')));
@@ -253,8 +259,13 @@ class DGPTM_Module_Upload_Handler {
             wp_send_json_error(array('message' => __('Insufficient permissions', 'dgptm-suite')));
         }
 
-        $module_id = sanitize_text_field($_POST['module_id'] ?? '');
-        $category = sanitize_text_field($_POST['category'] ?? '');
+        $module_id = sanitize_file_name($_POST['module_id'] ?? '');
+        $category = sanitize_file_name($_POST['category'] ?? '');
+
+        // Prevent directory traversal
+        if (strpos($module_id, '..') !== false || strpos($category, '..') !== false) {
+            wp_send_json_error(array('message' => __('Invalid module ID or category', 'dgptm-suite')));
+        }
 
         $module_file = WP_PLUGIN_DIR . '/dgptm-plugin-suite/modules/' . $category . '/' . $module_id . '/module.json';
 

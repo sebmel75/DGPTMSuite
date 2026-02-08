@@ -140,15 +140,15 @@ if (!class_exists('ZK_PDF_Import')) {
             $import_data = json_decode(file_get_contents($import_file), true);
 
             if (empty($import_data) || !is_array($import_data)) {
-                error_log('ZK Import: import.json ist leer oder ungültig');
+                dgptm_log_error('import.json ist leer oder ungültig', 'zeitschrift-kardiotechnik');
                 wp_send_json_error(['message' => 'Import-Daten ungültig. Bitte PDF erneut hochladen.']);
             }
 
             $pdf_path = $import_data['filepath'] ?? null;
 
             if (empty($pdf_path) || !file_exists($pdf_path)) {
-                error_log('ZK Import: PDF-Pfad nicht gefunden: ' . ($pdf_path ?? 'NULL'));
-                error_log('ZK Import: import.json Inhalt: ' . print_r($import_data, true));
+                dgptm_log_error('PDF-Pfad nicht gefunden: ' . ($pdf_path ?? 'NULL'), 'zeitschrift-kardiotechnik');
+                dgptm_log_error('import.json Inhalt: ' . print_r($import_data, true), 'zeitschrift-kardiotechnik');
                 wp_send_json_error(['message' => 'PDF-Datei nicht gefunden. Bitte erneut hochladen.']);
             }
 
@@ -157,14 +157,14 @@ if (!class_exists('ZK_PDF_Import')) {
             $api_key = $settings['api_key'] ?? '';
             $provider = $settings['provider'] ?? 'anthropic';
 
-            error_log('=== ZK Extraktion Start ===');
-            error_log('Import-ID: ' . $import_id);
-            error_log('AI Settings geladen: ' . print_r(array_keys($settings), true));
-            error_log('Provider: ' . $provider);
-            error_log('API-Key vorhanden: ' . (!empty($api_key) ? 'ja (Länge: ' . strlen($api_key) . ')' : 'NEIN!'));
+            dgptm_log_verbose('=== Extraktion Start ===', 'zeitschrift-kardiotechnik');
+            dgptm_log_verbose('Import-ID: ' . $import_id, 'zeitschrift-kardiotechnik');
+            dgptm_log_verbose('AI Settings geladen: ' . print_r(array_keys($settings), true), 'zeitschrift-kardiotechnik');
+            dgptm_log_verbose('Provider: ' . $provider, 'zeitschrift-kardiotechnik');
+            dgptm_log_verbose('API-Key vorhanden: ' . (!empty($api_key) ? 'ja (Länge: ' . strlen($api_key) . ')' : 'NEIN!'), 'zeitschrift-kardiotechnik');
 
             if (empty($api_key)) {
-                error_log('ZK Extraktion: ABBRUCH - Kein API-Key!');
+                dgptm_log_error('Extraktion: ABBRUCH - Kein API-Key!', 'zeitschrift-kardiotechnik');
                 wp_send_json_error([
                     'message' => 'Kein API-Key konfiguriert. Bitte zuerst die KI-Einstellungen konfigurieren.',
                     'need_config' => true
@@ -194,13 +194,13 @@ if (!class_exists('ZK_PDF_Import')) {
             $chars_per_page = $page_count > 0 ? strlen($full_text) / $page_count : 0;
             $is_scanned_pdf = $chars_per_page < 200; // Weniger als 200 Zeichen pro Seite = wahrscheinlich gescannt
 
-            error_log('ZK PDF: Zeichen pro Seite: ' . round($chars_per_page));
-            error_log('ZK PDF: Gescanntes PDF erkannt: ' . ($is_scanned_pdf ? 'JA' : 'nein'));
+            dgptm_log_verbose('Zeichen pro Seite: ' . round($chars_per_page), 'zeitschrift-kardiotechnik');
+            dgptm_log_verbose('Gescanntes PDF erkannt: ' . ($is_scanned_pdf ? 'JA' : 'nein'), 'zeitschrift-kardiotechnik');
 
             // 5. KI-Analyse durchführen
             if ($is_scanned_pdf && $provider === 'anthropic') {
                 // Gescanntes PDF: Claude Vision API verwenden
-                error_log('ZK PDF: Verwende Claude Vision für gescanntes PDF');
+                dgptm_log_verbose('Verwende Claude Vision für gescanntes PDF', 'zeitschrift-kardiotechnik');
                 $analysis = $this->analyze_scanned_pdf_with_vision(
                     $pdf_path,
                     $import_path,
@@ -511,13 +511,13 @@ if (!class_exists('ZK_PDF_Import')) {
         private function extract_full_text($pdf_path) {
             $text = '';
 
-            error_log('=== ZK PDF Text Extraktion ===');
-            error_log('PDF Pfad: ' . $pdf_path);
-            error_log('PDF existiert: ' . (file_exists($pdf_path) ? 'ja' : 'NEIN!'));
+            dgptm_log_verbose('=== PDF Text Extraktion ===', 'zeitschrift-kardiotechnik');
+            dgptm_log_verbose('PDF Pfad: ' . $pdf_path, 'zeitschrift-kardiotechnik');
+            dgptm_log_verbose('PDF existiert: ' . (file_exists($pdf_path) ? 'ja' : 'NEIN!'), 'zeitschrift-kardiotechnik');
 
             // Methode 1: pdftotext mit Layout
             $pdftotext_available = $this->command_exists('pdftotext');
-            error_log('pdftotext verfügbar: ' . ($pdftotext_available ? 'ja' : 'nein'));
+            dgptm_log_verbose('pdftotext verfügbar: ' . ($pdftotext_available ? 'ja' : 'nein'), 'zeitschrift-kardiotechnik');
 
             if ($pdftotext_available) {
                 $output_file = $this->temp_dir . uniqid('txt_') . '.txt';
@@ -527,24 +527,24 @@ if (!class_exists('ZK_PDF_Import')) {
                     escapeshellarg($output_file)
                 );
                 exec($command, $output, $return_var);
-                error_log('pdftotext Return: ' . $return_var);
+                dgptm_log_verbose('pdftotext Return: ' . $return_var, 'zeitschrift-kardiotechnik');
 
                 if ($return_var === 0 && file_exists($output_file)) {
                     $text = file_get_contents($output_file);
                     unlink($output_file);
-                    error_log('pdftotext Ergebnis: ' . strlen($text) . ' Zeichen');
+                    dgptm_log_verbose('pdftotext Ergebnis: ' . strlen($text) . ' Zeichen', 'zeitschrift-kardiotechnik');
                 }
             }
 
             // Fallback: PHP-basierte Extraktion
             if (empty($text)) {
-                error_log('Verwende PHP Fallback für Textextraktion...');
+                dgptm_log_verbose('Verwende PHP Fallback für Textextraktion...', 'zeitschrift-kardiotechnik');
                 $text = $this->extract_text_php($pdf_path);
-                error_log('PHP Fallback Ergebnis: ' . strlen($text) . ' Zeichen');
+                dgptm_log_verbose('PHP Fallback Ergebnis: ' . strlen($text) . ' Zeichen', 'zeitschrift-kardiotechnik');
             }
 
             $cleaned = $this->clean_text($text);
-            error_log('Nach Bereinigung: ' . strlen($cleaned) . ' Zeichen');
+            dgptm_log_verbose('Nach Bereinigung: ' . strlen($cleaned) . ' Zeichen', 'zeitschrift-kardiotechnik');
 
             return $cleaned;
         }
@@ -555,11 +555,11 @@ if (!class_exists('ZK_PDF_Import')) {
         private function extract_text_php($pdf_path) {
             $content = file_get_contents($pdf_path);
             if (empty($content)) {
-                error_log('ZK PDF: Datei konnte nicht gelesen werden');
+                dgptm_log_error('Datei konnte nicht gelesen werden', 'zeitschrift-kardiotechnik');
                 return '';
             }
 
-            error_log('ZK PDF: Dateigröße ' . strlen($content) . ' Bytes');
+            dgptm_log_verbose('Dateigröße ' . strlen($content) . ' Bytes', 'zeitschrift-kardiotechnik');
 
             $text = '';
             $streams_found = 0;
@@ -581,16 +581,16 @@ if (!class_exists('ZK_PDF_Import')) {
                 }
             }
 
-            error_log("ZK PDF: $streams_found Streams gefunden, $streams_decoded dekodiert");
-            error_log('ZK PDF: Extrahierter Text: ' . strlen($text) . ' Zeichen');
+            dgptm_log_verbose("$streams_found Streams gefunden, $streams_decoded dekodiert", 'zeitschrift-kardiotechnik');
+            dgptm_log_verbose('Extrahierter Text: ' . strlen($text) . ' Zeichen', 'zeitschrift-kardiotechnik');
 
             // Fallback: Direkte Textsuche im PDF
             if (strlen($text) < 500) {
-                error_log('ZK PDF: Versuche direkte Textextraktion...');
+                dgptm_log_verbose('Versuche direkte Textextraktion...', 'zeitschrift-kardiotechnik');
                 $direct_text = $this->extract_text_direct($content);
                 if (strlen($direct_text) > strlen($text)) {
                     $text = $direct_text;
-                    error_log('ZK PDF: Direkte Extraktion: ' . strlen($text) . ' Zeichen');
+                    dgptm_log_verbose('Direkte Extraktion: ' . strlen($text) . ' Zeichen', 'zeitschrift-kardiotechnik');
                 }
             }
 
@@ -888,17 +888,17 @@ if (!class_exists('ZK_PDF_Import')) {
          * Gescanntes PDF mit Claude Vision analysieren
          */
         private function analyze_scanned_pdf_with_vision($pdf_path, $import_path, $page_count, $api_key) {
-            error_log('=== ZK Vision Analyse Start ===');
+            dgptm_log_info('=== Vision Analyse Start ===', 'zeitschrift-kardiotechnik');
 
             // 1. PDF-Seiten als Bilder extrahieren
             $page_images = $this->extract_pages_as_images($pdf_path, $import_path, $page_count);
 
             if (empty($page_images)) {
-                error_log('ZK Vision: Keine Seitenbilder extrahiert');
+                dgptm_log_error('Vision: Keine Seitenbilder extrahiert', 'zeitschrift-kardiotechnik');
                 return new WP_Error('no_images', 'Konnte keine Seitenbilder aus dem PDF extrahieren');
             }
 
-            error_log('ZK Vision: ' . count($page_images) . ' Seitenbilder extrahiert');
+            dgptm_log_verbose('Vision: ' . count($page_images) . ' Seitenbilder extrahiert', 'zeitschrift-kardiotechnik');
 
             // 2. Bilder für API vorbereiten (max 20 Seiten wegen Token-Limit)
             $max_pages = min(count($page_images), 20);
@@ -913,7 +913,7 @@ if (!class_exists('ZK_PDF_Import')) {
 
                     // Dateigröße prüfen (max 5MB pro Bild)
                     if (strlen($image_data) > 5 * 1024 * 1024) {
-                        error_log('ZK Vision: Bild ' . ($i + 1) . ' zu groß, überspringe');
+                        dgptm_log_warning('Vision: Bild ' . ($i + 1) . ' zu groß, überspringe', 'zeitschrift-kardiotechnik');
                         continue;
                     }
 
@@ -926,7 +926,7 @@ if (!class_exists('ZK_PDF_Import')) {
                         ],
                     ];
 
-                    error_log('ZK Vision: Seite ' . ($i + 1) . ' hinzugefügt (' . round(strlen($image_data) / 1024) . ' KB)');
+                    dgptm_log_verbose('Vision: Seite ' . ($i + 1) . ' hinzugefügt (' . round(strlen($image_data) / 1024) . ' KB)', 'zeitschrift-kardiotechnik');
                 }
             }
 
@@ -957,7 +957,7 @@ if (!class_exists('ZK_PDF_Import')) {
 
             // pdftoppm verfügbar?
             if ($this->command_exists('pdftoppm')) {
-                error_log('ZK Vision: Verwende pdftoppm für Seitenextraktion');
+                dgptm_log_verbose('Vision: Verwende pdftoppm für Seitenextraktion', 'zeitschrift-kardiotechnik');
 
                 $command = sprintf(
                     'pdftoppm -jpeg -r 150 %s %s 2>&1',
@@ -966,7 +966,7 @@ if (!class_exists('ZK_PDF_Import')) {
                 );
                 exec($command, $output, $return_var);
 
-                error_log('ZK Vision: pdftoppm Return: ' . $return_var);
+                dgptm_log_verbose('Vision: pdftoppm Return: ' . $return_var, 'zeitschrift-kardiotechnik');
 
                 if ($return_var === 0) {
                     // Generierte Bilder finden
@@ -978,7 +978,7 @@ if (!class_exists('ZK_PDF_Import')) {
 
             // Fallback: convert (ImageMagick)
             if (empty($images) && $this->command_exists('convert')) {
-                error_log('ZK Vision: Verwende ImageMagick convert');
+                dgptm_log_verbose('Vision: Verwende ImageMagick convert', 'zeitschrift-kardiotechnik');
 
                 for ($i = 0; $i < min($page_count, 20); $i++) {
                     $output_file = $pages_dir . 'page-' . sprintf('%03d', $i + 1) . '.jpg';
@@ -996,7 +996,7 @@ if (!class_exists('ZK_PDF_Import')) {
                 }
             }
 
-            error_log('ZK Vision: ' . count($images) . ' Seitenbilder erstellt');
+            dgptm_log_verbose('Vision: ' . count($images) . ' Seitenbilder erstellt', 'zeitschrift-kardiotechnik');
             return $images;
         }
 
@@ -1060,9 +1060,9 @@ PROMPT;
                 $model = 'claude-sonnet-4-20250514';
             }
 
-            error_log('=== ZK Claude Vision API ===');
-            error_log('Modell: ' . $model);
-            error_log('Content-Elemente: ' . count($content));
+            dgptm_log_verbose('=== Claude Vision API ===', 'zeitschrift-kardiotechnik');
+            dgptm_log_verbose('Modell: ' . $model, 'zeitschrift-kardiotechnik');
+            dgptm_log_verbose('Content-Elemente: ' . count($content), 'zeitschrift-kardiotechnik');
 
             $body_data = [
                 'model' => $model,
@@ -1075,11 +1075,11 @@ PROMPT;
             $json_body = json_encode($body_data, JSON_UNESCAPED_UNICODE);
 
             if ($json_body === false) {
-                error_log('ZK Vision: JSON encode Fehler');
+                dgptm_log_error('Vision: JSON encode Fehler', 'zeitschrift-kardiotechnik');
                 return new WP_Error('json_error', 'JSON-Encoding fehlgeschlagen');
             }
 
-            error_log('ZK Vision: Request Body Größe: ' . round(strlen($json_body) / 1024 / 1024, 2) . ' MB');
+            dgptm_log_verbose('Vision: Request Body Größe: ' . round(strlen($json_body) / 1024 / 1024, 2) . ' MB', 'zeitschrift-kardiotechnik');
 
             $response = wp_remote_post('https://api.anthropic.com/v1/messages', [
                 'timeout' => 300, // 5 Minuten für Vision
@@ -1092,31 +1092,31 @@ PROMPT;
             ]);
 
             if (is_wp_error($response)) {
-                error_log('ZK Vision: WP Error - ' . $response->get_error_message());
+                dgptm_log_error('Vision: WP Error - ' . $response->get_error_message(), 'zeitschrift-kardiotechnik');
                 return $response;
             }
 
             $status = wp_remote_retrieve_response_code($response);
             $body = wp_remote_retrieve_body($response);
 
-            error_log('ZK Vision: HTTP Status ' . $status);
+            dgptm_log_verbose('Vision: HTTP Status ' . $status, 'zeitschrift-kardiotechnik');
 
             if ($status !== 200) {
                 $error = json_decode($body, true);
                 $error_msg = $error['error']['message'] ?? 'API-Fehler: ' . $status;
-                error_log('ZK Vision: API Fehler - ' . $error_msg);
+                dgptm_log_error('Vision: API Fehler - ' . $error_msg, 'zeitschrift-kardiotechnik');
                 return new WP_Error('api_error', $error_msg);
             }
 
             $data = json_decode($body, true);
 
             if (!isset($data['content'][0]['text'])) {
-                error_log('ZK Vision: Ungültige Antwortstruktur');
+                dgptm_log_error('Vision: Ungültige Antwortstruktur', 'zeitschrift-kardiotechnik');
                 return new WP_Error('parse_error', 'Ungültige API-Antwort');
             }
 
             $result_text = $data['content'][0]['text'];
-            error_log('ZK Vision: Antwort erhalten (' . strlen($result_text) . ' Zeichen)');
+            dgptm_log_verbose('Vision: Antwort erhalten (' . strlen($result_text) . ' Zeichen)', 'zeitschrift-kardiotechnik');
 
             // JSON aus Antwort extrahieren
             $result = json_decode($result_text, true);
@@ -1129,12 +1129,12 @@ PROMPT;
             }
 
             if (!$result) {
-                error_log('ZK Vision: JSON Parse Fehler - ' . json_last_error_msg());
-                error_log('ZK Vision: Antwort-Text: ' . substr($result_text, 0, 500));
+                dgptm_log_error('Vision: JSON Parse Fehler - ' . json_last_error_msg(), 'zeitschrift-kardiotechnik');
+                dgptm_log_error('Vision: Antwort-Text: ' . substr($result_text, 0, 500), 'zeitschrift-kardiotechnik');
                 return new WP_Error('parse_error', 'Konnte JSON nicht parsen');
             }
 
-            error_log('ZK Vision: Erfolgreich! ' . count($result['articles'] ?? []) . ' Artikel erkannt');
+            dgptm_log_info('Vision: Erfolgreich! ' . count($result['articles'] ?? []) . ' Artikel erkannt', 'zeitschrift-kardiotechnik');
 
             return $result;
         }
@@ -1213,18 +1213,18 @@ PROMPT;
                 'gpt-4-turbo-preview' => 'gpt-4o',
             ];
             if (isset($deprecated_models[$model])) {
-                error_log('ZK AI: Modell ' . $model . ' veraltet, verwende ' . $deprecated_models[$model]);
+                dgptm_log_warning('AI: Modell ' . $model . ' veraltet, verwende ' . $deprecated_models[$model], 'zeitschrift-kardiotechnik');
                 $model = $deprecated_models[$model];
             }
 
-            error_log('=== ZK Anthropic API Aufruf ===');
-            error_log('Modell: ' . $model);
-            error_log('API-Key vorhanden: ' . (!empty($api_key) ? 'ja (Länge: ' . strlen($api_key) . ')' : 'NEIN!'));
-            error_log('Prompt-Länge: ' . strlen($prompt) . ' Zeichen');
+            dgptm_log_verbose('=== Anthropic API Aufruf ===', 'zeitschrift-kardiotechnik');
+            dgptm_log_verbose('Modell: ' . $model, 'zeitschrift-kardiotechnik');
+            dgptm_log_verbose('API-Key vorhanden: ' . (!empty($api_key) ? 'ja (Länge: ' . strlen($api_key) . ')' : 'NEIN!'), 'zeitschrift-kardiotechnik');
+            dgptm_log_verbose('Prompt-Länge: ' . strlen($prompt) . ' Zeichen', 'zeitschrift-kardiotechnik');
 
             // Prompt bereinigen für gültiges UTF-8 (wichtig für json_encode)
             $prompt = $this->sanitize_utf8($prompt);
-            error_log('Prompt nach UTF-8 Bereinigung: ' . strlen($prompt) . ' Zeichen');
+            dgptm_log_verbose('Prompt nach UTF-8 Bereinigung: ' . strlen($prompt) . ' Zeichen', 'zeitschrift-kardiotechnik');
 
             $body_data = [
                 'model' => $model,
@@ -1237,11 +1237,11 @@ PROMPT;
             $json_body = json_encode($body_data, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
 
             if ($json_body === false) {
-                error_log('ZK AI: json_encode FEHLER - ' . json_last_error_msg());
+                dgptm_log_error('AI: json_encode FEHLER - ' . json_last_error_msg(), 'zeitschrift-kardiotechnik');
                 return new WP_Error('json_error', 'JSON-Encoding fehlgeschlagen: ' . json_last_error_msg());
             }
 
-            error_log('JSON Body Länge: ' . strlen($json_body) . ' Bytes');
+            dgptm_log_verbose('JSON Body Länge: ' . strlen($json_body) . ' Bytes', 'zeitschrift-kardiotechnik');
 
             $response = wp_remote_post('https://api.anthropic.com/v1/messages', [
                 'timeout' => 180,
@@ -1254,27 +1254,27 @@ PROMPT;
             ]);
 
             if (is_wp_error($response)) {
-                error_log('ZK AI: WP Error - ' . $response->get_error_message());
+                dgptm_log_error('AI: WP Error - ' . $response->get_error_message(), 'zeitschrift-kardiotechnik');
                 return $response;
             }
 
             $status = wp_remote_retrieve_response_code($response);
             $body = wp_remote_retrieve_body($response);
 
-            error_log('ZK AI: HTTP Status ' . $status);
+            dgptm_log_verbose('AI: HTTP Status ' . $status, 'zeitschrift-kardiotechnik');
 
             if ($status !== 200) {
                 $error = json_decode($body, true);
                 $error_msg = $error['error']['message'] ?? 'API-Fehler: ' . $status;
-                error_log('ZK AI: API Fehler - ' . $error_msg);
-                error_log('ZK AI: Response Body - ' . substr($body, 0, 500));
+                dgptm_log_error('AI: API Fehler - ' . $error_msg, 'zeitschrift-kardiotechnik');
+                dgptm_log_error('AI: Response Body - ' . substr($body, 0, 500), 'zeitschrift-kardiotechnik');
                 return new WP_Error('api_error', $error_msg . ' (Modell: ' . $model . ')');
             }
 
             $data = json_decode($body, true);
 
             if (!isset($data['content'][0]['text'])) {
-                error_log('ZK AI: Ungültige Antwortstruktur - ' . substr($body, 0, 500));
+                dgptm_log_error('AI: Ungültige Antwortstruktur - ' . substr($body, 0, 500), 'zeitschrift-kardiotechnik');
                 return new WP_Error('parse_error', 'Ungültige API-Antwort');
             }
 
@@ -1521,14 +1521,14 @@ PROMPT;
             $api_key = isset($_POST['api_key']) ? trim(wp_unslash($_POST['api_key'])) : '';
             $model = sanitize_text_field($_POST['model'] ?? 'claude-sonnet-4-20250514');
 
-            error_log('=== ZK AI Settings SAVE ===');
-            error_log('POST api_key raw: ' . (isset($_POST['api_key']) ? 'vorhanden, Länge: ' . strlen($_POST['api_key']) : 'NICHT VORHANDEN'));
-            error_log('api_key nach trim: ' . (!empty($api_key) ? 'Länge: ' . strlen($api_key) . ', Start: ' . substr($api_key, 0, 10) : 'LEER'));
+            dgptm_log_verbose('=== AI Settings SAVE ===', 'zeitschrift-kardiotechnik');
+            dgptm_log_verbose('POST api_key raw: ' . (isset($_POST['api_key']) ? 'vorhanden, Länge: ' . strlen($_POST['api_key']) : 'NICHT VORHANDEN'), 'zeitschrift-kardiotechnik');
+            dgptm_log_verbose('api_key nach trim: ' . (!empty($api_key) ? 'Länge: ' . strlen($api_key) . ', Start: ' . substr($api_key, 0, 10) : 'LEER'), 'zeitschrift-kardiotechnik');
 
             // Alte Settings laden
             $old_settings = get_option('zk_ai_settings', []);
-            error_log('Alte Settings: ' . print_r(array_keys($old_settings), true));
-            error_log('Alter API-Key existiert: ' . (!empty($old_settings['api_key']) ? 'ja' : 'nein'));
+            dgptm_log_verbose('Alte Settings: ' . print_r(array_keys($old_settings), true), 'zeitschrift-kardiotechnik');
+            dgptm_log_verbose('Alter API-Key existiert: ' . (!empty($old_settings['api_key']) ? 'ja' : 'nein'), 'zeitschrift-kardiotechnik');
 
             // Neue Settings erstellen
             $settings = [
@@ -1540,24 +1540,24 @@ PROMPT;
             // API-Key: Neuen verwenden oder alten beibehalten
             if (!empty($api_key) && strpos($api_key, '...') === false) {
                 $settings['api_key'] = $api_key;
-                error_log('ZK AI Settings: NEUER API-Key wird gespeichert (Länge: ' . strlen($api_key) . ')');
+                dgptm_log_info('AI Settings: NEUER API-Key wird gespeichert (Länge: ' . strlen($api_key) . ')', 'zeitschrift-kardiotechnik');
             } elseif (!empty($old_settings['api_key'])) {
                 $settings['api_key'] = $old_settings['api_key'];
-                error_log('ZK AI Settings: ALTER API-Key beibehalten (Länge: ' . strlen($old_settings['api_key']) . ')');
+                dgptm_log_info('AI Settings: ALTER API-Key beibehalten (Länge: ' . strlen($old_settings['api_key']) . ')', 'zeitschrift-kardiotechnik');
             } else {
-                error_log('ZK AI Settings: KEIN API-Key vorhanden!');
+                dgptm_log_warning('AI Settings: KEIN API-Key vorhanden!', 'zeitschrift-kardiotechnik');
             }
 
             // Option löschen und neu erstellen für sauberes Speichern
             delete_option('zk_ai_settings');
             $result = add_option('zk_ai_settings', $settings, '', 'yes');
 
-            error_log('ZK AI Settings: add_option Ergebnis: ' . ($result ? 'SUCCESS' : 'FAILED'));
+            dgptm_log_verbose('AI Settings: add_option Ergebnis: ' . ($result ? 'SUCCESS' : 'FAILED'), 'zeitschrift-kardiotechnik');
 
             // Verifizieren
             $verify = get_option('zk_ai_settings', []);
             $verified_key = !empty($verify['api_key']);
-            error_log('ZK AI Settings: Verifizierung - API-Key gespeichert: ' . ($verified_key ? 'JA (Länge: ' . strlen($verify['api_key']) . ')' : 'NEIN!'));
+            dgptm_log_verbose('AI Settings: Verifizierung - API-Key gespeichert: ' . ($verified_key ? 'JA (Länge: ' . strlen($verify['api_key']) . ')' : 'NEIN!'), 'zeitschrift-kardiotechnik');
 
             wp_send_json_success([
                 'message' => $verified_key ? 'Einstellungen gespeichert' : 'Fehler beim Speichern des API-Keys!',

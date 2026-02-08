@@ -62,6 +62,10 @@ class DGPTM_Central_Settings_Registry {
         $this->register_gocardless_settings();
         $this->register_zoho_books_settings();
 
+        // Business (weitere)
+        $this->register_kiosk_jahrestagung_settings();
+        $this->register_microsoft_gruppen_settings();
+
         // Utilities
         $this->register_efn_manager_settings();
         $this->register_role_manager_settings();
@@ -91,11 +95,27 @@ class DGPTM_Central_Settings_Registry {
         remove_submenu_page('edit.php?post_type=fortbildung', 'fobi-ebcp-settings');
         remove_submenu_page('edit.php?post_type=fortbildung', 'fobi-aek-settings');
 
-        // OTP Login Submenu
+        // OTP Login - komplettes Top-Level-Menu entfernen
         remove_submenu_page('options-general.php', 'dgptm-otp-settings');
+        remove_menu_page('dgptm-otp-root');
 
         // GitHub Sync, Daten bearbeiten
         remove_submenu_page('options-general.php', 'dgptm-daten-bearbeiten');
+
+        // Kiosk Jahrestagung (Bummern Code Scanner)
+        remove_submenu_page('options-general.php', 'bcs_settings');
+
+        // EFN Manager
+        remove_submenu_page('options-general.php', 'dgptm-efn-manager');
+
+        // Microsoft Gruppen
+        remove_submenu_page('options-general.php', 'wp_ms365_plugin');
+
+        // Vimeo Streams - Top-Level-Menu
+        remove_menu_page('vimeo-stream-manager');
+
+        // Custom Content Shortcode
+        remove_submenu_page('options-general.php', 'ccs_gallery_field_settings');
     }
 
     // ============================================================
@@ -993,6 +1013,104 @@ class DGPTM_Central_Settings_Registry {
             $current_settings['gocardless_token'] = $token;
             update_option('dgptm_module_settings_daten-bearbeiten', $current_settings);
         }
+    }
+
+    /**
+     * Kiosk Jahrestagung (Bummern Code Scanner) Settings
+     */
+    private function register_kiosk_jahrestagung_settings() {
+        dgptm_register_module_settings([
+            'id' => 'kiosk-jahrestagung',
+            'title' => 'Kiosk Jahrestagung',
+            'menu_title' => 'Kiosk',
+            'icon' => 'dashicons-camera',
+            'priority' => 37,
+            'sections' => [
+                ['id' => 'webhook', 'title' => 'Webhook / CRM', 'description' => 'Verbindung fuer Code-Validierung.'],
+                ['id' => 'display', 'title' => 'Anzeige', 'description' => 'Darstellung des Kiosk-Modus.'],
+                ['id' => 'party', 'title' => 'Party-Modus', 'description' => 'Easter-Egg bei speziellem Code.'],
+                ['id' => 'logging', 'title' => 'Logging', 'description' => 'Protokollierung der Scans.']
+            ],
+            'fields' => [
+                // Webhook
+                ['id' => 'webhook_url', 'section' => 'webhook', 'title' => 'Webhook URL', 'type' => 'url', 'description' => 'Zoho Functions URL fuer Code-Lookup'],
+                ['id' => 'use_crm', 'section' => 'webhook', 'title' => 'CRM direkt abfragen', 'type' => 'checkbox', 'default' => true, 'description' => 'Direkte CRM-Abfrage statt Webhook'],
+                ['id' => 'expected_event', 'section' => 'webhook', 'title' => 'Erwartete Event-ID', 'type' => 'text'],
+                ['id' => 'timeout', 'section' => 'webhook', 'title' => 'Webhook Timeout (Sek.)', 'type' => 'number', 'default' => 8, 'min' => 3, 'max' => 60],
+                // Display
+                ['id' => 'success_message', 'section' => 'display', 'title' => 'Erfolgsmeldung', 'type' => 'textarea', 'rows' => 3, 'default' => 'Willkommen, {{name}}! Zugang OK.', 'description' => 'Platzhalter: {{name}}'],
+                ['id' => 'error_message', 'section' => 'display', 'title' => 'Fehlermeldung', 'type' => 'textarea', 'rows' => 3, 'default' => 'Leider ungueltig. Bitte pruefen.'],
+                ['id' => 'custom_heading', 'section' => 'display', 'title' => 'Ueberschrift', 'type' => 'text', 'default' => 'Code-Check'],
+                ['id' => 'flash_duration', 'section' => 'display', 'title' => 'Flash-Dauer (ms)', 'type' => 'number', 'default' => 800, 'min' => 0],
+                ['id' => 'success_color', 'section' => 'display', 'title' => 'Erfolgsfarbe', 'type' => 'color', 'default' => '#66ff99'],
+                ['id' => 'error_color', 'section' => 'display', 'title' => 'Fehlerfarbe', 'type' => 'color', 'default' => '#ff3366'],
+                ['id' => 'banner_url', 'section' => 'display', 'title' => 'Banner-URL', 'type' => 'url'],
+                ['id' => 'kiosk_password', 'section' => 'display', 'title' => 'Kiosk-Passwort', 'type' => 'password', 'description' => 'Optionales Passwort fuer Kiosk-Login'],
+                // Party
+                ['id' => 'party_code', 'section' => 'party', 'title' => 'Party-Code', 'type' => 'text'],
+                ['id' => 'party_text', 'section' => 'party', 'title' => 'Party-Text', 'type' => 'text', 'default' => 'Party-Modus!'],
+                ['id' => 'party_duration', 'section' => 'party', 'title' => 'Party-Dauer (ms)', 'type' => 'number', 'default' => 4000],
+                // Logging
+                ['id' => 'log_enabled', 'section' => 'logging', 'title' => 'Logging aktivieren', 'type' => 'checkbox', 'default' => true],
+                ['id' => 'log_max', 'section' => 'logging', 'title' => 'Max. Log-Eintraege', 'type' => 'number', 'default' => 500, 'min' => 10, 'max' => 5000]
+            ]
+        ]);
+
+        $this->migrate_kiosk_jahrestagung_settings();
+    }
+
+    private function migrate_kiosk_jahrestagung_settings() {
+        if (get_option('dgptm_kiosk_jahrestagung_migrated')) return;
+
+        $old_options = get_option('bcs_options', []);
+        if (!empty($old_options) && is_array($old_options)) {
+            update_option('dgptm_module_settings_kiosk-jahrestagung', $old_options);
+        }
+        update_option('dgptm_kiosk_jahrestagung_migrated', true);
+    }
+
+    /**
+     * Microsoft Gruppen (MS365) Settings
+     */
+    private function register_microsoft_gruppen_settings() {
+        dgptm_register_module_settings([
+            'id' => 'microsoft-gruppen',
+            'title' => 'Microsoft 365 Gruppen',
+            'menu_title' => 'MS365 Gruppen',
+            'icon' => 'dashicons-groups',
+            'priority' => 38,
+            'sections' => [
+                ['id' => 'oauth', 'title' => 'OAuth-Konfiguration', 'description' => 'Microsoft Azure AD App-Registrierung. Erstellen Sie eine App unter <a href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps" target="_blank">Azure Portal</a>.'],
+                ['id' => 'options', 'title' => 'Optionen', 'description' => 'Zusaetzliche Einstellungen.']
+            ],
+            'fields' => [
+                ['id' => 'client_id', 'section' => 'oauth', 'title' => 'Client ID', 'type' => 'text', 'required' => true],
+                ['id' => 'client_secret', 'section' => 'oauth', 'title' => 'Client Secret', 'type' => 'password', 'required' => true],
+                ['id' => 'redirect_uri', 'section' => 'oauth', 'title' => 'Redirect URI', 'type' => 'url', 'description' => 'Muss mit Azure AD uebereinstimmen'],
+                ['id' => 'include_security_groups', 'section' => 'options', 'title' => 'Security-Gruppen einschliessen', 'type' => 'checkbox', 'default' => false]
+            ]
+        ]);
+
+        $this->migrate_microsoft_gruppen_settings();
+    }
+
+    private function migrate_microsoft_gruppen_settings() {
+        if (get_option('dgptm_microsoft_gruppen_migrated')) return;
+
+        $old_options = get_option('wp_ms365_plugin_options', []);
+        if (!empty($old_options) && is_array($old_options)) {
+            $new_settings = [];
+            $keys = ['client_id', 'client_secret', 'redirect_uri', 'include_security_groups'];
+            foreach ($keys as $key) {
+                if (isset($old_options[$key])) {
+                    $new_settings[$key] = $old_options[$key];
+                }
+            }
+            if (!empty($new_settings)) {
+                update_option('dgptm_module_settings_microsoft-gruppen', $new_settings);
+            }
+        }
+        update_option('dgptm_microsoft_gruppen_migrated', true);
     }
 
     /**

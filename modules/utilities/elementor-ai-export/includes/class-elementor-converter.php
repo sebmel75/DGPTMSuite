@@ -484,7 +484,7 @@ class DGPTM_Elementor_Converter {
 
             // Warning if _elementor_settings is missing (but allow it)
             if (!isset($element['_elementor_settings'])) {
-                error_log("WARNUNG: Element {$element_path} hat keine _elementor_settings. Dynamic Visibility könnte verloren gehen.");
+                dgptm_log_warning("Element {$element_path} hat keine _elementor_settings. Dynamic Visibility könnte verloren gehen.", 'elementor-ai-export');
             }
 
             // Validate children recursively

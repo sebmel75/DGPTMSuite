@@ -268,7 +268,7 @@ class DGPTM_Vimeo_Webinare {
             file_put_contents($cert_dir . '.htaccess', "Options -Indexes\n");
         }
         
-        error_log('VW: Database tables created/updated to version ' . self::DB_VERSION);
+        dgptm_log_info('Database tables created/updated to version ' . self::DB_VERSION, 'vimeo-webinare');
     }
 
     /**
@@ -842,10 +842,10 @@ class DGPTM_Vimeo_Webinare {
         $user_id = get_current_user_id();
         $webinar_id = intval($_POST['webinar_id'] ?? 0);
 
-        error_log('VW Complete Webinar - User: ' . $user_id . ', Webinar: ' . $webinar_id);
+        dgptm_log_verbose('Complete Webinar - User: ' . $user_id . ', Webinar: ' . $webinar_id, 'vimeo-webinare');
 
         if (!$user_id || !$webinar_id) {
-            error_log('VW Complete Webinar - ERROR: Invalid data');
+            dgptm_log_error('Complete Webinar - Invalid data', 'vimeo-webinare');
             wp_send_json_error(['message' => 'Invalid data']);
         }
 
@@ -857,7 +857,7 @@ class DGPTM_Vimeo_Webinare {
         $actual_progress = $duration > 0 ? ($watched_time / $duration) * 100 : 0;
 
         if ($actual_progress < $required) {
-            error_log('VW Complete Webinar - ERROR: Not enough progress. Actual: ' . $actual_progress . ', Required: ' . $required);
+            dgptm_log_error('Complete Webinar - Not enough progress. Actual: ' . $actual_progress . ', Required: ' . $required, 'vimeo-webinare');
             wp_send_json_error([
                 'message' => 'Nicht genug angesehen. Aktuell: ' . number_format($actual_progress, 1) . '%, Erforderlich: ' . $required . '%'
             ]);
@@ -865,37 +865,37 @@ class DGPTM_Vimeo_Webinare {
 
         // Check if already completed
         if ($this->is_webinar_completed($user_id, $webinar_id)) {
-            error_log('VW Complete Webinar - Already completed');
+            dgptm_log_warning('Complete Webinar - Already completed', 'vimeo-webinare');
             wp_send_json_error(['message' => 'Webinar bereits abgeschlossen']);
         }
 
         // Create Fortbildung entry
-        error_log('VW Complete Webinar - Creating Fortbildung entry...');
+        dgptm_log_verbose('Complete Webinar - Creating Fortbildung entry...', 'vimeo-webinare');
         $fortbildung_id = $this->create_fortbildung_entry($user_id, $webinar_id);
 
         if (!$fortbildung_id) {
-            error_log('VW Complete Webinar - ERROR: Failed to create Fortbildung entry');
+            dgptm_log_error('Complete Webinar - Failed to create Fortbildung entry', 'vimeo-webinare');
             wp_send_json_error(['message' => 'Fehler beim Erstellen des Fortbildungseintrags']);
         }
 
-        error_log('VW Complete Webinar - Fortbildung created: ' . $fortbildung_id);
+        dgptm_log_verbose('Complete Webinar - Fortbildung created: ' . $fortbildung_id, 'vimeo-webinare');
 
         // Generate certificate
-        error_log('VW Complete Webinar - Generating certificate...');
+        dgptm_log_verbose('Complete Webinar - Generating certificate...', 'vimeo-webinare');
         $pdf_url = $this->generate_certificate_pdf($user_id, $webinar_id);
 
         if ($pdf_url) {
-            error_log('VW Complete Webinar - Certificate generated: ' . $pdf_url);
+            dgptm_log_verbose('Complete Webinar - Certificate generated: ' . $pdf_url, 'vimeo-webinare');
 
             // Send email with certificate
-            error_log('VW Complete Webinar - Sending email...');
+            dgptm_log_verbose('Complete Webinar - Sending email...', 'vimeo-webinare');
             $mail_sent = $this->send_certificate_email($user_id, $webinar_id, $pdf_url);
-            error_log('VW Complete Webinar - Email sent: ' . ($mail_sent ? 'Yes' : 'No'));
+            dgptm_log_verbose('Complete Webinar - Email sent: ' . ($mail_sent ? 'Yes' : 'No'), 'vimeo-webinare');
         } else {
-            error_log('VW Complete Webinar - ERROR: Failed to generate certificate');
+            dgptm_log_error('Complete Webinar - Failed to generate certificate', 'vimeo-webinare');
         }
 
-        error_log('VW Complete Webinar - SUCCESS!');
+        dgptm_log_info('Complete Webinar - SUCCESS!', 'vimeo-webinare');
 
         $points = get_field('ebcp_points', $webinar_id) ?: 1;
 
@@ -1338,16 +1338,16 @@ class DGPTM_Vimeo_Webinare {
      * Helper: Create Fortbildung Entry
      */
     private function create_fortbildung_entry($user_id, $webinar_id) {
-        error_log('VW Create Fortbildung - Start: User ' . $user_id . ', Webinar ' . $webinar_id);
+        dgptm_log_verbose('Create Fortbildung - Start: User ' . $user_id . ', Webinar ' . $webinar_id, 'vimeo-webinare');
 
         $webinar = get_post($webinar_id);
 
         if (!$webinar) {
-            error_log('VW Create Fortbildung - ERROR: Webinar not found');
+            dgptm_log_error('Create Fortbildung - Webinar not found', 'vimeo-webinare');
             return false;
         }
 
-        error_log('VW Create Fortbildung - Webinar found: ' . $webinar->post_title);
+        dgptm_log_verbose('Create Fortbildung - Webinar found: ' . $webinar->post_title, 'vimeo-webinare');
 
         // Doubletten-Prüfung: Gibt es bereits einen Eintrag für dieses Webinar?
         $existing = get_posts([
@@ -1370,17 +1370,17 @@ class DGPTM_Vimeo_Webinare {
         ]);
 
         if (!empty($existing)) {
-            error_log('VW Create Fortbildung - Existing entry found: ' . $existing[0]->ID);
+            dgptm_log_info('Create Fortbildung - Existing entry found: ' . $existing[0]->ID, 'vimeo-webinare');
             return $existing[0]->ID;
         }
 
-        error_log('VW Create Fortbildung - No existing entry, creating new...');
+        dgptm_log_verbose('Create Fortbildung - No existing entry, creating new...', 'vimeo-webinare');
 
         $points = get_field('ebcp_points', $webinar_id) ?: 1;
         $vnr = get_field('vnr', $webinar_id) ?: '';
         $user = get_userdata($user_id);
 
-        error_log('VW Create Fortbildung - Points: ' . $points . ', VNR: ' . $vnr);
+        dgptm_log_verbose('Create Fortbildung - Points: ' . $points . ', VNR: ' . $vnr, 'vimeo-webinare');
 
         // Token generieren für Verifikation
         $token = wp_generate_password(32, false);
@@ -1394,19 +1394,19 @@ class DGPTM_Vimeo_Webinare {
         ], true);
 
         if (is_wp_error($fortbildung_id)) {
-            error_log('VW Create Fortbildung - ERROR: wp_insert_post failed: ' . $fortbildung_id->get_error_message());
+            dgptm_log_error('Create Fortbildung - wp_insert_post failed: ' . $fortbildung_id->get_error_message(), 'vimeo-webinare');
             return false;
         }
 
         if (!$fortbildung_id) {
-            error_log('VW Create Fortbildung - ERROR: wp_insert_post returned 0');
+            dgptm_log_error('Create Fortbildung - wp_insert_post returned 0', 'vimeo-webinare');
             return false;
         }
 
-        error_log('VW Create Fortbildung - Post created: ' . $fortbildung_id);
+        dgptm_log_verbose('Create Fortbildung - Post created: ' . $fortbildung_id, 'vimeo-webinare');
 
         // ACF Felder setzen
-        error_log('VW Create Fortbildung - Setting ACF fields...');
+        dgptm_log_verbose('Create Fortbildung - Setting ACF fields...', 'vimeo-webinare');
         update_field('user', $user_id, $fortbildung_id);
         update_field('date', current_time('Y-m-d'), $fortbildung_id);
         update_field('location', 'Online', $fortbildung_id);
@@ -1418,7 +1418,7 @@ class DGPTM_Vimeo_Webinare {
         update_field('freigabe_durch', 'System (Webinar)', $fortbildung_id);
         update_field('freigabe_mail', get_option('admin_email'), $fortbildung_id);
 
-        error_log('VW Create Fortbildung - ACF fields set');
+        dgptm_log_verbose('Create Fortbildung - ACF fields set', 'vimeo-webinare');
 
         // Webinar-ID als Meta speichern für Doubletten-Check
         update_post_meta($fortbildung_id, '_vw_webinar_id', $webinar_id);
@@ -1426,7 +1426,7 @@ class DGPTM_Vimeo_Webinare {
         // Mark as completed (nutzt neue DB-Methode)
         $this->mark_webinar_completed($user_id, $webinar_id, $fortbildung_id);
 
-        error_log('VW Create Fortbildung - Completed. Fortbildung ID: ' . $fortbildung_id);
+        dgptm_log_info('Create Fortbildung - Completed. Fortbildung ID: ' . $fortbildung_id, 'vimeo-webinare');
 
         return $fortbildung_id;
     }
@@ -1447,7 +1447,7 @@ class DGPTM_Vimeo_Webinare {
         }
 
         if (!file_exists($fpdf_path)) {
-            error_log('VW Certificate - FPDF not found at: ' . $fpdf_path);
+            dgptm_log_error('Certificate - FPDF not found at: ' . $fpdf_path, 'vimeo-webinare');
             return false;
         }
 

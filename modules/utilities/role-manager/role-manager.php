@@ -32,7 +32,7 @@ class DGPTM_Suite_Role_Manager {
 
     private function __construct() {
         try {
-            error_log('DGPTM Role Manager: Konstruktor gestartet');
+            dgptm_log_info('Konstruktor gestartet', 'role-manager');
 
             // Backend-Zugriffssperre (spät laden, nach allen anderen Plugins)
             add_action('admin_init', [$this, 'restrict_backend_access'], 999);
@@ -66,9 +66,9 @@ class DGPTM_Suite_Role_Manager {
             add_action('wp_ajax_dgptm_update_role_capabilities', [$this, 'ajax_update_role_capabilities']);
             add_action('wp_ajax_dgptm_get_role_capabilities', [$this, 'ajax_get_role_capabilities']);
 
-            error_log('DGPTM Role Manager: Konstruktor erfolgreich abgeschlossen');
+            dgptm_log_info('Konstruktor erfolgreich abgeschlossen', 'role-manager');
         } catch (Exception $e) {
-            error_log('DGPTM Role Manager: Fehler im Konstruktor - ' . $e->getMessage());
+            dgptm_log_error('Fehler im Konstruktor - ' . $e->getMessage(), 'role-manager');
             throw $e;
         }
     }
@@ -165,7 +165,7 @@ class DGPTM_Suite_Role_Manager {
 
         // Kein Zugriff = Redirect zum Frontend
         if (!$has_access) {
-            error_log('DGPTM Role Manager: Backend-Zugriff verweigert für User ' . $user->ID . ' mit Rollen: ' . implode(', ', $user_roles));
+            dgptm_log_warning('Backend-Zugriff verweigert für User ' . $user->ID . ' mit Rollen: ' . implode(', ', $user_roles), 'role-manager');
             wp_safe_redirect(home_url());
             exit;
         }
@@ -207,15 +207,15 @@ class DGPTM_Suite_Role_Manager {
      * Entferne Standard-Role Feld aus POST damit WordPress es nicht überschreibt
      */
     public function remove_standard_role_from_post($user_id) {
-        error_log('DGPTM Role Manager: remove_standard_role_from_post aufgerufen für User ' . $user_id);
+        dgptm_log_verbose('remove_standard_role_from_post aufgerufen für User ' . $user_id, 'role-manager');
 
         if (isset($_POST['role'])) {
-            error_log('DGPTM Role Manager: Standard-Role Feld gefunden im POST: ' . $_POST['role']);
-            error_log('DGPTM Role Manager: Entferne Standard-Role Feld aus POST');
+            dgptm_log_verbose('Standard-Role Feld gefunden im POST: ' . $_POST['role'], 'role-manager');
+            dgptm_log_verbose('Entferne Standard-Role Feld aus POST', 'role-manager');
             unset($_POST['role']);
-            error_log('DGPTM Role Manager: Standard-Role Feld entfernt - POST Keys jetzt: ' . print_r(array_keys($_POST), true));
+            dgptm_log_verbose('Standard-Role Feld entfernt - POST Keys jetzt: ' . print_r(array_keys($_POST), true), 'role-manager');
         } else {
-            error_log('DGPTM Role Manager: Kein Standard-Role Feld in POST gefunden');
+            dgptm_log_verbose('Kein Standard-Role Feld in POST gefunden', 'role-manager');
         }
     }
 
@@ -285,26 +285,26 @@ class DGPTM_Suite_Role_Manager {
      */
     public function save_user_roles($user_id) {
         // Debug-Logging
-        error_log('=== DGPTM Role Manager: save_user_roles START für User ' . $user_id . ' ===');
-        error_log('POST Keys: ' . print_r(array_keys($_POST), true));
+        dgptm_log_verbose('save_user_roles START für User ' . $user_id, 'role-manager');
+        dgptm_log_verbose('POST Keys: ' . print_r(array_keys($_POST), true), 'role-manager');
 
         // Capability Check
         if (!current_user_can('edit_user', $user_id)) {
-            error_log('DGPTM Role Manager: Keine Berechtigung - User kann edit_user nicht');
+            dgptm_log_warning('Keine Berechtigung - User kann edit_user nicht', 'role-manager');
             return;
         }
 
         // Prüfe ob unser Feld im POST ist
         if (!isset($_POST['dgptm_user_roles'])) {
-            error_log('DGPTM Role Manager: dgptm_user_roles NICHT in POST - Form nicht abgeschickt oder keine Checkboxen aktiviert');
+            dgptm_log_verbose('dgptm_user_roles NICHT in POST - Form nicht abgeschickt oder keine Checkboxen aktiviert', 'role-manager');
             // Wenn das Feld nicht vorhanden ist, setze Subscriber als Default
             $user = new WP_User($user_id);
             foreach ($user->roles as $role) {
                 $user->remove_role($role);
             }
             $user->add_role('subscriber');
-            error_log('DGPTM Role Manager: Subscriber als Default gesetzt');
-            error_log('=== DGPTM Role Manager: save_user_roles END (subscriber) ===');
+            dgptm_log_info('Subscriber als Default gesetzt', 'role-manager');
+            dgptm_log_verbose('save_user_roles END (subscriber)', 'role-manager');
             return;
         }
 
@@ -313,14 +313,14 @@ class DGPTM_Suite_Role_Manager {
             $selected_roles = [];
         }
 
-        error_log('DGPTM Role Manager: Ausgewählte Rollen: ' . print_r($selected_roles, true));
+        dgptm_log_verbose('Ausgewählte Rollen: ' . print_r($selected_roles, true), 'role-manager');
 
         // Verhindere dass User sich selbst die Admin-Rolle entfernt
         $editing_user = wp_get_current_user();
         if ($editing_user->ID == $user_id && in_array('administrator', $editing_user->roles)) {
             if (!in_array('administrator', $selected_roles)) {
-                error_log('DGPTM Role Manager: Admin darf sich nicht selbst Admin-Rolle entfernen');
-                error_log('=== DGPTM Role Manager: save_user_roles END (verhindert) ===');
+                dgptm_log_warning('Admin darf sich nicht selbst Admin-Rolle entfernen', 'role-manager');
+                dgptm_log_verbose('save_user_roles END (verhindert)', 'role-manager');
                 return;
             }
         }
@@ -329,31 +329,31 @@ class DGPTM_Suite_Role_Manager {
         $user = new WP_User($user_id);
         $current_roles = (array) $user->roles;
 
-        error_log('DGPTM Role Manager: Aktuelle Rollen vor Änderung: ' . print_r($current_roles, true));
+        dgptm_log_verbose('Aktuelle Rollen vor Änderung: ' . print_r($current_roles, true), 'role-manager');
 
         // Entferne alle aktuellen Rollen
         foreach ($current_roles as $role) {
             $user->remove_role($role);
-            error_log('DGPTM Role Manager: Rolle entfernt - ' . $role);
+            dgptm_log_verbose('Rolle entfernt - ' . $role, 'role-manager');
         }
 
         // Füge ausgewählte Rollen hinzu
         foreach ($selected_roles as $role) {
             $role = sanitize_text_field($role);
             $user->add_role($role);
-            error_log('DGPTM Role Manager: Rolle hinzugefügt - ' . $role);
+            dgptm_log_verbose('Rolle hinzugefügt - ' . $role, 'role-manager');
         }
 
         // Wenn keine Rollen ausgewählt wurden, setze Subscriber
         if (empty($selected_roles)) {
             $user->add_role('subscriber');
-            error_log('DGPTM Role Manager: Subscriber als Fallback gesetzt');
+            dgptm_log_info('Subscriber als Fallback gesetzt', 'role-manager');
         }
 
         // Finale Rollen loggen
         $user = new WP_User($user_id); // Neu laden um sicher zu sein
-        error_log('DGPTM Role Manager: Finale Rollen: ' . print_r($user->roles, true));
-        error_log('=== DGPTM Role Manager: save_user_roles END ===');
+        dgptm_log_verbose('Finale Rollen: ' . print_r($user->roles, true), 'role-manager');
+        dgptm_log_verbose('save_user_roles END', 'role-manager');
     }
 
     /**

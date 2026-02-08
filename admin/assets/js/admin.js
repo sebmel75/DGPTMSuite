@@ -14,6 +14,9 @@
         },
 
         bindEvents: function() {
+            // Quick Debug-Level
+            $(document).on('change', '#dgptm-quick-debug-level', this.setGlobalDebugLevel);
+
             // Toggle Module
             $(document).on('click', '.dgptm-toggle-module', this.toggleModule);
 
@@ -424,6 +427,48 @@
                 error: function() {
                     alert('AJAX-Fehler beim Löschen des Fehler-Eintrags');
                     $button.prop('disabled', false).html('<span class="dashicons dashicons-dismiss"></span> Fehler löschen');
+                }
+            });
+        },
+
+        setGlobalDebugLevel: function() {
+            var $select = $(this);
+            var level = $select.val();
+            var levelColors = {
+                verbose: '#9cdcfe',
+                info: '#4ec9b0',
+                warning: '#dcdcaa',
+                error: '#f48771',
+                critical: '#d63638'
+            };
+
+            $select.prop('disabled', true);
+
+            $.ajax({
+                url: dgptmSuite.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'dgptm_set_global_debug_level',
+                    nonce: dgptmSuite.nonce,
+                    level: level
+                },
+                success: function(response) {
+                    if (response.success) {
+                        var color = levelColors[level] || '#999';
+                        $select.css({
+                            'border-color': color,
+                            'background-color': color + '20'
+                        });
+                        dgptmSuiteAdmin.showTestFeedback('success', response.data.message);
+                    } else {
+                        dgptmSuiteAdmin.showTestFeedback('error', response.data.message);
+                    }
+                },
+                error: function() {
+                    dgptmSuiteAdmin.showTestFeedback('error', 'AJAX-Fehler beim Setzen des Debug-Levels.');
+                },
+                complete: function() {
+                    $select.prop('disabled', false);
                 }
             });
         },

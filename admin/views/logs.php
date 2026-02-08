@@ -33,6 +33,7 @@ if (isset($_POST['dgptm_save_logging_settings']) && check_admin_referer('dgptm_l
     $settings['logging']['db_enabled'] = isset($_POST['db_enabled']);
     $settings['logging']['file_enabled'] = isset($_POST['file_enabled']);
     $settings['logging']['max_db_entries'] = isset($_POST['max_db_entries']) ? absint($_POST['max_db_entries']) : 100000;
+    $settings['logging']['max_debug_log_lines'] = isset($_POST['max_debug_log_lines']) ? max(100, min(10000, absint($_POST['max_debug_log_lines']))) : 1000;
 
     update_option('dgptm_suite_settings', $settings);
 
@@ -58,6 +59,7 @@ $global_level = isset($settings['logging']['global_level']) ? $settings['logging
 $db_enabled = isset($settings['logging']['db_enabled']) ? (bool)$settings['logging']['db_enabled'] : true;
 $file_enabled = isset($settings['logging']['file_enabled']) ? (bool)$settings['logging']['file_enabled'] : true;
 $max_db_entries = isset($settings['logging']['max_db_entries']) ? (int)$settings['logging']['max_db_entries'] : 100000;
+$max_debug_log_lines = isset($settings['logging']['max_debug_log_lines']) ? (int)$settings['logging']['max_debug_log_lines'] : 1000;
 
 // Log-Quelle bestimmen (db oder file)
 $source = isset($_GET['source']) ? sanitize_text_field($_GET['source']) : 'db';
@@ -260,6 +262,13 @@ $level_icons = [
                     <td>
                         <input type="number" name="max_db_entries" value="<?php echo esc_attr($max_db_entries); ?>" min="1000" max="1000000" style="width: 120px;">
                         <p class="description"><?php _e('Maximale Anzahl von Log-Einträgen in der Datenbank. Ältere werden automatisch gelöscht.', 'dgptm-suite'); ?></p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><?php _e('Max. debug.log Zeilen', 'dgptm-suite'); ?></th>
+                    <td>
+                        <input type="number" name="max_debug_log_lines" value="<?php echo esc_attr($max_debug_log_lines); ?>" min="100" max="10000" style="width: 120px;">
+                        <p class="description"><?php _e('Maximale Zeilenanzahl in der debug.log. Wird stündlich automatisch getrimmt.', 'dgptm-suite'); ?></p>
                     </td>
                 </tr>
                 <tr>

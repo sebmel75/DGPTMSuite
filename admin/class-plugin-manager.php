@@ -49,6 +49,7 @@ class DGPTM_Plugin_Manager {
         add_action('wp_ajax_dgptm_link_test_version', [$this, 'ajax_link_test_version']);
         add_action('wp_ajax_dgptm_repair_flags', [$this, 'ajax_repair_flags']);
         add_action('wp_ajax_dgptm_clear_module_error', [$this, 'ajax_clear_module_error']);
+        add_action('wp_ajax_dgptm_set_global_debug_level', [$this, 'ajax_set_global_debug_level']);
 
         // Test-Version Management AJAX-Handler
         add_action('wp_ajax_dgptm_create_test_version', [$this, 'ajax_create_test_version']);
@@ -1895,6 +1896,44 @@ class DGPTM_Plugin_Manager {
                 $module_id
             ),
             'module_id' => $module_id
+        ]);
+    }
+
+    /**
+     * AJAX: Globales Debug-Level setzen
+     */
+    public function ajax_set_global_debug_level() {
+        check_ajax_referer('dgptm_suite_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Keine Berechtigung', 'dgptm-suite')]);
+        }
+
+        $valid_levels = ['verbose', 'info', 'warning', 'error', 'critical'];
+        $level = sanitize_text_field($_POST['level'] ?? '');
+
+        if (!in_array($level, $valid_levels, true)) {
+            wp_send_json_error(['message' => __('Ungültiges Debug-Level', 'dgptm-suite')]);
+        }
+
+        $settings = get_option('dgptm_suite_settings', []);
+        if (!isset($settings['logging'])) {
+            $settings['logging'] = [];
+        }
+        $settings['logging']['global_level'] = $level;
+        update_option('dgptm_suite_settings', $settings);
+
+        $level_labels = [
+            'verbose'  => 'Verbose',
+            'info'     => 'Info',
+            'warning'  => 'Warning',
+            'error'    => 'Error',
+            'critical' => 'Critical'
+        ];
+
+        wp_send_json_success([
+            'message' => sprintf(__('Debug-Level auf "%s" gesetzt.', 'dgptm-suite'), $level_labels[$level]),
+            'level' => $level
         ]);
     }
 }

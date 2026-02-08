@@ -382,25 +382,25 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
         public function get_access_token() {
             $options = dgptm_ma_get_options();
-            error_log('[Mitgliedsantrag OAuth] Starting get_access_token()');
+            dgptm_log_verbose('OAuth: Starting get_access_token()', 'mitgliedsantrag');
 
             // Check if using crm-abruf module's tokens
             if (class_exists('DGPTM_Zoho_Plugin')) {
-                error_log('[Mitgliedsantrag OAuth] DGPTM_Zoho_Plugin class exists');
+                dgptm_log_verbose('OAuth: DGPTM_Zoho_Plugin class exists', 'mitgliedsantrag');
 
                 // Try to use crm-abruf module's get_oauth_token() method
                 $crm_instance = DGPTM_Zoho_Plugin::get_instance();
                 if (method_exists($crm_instance, 'get_oauth_token')) {
-                    error_log('[Mitgliedsantrag OAuth] Calling crm-abruf get_oauth_token()');
+                    dgptm_log_verbose('OAuth: Calling crm-abruf get_oauth_token()', 'mitgliedsantrag');
                     $token = $crm_instance->get_oauth_token();
                     if (is_wp_error($token)) {
-                        error_log('[Mitgliedsantrag OAuth] get_oauth_token() returned WP_Error: ' . $token->get_error_message());
+                        dgptm_log_error('OAuth: get_oauth_token() returned WP_Error: ' . $token->get_error_message(), 'mitgliedsantrag');
                     } elseif (!empty($token)) {
-                        error_log('[Mitgliedsantrag OAuth] SUCCESS: Got token via get_oauth_token()');
+                        dgptm_log_verbose('OAuth: SUCCESS - Got token via get_oauth_token()', 'mitgliedsantrag');
                         $this->log('Using crm-abruf module OAuth token via get_oauth_token()');
                         return $token;
                     } else {
-                        error_log('[Mitgliedsantrag OAuth] get_oauth_token() returned empty');
+                        dgptm_log_warning('OAuth: get_oauth_token() returned empty', 'mitgliedsantrag');
                     }
                 }
 
@@ -409,23 +409,23 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 $crm_token_expires = (int) get_option('dgptm_zoho_token_expires', 0);
                 $crm_refresh_token = get_option('dgptm_zoho_refresh_token', '');
 
-                error_log('[Mitgliedsantrag OAuth] Direct options check:');
-                error_log('[Mitgliedsantrag OAuth] - access_token exists: ' . (!empty($crm_access_token) ? 'YES' : 'NO'));
-                error_log('[Mitgliedsantrag OAuth] - refresh_token exists: ' . (!empty($crm_refresh_token) ? 'YES' : 'NO'));
-                error_log('[Mitgliedsantrag OAuth] - token_expires: ' . $crm_token_expires . ' (now: ' . time() . ')');
+                dgptm_log_verbose('OAuth: Direct options check:', 'mitgliedsantrag');
+                dgptm_log_verbose('OAuth: - access_token exists: ' . (!empty($crm_access_token) ? 'YES' : 'NO'), 'mitgliedsantrag');
+                dgptm_log_verbose('OAuth: - refresh_token exists: ' . (!empty($crm_refresh_token) ? 'YES' : 'NO'), 'mitgliedsantrag');
+                dgptm_log_verbose('OAuth: - token_expires: ' . $crm_token_expires . ' (now: ' . time() . ')', 'mitgliedsantrag');
 
                 if (!empty($crm_access_token) && time() < $crm_token_expires) {
-                    error_log('[Mitgliedsantrag OAuth] SUCCESS: Token valid from options');
+                    dgptm_log_verbose('OAuth: SUCCESS - Token valid from options', 'mitgliedsantrag');
                     $this->log('Using crm-abruf module OAuth token from options');
                     return $crm_access_token;
                 } elseif (!empty($crm_refresh_token)) {
                     // Token expired or missing, try to refresh
-                    error_log('[Mitgliedsantrag OAuth] Token expired or missing, attempting refresh');
+                    dgptm_log_verbose('OAuth: Token expired or missing, attempting refresh', 'mitgliedsantrag');
                     $client_id = get_option('dgptm_zoho_client_id', '');
                     $client_secret = get_option('dgptm_zoho_client_secret', '');
 
-                    error_log('[Mitgliedsantrag OAuth] - client_id exists: ' . (!empty($client_id) ? 'YES' : 'NO'));
-                    error_log('[Mitgliedsantrag OAuth] - client_secret exists: ' . (!empty($client_secret) ? 'YES' : 'NO'));
+                    dgptm_log_verbose('OAuth: - client_id exists: ' . (!empty($client_id) ? 'YES' : 'NO'), 'mitgliedsantrag');
+                    dgptm_log_verbose('OAuth: - client_secret exists: ' . (!empty($client_secret) ? 'YES' : 'NO'), 'mitgliedsantrag');
 
                     if (!empty($client_id) && !empty($client_secret)) {
                         $response = wp_remote_post('https://accounts.zoho.eu/oauth/v2/token', [
@@ -438,35 +438,35 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                         ]);
 
                         if (is_wp_error($response)) {
-                            error_log('[Mitgliedsantrag OAuth] Refresh request failed: ' . $response->get_error_message());
+                            dgptm_log_error('OAuth: Refresh request failed: ' . $response->get_error_message(), 'mitgliedsantrag');
                         } else {
                             $body = json_decode(wp_remote_retrieve_body($response), true);
-                            error_log('[Mitgliedsantrag OAuth] Refresh response: ' . wp_json_encode($body));
+                            dgptm_log_verbose('OAuth: Refresh response: ' . wp_json_encode($body), 'mitgliedsantrag');
 
                             if (isset($body['access_token'])) {
                                 update_option('dgptm_zoho_access_token', $body['access_token']);
                                 update_option('dgptm_zoho_token_expires', time() + ($body['expires_in'] ?? 3600) - 60);
-                                error_log('[Mitgliedsantrag OAuth] SUCCESS: Token refreshed');
+                                dgptm_log_info('OAuth: Token refreshed successfully', 'mitgliedsantrag');
                                 $this->log('crm-abruf token refreshed successfully');
                                 return $body['access_token'];
                             } else {
-                                error_log('[Mitgliedsantrag OAuth] Refresh failed - no access_token in response');
+                                dgptm_log_error('OAuth: Refresh failed - no access_token in response', 'mitgliedsantrag');
                             }
                         }
                     } else {
-                        error_log('[Mitgliedsantrag OAuth] Cannot refresh - missing client_id or client_secret');
+                        dgptm_log_error('OAuth: Cannot refresh - missing client_id or client_secret', 'mitgliedsantrag');
                     }
                 } else {
-                    error_log('[Mitgliedsantrag OAuth] No crm-abruf tokens available');
+                    dgptm_log_warning('OAuth: No crm-abruf tokens available', 'mitgliedsantrag');
                 }
             } else {
-                error_log('[Mitgliedsantrag OAuth] DGPTM_Zoho_Plugin class NOT found');
+                dgptm_log_warning('OAuth: DGPTM_Zoho_Plugin class NOT found', 'mitgliedsantrag');
             }
 
             // Fallback to module's own tokens
-            error_log('[Mitgliedsantrag OAuth] Checking module own tokens');
+            dgptm_log_verbose('OAuth: Checking module own tokens', 'mitgliedsantrag');
             if (empty($options['access_token'])) {
-                error_log('[Mitgliedsantrag OAuth] FAILED: No access token available anywhere');
+                dgptm_log_error('OAuth: No access token available anywhere', 'mitgliedsantrag');
                 $this->log('No access token available');
                 return false;
             }
@@ -1161,13 +1161,13 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
         public function ajax_submit_application() {
             // Force logging for debugging
-            error_log('[DGPTM Mitgliedsantrag DEBUG] ajax_submit_application called');
+            dgptm_log_verbose('ajax_submit_application called', 'mitgliedsantrag');
 
             try {
                 check_ajax_referer('dgptm_mitgliedsantrag_nonce', 'nonce');
-                error_log('[DGPTM Mitgliedsantrag DEBUG] Nonce verified');
+                dgptm_log_verbose('Nonce verified', 'mitgliedsantrag');
             } catch (Exception $e) {
-                error_log('[DGPTM Mitgliedsantrag ERROR] Nonce verification failed: ' . $e->getMessage());
+                dgptm_log_error('Nonce verification failed: ' . $e->getMessage(), 'mitgliedsantrag');
                 wp_send_json_error(['message' => 'Sicherheitsprüfung fehlgeschlagen']);
                 return;
             }
@@ -1213,17 +1213,17 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             // Validate all required confirmations (Step 5)
             if (!$data['satzung_akzeptiert']) {
-                error_log('[DGPTM Mitgliedsantrag ERROR] Satzung not accepted');
+                dgptm_log_warning('Satzung not accepted', 'mitgliedsantrag');
                 wp_send_json_error(['message' => 'Bitte bestätigen Sie die Anerkennung der Satzung.']);
                 return;
             }
             if (!$data['beitrag_akzeptiert']) {
-                error_log('[DGPTM Mitgliedsantrag ERROR] Beitrag not accepted');
+                dgptm_log_warning('Beitrag not accepted', 'mitgliedsantrag');
                 wp_send_json_error(['message' => 'Bitte bestätigen Sie die Kenntnisnahme der Beitragspflicht.']);
                 return;
             }
             if (!$data['dsgvo_akzeptiert']) {
-                error_log('[DGPTM Mitgliedsantrag ERROR] DSGVO not accepted');
+                dgptm_log_warning('DSGVO not accepted', 'mitgliedsantrag');
                 wp_send_json_error(['message' => 'Bitte stimmen Sie der Datenschutzerklärung zu.']);
                 return;
             }
@@ -1231,88 +1231,88 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             $this->log('Normalized phones - Phone1: ' . $data['telefon1'] . ', Phone2: ' . $data['telefon2']);
 
             // Handle file uploads
-            error_log('[DGPTM Mitgliedsantrag DEBUG] Data collected, processing file uploads if needed');
+            dgptm_log_verbose('Data collected, processing file uploads if needed', 'mitgliedsantrag');
 
             // Student certificate upload
             $studienbescheinigung_id = 0;
             if ($data['ist_student'] && isset($_FILES['studienbescheinigung'])) {
-                error_log('[DGPTM Mitgliedsantrag DEBUG] Student certificate upload detected');
+                dgptm_log_verbose('Student certificate upload detected', 'mitgliedsantrag');
                 $uploaded = $this->handle_file_upload($_FILES['studienbescheinigung']);
                 if (!$uploaded) {
-                    error_log('[DGPTM Mitgliedsantrag ERROR] Student certificate upload failed');
+                    dgptm_log_error('Student certificate upload failed', 'mitgliedsantrag');
                     wp_send_json_error(['message' => 'Fehler beim Hochladen der Studienbescheinigung']);
                     return;
                 }
                 $studienbescheinigung_id = $uploaded;
-                error_log('[DGPTM Mitgliedsantrag DEBUG] Student certificate uploaded, ID: ' . $studienbescheinigung_id);
+                dgptm_log_verbose('Student certificate uploaded, ID: ' . $studienbescheinigung_id, 'mitgliedsantrag');
             }
 
             // Qualification certificate upload
             $qualifikation_nachweis_id = 0;
             if ($data['hat_qualifikation'] === 'ja' && isset($_FILES['qualifikation_nachweis'])) {
-                error_log('[DGPTM Mitgliedsantrag DEBUG] Qualification certificate upload detected');
+                dgptm_log_verbose('Qualification certificate upload detected', 'mitgliedsantrag');
                 $uploaded = $this->handle_file_upload($_FILES['qualifikation_nachweis']);
                 if (!$uploaded) {
-                    error_log('[DGPTM Mitgliedsantrag ERROR] Qualification certificate upload failed');
+                    dgptm_log_error('Qualification certificate upload failed', 'mitgliedsantrag');
                     wp_send_json_error(['message' => 'Fehler beim Hochladen des Qualifikationsnachweises']);
                     return;
                 }
                 $qualifikation_nachweis_id = $uploaded;
-                error_log('[DGPTM Mitgliedsantrag DEBUG] Qualification certificate uploaded, ID: ' . $qualifikation_nachweis_id);
+                dgptm_log_verbose('Qualification certificate uploaded, ID: ' . $qualifikation_nachweis_id, 'mitgliedsantrag');
             }
 
             // Create or update contact in Zoho CRM
-            error_log('[DGPTM Mitgliedsantrag DEBUG] Getting access token');
+            dgptm_log_verbose('Getting access token', 'mitgliedsantrag');
             $token = $this->get_access_token();
             if (!$token) {
-                error_log('[DGPTM Mitgliedsantrag ERROR] No access token available');
+                dgptm_log_error('No access token available', 'mitgliedsantrag');
                 wp_send_json_error(['message' => 'OAuth-Verbindung nicht konfiguriert. Bitte konfigurieren Sie die Zoho CRM Verbindung in den Einstellungen.']);
                 return;
             }
 
-            error_log('[DGPTM Mitgliedsantrag DEBUG] Access token obtained, creating/updating contact');
+            dgptm_log_verbose('Access token obtained, creating/updating contact', 'mitgliedsantrag');
             $contact_result = $this->create_or_update_contact($data, $studienbescheinigung_id, $qualifikation_nachweis_id, $token);
 
             // Check if error was returned (existing application/membership)
             if (is_array($contact_result) && isset($contact_result['error'])) {
-                error_log('[DGPTM Mitgliedsantrag ERROR] Application blocked: ' . $contact_result['message']);
+                dgptm_log_error('Application blocked: ' . $contact_result['message'], 'mitgliedsantrag');
                 wp_send_json_error(['message' => $contact_result['message']]);
                 return;
             }
 
             // Check if contact creation failed
             if (!$contact_result) {
-                error_log('[DGPTM Mitgliedsantrag ERROR] Contact creation/update returned false');
+                dgptm_log_error('Contact creation/update returned false', 'mitgliedsantrag');
                 wp_send_json_error(['message' => 'Fehler beim Erstellen des Kontakts in Zoho CRM. Bitte prüfen Sie das Debug-Log für Details.']);
                 return;
             }
 
             $contact_id = $contact_result;
-            error_log('[DGPTM Mitgliedsantrag DEBUG] Contact created/updated with ID: ' . $contact_id);
+            dgptm_log_verbose('Contact created/updated with ID: ' . $contact_id, 'mitgliedsantrag');
 
             // Trigger webhook
-            error_log('[DGPTM Mitgliedsantrag DEBUG] Triggering webhook');
+            dgptm_log_verbose('Triggering webhook', 'mitgliedsantrag');
             $webhook_result = $this->trigger_webhook($data, $contact_id, $studienbescheinigung_id, $qualifikation_nachweis_id);
 
             if (!$webhook_result['success']) {
-                error_log('[DGPTM Mitgliedsantrag WARNING] Webhook failed: ' . $webhook_result['message']);
+                dgptm_log_warning('Webhook failed: ' . $webhook_result['message'], 'mitgliedsantrag');
                 // Don't fail the whole application, just log the warning
             } else {
-                error_log('[DGPTM Mitgliedsantrag DEBUG] Webhook triggered successfully');
+                dgptm_log_verbose('Webhook triggered successfully', 'mitgliedsantrag');
             }
 
             // Schedule deletion of uploaded certificates after 10 minutes
             if ($studienbescheinigung_id > 0) {
                 wp_schedule_single_event(time() + 600, 'dgptm_delete_student_certificate', [$studienbescheinigung_id]);
-                error_log('[DGPTM Mitgliedsantrag DEBUG] Scheduled deletion of student certificate ID ' . $studienbescheinigung_id . ' in 10 minutes');
+                dgptm_log_verbose('Scheduled deletion of student certificate ID ' . $studienbescheinigung_id . ' in 10 minutes', 'mitgliedsantrag');
             }
 
             if ($qualifikation_nachweis_id > 0) {
                 wp_schedule_single_event(time() + 600, 'dgptm_delete_student_certificate', [$qualifikation_nachweis_id]);
-                error_log('[DGPTM Mitgliedsantrag DEBUG] Scheduled deletion of qualification certificate ID ' . $qualifikation_nachweis_id . ' in 10 minutes');
+                dgptm_log_verbose('Scheduled deletion of qualification certificate ID ' . $qualifikation_nachweis_id . ' in 10 minutes', 'mitgliedsantrag');
             }
 
-            error_log('[DGPTM Mitgliedsantrag SUCCESS] Application submitted successfully for contact ' . $contact_id);
+            dgptm_log_info('Application submitted successfully for contact ' . $contact_id, 'mitgliedsantrag');
 
             wp_send_json_success([
                 'message' => 'Ihr Mitgliedsantrag wurde erfolgreich eingereicht!',
@@ -2628,9 +2628,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         }
 
         private function log($message) {
-            if (defined('WP_DEBUG') && WP_DEBUG && defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
-                error_log('[DGPTM Mitgliedsantrag] ' . $message);
-            }
+            dgptm_log_info($message, 'mitgliedsantrag');
         }
     }
 }

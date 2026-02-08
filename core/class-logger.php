@@ -63,6 +63,7 @@ class DGPTM_Logger {
             'db_enabled' => isset($settings['logging']['db_enabled']) ? (bool) $settings['logging']['db_enabled'] : true,
             'file_enabled' => isset($settings['logging']['file_enabled']) ? (bool) $settings['logging']['file_enabled'] : true,
             'max_db_entries' => isset($settings['logging']['max_db_entries']) ? (int) $settings['logging']['max_db_entries'] : 100000,
+            'max_debug_log_lines' => isset($settings['logging']['max_debug_log_lines']) ? (int) $settings['logging']['max_debug_log_lines'] : 1000,
             'module_levels' => isset($settings['logging']['module_levels']) ? $settings['logging']['module_levels'] : [],
             // Legacy-Settings für Rückwärtskompatibilität
             'enable_logging' => isset($settings['enable_logging']) ? (bool) $settings['enable_logging'] : false,
@@ -460,6 +461,52 @@ class DGPTM_Logger {
             $settings = self::get_logging_settings();
             DGPTM_Logger_Installer::cleanup_by_count($settings['max_db_entries']);
         }
+
+        // debug.log trimmen
+        $settings = self::get_logging_settings();
+        self::trim_debug_log($settings['max_debug_log_lines']);
+    }
+
+    /**
+     * Trimmt die debug.log auf eine maximale Zeilenanzahl
+     *
+     * @param int $max_lines Maximale Zeilenanzahl (Standard: 1000)
+     */
+    public static function trim_debug_log($max_lines = 1000) {
+        $debug_log = WP_CONTENT_DIR . '/debug.log';
+
+        if (!file_exists($debug_log) || !is_writable($debug_log)) {
+            return;
+        }
+
+        // Quick-Exit wenn Datei klein genug ist (< 100KB)
+        $size = filesize($debug_log);
+        if ($size < 102400) {
+            return;
+        }
+
+        $lines = file($debug_log, FILE_IGNORE_NEW_LINES);
+        if ($lines === false) {
+            return;
+        }
+
+        $total = count($lines);
+        if ($total <= $max_lines) {
+            return;
+        }
+
+        // Letzte $max_lines behalten
+        $trimmed = array_slice($lines, -$max_lines);
+        $removed = $total - $max_lines;
+        $header = sprintf(
+            '[%s] DGPTM Suite: debug.log getrimmt - %d Zeilen entfernt, %d behalten',
+            current_time('d-M-Y H:i:s T'),
+            $removed,
+            $max_lines
+        );
+
+        array_unshift($trimmed, $header);
+        file_put_contents($debug_log, implode("\n", $trimmed) . "\n", LOCK_EX);
     }
 
     /**

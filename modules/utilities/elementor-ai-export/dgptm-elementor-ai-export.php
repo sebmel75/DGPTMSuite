@@ -345,7 +345,7 @@ if (!class_exists('DGPTM_Elementor_AI_Export')) {
             $prompt = sanitize_textarea_field(wp_unslash($_POST['prompt']));
             $duplicate = isset($_POST['duplicate']) && $_POST['duplicate'] === 'true';
 
-            error_log("Auto Redesign - Start: Page ID = {$page_id}, Duplicate = " . ($duplicate ? 'yes' : 'no'));
+            dgptm_log_verbose("Start: Page ID = {$page_id}, Duplicate = " . ($duplicate ? 'yes' : 'no'), 'elementor-ai-export');
 
             if (!$page_id || !$prompt) {
                 wp_send_json_error(['message' => 'Fehlende Parameter']);
@@ -356,30 +356,30 @@ if (!class_exists('DGPTM_Elementor_AI_Export')) {
                 wp_send_json_error(['message' => 'Elementor ist nicht aktiv']);
             }
 
-            error_log("Auto Redesign - Elementor aktiv, starte Export");
+            dgptm_log_verbose("Elementor aktiv, starte Export", 'elementor-ai-export');
 
             // Export original page
             $converter = new DGPTM_Elementor_Converter();
             $export_data = $converter->export_page($page_id, 'json');
 
             if (is_wp_error($export_data)) {
-                error_log("Auto Redesign - Export fehlgeschlagen: " . $export_data->get_error_message());
+                dgptm_log_error("Export fehlgeschlagen: " . $export_data->get_error_message(), 'elementor-ai-export');
                 wp_send_json_error(['message' => 'Export fehlgeschlagen: ' . $export_data->get_error_message()]);
             }
 
-            error_log("Auto Redesign - Export erfolgreich, rufe Claude API");
+            dgptm_log_verbose("Export erfolgreich, rufe Claude API", 'elementor-ai-export');
 
             // Decode JSON
             $page_data = json_decode($export_data['content'], true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
-                error_log("Auto Redesign - JSON Decode Error: " . json_last_error_msg());
+                dgptm_log_error("JSON Decode Error: " . json_last_error_msg(), 'elementor-ai-export');
                 wp_send_json_error(['message' => 'JSON Decode Fehler: ' . json_last_error_msg()]);
             }
 
             // Call Claude API
             $claude = new DGPTM_Claude_API();
-            error_log("Auto Redesign - Claude API Instanz erstellt, sende Request");
+            dgptm_log_verbose("Claude API Instanz erstellt, sende Request", 'elementor-ai-export');
             $modified_data = $claude->redesign_page($page_data, $prompt);
 
             if (is_wp_error($modified_data)) {

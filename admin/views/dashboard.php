@@ -72,6 +72,9 @@ $active_count = count(array_filter($active_modules));
 $loaded_count = count($loaded_modules);
 $checkout_count = count($active_checkouts);
 
+// Aktuelles Debug-Level
+$current_debug_level = isset($settings['logging']['global_level']) ? $settings['logging']['global_level'] : 'warning';
+
 // Prüfen welche Module ausgecheckt sind
 $checked_out_modules = [];
 foreach ($active_checkouts as $checkout_info) {
@@ -119,6 +122,31 @@ foreach ($active_checkouts as $checkout_info) {
         <div class="dgptm-stat-box">
             <div class="dgptm-stat-number"><?php echo count($categories); ?></div>
             <div class="dgptm-stat-label"><?php _e('Categories', 'dgptm-suite'); ?></div>
+        </div>
+        <div class="dgptm-stat-box dgptm-stat-debug-level">
+            <?php
+            $level_colors = [
+                'verbose'  => '#9cdcfe',
+                'info'     => '#4ec9b0',
+                'warning'  => '#dcdcaa',
+                'error'    => '#f48771',
+                'critical' => '#d63638'
+            ];
+            $level_color = isset($level_colors[$current_debug_level]) ? $level_colors[$current_debug_level] : '#999';
+            ?>
+            <div class="dgptm-stat-number" style="font-size: 14px; line-height: 1.4;">
+                <select id="dgptm-quick-debug-level" style="font-size: 14px; font-weight: bold; border-color: <?php echo esc_attr($level_color); ?>; background-color: <?php echo esc_attr($level_color); ?>20; padding: 4px 8px;">
+                    <option value="verbose" <?php selected($current_debug_level, 'verbose'); ?>>Verbose</option>
+                    <option value="info" <?php selected($current_debug_level, 'info'); ?>>Info</option>
+                    <option value="warning" <?php selected($current_debug_level, 'warning'); ?>>Warning</option>
+                    <option value="error" <?php selected($current_debug_level, 'error'); ?>>Error</option>
+                    <option value="critical" <?php selected($current_debug_level, 'critical'); ?>>Critical</option>
+                </select>
+            </div>
+            <div class="dgptm-stat-label">
+                <?php _e('Debug-Level', 'dgptm-suite'); ?>
+                <a href="<?php echo admin_url('admin.php?page=dgptm-suite-logs&tab=modules'); ?>" style="font-size: 11px; margin-left: 4px;"><?php _e('Pro Modul', 'dgptm-suite'); ?></a>
+            </div>
         </div>
     </div>
 

@@ -55,14 +55,14 @@ class DGPTM_Claude_API {
      * @return array|WP_Error Modified page data or error
      */
     public function redesign_page($page_data, $prompt) {
-        error_log("Claude API - redesign_page aufgerufen");
+        dgptm_log_verbose("redesign_page aufgerufen", 'elementor-ai-export');
 
         if (!$this->is_configured()) {
-            error_log("Claude API - Nicht konfiguriert!");
+            dgptm_log_warning("Nicht konfiguriert!", 'elementor-ai-export');
             return new WP_Error('no_api_key', 'Claude API Key ist nicht konfiguriert. Bitte in den Einstellungen hinterlegen.');
         }
 
-        error_log("Claude API - Konfiguriert, baue Prompts");
+        dgptm_log_verbose("Konfiguriert, baue Prompts", 'elementor-ai-export');
 
         // Build system prompt (instructions for Claude)
         $system_prompt = $this->get_system_prompt();
@@ -70,12 +70,12 @@ class DGPTM_Claude_API {
         // Build user message with page data
         $user_message = $this->build_user_message($page_data, $prompt);
 
-        error_log("Claude API - Prompts erstellt, sende Request an API");
+        dgptm_log_verbose("Prompts erstellt, sende Request an API", 'elementor-ai-export');
 
         // Call Claude API
         $response = $this->call_api($system_prompt, $user_message);
 
-        error_log("Claude API - Response erhalten");
+        dgptm_log_verbose("Response erhalten", 'elementor-ai-export');
 
         if (is_wp_error($response)) {
             return $response;
@@ -210,7 +210,7 @@ Antworte IMMER mit validem JSON, niemals mit Text-Erklärungen!';
 
             // Rate Limit Error - Informiere Benutzer sofort, kein automatisches Retry
             if ($status_code === 429 || $error_type === 'rate_limit_error') {
-                error_log("Claude API - Rate Limit erreicht bei Versuch " . ($retry_count + 1));
+                dgptm_log_warning("Rate Limit erreicht bei Versuch " . ($retry_count + 1), 'elementor-ai-export');
 
                 return new WP_Error('rate_limit_error',
                     '⏱️ Rate Limit erreicht - Ihre API skaliert gerade hoch!\n\n' .
@@ -373,9 +373,9 @@ Antworte IMMER mit validem JSON, niemals mit Text-Erklärungen!';
             $response_body = wp_remote_retrieve_body($response);
 
             // Debug-Log mit vollständiger API-Antwort
-            error_log("Claude API Test - Modell: {$model}, Status: {$status_code}");
+            dgptm_log_verbose("Test - Modell: {$model}, Status: {$status_code}", 'elementor-ai-export');
             if ($status_code !== 200) {
-                error_log("Claude API - Fehler-Details für {$model}: " . $response_body);
+                dgptm_log_verbose("Fehler-Details für {$model}: " . $response_body, 'elementor-ai-export');
             }
 
             if ($status_code === 200) {
@@ -384,7 +384,7 @@ Antworte IMMER mit validem JSON, niemals mit Text-Erklärungen!';
                 $this->model = $model;
                 $this->max_tokens = $max_tokens;
 
-                error_log("Claude API - Funktionierendes Modell gefunden: {$model}");
+                dgptm_log_info("Funktionierendes Modell gefunden: {$model}", 'elementor-ai-export');
 
                 return [
                     'success' => true,
@@ -397,7 +397,7 @@ Antworte IMMER mit validem JSON, niemals mit Text-Erklärungen!';
                 $error_data = json_decode($response_body, true);
                 $error_msg = $error_data['error']['message'] ?? 'Unbekannter Fehler';
                 $tested_models[$model] = "Status {$status_code}: {$error_msg}";
-                error_log("Claude API - Modell {$model} fehlgeschlagen: {$error_msg}");
+                dgptm_log_warning("Modell {$model} fehlgeschlagen: {$error_msg}", 'elementor-ai-export');
             }
         }
 

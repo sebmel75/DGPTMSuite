@@ -151,5 +151,11 @@ class DGPTM_Survey_Installer {
         if (!$has($questions, 'parent_answer_value')) {
             $wpdb->query("ALTER TABLE $questions ADD COLUMN parent_answer_value VARCHAR(255) NOT NULL DEFAULT ''");
         }
+
+        // Backfill: generate survey_token for existing surveys that don't have one
+        $missing = $wpdb->get_col("SELECT id FROM $surveys WHERE survey_token IS NULL OR survey_token = ''");
+        foreach ($missing as $sid) {
+            $wpdb->update($surveys, ['survey_token' => wp_generate_password(32, false)], ['id' => $sid]);
+        }
     }
 }

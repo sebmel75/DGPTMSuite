@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM Umfragen
  * Description: Generisches Umfrage-Framework mit erweiterten Fragetypen, Skip-Logic, Verschachtelung und Ergebnis-Dashboard
- * Version: 1.1.0
+ * Version: 1.1.1
  * Author: Sebastian Melzer
  */
 
@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('DGPTM_UMFRAGEN_VERSION')) {
-    define('DGPTM_UMFRAGEN_VERSION', '1.1.0');
+    define('DGPTM_UMFRAGEN_VERSION', '1.1.1');
 }
 if (!defined('DGPTM_UMFRAGEN_PATH')) {
     define('DGPTM_UMFRAGEN_PATH', plugin_dir_path(__FILE__));

@@ -1,0 +1,20 @@
+{
+    "id": "umfragen",
+    "name": "DGPTM Umfragen",
+    "description": "Generisches Umfrage-Framework mit erweiterten Fragetypen, Skip-Logic und Ergebnis-Dashboard",
+    "version": "1.0.0",
+    "author": "Sebastian Melzer",
+    "main_file": "dgptm-umfragen.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": []
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "business",
+    "icon": "dashicons-forms",
+    "active": false,
+    "can_export": true,
+    "flags": ["development"]
+}

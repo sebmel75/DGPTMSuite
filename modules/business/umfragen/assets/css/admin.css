@@ -1,0 +1,362 @@
+/* DGPTM Umfragen - Admin Styles */
+
+.dgptm-umfragen-wrap .card {
+    max-width: 960px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+/* Status badges */
+.dgptm-status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* Shortcode copy */
+.dgptm-shortcode-copy {
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.dgptm-shortcode-copy:hover {
+    background: #e0e0e0;
+}
+
+/* Empty state */
+.dgptm-umfragen-empty {
+    text-align: center;
+    padding: 40px 20px;
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    margin-top: 20px;
+}
+
+/* Question Builder */
+.dgptm-question-builder {
+    margin-top: 30px;
+}
+
+.dgptm-questions-sortable {
+    min-height: 50px;
+}
+
+.dgptm-question-item {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    margin-bottom: 8px;
+    border-radius: 4px;
+}
+
+.dgptm-question-item.ui-sortable-helper {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.dgptm-question-item.ui-sortable-placeholder {
+    visibility: visible !important;
+    background: #f0f6fc;
+    border: 2px dashed #2271b1;
+    min-height: 50px;
+}
+
+.dgptm-question-header {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    gap: 8px;
+    cursor: pointer;
+    background: #f6f7f7;
+    border-bottom: 1px solid transparent;
+}
+
+.dgptm-question-item.dgptm-open .dgptm-question-header {
+    border-bottom-color: #ccd0d4;
+}
+
+.dgptm-drag-handle {
+    cursor: grab;
+    color: #999;
+}
+.dgptm-drag-handle:hover {
+    color: #333;
+}
+
+.dgptm-question-number {
+    font-weight: 600;
+    color: #2271b1;
+    min-width: 24px;
+}
+
+.dgptm-question-title-preview {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dgptm-question-type-badge {
+    background: #e0e6ed;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    color: #50575e;
+}
+
+.dgptm-required-badge {
+    background: #d63638;
+    color: #fff;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+}
+
+.dgptm-question-body {
+    padding: 0 12px 12px;
+}
+
+.dgptm-question-body .form-table th {
+    width: 140px;
+    padding: 10px 0;
+}
+
+.dgptm-question-body .form-table td {
+    padding: 10px 0;
+}
+
+/* Choices */
+.dgptm-choices-list,
+.dgptm-matrix-rows-list,
+.dgptm-matrix-cols-list {
+    margin-bottom: 8px;
+}
+
+.dgptm-choice-item,
+.dgptm-matrix-item {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 4px;
+    align-items: center;
+}
+
+.dgptm-choice-input,
+.dgptm-matrix-row-input,
+.dgptm-matrix-col-input {
+    flex: 1;
+    max-width: 300px;
+}
+
+/* Skip logic */
+.dgptm-skip-rule {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.dgptm-skip-value {
+    max-width: 150px;
+}
+
+.dgptm-skip-goto {
+    max-width: 250px;
+}
+
+/* Add question bar */
+.dgptm-add-question-bar {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    align-items: center;
+}
+
+/* Results page */
+.dgptm-results-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.dgptm-stat-card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 16px;
+    text-align: center;
+}
+
+.dgptm-stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #2271b1;
+    display: block;
+}
+
+.dgptm-stat-label {
+    font-size: 13px;
+    color: #666;
+    margin-top: 4px;
+}
+
+/* Question result cards */
+.dgptm-question-result {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.dgptm-question-result h3 {
+    margin: 0 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+}
+
+.dgptm-question-result .dgptm-q-number {
+    color: #2271b1;
+    margin-right: 6px;
+}
+
+/* Bar chart */
+.dgptm-bar-chart {
+    max-width: 600px;
+}
+
+.dgptm-bar-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+    gap: 8px;
+}
+
+.dgptm-bar-label {
+    min-width: 150px;
+    max-width: 200px;
+    font-size: 13px;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dgptm-bar-track {
+    flex: 1;
+    background: #f0f0f1;
+    border-radius: 3px;
+    height: 22px;
+    position: relative;
+    overflow: hidden;
+}
+
+.dgptm-bar-fill {
+    height: 100%;
+    background: #2271b1;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+    min-width: 2px;
+}
+
+.dgptm-bar-count {
+    min-width: 50px;
+    font-size: 12px;
+    color: #666;
+}
+
+/* Matrix heatmap */
+.dgptm-matrix-result table {
+    border-collapse: collapse;
+    width: 100%;
+    max-width: 600px;
+}
+
+.dgptm-matrix-result th,
+.dgptm-matrix-result td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+    font-size: 13px;
+}
+
+.dgptm-matrix-result th {
+    background: #f6f7f7;
+    font-weight: 600;
+}
+
+.dgptm-matrix-result th:first-child {
+    text-align: left;
+}
+
+.dgptm-matrix-cell {
+    position: relative;
+}
+
+/* Number stats */
+.dgptm-number-stats {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.dgptm-number-stat {
+    text-align: center;
+}
+
+.dgptm-number-stat strong {
+    display: block;
+    font-size: 20px;
+    color: #2271b1;
+}
+
+/* Text responses */
+.dgptm-text-responses {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #eee;
+    padding: 8px;
+    border-radius: 4px;
+}
+
+.dgptm-text-response-item {
+    padding: 6px 0;
+    border-bottom: 1px solid #f0f0f1;
+    font-size: 13px;
+}
+
+.dgptm-text-response-item:last-child {
+    border-bottom: none;
+}
+
+/* Response detail table */
+.dgptm-response-detail td {
+    vertical-align: top;
+}
+
+/* Notification */
+.dgptm-notice {
+    position: fixed;
+    top: 50px;
+    right: 20px;
+    z-index: 99999;
+    padding: 10px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    opacity: 1;
+    transition: opacity 0.3s;
+}
+
+.dgptm-notice.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.dgptm-notice.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}

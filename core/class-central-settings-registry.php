@@ -77,6 +77,7 @@ class DGPTM_Central_Settings_Registry {
 
         // Business (weitere)
         $this->register_abstimmen_addon_settings();
+        $this->register_umfragen_settings();
     }
 
     /**
@@ -1175,6 +1176,31 @@ class DGPTM_Central_Settings_Registry {
         if ($updated) {
             update_option('dgptm_module_settings_abstimmen-addon', $current_settings);
         }
+    }
+
+    private function register_umfragen_settings() {
+        dgptm_register_module_settings([
+            'id' => 'umfragen',
+            'title' => 'Umfragen',
+            'menu_title' => 'Umfragen',
+            'icon' => 'dashicons-forms',
+            'priority' => 26,
+            'sections' => [
+                ['id' => 'general', 'title' => 'Allgemein', 'description' => 'Grundeinstellungen fuer das Umfrage-Modul.'],
+                ['id' => 'files', 'title' => 'Datei-Uploads', 'description' => 'Einstellungen fuer Datei-Uploads in Umfragen.']
+            ],
+            'fields' => [
+                ['id' => 'default_duplicate_check', 'section' => 'general', 'title' => 'Standard Duplikatschutz', 'type' => 'select', 'options' => [
+                    'cookie_ip' => 'Cookie + IP',
+                    'cookie' => 'Nur Cookie',
+                    'ip' => 'Nur IP',
+                    'none' => 'Kein Schutz'
+                ], 'default' => 'cookie_ip'],
+                ['id' => 'results_page_id', 'section' => 'general', 'title' => 'Ergebnis-Seite (Page ID)', 'type' => 'number', 'default' => 0, 'description' => 'WordPress-Seiten-ID fuer die Ergebnis-Anzeige (0 = Rewrite-Rule).'],
+                ['id' => 'file_upload_max_size', 'section' => 'files', 'title' => 'Maximale Dateigroesse (MB)', 'type' => 'number', 'default' => 5],
+                ['id' => 'file_cleanup_days', 'section' => 'files', 'title' => 'Dateien loeschen nach (Tage)', 'type' => 'number', 'default' => 90, 'description' => 'Hochgeladene Dateien werden nach dieser Anzahl Tagen automatisch geloescht. 0 = nie loeschen.']
+            ]
+        ]);
     }
 }
 

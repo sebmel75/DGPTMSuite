@@ -100,6 +100,13 @@ $question_types = [
                         </label>
                     </td>
                 </tr>
+                <tr>
+                    <th><label for="survey-completion-text">Abschlusstext</label></th>
+                    <td>
+                        <textarea id="survey-completion-text" name="completion_text" class="large-text" rows="3" placeholder="Vielen Dank fuer Ihre Teilnahme! (HTML erlaubt)"><?php echo esc_textarea($survey ? $survey->completion_text : ''); ?></textarea>
+                        <p class="description">Individueller Text nach dem Absenden. Leer = Standardtext. HTML ist erlaubt.</p>
+                    </td>
+                </tr>
                 <?php if ($survey && $survey->results_token) : ?>
                 <tr>
                     <th>Ergebnis-Link</th>
@@ -191,6 +198,13 @@ $question_types = [
                                         <?php endforeach; ?>
                                     </div>
                                     <button type="button" class="button button-small dgptm-add-choice">+ Option</button>
+                                </td>
+                            </tr>
+                            <tr class="dgptm-exclusive-row" <?php if ($q->question_type !== 'checkbox') echo 'style="display:none;"'; ?>>
+                                <th><label>Ausschluss-Option</label></th>
+                                <td>
+                                    <input type="text" class="dgptm-q-exclusive regular-text" value="<?php echo esc_attr(isset($validation['exclusive_option']) ? $validation['exclusive_option'] : ''); ?>" placeholder="z.B. Nein / Keine Antwort">
+                                    <p class="description">Wird als letzte Option angezeigt und schliesst alle anderen aus.</p>
                                 </td>
                             </tr>
                             <tr class="dgptm-matrix-row" <?php if ($q->question_type !== 'matrix') echo 'style="display:none;"'; ?>>
@@ -355,6 +369,13 @@ $question_types = [
                         <td>
                             <div class="dgptm-choices-list"></div>
                             <button type="button" class="button button-small dgptm-add-choice">+ Option</button>
+                        </td>
+                    </tr>
+                    <tr class="dgptm-exclusive-row" style="display:none;">
+                        <th><label>Ausschluss-Option</label></th>
+                        <td>
+                            <input type="text" class="dgptm-q-exclusive regular-text" value="" placeholder="z.B. Nein / Keine Antwort">
+                            <p class="description">Wird als letzte Option angezeigt und schliesst alle anderen aus.</p>
                         </td>
                     </tr>
                     <tr class="dgptm-matrix-row" style="display:none;">

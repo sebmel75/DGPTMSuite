@@ -1,6 +1,6 @@
 /**
  * DGPTM Umfragen - Frontend JavaScript
- * Form logic, skip-logic, AJAX submit, file uploads
+ * Form logic, skip-logic, nesting, exclusive checkboxes, AJAX submit, file uploads
  */
 (function($) {
     'use strict';
@@ -22,10 +22,11 @@
                 self.bindSubmit($form, $container);
                 self.bindSkipLogic($container);
                 self.bindNesting($container);
+                self.bindExclusiveCheckbox($container);
                 self.bindFileUploads($container);
                 self.bindSaveProgress($form, $container);
 
-                // Apply skip-logic on load (for pre-filled forms)
+                // Apply skip-logic and nesting on load (for pre-filled forms)
                 self.evaluateSkipLogic($container);
                 self.evaluateNesting($container);
             });
@@ -77,7 +78,8 @@
             var valid = true;
             var $section = $container.find('.dgptm-survey-section[data-section="' + sectionIndex + '"]');
 
-            $section.find('.dgptm-question:visible').not('.dgptm-question-hidden-nested').each(function() {
+            // Find questions in this section that are not hidden by skip-logic or nesting
+            $section.find('.dgptm-question').not('.dgptm-question-hidden').not('.dgptm-question-hidden-nested').each(function() {
                 var $q = $(this);
                 if (!$q.data('required')) return;
 
@@ -88,8 +90,10 @@
                     case 'text':
                     case 'textarea':
                     case 'number':
+                        hasValue = $.trim($q.find('input, textarea').not('[type="hidden"]').val() || '') !== '';
+                        break;
                     case 'select':
-                        hasValue = $.trim($q.find('.dgptm-input, select').val()) !== '';
+                        hasValue = $.trim($q.find('select').val() || '') !== '';
                         break;
                     case 'radio':
                         hasValue = $q.find('input[type="radio"]:checked').length > 0;
@@ -98,7 +102,6 @@
                         hasValue = $q.find('input[type="checkbox"]:checked').length > 0;
                         break;
                     case 'matrix':
-                        // Check at least one row has a selection
                         var totalRows = $q.find('.dgptm-matrix-table tbody tr').length;
                         var answeredRows = 0;
                         $q.find('.dgptm-matrix-table tbody tr').each(function() {
@@ -152,7 +155,6 @@
             });
 
             if (!valid) {
-                // Scroll to first error
                 var $firstError = $section.find('.dgptm-question-error-state').first();
                 if ($firstError.length) {
                     $('html, body').animate({
@@ -184,10 +186,8 @@
         },
 
         evaluateSkipLogic: function($container) {
-            // Reset all questions to visible first
             $container.find('.dgptm-question').removeClass('dgptm-question-hidden');
 
-            // Process each question with skip-logic
             $container.find('.dgptm-question[data-skip-logic]').each(function() {
                 var $q = $(this);
                 var rules = $q.data('skip-logic');
@@ -213,15 +213,13 @@
                 for (var i = 0; i < rules.length; i++) {
                     var rule = rules[i];
                     if (currentValue === rule.if_value && rule.goto_question_id) {
-                        // Hide all questions between this one and the target
-                        var thisOrder = $q.index('.dgptm-question');
                         var $target = $container.find('.dgptm-question[data-question-id="' + rule.goto_question_id + '"]');
                         if ($target.length) {
                             var found = false;
                             $container.find('.dgptm-question').each(function() {
                                 if (this === $q[0]) {
                                     found = true;
-                                    return; // Skip source question
+                                    return;
                                 }
                                 if (found && this !== $target[0]) {
                                     $(this).addClass('dgptm-question-hidden');
@@ -231,7 +229,7 @@
                                 }
                             });
                         }
-                        break; // First matching rule wins
+                        break;
                     }
                 }
             });
@@ -247,11 +245,8 @@
         },
 
         evaluateNesting: function($container) {
-            // Remove all nesting-hidden states first
             $container.find('.dgptm-question[data-parent-id]').removeClass('dgptm-question-hidden-nested');
 
-            // Walk all questions with a parent; cascade means if parent is hidden, child is hidden
-            // Iterate multiple times for multi-level cascading (max 10 levels)
             for (var pass = 0; pass < 10; pass++) {
                 var changed = false;
                 $container.find('.dgptm-question[data-parent-id]').each(function() {
@@ -265,14 +260,12 @@
                     var $parent = $container.find('.dgptm-question[data-question-id="' + parentId + '"]');
                     if (!$parent.length) return;
 
-                    // Parent hidden by nesting or skip-logic?
-                    if ($parent.hasClass('dgptm-question-hidden-nested') || $parent.hasClass('dgptm-question-hidden') || $parent.is(':hidden')) {
+                    if ($parent.hasClass('dgptm-question-hidden-nested') || $parent.hasClass('dgptm-question-hidden')) {
                         $q.addClass('dgptm-question-hidden-nested');
                         changed = true;
                         return;
                     }
 
-                    // Get parent answer
                     var parentType = $parent.data('question-type');
                     var currentValue = '';
 
@@ -290,7 +283,6 @@
                         currentValue = $.trim($parent.find('input, textarea').not('[type="hidden"]').first().val() || '');
                     }
 
-                    // Check if parent value matches
                     if (currentValue !== parentValue) {
                         $q.addClass('dgptm-question-hidden-nested');
                         changed = true;
@@ -298,6 +290,26 @@
                 });
                 if (!changed) break;
             }
+        },
+
+        // --- Exclusive Checkbox ---
+
+        bindExclusiveCheckbox: function($container) {
+            $container.on('change', '.dgptm-checkbox-label input[type="checkbox"]', function() {
+                var $cb = $(this);
+                var $q = $cb.closest('.dgptm-question');
+                var isExclusive = $cb.closest('.dgptm-checkbox-label').hasClass('dgptm-checkbox-exclusive');
+
+                if ($cb.is(':checked')) {
+                    if (isExclusive) {
+                        // Uncheck all non-exclusive options
+                        $q.find('.dgptm-checkbox-label:not(.dgptm-checkbox-exclusive) input[type="checkbox"]').prop('checked', false);
+                    } else {
+                        // Uncheck all exclusive options
+                        $q.find('.dgptm-checkbox-exclusive input[type="checkbox"]').prop('checked', false);
+                    }
+                }
+            });
         },
 
         // --- File Uploads ---
@@ -312,14 +324,12 @@
 
                 if (!file) return;
 
-                // Check size (5MB)
                 if (file.size > 5 * 1024 * 1024) {
                     alert(dgptmSurvey.strings.fileTooBig);
                     $input.val('');
                     return;
                 }
 
-                // Check type
                 var allowed = ['application/pdf', 'image/jpeg', 'image/png'];
                 if (allowed.indexOf(file.type) === -1) {
                     alert(dgptmSurvey.strings.fileTypeError);
@@ -327,7 +337,6 @@
                     return;
                 }
 
-                // Upload via AJAX
                 var formData = new FormData();
                 formData.append('action', 'dgptm_survey_upload_file');
                 formData.append('nonce', dgptmSurvey.nonce);
@@ -363,7 +372,6 @@
                 });
             });
 
-            // Remove uploaded file
             $container.on('click', '.dgptm-file-remove', function() {
                 var removeId = $(this).data('id');
                 var $area = $(this).closest('.dgptm-file-upload-area');
@@ -425,6 +433,7 @@
                 var $btn = $container.find('.dgptm-btn-submit');
                 $btn.prop('disabled', true).text(dgptmSurvey.strings.submitting);
 
+                // Collect answers from ALL sections (not just visible)
                 var answers = self.collectAnswers($container);
 
                 // Include file IDs in answers
@@ -459,12 +468,10 @@
                         self.showNotice($container, resp.data.message, 'error');
                         $btn.prop('disabled', false).text('Absenden');
 
-                        // Scroll to specific question if indicated
                         if (resp.data.question_id) {
                             var $errQ = $container.find('.dgptm-question[data-question-id="' + resp.data.question_id + '"]');
                             if ($errQ.length) {
                                 $errQ.addClass('dgptm-question-error-state');
-                                // Go to the section containing this question
                                 var $section = $errQ.closest('.dgptm-survey-section');
                                 if ($section.length) {
                                     self.goToSection($container, parseInt($section.data('section'), 10));
@@ -481,10 +488,16 @@
 
         // --- Helpers ---
 
+        /**
+         * Collect answers from ALL sections, excluding only skip-logic
+         * and nesting hidden questions.
+         */
         collectAnswers: function($container) {
             var answers = {};
 
-            $container.find('.dgptm-question:visible').not('.dgptm-question-hidden-nested').each(function() {
+            // Collect from ALL questions, not just :visible
+            // This ensures multi-section answers are included
+            $container.find('.dgptm-question').not('.dgptm-question-hidden').not('.dgptm-question-hidden-nested').each(function() {
                 var $q = $(this);
                 var qId = $q.data('question-id');
                 var type = $q.data('question-type');
@@ -516,7 +529,6 @@
                             var $checked = $(this).find('input:checked');
                             if ($checked.length) {
                                 var name = $checked.attr('name');
-                                // Extract row key from name: answers[qid][row_key]
                                 var match = name.match(/\[([^\]]+)\]$/);
                                 if (match) {
                                     matrixVals[match[1]] = $checked.val();
@@ -526,7 +538,6 @@
                         if (Object.keys(matrixVals).length > 0) answers[qId] = matrixVals;
                         break;
                     case 'file':
-                        // File IDs handled separately in submit
                         break;
                 }
             });
@@ -538,9 +549,8 @@
             var $existing = $container.find('.dgptm-frontend-notice');
             if ($existing.length) $existing.remove();
 
-            var cls = type === 'error' ? 'color:#dc3232;background:#fef7f7;border:1px solid #dc3232;' : 'color:#46b450;background:#f0faf0;border:1px solid #46b450;';
-            var $notice = $('<div class="dgptm-frontend-notice" style="' + cls + 'padding:10px 14px;border-radius:4px;margin-bottom:16px;font-size:14px;">')
-                .text(message);
+            var cls = type === 'error' ? 'dgptm-notice-error' : 'dgptm-notice-success';
+            var $notice = $('<div class="dgptm-frontend-notice ' + cls + '">').text(message);
 
             $container.prepend($notice);
             $('html, body').animate({ scrollTop: $container.offset().top - 60 }, 200);

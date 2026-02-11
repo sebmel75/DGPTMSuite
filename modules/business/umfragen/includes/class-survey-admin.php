@@ -161,6 +161,7 @@ class DGPTM_Survey_Admin {
             'duplicate_check' => sanitize_text_field($_POST['duplicate_check'] ?? 'cookie_ip'),
             'show_progress'   => absint($_POST['show_progress'] ?? 1),
             'allow_save_resume' => absint($_POST['allow_save_resume'] ?? 0),
+            'completion_text' => wp_kses_post(wp_unslash($_POST['completion_text'] ?? '')),
             'updated_at'      => current_time('mysql'),
         ];
 
@@ -434,6 +435,7 @@ class DGPTM_Survey_Admin {
             'survey_token'      => wp_generate_password(32, false),
             'show_progress'     => $survey->show_progress,
             'allow_save_resume' => $survey->allow_save_resume,
+            'completion_text'   => $survey->completion_text,
             'created_by'        => get_current_user_id(),
             'created_at'        => $now,
             'updated_at'        => $now,

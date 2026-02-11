@@ -155,6 +155,7 @@ if ($resume_data) {
 
                                 case 'checkbox':
                                     $checked_vals = is_array($prefill_decoded) ? $prefill_decoded : [];
+                                    $exclusive_opt = isset($validation['exclusive_option']) ? $validation['exclusive_option'] : '';
                                     if (is_array($choices)) :
                                         foreach ($choices as $choice) : ?>
                                             <label class="dgptm-checkbox-label">
@@ -166,6 +167,15 @@ if ($resume_data) {
                                             </label>
                                         <?php endforeach;
                                     endif;
+                                    if ($exclusive_opt) : ?>
+                                        <label class="dgptm-checkbox-label dgptm-checkbox-exclusive">
+                                            <input type="checkbox"
+                                                   name="<?php echo esc_attr($field_name); ?>[]"
+                                                   value="<?php echo esc_attr($exclusive_opt); ?>"
+                                                   <?php checked(in_array($exclusive_opt, $checked_vals, true)); ?>>
+                                            <span><?php echo esc_html($exclusive_opt); ?></span>
+                                        </label>
+                                    <?php endif;
                                     break;
 
                                 case 'select':
@@ -271,7 +281,11 @@ if ($resume_data) {
 
     <div class="dgptm-survey-success" style="display: none;">
         <div class="dgptm-success-icon">&#10003;</div>
-        <h3>Vielen Dank!</h3>
-        <p>Ihre Antworten wurden erfolgreich uebermittelt.</p>
+        <?php if (!empty($survey->completion_text)) : ?>
+            <div class="dgptm-completion-text"><?php echo wp_kses_post($survey->completion_text); ?></div>
+        <?php else : ?>
+            <h3>Vielen Dank!</h3>
+            <p>Ihre Antworten wurden erfolgreich uebermittelt.</p>
+        <?php endif; ?>
     </div>
 </div>

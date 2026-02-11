@@ -104,6 +104,12 @@ $status_labels = [
                 </label>
             </div>
 
+            <div class="dgptm-fe-field">
+                <label>Abschlusstext</label>
+                <textarea name="completion_text" rows="3" placeholder="Vielen Dank fuer Ihre Teilnahme! (HTML erlaubt)"><?php echo esc_textarea($survey ? $survey->completion_text : ''); ?></textarea>
+                <small>Individueller Text nach dem Absenden. Leer = Standardtext.</small>
+            </div>
+
             <?php if ($survey && !empty($survey->survey_token)) :
                 $survey_url = 'https://perfusiologie.de/umfragen?survey=' . $survey->survey_token;
             ?>
@@ -189,6 +195,15 @@ $status_labels = [
                                 <?php endforeach; ?>
                             </div>
                             <button type="button" class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-add-choice">+ Option</button>
+                        </div>
+
+                        <!-- Exclusive option (checkbox only) -->
+                        <div class="dgptm-fe-exclusive-section" <?php if ($q->question_type !== 'checkbox') echo 'style="display:none;"'; ?>>
+                            <div class="dgptm-fe-field">
+                                <label>Ausschluss-Option</label>
+                                <input type="text" class="dgptm-fe-q-exclusive" value="<?php echo esc_attr(isset($validation['exclusive_option']) ? $validation['exclusive_option'] : ''); ?>" placeholder="z.B. Nein / Keine Antwort">
+                                <small>Schliesst alle anderen Optionen aus, wenn angekreuzt.</small>
+                            </div>
                         </div>
 
                         <!-- Matrix -->
@@ -350,6 +365,13 @@ $status_labels = [
                     <label>Antwortoptionen</label>
                     <div class="dgptm-fe-choices-list"></div>
                     <button type="button" class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-add-choice">+ Option</button>
+                </div>
+                <div class="dgptm-fe-exclusive-section" style="display:none;">
+                    <div class="dgptm-fe-field">
+                        <label>Ausschluss-Option</label>
+                        <input type="text" class="dgptm-fe-q-exclusive" value="" placeholder="z.B. Nein / Keine Antwort">
+                        <small>Schliesst alle anderen Optionen aus, wenn angekreuzt.</small>
+                    </div>
                 </div>
                 <div class="dgptm-fe-matrix-section" style="display:none;">
                     <div class="dgptm-fe-field">

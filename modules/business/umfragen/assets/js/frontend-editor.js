@@ -57,7 +57,8 @@
                     access_mode: $form.find('[name="access_mode"]').val(),
                     duplicate_check: $form.find('[name="duplicate_check"]').val(),
                     show_progress: $form.find('[name="show_progress"]').is(':checked') ? 1 : 0,
-                    allow_save_resume: $form.find('[name="allow_save_resume"]').is(':checked') ? 1 : 0
+                    allow_save_resume: $form.find('[name="allow_save_resume"]').is(':checked') ? 1 : 0,
+                    completion_text: $form.find('[name="completion_text"]').val() || ''
                 };
 
                 $.post(dgptmSurveyEditor.ajaxUrl, data, function(resp) {
@@ -107,6 +108,7 @@
                 var choiceTypes = ['radio', 'checkbox', 'select'];
 
                 $item.find('.dgptm-fe-choices-section').toggle(choiceTypes.indexOf(type) !== -1);
+                $item.find('.dgptm-fe-exclusive-section').toggle(type === 'checkbox');
                 $item.find('.dgptm-fe-matrix-section').toggle(type === 'matrix');
                 $item.find('.dgptm-fe-number-section').toggle(type === 'number');
                 $item.find('.dgptm-fe-text-section').toggle(type === 'text');
@@ -376,6 +378,11 @@
                 if (type === 'text') {
                     var pattern = $item.find('.dgptm-fe-q-pattern').val();
                     if (pattern) validation.pattern = pattern;
+                }
+
+                if (type === 'checkbox') {
+                    var exclusive = $.trim($item.find('.dgptm-fe-q-exclusive').val());
+                    if (exclusive) validation.exclusive_option = exclusive;
                 }
 
                 if (Object.keys(validation).length > 0) {

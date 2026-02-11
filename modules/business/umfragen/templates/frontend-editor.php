@@ -426,7 +426,7 @@ $status_labels = [
             <?php foreach ($surveys as $s) :
                 $edit_link = add_query_arg(['survey_action' => 'edit', 'survey_id' => $s->id], $current_url);
                 $results_link = !empty($s->results_token) ? home_url('/umfrage-ergebnisse/' . $s->results_token) : '';
-                $survey_link = !empty($s->survey_token) ? DGPTM_Umfragen::get_survey_url($s) : '';
+                $survey_link = !empty($s->survey_token) ? 'https://perfusiologie.de/umfragen?survey=' . $s->survey_token : '';
                 $status_class = 'dgptm-fe-status-' . $s->status;
             ?>
                 <div class="dgptm-fe-survey-card">
@@ -444,10 +444,10 @@ $status_labels = [
                     <div class="dgptm-fe-card-actions">
                         <a href="<?php echo esc_url($edit_link); ?>" class="dgptm-fe-btn dgptm-fe-btn-small">Bearbeiten</a>
                         <?php if ($survey_link) : ?>
-                            <button type="button" class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-copy-link" data-url="<?php echo esc_attr($survey_link); ?>">Umfrage-Link</button>
+                            <a href="<?php echo esc_url($survey_link); ?>" class="dgptm-fe-btn dgptm-fe-btn-small" target="_blank">zur Umfrage</a>
                         <?php endif; ?>
                         <?php if ($results_link) : ?>
-                            <button type="button" class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-copy-link" data-url="<?php echo esc_attr($results_link); ?>">Ergebnis-Link</button>
+                            <a href="<?php echo esc_url($results_link); ?>" class="dgptm-fe-btn dgptm-fe-btn-small" target="_blank">Ergebnis</a>
                         <?php endif; ?>
                     </div>
                 </div>

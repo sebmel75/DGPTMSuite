@@ -1,0 +1,476 @@
+/* DGPTM Umfragen - Frontend Editor Styles */
+
+.dgptm-fe-editor {
+    max-width: 900px;
+    margin: 0 auto;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    color: #333;
+    line-height: 1.6;
+}
+
+/* Top bar */
+.dgptm-fe-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.dgptm-fe-topbar h2 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    color: #1d2327;
+}
+
+/* Buttons */
+.dgptm-fe-btn {
+    display: inline-block;
+    padding: 8px 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    background: #f0f0f1;
+    color: #50575e;
+    transition: background 0.2s, border-color 0.2s;
+    font-family: inherit;
+    line-height: 1.4;
+}
+
+.dgptm-fe-btn:hover {
+    background: #e0e0e0;
+    border-color: #999;
+    color: #1d2327;
+    text-decoration: none;
+}
+
+.dgptm-fe-btn-primary {
+    background: #2271b1;
+    color: #fff;
+    border-color: #2271b1;
+}
+
+.dgptm-fe-btn-primary:hover {
+    background: #135e96;
+    border-color: #135e96;
+    color: #fff;
+}
+
+.dgptm-fe-btn-secondary {
+    background: #f6f7f7;
+    color: #50575e;
+}
+
+.dgptm-fe-btn-small {
+    padding: 4px 10px;
+    font-size: 12px;
+}
+
+.dgptm-fe-btn-danger {
+    color: #dc3232;
+    border-color: #dc3232;
+    background: #fff;
+}
+
+.dgptm-fe-btn-danger:hover {
+    background: #dc3232;
+    color: #fff;
+}
+
+.dgptm-fe-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Cards */
+.dgptm-fe-card {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 20px;
+}
+
+.dgptm-fe-card h3 {
+    margin: 0 0 16px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+/* Form fields */
+.dgptm-fe-form input[type="text"],
+.dgptm-fe-form input[type="number"],
+.dgptm-fe-form textarea,
+.dgptm-fe-form select,
+.dgptm-fe-question-body input[type="text"],
+.dgptm-fe-question-body input[type="number"],
+.dgptm-fe-question-body textarea,
+.dgptm-fe-question-body select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: inherit;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+
+.dgptm-fe-form input:focus,
+.dgptm-fe-form textarea:focus,
+.dgptm-fe-form select:focus,
+.dgptm-fe-question-body input:focus,
+.dgptm-fe-question-body textarea:focus,
+.dgptm-fe-question-body select:focus {
+    border-color: #2271b1;
+    outline: none;
+    box-shadow: 0 0 0 1px #2271b1;
+}
+
+.dgptm-fe-field {
+    margin-bottom: 14px;
+}
+
+.dgptm-fe-field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #50575e;
+}
+
+.dgptm-fe-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+
+.dgptm-fe-row .dgptm-fe-field {
+    flex: 1;
+    min-width: 150px;
+}
+
+.dgptm-fe-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    margin-bottom: 8px;
+}
+
+.dgptm-fe-actions {
+    margin-top: 16px;
+}
+
+/* Link display */
+.dgptm-fe-link-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.dgptm-fe-link {
+    background: #f6f7f7;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    word-break: break-all;
+    flex: 1;
+}
+
+/* Survey grid (list view) */
+.dgptm-fe-survey-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.dgptm-fe-survey-card {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.dgptm-fe-survey-card:hover {
+    border-color: #c0c0c0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.dgptm-fe-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.dgptm-fe-card-header h3 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.dgptm-fe-card-header h3 a {
+    color: #1d2327;
+    text-decoration: none;
+}
+
+.dgptm-fe-card-header h3 a:hover {
+    color: #2271b1;
+}
+
+.dgptm-fe-status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    color: #fff;
+    background: #999;
+}
+
+.dgptm-fe-status-draft { background: #999; }
+.dgptm-fe-status-active { background: #46b450; }
+.dgptm-fe-status-closed { background: #dc3232; }
+
+.dgptm-fe-card-desc {
+    font-size: 13px;
+    color: #666;
+    margin: 0 0 10px;
+}
+
+.dgptm-fe-card-meta {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 12px;
+}
+
+.dgptm-fe-card-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.dgptm-fe-empty {
+    text-align: center;
+    padding: 40px 20px;
+    background: #f6f7f7;
+    border-radius: 8px;
+    color: #666;
+}
+
+/* Question builder */
+.dgptm-fe-questions-sortable {
+    min-height: 40px;
+}
+
+.dgptm-fe-question-item {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+
+.dgptm-fe-question-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    background: #f9f9f9;
+    border-radius: 6px 6px 0 0;
+    border-bottom: 1px solid transparent;
+}
+
+.dgptm-fe-question-item.dgptm-fe-open .dgptm-fe-question-header {
+    border-bottom-color: #e0e0e0;
+}
+
+.dgptm-fe-drag-handle {
+    cursor: grab;
+    color: #999;
+    font-size: 16px;
+}
+
+.dgptm-fe-drag-handle:hover {
+    color: #333;
+}
+
+.dgptm-fe-question-number {
+    font-weight: 600;
+    color: #2271b1;
+    min-width: 24px;
+}
+
+.dgptm-fe-question-preview {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px;
+}
+
+.dgptm-fe-type-badge {
+    background: #e0e6ed;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    color: #50575e;
+    white-space: nowrap;
+}
+
+.dgptm-fe-required-badge {
+    background: #d63638;
+    color: #fff;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+}
+
+.dgptm-fe-question-body {
+    padding: 16px;
+}
+
+.dgptm-fe-question-item.ui-sortable-helper {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.dgptm-fe-question-item.ui-sortable-placeholder {
+    visibility: visible !important;
+    background: #f0f6fc;
+    border: 2px dashed #2271b1;
+    min-height: 50px;
+}
+
+/* Choices */
+.dgptm-fe-choices-section,
+.dgptm-fe-matrix-section {
+    margin-bottom: 14px;
+}
+
+.dgptm-fe-choices-section > label,
+.dgptm-fe-matrix-section > label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #50575e;
+}
+
+.dgptm-fe-choice-item {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 4px;
+    align-items: center;
+}
+
+.dgptm-fe-choice-item input[type="text"] {
+    flex: 1;
+    max-width: 300px;
+}
+
+/* Skip logic */
+.dgptm-fe-skip-rule {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+    font-size: 13px;
+}
+
+.dgptm-fe-skip-rule input[type="text"] {
+    width: auto;
+    max-width: 120px;
+}
+
+.dgptm-fe-skip-rule select {
+    width: auto;
+    max-width: 200px;
+}
+
+/* Add question bar */
+.dgptm-fe-add-bar {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    align-items: center;
+}
+
+.dgptm-fe-add-bar select {
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+/* Question count badge */
+.dgptm-fe-question-count {
+    font-weight: normal;
+    color: #888;
+    font-size: 14px;
+}
+
+/* Notification */
+.dgptm-fe-notice {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 99999;
+    padding: 10px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.dgptm-fe-notice.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.dgptm-fe-notice.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .dgptm-fe-editor {
+        padding: 0 12px;
+    }
+
+    .dgptm-fe-topbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .dgptm-fe-survey-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dgptm-fe-row {
+        flex-direction: column;
+    }
+
+    .dgptm-fe-card {
+        padding: 16px;
+    }
+
+    .dgptm-fe-add-bar {
+        flex-direction: column;
+    }
+}

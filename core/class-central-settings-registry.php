@@ -1197,6 +1197,7 @@ class DGPTM_Central_Settings_Registry {
                     'none' => 'Kein Schutz'
                 ], 'default' => 'cookie_ip'],
                 ['id' => 'results_page_id', 'section' => 'general', 'title' => 'Ergebnis-Seite (Page ID)', 'type' => 'number', 'default' => 0, 'description' => 'WordPress-Seiten-ID fuer die Ergebnis-Anzeige (0 = Rewrite-Rule).'],
+                ['id' => 'survey_page_id', 'section' => 'general', 'title' => 'Umfrage-Seite (Page ID)', 'type' => 'number', 'default' => 0, 'description' => 'WordPress-Seiten-ID auf der der [dgptm_umfrage]-Shortcode eingebunden ist. Wird fuer Umfrage-Links verwendet.'],
                 ['id' => 'file_upload_max_size', 'section' => 'files', 'title' => 'Maximale Dateigroesse (MB)', 'type' => 'number', 'default' => 5],
                 ['id' => 'file_cleanup_days', 'section' => 'files', 'title' => 'Dateien loeschen nach (Tage)', 'type' => 'number', 'default' => 90, 'description' => 'Hochgeladene Dateien werden nach dieser Anzahl Tagen automatisch geloescht. 0 = nie loeschen.']
             ]

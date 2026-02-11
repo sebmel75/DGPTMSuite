@@ -38,6 +38,7 @@ $results_url = admin_url('admin.php?page=dgptm-umfragen&view=results');
                     <th class="column-status" style="width: 100px;">Status</th>
                     <th class="column-responses" style="width: 100px;">Antworten</th>
                     <th class="column-shortcode" style="width: 220px;">Shortcode</th>
+                    <th class="column-survey-link" style="width: 100px;">Umfrage-Link</th>
                     <th class="column-date" style="width: 140px;">Erstellt</th>
                     <th class="column-actions" style="width: 200px;">Aktionen</th>
                 </tr>
@@ -70,6 +71,17 @@ $results_url = admin_url('admin.php?page=dgptm-umfragen&view=results');
                         <td class="column-shortcode">
                             <code class="dgptm-shortcode-copy" title="Klicken zum Kopieren">[dgptm_umfrage slug="<?php echo esc_attr($survey->slug); ?>"]</code>
                         </td>
+                        <td class="column-survey-link">
+                            <?php if (!empty($survey->survey_token)) :
+                                $survey_url = DGPTM_Umfragen::get_survey_url($survey);
+                            ?>
+                                <button type="button" class="button button-small dgptm-copy-link" data-url="<?php echo esc_attr($survey_url); ?>" title="Umfrage-Link kopieren">
+                                    <span class="dashicons dashicons-admin-links" style="vertical-align: text-bottom;"></span>
+                                </button>
+                            <?php else : ?>
+                                -
+                            <?php endif; ?>
+                        </td>
                         <td class="column-date">
                             <?php echo esc_html(wp_date('d.m.Y H:i', strtotime($survey->created_at))); ?>
                         </td>
@@ -97,4 +109,19 @@ $results_url = admin_url('admin.php?page=dgptm-umfragen&view=results');
             </tbody>
         </table>
     <?php endif; ?>
+
+<script>
+jQuery(function($) {
+    $(document).on('click', '.dgptm-copy-link', function() {
+        var url = $(this).data('url');
+        if (url && navigator.clipboard) {
+            navigator.clipboard.writeText(url).then(function() {
+                var $notice = $('<div class="dgptm-notice success">').text('Link kopiert!');
+                $('body').append($notice);
+                setTimeout(function() { $notice.fadeOut(300, function() { $(this).remove(); }); }, 3000);
+            });
+        }
+    });
+});
+</script>
 </div>

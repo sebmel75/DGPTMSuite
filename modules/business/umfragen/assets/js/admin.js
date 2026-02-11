@@ -12,6 +12,7 @@
             this.bindQuestionBuilder();
             this.bindSurveyList();
             this.initSortable();
+            this.populateParentDropdowns();
         },
 
         // --- Notifications ---
@@ -132,6 +133,16 @@
                     });
                 }
             });
+
+            // Copy survey link
+            $(document).on('click', '.dgptm-copy-survey-link', function() {
+                var $linkEl = $('#survey-link');
+                if ($linkEl.length && navigator.clipboard) {
+                    navigator.clipboard.writeText($linkEl.text()).then(function() {
+                        self.notify('Link kopiert!');
+                    });
+                }
+            });
         },
 
         // --- Survey Form ---
@@ -239,6 +250,7 @@
                 $newItem.find('.dgptm-question-body').show();
 
                 self.updateQuestionNumbers();
+                self.populateParentDropdowns();
                 self.notify(dgptmUmfragen.strings.questionAdded);
 
                 // Scroll to new question
@@ -376,6 +388,7 @@
                     tolerance: 'pointer',
                     update: function() {
                         self.updateQuestionNumbers();
+                        self.populateParentDropdowns();
                     }
                 });
             }
@@ -388,6 +401,33 @@
                 $(this).find('.dgptm-question-number').text((i + 1) + '.');
             });
             $('.dgptm-question-count').text('(' + $('#dgptm-questions-list .dgptm-question-item').length + ')');
+        },
+
+        populateParentDropdowns: function() {
+            var questions = [];
+            $('#dgptm-questions-list .dgptm-question-item').each(function(i) {
+                questions.push({
+                    id: $(this).attr('data-question-id'),
+                    text: (i + 1) + '. ' + ($(this).find('.dgptm-q-text').val() || 'Frage ' + (i + 1)).substring(0, 40)
+                });
+            });
+
+            $('#dgptm-questions-list .dgptm-q-parent').each(function() {
+                var $select = $(this);
+                var currentVal = $select.val();
+                var myId = $select.closest('.dgptm-question-item').attr('data-question-id');
+
+                $select.find('option:not(:first)').remove();
+                $.each(questions, function(i, q) {
+                    if (q.id !== myId) {
+                        $select.append($('<option>').val(q.id).text(q.text));
+                    }
+                });
+
+                if (currentVal) {
+                    $select.val(currentVal);
+                }
+            });
         },
 
         populateSkipTargets: function($select) {
@@ -414,7 +454,9 @@
                     is_required: $item.find('.dgptm-q-required').is(':checked') ? 1 : 0,
                     choices: null,
                     validation_rules: null,
-                    skip_logic: null
+                    skip_logic: null,
+                    parent_question_id: 0,
+                    parent_answer_value: ''
                 };
 
                 // Collect choices for choice-based types
@@ -474,6 +516,14 @@
                 });
                 if (skipRules.length > 0) {
                     q.skip_logic = skipRules;
+                }
+
+                // Nesting (parent question)
+                var parentId = $item.find('.dgptm-q-parent').val();
+                var parentValue = $.trim($item.find('.dgptm-q-parent-value').val());
+                if (parentId) {
+                    q.parent_question_id = parseInt(parentId, 10) || 0;
+                    q.parent_answer_value = parentValue;
                 }
 
                 questions.push(q);

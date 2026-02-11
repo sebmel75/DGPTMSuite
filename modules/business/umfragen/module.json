@@ -2,7 +2,7 @@
     "id": "umfragen",
     "name": "DGPTM Umfragen",
     "description": "Generisches Umfrage-Framework mit erweiterten Fragetypen, Skip-Logic und Ergebnis-Dashboard",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "author": "Sebastian Melzer",
     "main_file": "dgptm-umfragen.php",
     "dependencies": [],

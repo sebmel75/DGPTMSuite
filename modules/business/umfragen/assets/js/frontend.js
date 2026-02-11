@@ -21,11 +21,13 @@
                 self.bindNavigation($container);
                 self.bindSubmit($form, $container);
                 self.bindSkipLogic($container);
+                self.bindNesting($container);
                 self.bindFileUploads($container);
                 self.bindSaveProgress($form, $container);
 
                 // Apply skip-logic on load (for pre-filled forms)
                 self.evaluateSkipLogic($container);
+                self.evaluateNesting($container);
             });
         },
 
@@ -75,7 +77,7 @@
             var valid = true;
             var $section = $container.find('.dgptm-survey-section[data-section="' + sectionIndex + '"]');
 
-            $section.find('.dgptm-question:visible').each(function() {
+            $section.find('.dgptm-question:visible').not('.dgptm-question-hidden-nested').each(function() {
                 var $q = $(this);
                 if (!$q.data('required')) return;
 
@@ -233,6 +235,69 @@
                     }
                 }
             });
+        },
+
+        // --- Nesting (Verschachtelung) ---
+
+        bindNesting: function($container) {
+            var self = this;
+            $container.on('change input', '.dgptm-question input, .dgptm-question textarea, .dgptm-question select', function() {
+                self.evaluateNesting($container);
+            });
+        },
+
+        evaluateNesting: function($container) {
+            // Remove all nesting-hidden states first
+            $container.find('.dgptm-question[data-parent-id]').removeClass('dgptm-question-hidden-nested');
+
+            // Walk all questions with a parent; cascade means if parent is hidden, child is hidden
+            // Iterate multiple times for multi-level cascading (max 10 levels)
+            for (var pass = 0; pass < 10; pass++) {
+                var changed = false;
+                $container.find('.dgptm-question[data-parent-id]').each(function() {
+                    var $q = $(this);
+                    if ($q.hasClass('dgptm-question-hidden-nested')) return;
+
+                    var parentId = $q.data('parent-id');
+                    var parentValue = String($q.data('parent-value') || '');
+                    if (!parentId) return;
+
+                    var $parent = $container.find('.dgptm-question[data-question-id="' + parentId + '"]');
+                    if (!$parent.length) return;
+
+                    // Parent hidden by nesting or skip-logic?
+                    if ($parent.hasClass('dgptm-question-hidden-nested') || $parent.hasClass('dgptm-question-hidden') || $parent.is(':hidden')) {
+                        $q.addClass('dgptm-question-hidden-nested');
+                        changed = true;
+                        return;
+                    }
+
+                    // Get parent answer
+                    var parentType = $parent.data('question-type');
+                    var currentValue = '';
+
+                    if (parentType === 'radio') {
+                        currentValue = $parent.find('input[type="radio"]:checked').val() || '';
+                    } else if (parentType === 'select') {
+                        currentValue = $parent.find('select').val() || '';
+                    } else if (parentType === 'checkbox') {
+                        var vals = [];
+                        $parent.find('input[type="checkbox"]:checked').each(function() {
+                            vals.push($(this).val());
+                        });
+                        currentValue = vals.join(',');
+                    } else {
+                        currentValue = $.trim($parent.find('input, textarea').not('[type="hidden"]').first().val() || '');
+                    }
+
+                    // Check if parent value matches
+                    if (currentValue !== parentValue) {
+                        $q.addClass('dgptm-question-hidden-nested');
+                        changed = true;
+                    }
+                });
+                if (!changed) break;
+            }
         },
 
         // --- File Uploads ---
@@ -419,7 +484,7 @@
         collectAnswers: function($container) {
             var answers = {};
 
-            $container.find('.dgptm-question:visible').each(function() {
+            $container.find('.dgptm-question:visible').not('.dgptm-question-hidden-nested').each(function() {
                 var $q = $(this);
                 var qId = $q.data('question-id');
                 var type = $q.data('question-type');

@@ -34,6 +34,8 @@ class DGPTM_Survey_Seeder {
         $user_id = get_current_user_id();
         $results_token = wp_generate_password(32, false);
 
+        $survey_token = wp_generate_password(32, false);
+
         // Create survey
         $wpdb->insert($table_surveys, [
             'title'           => 'ECLS-Zentren Umfrage',
@@ -43,6 +45,7 @@ class DGPTM_Survey_Seeder {
             'access_mode'     => 'public',
             'duplicate_check' => 'cookie_ip',
             'results_token'   => $results_token,
+            'survey_token'    => $survey_token,
             'show_progress'   => 1,
             'allow_save_resume' => 1,
             'created_by'      => $user_id,
@@ -98,7 +101,7 @@ class DGPTM_Survey_Seeder {
                 'description'   => null,
                 'choices'       => wp_json_encode(['Ja', 'Nein']),
                 'validation_rules' => wp_json_encode(['required' => true]),
-                'skip_logic'    => null, // Will be set after all questions are inserted
+                'skip_logic'    => null,
                 'is_required'   => 1,
             ],
             [
@@ -237,16 +240,21 @@ class DGPTM_Survey_Seeder {
             $question_ids[] = $wpdb->insert_id;
         }
 
-        // Set skip logic for Q4 ("Nein" -> jump to Q15)
-        if (isset($question_ids[3]) && isset($question_ids[14])) {
-            $skip = wp_json_encode([
-                ['if_value' => 'Nein', 'goto_question_id' => $question_ids[14]]
-            ]);
-            $wpdb->update(
-                $table_questions,
-                ['skip_logic' => $skip],
-                ['id' => $question_ids[3]]
-            );
+        // Set nesting for Q5-Q14: only visible when Q4 = "Ja"
+        if (isset($question_ids[3])) {
+            $q4_id = $question_ids[3];
+            for ($i = 4; $i <= 13; $i++) {
+                if (isset($question_ids[$i])) {
+                    $wpdb->update(
+                        $table_questions,
+                        [
+                            'parent_question_id' => $q4_id,
+                            'parent_answer_value' => 'Ja',
+                        ],
+                        ['id' => $question_ids[$i]]
+                    );
+                }
+            }
         }
 
         return $survey_id;

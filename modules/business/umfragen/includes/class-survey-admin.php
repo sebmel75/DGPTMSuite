@@ -144,7 +144,7 @@ class DGPTM_Survey_Admin {
 
     public function ajax_save_survey() {
         check_ajax_referer('dgptm_suite_nonce', 'nonce');
-        if (!current_user_can('manage_options')) {
+        if (!DGPTM_Umfragen::user_can_manage_surveys()) {
             wp_send_json_error(['message' => 'Keine Berechtigung']);
         }
 
@@ -208,6 +208,7 @@ class DGPTM_Survey_Admin {
             $data['created_by'] = get_current_user_id();
             $data['created_at'] = current_time('mysql');
             $data['results_token'] = wp_generate_password(32, false);
+            $data['survey_token'] = wp_generate_password(32, false);
 
             // Ensure unique slug
             $base_slug = $data['slug'];
@@ -234,7 +235,7 @@ class DGPTM_Survey_Admin {
 
     public function ajax_delete_survey() {
         check_ajax_referer('dgptm_suite_nonce', 'nonce');
-        if (!current_user_can('manage_options')) {
+        if (!DGPTM_Umfragen::user_can_manage_surveys()) {
             wp_send_json_error(['message' => 'Keine Berechtigung']);
         }
 
@@ -260,7 +261,7 @@ class DGPTM_Survey_Admin {
 
     public function ajax_save_questions() {
         check_ajax_referer('dgptm_suite_nonce', 'nonce');
-        if (!current_user_can('manage_options')) {
+        if (!DGPTM_Umfragen::user_can_manage_surveys()) {
             wp_send_json_error(['message' => 'Keine Berechtigung']);
         }
 
@@ -289,16 +290,18 @@ class DGPTM_Survey_Admin {
         foreach ($questions as $index => $q) {
             $q_id = absint($q['id'] ?? 0);
             $q_data = [
-                'survey_id'       => $survey_id,
-                'sort_order'      => $index + 1,
-                'group_label'     => sanitize_text_field($q['group_label'] ?? ''),
-                'question_type'   => sanitize_text_field($q['question_type'] ?? 'text'),
-                'question_text'   => sanitize_textarea_field($q['question_text'] ?? ''),
-                'description'     => sanitize_textarea_field($q['description'] ?? ''),
-                'choices'         => isset($q['choices']) ? wp_json_encode($q['choices']) : null,
-                'validation_rules' => isset($q['validation_rules']) ? wp_json_encode($q['validation_rules']) : null,
-                'skip_logic'      => isset($q['skip_logic']) ? wp_json_encode($q['skip_logic']) : null,
-                'is_required'     => absint($q['is_required'] ?? 0),
+                'survey_id'          => $survey_id,
+                'sort_order'         => $index + 1,
+                'group_label'        => sanitize_text_field($q['group_label'] ?? ''),
+                'question_type'      => sanitize_text_field($q['question_type'] ?? 'text'),
+                'question_text'      => sanitize_textarea_field($q['question_text'] ?? ''),
+                'description'        => sanitize_textarea_field($q['description'] ?? ''),
+                'choices'            => isset($q['choices']) ? wp_json_encode($q['choices']) : null,
+                'validation_rules'   => isset($q['validation_rules']) ? wp_json_encode($q['validation_rules']) : null,
+                'skip_logic'         => isset($q['skip_logic']) ? wp_json_encode($q['skip_logic']) : null,
+                'is_required'        => absint($q['is_required'] ?? 0),
+                'parent_question_id' => absint($q['parent_question_id'] ?? 0),
+                'parent_answer_value' => sanitize_text_field($q['parent_answer_value'] ?? ''),
             ];
 
             // Validate question type
@@ -347,7 +350,7 @@ class DGPTM_Survey_Admin {
 
     public function ajax_reorder_questions() {
         check_ajax_referer('dgptm_suite_nonce', 'nonce');
-        if (!current_user_can('manage_options')) {
+        if (!DGPTM_Umfragen::user_can_manage_surveys()) {
             wp_send_json_error(['message' => 'Keine Berechtigung']);
         }
 
@@ -368,7 +371,7 @@ class DGPTM_Survey_Admin {
 
     public function ajax_delete_response() {
         check_ajax_referer('dgptm_suite_nonce', 'nonce');
-        if (!current_user_can('manage_options')) {
+        if (!DGPTM_Umfragen::user_can_manage_surveys()) {
             wp_send_json_error(['message' => 'Keine Berechtigung']);
         }
 
@@ -387,7 +390,7 @@ class DGPTM_Survey_Admin {
 
     public function ajax_duplicate_survey() {
         check_ajax_referer('dgptm_suite_nonce', 'nonce');
-        if (!current_user_can('manage_options')) {
+        if (!DGPTM_Umfragen::user_can_manage_surveys()) {
             wp_send_json_error(['message' => 'Keine Berechtigung']);
         }
 
@@ -423,6 +426,7 @@ class DGPTM_Survey_Admin {
             'access_mode'       => $survey->access_mode,
             'duplicate_check'   => $survey->duplicate_check,
             'results_token'     => wp_generate_password(32, false),
+            'survey_token'      => wp_generate_password(32, false),
             'show_progress'     => $survey->show_progress,
             'allow_save_resume' => $survey->allow_save_resume,
             'created_by'        => get_current_user_id(),
@@ -437,42 +441,55 @@ class DGPTM_Survey_Admin {
         foreach ($questions as $q) {
             $old_id = $q->id;
             $wpdb->insert($wpdb->prefix . 'dgptm_survey_questions', [
-                'survey_id'       => $new_id,
-                'sort_order'      => $q->sort_order,
-                'group_label'     => $q->group_label,
-                'question_type'   => $q->question_type,
-                'question_text'   => $q->question_text,
-                'description'     => $q->description,
-                'choices'         => $q->choices,
-                'validation_rules' => $q->validation_rules,
-                'skip_logic'      => null, // Reset, will remap below
-                'is_required'     => $q->is_required,
+                'survey_id'          => $new_id,
+                'sort_order'         => $q->sort_order,
+                'group_label'        => $q->group_label,
+                'question_type'      => $q->question_type,
+                'question_text'      => $q->question_text,
+                'description'        => $q->description,
+                'choices'            => $q->choices,
+                'validation_rules'   => $q->validation_rules,
+                'skip_logic'         => null, // Reset, will remap below
+                'is_required'        => $q->is_required,
+                'parent_question_id' => 0, // Reset, will remap below
+                'parent_answer_value' => $q->parent_answer_value,
             ]);
             $id_map[$old_id] = $wpdb->insert_id;
         }
 
-        // Remap skip logic question IDs
+        // Remap skip logic + parent question IDs
         foreach ($questions as $q) {
-            if (empty($q->skip_logic)) {
+            $new_q_id = isset($id_map[$q->id]) ? $id_map[$q->id] : 0;
+            if (!$new_q_id) {
                 continue;
             }
-            $skip = json_decode($q->skip_logic, true);
-            if (!is_array($skip)) {
-                continue;
-            }
-            $updated = false;
-            foreach ($skip as &$rule) {
-                if (isset($rule['goto_question_id']) && isset($id_map[$rule['goto_question_id']])) {
-                    $rule['goto_question_id'] = $id_map[$rule['goto_question_id']];
-                    $updated = true;
+
+            $updates = [];
+
+            // Remap skip logic
+            if (!empty($q->skip_logic)) {
+                $skip = json_decode($q->skip_logic, true);
+                if (is_array($skip)) {
+                    foreach ($skip as &$rule) {
+                        if (isset($rule['goto_question_id']) && isset($id_map[$rule['goto_question_id']])) {
+                            $rule['goto_question_id'] = $id_map[$rule['goto_question_id']];
+                        }
+                    }
+                    unset($rule);
+                    $updates['skip_logic'] = wp_json_encode($skip);
                 }
             }
-            unset($rule);
-            if ($updated && isset($id_map[$q->id])) {
+
+            // Remap parent_question_id
+            if ($q->parent_question_id && isset($id_map[$q->parent_question_id])) {
+                $updates['parent_question_id'] = $id_map[$q->parent_question_id];
+            }
+
+            if (!empty($updates)) {
                 $wpdb->update(
                     $wpdb->prefix . 'dgptm_survey_questions',
-                    ['skip_logic' => wp_json_encode($skip)],
-                    ['id' => $id_map[$q->id]]
+                    $updates,
+                    ['id' => $new_q_id]
                 );
             }
         }

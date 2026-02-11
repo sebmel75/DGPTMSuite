@@ -31,17 +31,29 @@ class DGPTM_Survey_Frontend {
 
         global $wpdb;
         $table = $wpdb->prefix . 'dgptm_surveys';
+        $survey = null;
 
         if (!empty($atts['slug'])) {
             $survey = $wpdb->get_row($wpdb->prepare(
                 "SELECT * FROM $table WHERE slug = %s",
                 sanitize_text_field($atts['slug'])
             ));
-        } else {
+        } elseif (!empty($atts['id'])) {
             $survey = $wpdb->get_row($wpdb->prepare(
                 "SELECT * FROM $table WHERE id = %d",
                 absint($atts['id'])
             ));
+        }
+
+        // Token-based lookup from GET parameter
+        if (!$survey && isset($_GET['survey'])) {
+            $token = sanitize_text_field($_GET['survey']);
+            if ($token) {
+                $survey = $wpdb->get_row($wpdb->prepare(
+                    "SELECT * FROM $table WHERE survey_token = %s",
+                    $token
+                ));
+            }
         }
 
         if (!$survey) {
@@ -231,8 +243,11 @@ class DGPTM_Survey_Frontend {
 
             $val = isset($answers_raw[$q->id]) ? $answers_raw[$q->id] : '';
 
-            // Check if this question is skipped via skip-logic
+            // Check if this question is skipped via skip-logic or nesting
             if ($this->is_question_skipped($q, $questions, $answers_raw)) {
+                continue;
+            }
+            if ($this->is_question_nested_hidden($q, $questions, $answers_raw)) {
                 continue;
             }
 
@@ -487,6 +502,50 @@ class DGPTM_Survey_Frontend {
     }
 
     // --- Helpers ---
+
+    /**
+     * Check if a question is hidden due to nesting (parent chain)
+     */
+    private function is_question_nested_hidden($question, $all_questions, $answers) {
+        if (empty($question->parent_question_id)) {
+            return false;
+        }
+
+        // Build lookup map
+        $q_map = [];
+        foreach ($all_questions as $q) {
+            $q_map[$q->id] = $q;
+        }
+
+        // Walk parent chain (max 10 levels to prevent infinite loops)
+        $current = $question;
+        for ($i = 0; $i < 10; $i++) {
+            if (empty($current->parent_question_id)) {
+                return false; // Reached top level, not hidden
+            }
+
+            $parent_id = $current->parent_question_id;
+            if (!isset($q_map[$parent_id])) {
+                return true; // Parent not found, hide
+            }
+
+            $parent = $q_map[$parent_id];
+            $parent_answer = isset($answers[$parent_id]) ? $answers[$parent_id] : '';
+            if (is_array($parent_answer)) {
+                $parent_answer = implode(',', $parent_answer);
+            }
+
+            // Check if parent answer matches expected value
+            if ($parent_answer !== $current->parent_answer_value) {
+                return true; // Parent answer doesn't match, hide this question
+            }
+
+            // Check if parent itself is nested-hidden
+            $current = $parent;
+        }
+
+        return false;
+    }
 
     /**
      * Check if a question should be skipped based on skip-logic

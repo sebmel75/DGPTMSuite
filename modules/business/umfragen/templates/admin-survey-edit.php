@@ -109,6 +109,17 @@ $question_types = [
                     </td>
                 </tr>
                 <?php endif; ?>
+                <?php if ($survey && !empty($survey->survey_token)) :
+                    $survey_url = DGPTM_Umfragen::get_survey_url($survey);
+                ?>
+                <tr>
+                    <th>Umfrage-Link</th>
+                    <td>
+                        <code id="survey-link"><?php echo esc_url($survey_url); ?></code>
+                        <button type="button" class="button button-small dgptm-copy-survey-link">Kopieren</button>
+                    </td>
+                </tr>
+                <?php endif; ?>
             </table>
 
             <p class="submit">
@@ -232,6 +243,22 @@ $question_types = [
                                         <option value="url" <?php selected(isset($validation['pattern']) ? $validation['pattern'] : '', 'url'); ?>>URL</option>
                                         <option value="phone" <?php selected(isset($validation['pattern']) ? $validation['pattern'] : '', 'phone'); ?>>Telefon</option>
                                     </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th><label>Elternfrage</label></th>
+                                <td>
+                                    <select class="dgptm-q-parent">
+                                        <option value="">-- Keine --</option>
+                                        <?php foreach ($questions as $tq) :
+                                            if ($tq->id === $q->id) continue;
+                                        ?>
+                                            <option value="<?php echo esc_attr($tq->id); ?>" <?php selected($q->parent_question_id, $tq->id); ?>>
+                                                <?php echo esc_html($tq->sort_order . '. ' . wp_trim_words($tq->question_text, 5)); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <label style="margin-left: 10px;">Sichtbar wenn Antwort = <input type="text" class="dgptm-q-parent-value" value="<?php echo esc_attr($q->parent_answer_value); ?>" placeholder="z.B. Ja" style="width: 120px;"></label>
                                 </td>
                             </tr>
                             <tr>
@@ -362,6 +389,15 @@ $question_types = [
                                 <option value="url">URL</option>
                                 <option value="phone">Telefon</option>
                             </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label>Elternfrage</label></th>
+                        <td>
+                            <select class="dgptm-q-parent">
+                                <option value="">-- Keine --</option>
+                            </select>
+                            <label style="margin-left: 10px;">Sichtbar wenn Antwort = <input type="text" class="dgptm-q-parent-value" value="" placeholder="z.B. Ja" style="width: 120px;"></label>
                         </td>
                     </tr>
                     <tr>

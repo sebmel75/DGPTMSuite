@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: DGPTM Umfragen
- * Description: Generisches Umfrage-Framework mit erweiterten Fragetypen, Skip-Logic und Ergebnis-Dashboard
- * Version: 1.0.0
+ * Description: Generisches Umfrage-Framework mit erweiterten Fragetypen, Skip-Logic, Verschachtelung und Ergebnis-Dashboard
+ * Version: 1.1.0
  * Author: Sebastian Melzer
  */
 
@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('DGPTM_UMFRAGEN_VERSION')) {
-    define('DGPTM_UMFRAGEN_VERSION', '1.0.0');
+    define('DGPTM_UMFRAGEN_VERSION', '1.1.0');
 }
 if (!defined('DGPTM_UMFRAGEN_PATH')) {
     define('DGPTM_UMFRAGEN_PATH', plugin_dir_path(__FILE__));
@@ -48,6 +48,7 @@ if (!class_exists('DGPTM_Umfragen')) {
 
             require_once DGPTM_UMFRAGEN_PATH . 'includes/class-survey-frontend.php';
             require_once DGPTM_UMFRAGEN_PATH . 'includes/class-survey-exporter.php';
+            require_once DGPTM_UMFRAGEN_PATH . 'includes/class-survey-frontend-editor.php';
         }
 
         private function init_hooks() {
@@ -76,6 +77,7 @@ if (!class_exists('DGPTM_Umfragen')) {
             add_action('wp_ajax_dgptm_survey_reorder', [$this, 'ajax_reorder_questions']);
             add_action('wp_ajax_dgptm_survey_seed_ecls', [$this, 'ajax_seed_ecls']);
             add_action('wp_ajax_dgptm_survey_export_csv', [$this, 'ajax_export_csv']);
+            add_action('wp_ajax_dgptm_survey_export_pdf', [$this, 'ajax_export_pdf']);
             add_action('wp_ajax_dgptm_survey_delete_response', [$this, 'ajax_delete_response']);
             add_action('wp_ajax_dgptm_survey_duplicate', [$this, 'ajax_duplicate_survey']);
 
@@ -95,6 +97,27 @@ if (!class_exists('DGPTM_Umfragen')) {
             if (!wp_next_scheduled('dgptm_survey_cleanup_files')) {
                 wp_schedule_event(time(), 'daily', 'dgptm_survey_cleanup_files');
             }
+        }
+
+        // --- Permission helper ---
+
+        /**
+         * Check if a user can manage surveys (admin OR ACF umfragen=true)
+         */
+        public static function user_can_manage_surveys($user_id = null) {
+            if (!$user_id) {
+                $user_id = get_current_user_id();
+            }
+            if (!$user_id) {
+                return false;
+            }
+            if (current_user_can('manage_options')) {
+                return true;
+            }
+            if (function_exists('get_field')) {
+                return (bool) get_field('umfragen', 'user_' . $user_id);
+            }
+            return (bool) get_user_meta($user_id, 'umfragen', true);
         }
 
         /**
@@ -124,11 +147,36 @@ if (!class_exists('DGPTM_Umfragen')) {
 
         public function register_shortcodes() {
             add_shortcode('dgptm_umfrage', [$this, 'shortcode_survey']);
+            add_shortcode('umfrageberechtigung', [$this, 'shortcode_berechtigung']);
+            add_shortcode('dgptm_umfrage_editor', [$this, 'shortcode_editor']);
         }
 
         public function shortcode_survey($atts) {
             $frontend = DGPTM_Survey_Frontend::get_instance();
             return $frontend->render_shortcode($atts);
+        }
+
+        /**
+         * [umfrageberechtigung] - Returns "1" if user has umfragen permission, "0" otherwise
+         */
+        public function shortcode_berechtigung($atts) {
+            return self::user_can_manage_surveys() ? '1' : '0';
+        }
+
+        /**
+         * [dgptm_umfrage_editor] - Renders frontend survey editor
+         */
+        public function shortcode_editor($atts) {
+            if (!is_user_logged_in()) {
+                return '<p class="dgptm-survey-error">Bitte melden Sie sich an.</p>';
+            }
+            if (!self::user_can_manage_surveys()) {
+                return '<p class="dgptm-survey-error">Kein Zugriff.</p>';
+            }
+
+            $this->enqueue_frontend_editor_assets();
+            $editor = DGPTM_Survey_Frontend_Editor::get_instance();
+            return $editor->render($atts);
         }
 
         // --- Rewrite rules for public results ---
@@ -155,7 +203,7 @@ if (!class_exists('DGPTM_Umfragen')) {
             global $wpdb;
             $table = $wpdb->prefix . 'dgptm_surveys';
             $survey = $wpdb->get_row($wpdb->prepare(
-                "SELECT * FROM $table WHERE results_token = %s AND status IN ('active','closed')",
+                "SELECT * FROM $table WHERE results_token = %s AND status != 'archived'",
                 sanitize_text_field($token)
             ));
 
@@ -204,6 +252,10 @@ if (!class_exists('DGPTM_Umfragen')) {
 
         public function ajax_export_csv() {
             DGPTM_Survey_Exporter::get_instance()->export_csv();
+        }
+
+        public function ajax_export_pdf() {
+            DGPTM_Survey_Exporter::get_instance()->export_pdf();
         }
 
         public function ajax_delete_response() {
@@ -315,6 +367,59 @@ if (!class_exists('DGPTM_Umfragen')) {
                 [],
                 DGPTM_UMFRAGEN_VERSION
             );
+        }
+
+        /**
+         * Enqueue frontend editor assets (called from shortcode)
+         */
+        public function enqueue_frontend_editor_assets() {
+            wp_enqueue_script('jquery-ui-sortable');
+
+            wp_enqueue_style(
+                'dgptm-umfragen-fe-editor',
+                DGPTM_UMFRAGEN_URL . 'assets/css/frontend-editor.css',
+                [],
+                DGPTM_UMFRAGEN_VERSION
+            );
+
+            wp_enqueue_script(
+                'dgptm-umfragen-fe-editor',
+                DGPTM_UMFRAGEN_URL . 'assets/js/frontend-editor.js',
+                ['jquery', 'jquery-ui-sortable'],
+                DGPTM_UMFRAGEN_VERSION,
+                true
+            );
+
+            wp_localize_script('dgptm-umfragen-fe-editor', 'dgptmSurveyEditor', [
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'nonce'   => wp_create_nonce('dgptm_suite_nonce'),
+                'strings' => [
+                    'confirmDelete'   => 'Wirklich loeschen?',
+                    'confirmArchive'  => 'Umfrage wirklich archivieren?',
+                    'saved'           => 'Gespeichert',
+                    'error'           => 'Fehler beim Speichern',
+                    'questionAdded'   => 'Frage hinzugefuegt',
+                    'questionRemoved' => 'Frage entfernt',
+                    'noQuestions'     => 'Bitte mindestens eine Frage hinzufuegen.',
+                    'linkCopied'     => 'Link kopiert!',
+                ]
+            ]);
+        }
+
+        /**
+         * Get survey URL (page-based with token parameter)
+         */
+        public static function get_survey_url($survey) {
+            $token = is_object($survey) ? $survey->survey_token : $survey;
+            if (!$token) {
+                return '';
+            }
+            $settings = get_option('dgptm_module_settings_umfragen', []);
+            $page_id = !empty($settings['survey_page_id']) ? absint($settings['survey_page_id']) : 0;
+            if ($page_id && get_post($page_id)) {
+                return add_query_arg('survey', $token, get_permalink($page_id));
+            }
+            return add_query_arg('survey', $token, home_url('/'));
         }
 
         /**

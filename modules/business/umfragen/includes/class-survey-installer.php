@@ -29,6 +29,7 @@ class DGPTM_Survey_Installer {
             access_mode VARCHAR(20) NOT NULL DEFAULT 'public',
             duplicate_check VARCHAR(20) NOT NULL DEFAULT 'cookie_ip',
             results_token VARCHAR(64) DEFAULT NULL,
+            survey_token VARCHAR(64) DEFAULT NULL,
             show_progress TINYINT(1) NOT NULL DEFAULT 1,
             allow_save_resume TINYINT(1) NOT NULL DEFAULT 0,
             created_by BIGINT(20) UNSIGNED NOT NULL DEFAULT 0,
@@ -38,7 +39,8 @@ class DGPTM_Survey_Installer {
             PRIMARY KEY (id),
             UNIQUE KEY slug (slug),
             KEY status (status),
-            KEY results_token (results_token)
+            KEY results_token (results_token),
+            KEY survey_token (survey_token)
         ) $charset_collate;";
 
         $sql_questions = "CREATE TABLE $table_questions (
@@ -53,6 +55,8 @@ class DGPTM_Survey_Installer {
             validation_rules TEXT,
             skip_logic TEXT,
             is_required TINYINT(1) NOT NULL DEFAULT 0,
+            parent_question_id BIGINT(20) UNSIGNED NOT NULL DEFAULT 0,
+            parent_answer_value VARCHAR(255) NOT NULL DEFAULT '',
             PRIMARY KEY (id),
             KEY survey_id (survey_id),
             KEY sort_order (sort_order)
@@ -92,6 +96,9 @@ class DGPTM_Survey_Installer {
         dbDelta($sql_responses);
         dbDelta($sql_answers);
 
+        // ALTER TABLE fallback for columns dbDelta may not add
+        self::ensure_columns();
+
         update_option('dgptm_umfragen_db_version', DGPTM_UMFRAGEN_VERSION);
 
         if (function_exists('dgptm_log_info')) {
@@ -107,5 +114,42 @@ class DGPTM_Survey_Installer {
 
         // Re-run install to pick up schema changes via dbDelta
         self::install();
+    }
+
+    /**
+     * Fallback: ensure new columns exist via ALTER TABLE
+     * (dbDelta sometimes fails to add columns to existing tables)
+     */
+    private static function ensure_columns() {
+        global $wpdb;
+
+        $has = function ($table, $col) use ($wpdb) {
+            $rows = $wpdb->get_results("SHOW COLUMNS FROM $table", ARRAY_A);
+            if (!$rows) {
+                return false;
+            }
+            foreach ($rows as $r) {
+                if ($r['Field'] === $col) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        $surveys   = $wpdb->prefix . 'dgptm_surveys';
+        $questions = $wpdb->prefix . 'dgptm_survey_questions';
+
+        if (!$has($surveys, 'survey_token')) {
+            $wpdb->query("ALTER TABLE $surveys ADD COLUMN survey_token VARCHAR(64) DEFAULT NULL");
+            $wpdb->query("ALTER TABLE $surveys ADD KEY survey_token (survey_token)");
+        }
+
+        if (!$has($questions, 'parent_question_id')) {
+            $wpdb->query("ALTER TABLE $questions ADD COLUMN parent_question_id BIGINT(20) UNSIGNED NOT NULL DEFAULT 0");
+        }
+
+        if (!$has($questions, 'parent_answer_value')) {
+            $wpdb->query("ALTER TABLE $questions ADD COLUMN parent_answer_value VARCHAR(255) NOT NULL DEFAULT ''");
+        }
     }
 }

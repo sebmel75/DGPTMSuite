@@ -68,6 +68,10 @@ $view_response = isset($_GET['response_id']) ? absint($_GET['response_id']) : 0;
            class="button">
             CSV Export
         </a>
+        <a href="<?php echo esc_url(admin_url('admin-ajax.php?action=dgptm_survey_export_pdf&survey_id=' . $survey_id . '&nonce=' . wp_create_nonce('dgptm_suite_nonce'))); ?>"
+           class="button">
+            PDF Export
+        </a>
         <?php if ($survey->results_token) : ?>
             <button type="button" class="button dgptm-copy-results-link" data-token="<?php echo esc_attr($survey->results_token); ?>">
                 Oeffentlichen Ergebnis-Link kopieren

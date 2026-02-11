@@ -91,8 +91,14 @@
     background: #fef7f7;
 }
 
-.dgptm-question.dgptm-question-hidden {
+.dgptm-question.dgptm-question-hidden,
+.dgptm-question.dgptm-question-hidden-nested {
     display: none;
+}
+
+.dgptm-question.dgptm-question-nested {
+    margin-left: 16px;
+    border-left: 3px solid #2271b1;
 }
 
 .dgptm-question-label {

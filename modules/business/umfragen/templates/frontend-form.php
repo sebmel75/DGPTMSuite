@@ -83,11 +83,12 @@ if ($resume_data) {
                         }
                     }
                 ?>
-                    <div class="dgptm-question"
+                    <div class="dgptm-question<?php if (!empty($q->parent_question_id)) echo ' dgptm-question-nested'; ?>"
                          data-question-id="<?php echo esc_attr($q->id); ?>"
                          data-question-type="<?php echo esc_attr($q->question_type); ?>"
                          data-required="<?php echo esc_attr($q->is_required); ?>"
-                         <?php if ($skip) : ?>data-skip-logic="<?php echo esc_attr(wp_json_encode($skip)); ?>"<?php endif; ?>>
+                         <?php if ($skip) : ?>data-skip-logic="<?php echo esc_attr(wp_json_encode($skip)); ?>"<?php endif; ?>
+                         <?php if (!empty($q->parent_question_id)) : ?>data-parent-id="<?php echo esc_attr($q->parent_question_id); ?>" data-parent-value="<?php echo esc_attr($q->parent_answer_value); ?>"<?php endif; ?>>
 
                         <label class="dgptm-question-label">
                             <?php echo esc_html($q->question_text); ?>

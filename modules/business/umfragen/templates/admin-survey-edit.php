@@ -105,18 +105,16 @@ $question_types = [
                     <th>Ergebnis-Link</th>
                     <td>
                         <code id="results-link"><?php echo esc_url(home_url('/umfrage-ergebnisse/' . $survey->results_token)); ?></code>
-                        <button type="button" class="button button-small dgptm-copy-results-link" data-token="<?php echo esc_attr($survey->results_token); ?>">Kopieren</button>
+                        <a href="<?php echo esc_url(home_url('/umfrage-ergebnisse/' . $survey->results_token)); ?>" class="button button-small" target="_blank">Oeffnen</a>
                     </td>
                 </tr>
                 <?php endif; ?>
-                <?php if ($survey && !empty($survey->survey_token)) :
-                    $survey_url = DGPTM_Umfragen::get_survey_url($survey);
-                ?>
+                <?php if ($survey && !empty($survey->survey_token)) : ?>
                 <tr>
                     <th>Umfrage-Link</th>
                     <td>
-                        <code id="survey-link"><?php echo esc_url($survey_url); ?></code>
-                        <button type="button" class="button button-small dgptm-copy-survey-link">Kopieren</button>
+                        <code id="survey-link"><?php echo esc_url('https://perfusiologie.de/umfragen?survey=' . $survey->survey_token); ?></code>
+                        <a href="<?php echo esc_url('https://perfusiologie.de/umfragen?survey=' . $survey->survey_token); ?>" class="button button-small" target="_blank">Oeffnen</a>
                     </td>
                 </tr>
                 <?php endif; ?>

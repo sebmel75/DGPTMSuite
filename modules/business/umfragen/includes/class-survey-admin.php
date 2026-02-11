@@ -198,6 +198,11 @@ class DGPTM_Survey_Admin {
                 $data['closed_at'] = current_time('mysql');
             }
 
+            // Generate survey_token for legacy surveys that don't have one
+            if ($old && empty($old->survey_token)) {
+                $data['survey_token'] = wp_generate_password(32, false);
+            }
+
             $wpdb->update($table, $data, ['id' => $survey_id]);
 
             if (function_exists('dgptm_log_info')) {

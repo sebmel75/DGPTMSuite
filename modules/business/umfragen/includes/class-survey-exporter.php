@@ -7,6 +7,25 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// FPDF subclass must be declared at file level (not nested inside another class)
+// Loaded lazily when FPDF is available
+if (file_exists(DGPTM_SUITE_PATH . 'libraries/fpdf/fpdf.php')) {
+    require_once DGPTM_SUITE_PATH . 'libraries/fpdf/fpdf.php';
+    if (class_exists('FPDF') && !class_exists('DGPTM_Survey_FPDF')) {
+        class DGPTM_Survey_FPDF extends FPDF {
+            public function Header() {
+                // Empty - title is added manually on title page
+            }
+
+            public function Footer() {
+                $this->SetY(-15);
+                $this->SetFont('Arial', 'I', 8);
+                $this->Cell(0, 10, 'Seite ' . $this->PageNo() . ' / {nb}', 0, 0, 'C');
+            }
+        }
+    }
+}
+
 class DGPTM_Survey_Exporter {
 
     private static $instance = null;
@@ -222,26 +241,8 @@ class DGPTM_Survey_Exporter {
             $survey_id
         ));
 
-        // Load FPDF
-        require_once DGPTM_SUITE_PATH . 'libraries/fpdf/fpdf.php';
-
-        if (!class_exists('FPDF')) {
-            wp_die('FPDF-Klasse nicht verfuegbar.');
-        }
-
-        // Custom FPDF subclass with Header/Footer
         if (!class_exists('DGPTM_Survey_FPDF')) {
-            class DGPTM_Survey_FPDF extends FPDF {
-                public function Header() {
-                    // Empty - title is added manually on title page
-                }
-
-                public function Footer() {
-                    $this->SetY(-15);
-                    $this->SetFont('Arial', 'I', 8);
-                    $this->Cell(0, 10, 'Seite ' . $this->PageNo() . ' / {nb}', 0, 0, 'C');
-                }
-            }
+            wp_die('FPDF-Klasse nicht verfuegbar.');
         }
 
         $pdf = new DGPTM_Survey_FPDF('P', 'mm', 'A4');

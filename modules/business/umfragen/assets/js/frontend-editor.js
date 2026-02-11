@@ -10,6 +10,7 @@
         init: function() {
             this.bindSurveyForm();
             this.bindQuestionBuilder();
+            this.bindSharing();
             this.initSortable();
             this.bindCopyLinks();
             this.populateParentDropdowns();
@@ -58,7 +59,8 @@
                     duplicate_check: $form.find('[name="duplicate_check"]').val(),
                     show_progress: $form.find('[name="show_progress"]').is(':checked') ? 1 : 0,
                     allow_save_resume: $form.find('[name="allow_save_resume"]').is(':checked') ? 1 : 0,
-                    completion_text: $form.find('[name="completion_text"]').val() || ''
+                    completion_text: $form.find('[name="completion_text"]').val() || '',
+                    shared_with: $form.find('[name="shared_with"]').val() || ''
                 };
 
                 $.post(dgptmSurveyEditor.ajaxUrl, data, function(resp) {
@@ -84,6 +86,100 @@
                     self.notify(dgptmSurveyEditor.strings.error, 'error');
                     $btn.prop('disabled', false).text('Umfrage speichern');
                 });
+            });
+        },
+
+        // --- Sharing ---
+        bindSharing: function() {
+            var self = this;
+            var searchTimer = null;
+
+            // Search users with debounce
+            $('#dgptm-fe-share-search').on('input', function() {
+                var term = $.trim($(this).val());
+                var $results = $('#dgptm-fe-share-results');
+
+                if (searchTimer) clearTimeout(searchTimer);
+
+                if (term.length < 2) {
+                    $results.hide().empty();
+                    return;
+                }
+
+                searchTimer = setTimeout(function() {
+                    $.post(dgptmSurveyEditor.ajaxUrl, {
+                        action: 'dgptm_survey_search_users',
+                        nonce: dgptmSurveyEditor.nonce,
+                        search: term
+                    }, function(resp) {
+                        $results.empty();
+                        if (resp.success && resp.data.users.length > 0) {
+                            var currentIds = ($('#dgptm-fe-shared-with').val() || '').split(',').filter(Boolean);
+                            $.each(resp.data.users, function(i, u) {
+                                if (currentIds.indexOf(String(u.id)) !== -1) return;
+                                var $item = $('<div class="dgptm-fe-share-result-item">')
+                                    .attr('data-user-id', u.id)
+                                    .attr('data-display-name', u.display_name)
+                                    .attr('data-email', u.user_email);
+                                $item.append($('<strong>').text(u.display_name));
+                                $item.append(' ');
+                                $item.append($('<small>').text('(' + u.user_email + ')'));
+                                $results.append($item);
+                            });
+                            $results.show();
+                        } else {
+                            $results.hide();
+                        }
+                    }).fail(function() {
+                        $results.hide();
+                    });
+                }, 300);
+            });
+
+            // Click search result to add user
+            $(document).on('click', '.dgptm-fe-share-result-item', function() {
+                var userId = $(this).attr('data-user-id');
+                var name = $(this).attr('data-display-name');
+                var email = $(this).attr('data-email');
+
+                var $hidden = $('#dgptm-fe-shared-with');
+                var ids = $hidden.val() ? $hidden.val().split(',').filter(Boolean) : [];
+                if (ids.indexOf(userId) === -1) {
+                    ids.push(userId);
+                    $hidden.val(ids.join(','));
+                }
+
+                var $badge = $('<span class="dgptm-fe-shared-user">').attr('data-user-id', userId);
+                $badge.append(document.createTextNode(name + ' (' + email + ')'));
+                $badge.append(' ');
+                $badge.append($('<button type="button" class="dgptm-fe-remove-shared-user">').text('\u00d7'));
+                $('#dgptm-fe-shared-users-list').append($badge).append(' ');
+
+                $('#dgptm-fe-share-search').val('');
+                $('#dgptm-fe-share-results').hide().empty();
+
+                self.notify('Benutzer hinzugefuegt');
+            });
+
+            // Remove shared user
+            $(document).on('click', '.dgptm-fe-remove-shared-user', function() {
+                var $badge = $(this).closest('.dgptm-fe-shared-user');
+                var userId = $badge.attr('data-user-id');
+
+                var $hidden = $('#dgptm-fe-shared-with');
+                var ids = $hidden.val() ? $hidden.val().split(',').filter(Boolean) : [];
+                ids = ids.filter(function(id) { return id !== String(userId); });
+                $hidden.val(ids.join(','));
+
+                $badge.remove();
+                self.notify('Benutzer entfernt');
+            });
+
+            // Close results on click outside
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('.dgptm-fe-share-search-wrap').length) {
+                    $('#dgptm-fe-share-results').hide();
+                }
             });
         },
 

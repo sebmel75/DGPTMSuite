@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM Umfragen
  * Description: Generisches Umfrage-Framework mit erweiterten Fragetypen, Skip-Logic, Verschachtelung und Ergebnis-Dashboard
- * Version: 1.2.0
+ * Version: 1.2.1
  * Author: Sebastian Melzer
  */
 
@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('DGPTM_UMFRAGEN_VERSION')) {
-    define('DGPTM_UMFRAGEN_VERSION', '1.2.0');
+    define('DGPTM_UMFRAGEN_VERSION', '1.2.1');
 }
 if (!defined('DGPTM_UMFRAGEN_PATH')) {
     define('DGPTM_UMFRAGEN_PATH', plugin_dir_path(__FILE__));
@@ -80,6 +80,7 @@ if (!class_exists('DGPTM_Umfragen')) {
             add_action('wp_ajax_dgptm_survey_export_pdf', [$this, 'ajax_export_pdf']);
             add_action('wp_ajax_dgptm_survey_delete_response', [$this, 'ajax_delete_response']);
             add_action('wp_ajax_dgptm_survey_duplicate', [$this, 'ajax_duplicate_survey']);
+            add_action('wp_ajax_dgptm_survey_search_users', [$this, 'ajax_search_users']);
 
             // Public AJAX (nopriv for public surveys)
             add_action('wp_ajax_dgptm_survey_submit', [$this, 'ajax_submit_survey']);
@@ -264,6 +265,10 @@ if (!class_exists('DGPTM_Umfragen')) {
 
         public function ajax_duplicate_survey() {
             DGPTM_Survey_Admin::get_instance()->ajax_duplicate_survey();
+        }
+
+        public function ajax_search_users() {
+            DGPTM_Survey_Admin::get_instance()->ajax_search_users();
         }
 
         // Public AJAX

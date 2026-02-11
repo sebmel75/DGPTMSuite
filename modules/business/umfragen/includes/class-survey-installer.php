@@ -33,6 +33,7 @@ class DGPTM_Survey_Installer {
             show_progress TINYINT(1) NOT NULL DEFAULT 1,
             allow_save_resume TINYINT(1) NOT NULL DEFAULT 0,
             completion_text TEXT DEFAULT NULL,
+            shared_with TEXT DEFAULT NULL,
             created_by BIGINT(20) UNSIGNED NOT NULL DEFAULT 0,
             created_at DATETIME NOT NULL,
             updated_at DATETIME NOT NULL,
@@ -142,6 +143,10 @@ class DGPTM_Survey_Installer {
 
         if (!$has($surveys, 'completion_text')) {
             $wpdb->query("ALTER TABLE $surveys ADD COLUMN completion_text TEXT DEFAULT NULL");
+        }
+
+        if (!$has($surveys, 'shared_with')) {
+            $wpdb->query("ALTER TABLE $surveys ADD COLUMN shared_with TEXT DEFAULT NULL");
         }
 
         if (!$has($surveys, 'survey_token')) {

@@ -107,6 +107,33 @@ $question_types = [
                         <p class="description">Individueller Text nach dem Absenden. Leer = Standardtext. HTML ist erlaubt.</p>
                     </td>
                 </tr>
+                <tr>
+                    <th>Geteilt mit</th>
+                    <td>
+                        <input type="hidden" name="shared_with" id="dgptm-shared-with" value="<?php echo esc_attr($survey ? $survey->shared_with : ''); ?>">
+                        <div id="dgptm-shared-users-list" class="dgptm-shared-users-list">
+                            <?php
+                            if ($survey && !empty($survey->shared_with)) {
+                                $shared_ids = array_map('absint', array_filter(explode(',', $survey->shared_with)));
+                                foreach ($shared_ids as $uid) {
+                                    $u = get_userdata($uid);
+                                    if ($u) {
+                                        echo '<span class="dgptm-shared-user" data-user-id="' . esc_attr($uid) . '">';
+                                        echo esc_html($u->display_name) . ' <small>(' . esc_html($u->user_email) . ')</small>';
+                                        echo ' <button type="button" class="dgptm-remove-shared-user" title="Entfernen">&times;</button>';
+                                        echo '</span> ';
+                                    }
+                                }
+                            }
+                            ?>
+                        </div>
+                        <div class="dgptm-share-search-wrap" style="margin-top: 6px;">
+                            <input type="text" id="dgptm-share-search" class="regular-text" placeholder="Name oder E-Mail eingeben..." autocomplete="off">
+                            <div id="dgptm-share-results" class="dgptm-share-results" style="display:none;"></div>
+                        </div>
+                        <p class="description">Berechtigte Benutzer, die diese Umfrage mitbearbeiten duerfen.</p>
+                    </td>
+                </tr>
                 <?php if ($survey && $survey->results_token) : ?>
                 <tr>
                     <th>Ergebnis-Link</th>

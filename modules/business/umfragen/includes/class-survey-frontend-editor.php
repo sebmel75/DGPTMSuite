@@ -34,7 +34,7 @@ if (!class_exists('DGPTM_Survey_Frontend_Editor')) {
 
         /**
          * Get surveys for the current user
-         * Admins see all, non-admins see only their own
+         * Admins see all, non-admins see own + shared
          */
         public function get_user_surveys() {
             global $wpdb;
@@ -50,8 +50,8 @@ if (!class_exists('DGPTM_Survey_Frontend_Editor')) {
 
             return $wpdb->get_results($wpdb->prepare(
                 "SELECT s.*, (SELECT COUNT(*) FROM {$wpdb->prefix}dgptm_survey_responses r WHERE r.survey_id = s.id AND r.status = 'completed') as response_count
-                 FROM $table s WHERE s.status != 'archived' AND s.created_by = %d ORDER BY s.created_at DESC",
-                $user_id
+                 FROM $table s WHERE s.status != 'archived' AND (s.created_by = %d OR FIND_IN_SET(%d, s.shared_with) > 0) ORDER BY s.created_at DESC",
+                $user_id, $user_id
             ));
         }
 
@@ -69,12 +69,33 @@ if (!class_exists('DGPTM_Survey_Frontend_Editor')) {
                 return null;
             }
 
-            // Non-admins can only edit their own surveys
-            if (!current_user_can('manage_options') && (int) $survey->created_by !== get_current_user_id()) {
-                return null;
+            // Admins can edit any survey
+            if (current_user_can('manage_options')) {
+                return $survey;
             }
 
-            return $survey;
+            // Owner can edit
+            if ((int) $survey->created_by === get_current_user_id()) {
+                return $survey;
+            }
+
+            // Shared users can edit
+            if (self::is_shared_with($survey, get_current_user_id())) {
+                return $survey;
+            }
+
+            return null;
+        }
+
+        /**
+         * Check if a survey is shared with a specific user
+         */
+        public static function is_shared_with($survey, $user_id) {
+            if (empty($survey->shared_with)) {
+                return false;
+            }
+            $shared_ids = array_map('intval', array_filter(explode(',', $survey->shared_with)));
+            return in_array((int) $user_id, $shared_ids, true);
         }
 
         /**

@@ -162,6 +162,7 @@ class DGPTM_Survey_Admin {
             'show_progress'   => absint($_POST['show_progress'] ?? 1),
             'allow_save_resume' => absint($_POST['allow_save_resume'] ?? 0),
             'completion_text' => wp_kses_post(wp_unslash($_POST['completion_text'] ?? '')),
+            'shared_with'    => self::sanitize_shared_with($_POST['shared_with'] ?? ''),
             'updated_at'      => current_time('mysql'),
         ];
 
@@ -509,5 +510,58 @@ class DGPTM_Survey_Admin {
             'message'   => 'Umfrage dupliziert',
             'survey_id' => $new_id,
         ]);
+    }
+
+    /**
+     * AJAX: Search users with umfragen permission
+     */
+    public function ajax_search_users() {
+        check_ajax_referer('dgptm_suite_nonce', 'nonce');
+        if (!DGPTM_Umfragen::user_can_manage_surveys()) {
+            wp_send_json_error(['message' => 'Keine Berechtigung']);
+        }
+
+        $search = sanitize_text_field($_POST['search'] ?? '');
+        if (strlen($search) < 2) {
+            wp_send_json_success(['users' => []]);
+        }
+
+        $wp_users = get_users([
+            'search'         => '*' . $search . '*',
+            'search_columns' => ['user_login', 'user_email', 'display_name'],
+            'number'         => 10,
+        ]);
+
+        $results = [];
+        $current_user_id = get_current_user_id();
+        foreach ($wp_users as $u) {
+            // Skip self
+            if ($u->ID === $current_user_id) {
+                continue;
+            }
+            // Only include users who can manage surveys
+            if (!DGPTM_Umfragen::user_can_manage_surveys($u->ID)) {
+                continue;
+            }
+            $results[] = [
+                'id'           => $u->ID,
+                'display_name' => $u->display_name,
+                'user_email'   => $u->user_email,
+            ];
+        }
+
+        wp_send_json_success(['users' => $results]);
+    }
+
+    /**
+     * Sanitize shared_with: comma-separated user IDs
+     */
+    public static function sanitize_shared_with($value) {
+        if (empty($value)) {
+            return '';
+        }
+        $ids = array_map('absint', array_filter(explode(',', $value)));
+        $ids = array_unique(array_filter($ids));
+        return implode(',', $ids);
     }
 }

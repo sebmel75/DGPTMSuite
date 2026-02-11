@@ -110,6 +110,32 @@ $status_labels = [
                 <small>Individueller Text nach dem Absenden. Leer = Standardtext.</small>
             </div>
 
+            <div class="dgptm-fe-field">
+                <label>Geteilt mit</label>
+                <input type="hidden" name="shared_with" id="dgptm-fe-shared-with" value="<?php echo esc_attr($survey ? $survey->shared_with : ''); ?>">
+                <div id="dgptm-fe-shared-users-list" class="dgptm-fe-shared-users-list">
+                    <?php
+                    if ($survey && !empty($survey->shared_with)) {
+                        $shared_ids = array_map('absint', array_filter(explode(',', $survey->shared_with)));
+                        foreach ($shared_ids as $uid) {
+                            $u = get_userdata($uid);
+                            if ($u) {
+                                echo '<span class="dgptm-fe-shared-user" data-user-id="' . esc_attr($uid) . '">';
+                                echo esc_html($u->display_name) . ' (' . esc_html($u->user_email) . ')';
+                                echo ' <button type="button" class="dgptm-fe-remove-shared-user">&times;</button>';
+                                echo '</span> ';
+                            }
+                        }
+                    }
+                    ?>
+                </div>
+                <div class="dgptm-fe-share-search-wrap" style="margin-top: 6px; position: relative;">
+                    <input type="text" id="dgptm-fe-share-search" placeholder="Name oder E-Mail eingeben..." autocomplete="off">
+                    <div id="dgptm-fe-share-results" class="dgptm-fe-share-results" style="display:none;"></div>
+                </div>
+                <small>Berechtigte Benutzer, die diese Umfrage mitbearbeiten duerfen.</small>
+            </div>
+
             <?php if ($survey && !empty($survey->survey_token)) :
                 $survey_url = 'https://perfusiologie.de/umfragen?survey=' . $survey->survey_token;
             ?>
@@ -455,6 +481,9 @@ $status_labels = [
                     <div class="dgptm-fe-card-header">
                         <h3><a href="<?php echo esc_url($edit_link); ?>"><?php echo esc_html($s->title); ?></a></h3>
                         <span class="dgptm-fe-status-badge <?php echo esc_attr($status_class); ?>"><?php echo esc_html($status_labels[$s->status] ?? $s->status); ?></span>
+                        <?php if ((int) $s->created_by !== get_current_user_id()) : ?>
+                            <span class="dgptm-fe-status-badge dgptm-fe-status-shared">Geteilt</span>
+                        <?php endif; ?>
                     </div>
                     <?php if ($s->description) : ?>
                         <p class="dgptm-fe-card-desc"><?php echo esc_html(wp_trim_words($s->description, 20)); ?></p>

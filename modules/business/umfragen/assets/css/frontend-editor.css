@@ -423,6 +423,83 @@
     font-size: 14px;
 }
 
+/* Sharing */
+.dgptm-fe-shared-users-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.dgptm-fe-shared-user {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #e8f0fe;
+    border: 1px solid #c4d7f2;
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.dgptm-fe-remove-shared-user {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #999;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0 2px;
+    font-family: inherit;
+}
+
+.dgptm-fe-remove-shared-user:hover {
+    color: #dc3232;
+}
+
+.dgptm-fe-share-search-wrap {
+    position: relative;
+}
+
+.dgptm-fe-share-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.dgptm-fe-share-result-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    border-bottom: 1px solid #f0f0f1;
+}
+
+.dgptm-fe-share-result-item:last-child {
+    border-bottom: none;
+}
+
+.dgptm-fe-share-result-item:hover {
+    background: #f0f6fc;
+}
+
+.dgptm-fe-share-result-item small {
+    color: #666;
+}
+
+.dgptm-fe-status-shared {
+    background: #8e44ad;
+}
+
 /* Notification */
 .dgptm-fe-notice {
     position: fixed;

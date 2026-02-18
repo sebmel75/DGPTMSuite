@@ -192,10 +192,13 @@ class DGPTM_Survey_Admin {
             $data['duplicate_check'] = 'cookie_ip';
         }
 
+        $old_shared_with = '';
+
         if ($survey_id) {
             // Update
             // Handle status transitions
             $old = $this->get_survey($survey_id);
+            $old_shared_with = $old ? ($old->shared_with ?? '') : '';
             if ($old && $data['status'] === 'closed' && $old->status !== 'closed') {
                 $data['closed_at'] = current_time('mysql');
             }
@@ -233,6 +236,17 @@ class DGPTM_Survey_Admin {
             }
         }
 
+        // Sync umfragen permissions for shared users
+        $this->sync_shared_permissions($old_shared_with, $data['shared_with']);
+
+        // If survey was archived via status change, revoke for all shared users
+        if ($data['status'] === 'archived' && !empty($data['shared_with'])) {
+            $archived_shared = array_filter(array_map('absint', explode(',', $data['shared_with'])));
+            foreach ($archived_shared as $shared_uid) {
+                $this->maybe_revoke_survey_permission($shared_uid);
+            }
+        }
+
         wp_send_json_success([
             'message'   => 'Umfrage gespeichert',
             'survey_id' => $survey_id,
@@ -264,12 +278,24 @@ class DGPTM_Survey_Admin {
             }
         }
 
+        // Get shared users before archiving (for permission revocation)
+        $archive_survey = $this->get_survey($survey_id);
+        $archive_shared_with = ($archive_survey && !empty($archive_survey->shared_with)) ? $archive_survey->shared_with : '';
+
         // Archive instead of hard delete
         $wpdb->update(
             $wpdb->prefix . 'dgptm_surveys',
             ['status' => 'archived', 'updated_at' => current_time('mysql')],
             ['id' => $survey_id]
         );
+
+        // Revoke auto-granted permissions for shared users if needed
+        if ($archive_shared_with) {
+            $shared_ids = array_filter(array_map('absint', explode(',', $archive_shared_with)));
+            foreach ($shared_ids as $shared_uid) {
+                $this->maybe_revoke_survey_permission($shared_uid);
+            }
+        }
 
         if (function_exists('dgptm_log_info')) {
             dgptm_log_info('Umfrage archiviert (ID: ' . $survey_id . ')', 'umfragen');
@@ -575,5 +601,73 @@ class DGPTM_Survey_Admin {
         $ids = array_map('absint', array_filter(explode(',', $value)));
         $ids = array_unique(array_filter($ids));
         return implode(',', $ids);
+    }
+
+    // --- Shared permission sync ---
+
+    /**
+     * Sync umfragen permission when shared_with changes
+     */
+    private function sync_shared_permissions($old_shared_str, $new_shared_str) {
+        $old_ids = $old_shared_str ? array_filter(array_map('absint', explode(',', $old_shared_str))) : [];
+        $new_ids = $new_shared_str ? array_filter(array_map('absint', explode(',', $new_shared_str))) : [];
+
+        // Newly added users -> grant permission
+        foreach (array_diff($new_ids, $old_ids) as $uid) {
+            $this->grant_survey_permission($uid);
+        }
+
+        // Removed users -> maybe revoke
+        foreach (array_diff($old_ids, $new_ids) as $uid) {
+            $this->maybe_revoke_survey_permission($uid);
+        }
+    }
+
+    /**
+     * Auto-grant umfragen permission for a shared user.
+     * Skips users who already have manual (ACF) permission.
+     */
+    private function grant_survey_permission($user_id) {
+        $has_permission = (bool) get_user_meta($user_id, 'umfragen', true);
+        $auto_granted = (bool) get_user_meta($user_id, '_umfragen_auto_granted', true);
+
+        // Already has permission and it was NOT auto-granted -> manual, don't touch
+        if ($has_permission && !$auto_granted) {
+            return;
+        }
+
+        update_user_meta($user_id, 'umfragen', '1');
+        update_user_meta($user_id, '_umfragen_auto_granted', '1');
+    }
+
+    /**
+     * Revoke auto-granted permission if user has no more active shared surveys.
+     * Never revokes manually granted permissions.
+     */
+    private function maybe_revoke_survey_permission($user_id) {
+        // Only revoke if it was auto-granted
+        if (!get_user_meta($user_id, '_umfragen_auto_granted', true)) {
+            return;
+        }
+
+        // Still has other active shared surveys -> keep
+        if ($this->user_has_active_shared_surveys($user_id)) {
+            return;
+        }
+
+        delete_user_meta($user_id, 'umfragen');
+        delete_user_meta($user_id, '_umfragen_auto_granted', '1');
+    }
+
+    /**
+     * Check if user has any active (non-archived) shared surveys
+     */
+    private function user_has_active_shared_surveys($user_id) {
+        global $wpdb;
+        return (int) $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}dgptm_surveys
+             WHERE status != 'archived' AND FIND_IN_SET(%d, shared_with) > 0",
+            $user_id
+        )) > 0;
     }
 }

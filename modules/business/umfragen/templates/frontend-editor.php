@@ -500,6 +500,11 @@ $status_labels = [
                         <?php if ($results_link) : ?>
                             <a href="<?php echo esc_url($results_link); ?>" class="dgptm-fe-btn dgptm-fe-btn-small" target="_blank">Ergebnis</a>
                         <?php endif; ?>
+                        <?php if ($s->response_count > 0) : ?>
+                            <a href="<?php echo esc_url(admin_url('admin-ajax.php?action=dgptm_survey_export_csv&survey_id=' . $s->id . '&nonce=' . wp_create_nonce('dgptm_suite_nonce'))); ?>" class="dgptm-fe-btn dgptm-fe-btn-small" title="CSV Export">CSV</a>
+                            <a href="<?php echo esc_url(admin_url('admin-ajax.php?action=dgptm_survey_export_pdf&survey_id=' . $s->id . '&nonce=' . wp_create_nonce('dgptm_suite_nonce'))); ?>" class="dgptm-fe-btn dgptm-fe-btn-small" title="PDF Export">PDF</a>
+                        <?php endif; ?>
+                        <button type="button" class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-btn-danger dgptm-fe-archive-survey" data-id="<?php echo esc_attr($s->id); ?>">Archivieren</button>
                     </div>
                 </div>
             <?php endforeach; ?>

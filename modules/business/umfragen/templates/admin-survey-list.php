@@ -38,7 +38,7 @@ $results_url = admin_url('admin.php?page=dgptm-umfragen&view=results');
                     <th class="column-responses" style="width: 100px;">Antworten</th>
                     <th class="column-shortcode" style="width: 220px;">Shortcode</th>
                     <th class="column-date" style="width: 140px;">Erstellt</th>
-                    <th class="column-actions" style="width: 200px;">Aktionen</th>
+                    <th class="column-actions" style="width: 280px;">Aktionen</th>
                 </tr>
             </thead>
             <tbody>
@@ -90,6 +90,14 @@ $results_url = admin_url('admin.php?page=dgptm-umfragen&view=results');
                             <?php if (!empty($survey->survey_token)) : ?>
                                 <a href="<?php echo esc_url('https://perfusiologie.de/umfragen?survey=' . $survey->survey_token); ?>" class="button button-small" target="_blank" title="zur Umfrage">
                                     <span class="dashicons dashicons-external" style="vertical-align: text-bottom;"></span>
+                                </a>
+                            <?php endif; ?>
+                            <?php if ($survey->response_count > 0) : ?>
+                                <a href="<?php echo esc_url(admin_url('admin-ajax.php?action=dgptm_survey_export_csv&survey_id=' . $survey->id . '&nonce=' . wp_create_nonce('dgptm_suite_nonce'))); ?>" class="button button-small" title="CSV Export">
+                                    <span class="dashicons dashicons-media-spreadsheet" style="vertical-align: text-bottom;"></span>
+                                </a>
+                                <a href="<?php echo esc_url(admin_url('admin-ajax.php?action=dgptm_survey_export_pdf&survey_id=' . $survey->id . '&nonce=' . wp_create_nonce('dgptm_suite_nonce'))); ?>" class="button button-small" title="PDF Export">
+                                    <span class="dashicons dashicons-pdf" style="vertical-align: text-bottom;"></span>
                                 </a>
                             <?php endif; ?>
                             <button type="button" class="button button-small dgptm-delete-survey" data-id="<?php echo esc_attr($survey->id); ?>" title="Archivieren">

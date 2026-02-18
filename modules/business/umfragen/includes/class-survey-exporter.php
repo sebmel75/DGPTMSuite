@@ -53,7 +53,7 @@ class DGPTM_Survey_Exporter {
             wp_die('Ungueltiger Nonce');
         }
 
-        if (!current_user_can('manage_options')) {
+        if (!DGPTM_Umfragen::user_can_manage_surveys()) {
             wp_die('Keine Berechtigung');
         }
 
@@ -72,6 +72,14 @@ class DGPTM_Survey_Exporter {
 
         if (!$survey) {
             wp_die('Umfrage nicht gefunden');
+        }
+
+        // Ownership check for non-admins
+        if (!current_user_can('manage_options')) {
+            $uid = get_current_user_id();
+            if ((int) $survey->created_by !== $uid && !DGPTM_Survey_Frontend_Editor::is_shared_with($survey, $uid)) {
+                wp_die('Keine Berechtigung fuer diese Umfrage');
+            }
         }
 
         // Get questions
@@ -208,7 +216,7 @@ class DGPTM_Survey_Exporter {
             wp_die('Ungueltiger Nonce');
         }
 
-        if (!current_user_can('manage_options')) {
+        if (!DGPTM_Umfragen::user_can_manage_surveys()) {
             wp_die('Keine Berechtigung');
         }
 
@@ -227,6 +235,14 @@ class DGPTM_Survey_Exporter {
 
         if (!$survey) {
             wp_die('Umfrage nicht gefunden');
+        }
+
+        // Ownership check for non-admins
+        if (!current_user_can('manage_options')) {
+            $uid = get_current_user_id();
+            if ((int) $survey->created_by !== $uid && !DGPTM_Survey_Frontend_Editor::is_shared_with($survey, $uid)) {
+                wp_die('Keine Berechtigung fuer diese Umfrage');
+            }
         }
 
         // Get questions

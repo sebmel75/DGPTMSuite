@@ -252,6 +252,18 @@ class DGPTM_Survey_Admin {
             wp_send_json_error(['message' => 'Keine Umfrage-ID']);
         }
 
+        // Ownership check for non-admins
+        if (!current_user_can('manage_options')) {
+            $survey = $this->get_survey($survey_id);
+            if (!$survey) {
+                wp_send_json_error(['message' => 'Umfrage nicht gefunden']);
+            }
+            $uid = get_current_user_id();
+            if ((int) $survey->created_by !== $uid && !DGPTM_Survey_Frontend_Editor::is_shared_with($survey, $uid)) {
+                wp_send_json_error(['message' => 'Keine Berechtigung fuer diese Umfrage']);
+            }
+        }
+
         // Archive instead of hard delete
         $wpdb->update(
             $wpdb->prefix . 'dgptm_surveys',

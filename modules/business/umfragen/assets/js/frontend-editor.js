@@ -11,6 +11,7 @@
             this.bindSurveyForm();
             this.bindQuestionBuilder();
             this.bindSharing();
+            this.bindSurveyList();
             this.initSortable();
             this.bindCopyLinks();
             this.populateParentDropdowns();
@@ -34,6 +35,40 @@
                         self.notify(dgptmSurveyEditor.strings.linkCopied || 'Link kopiert!');
                     });
                 }
+            });
+        },
+
+        // --- Survey List (archive) ---
+        bindSurveyList: function() {
+            var self = this;
+
+            $(document).on('click', '.dgptm-fe-archive-survey', function() {
+                if (!confirm(dgptmSurveyEditor.strings.confirmArchive)) {
+                    return;
+                }
+
+                var $btn = $(this);
+                var surveyId = $btn.data('id');
+                var $card = $btn.closest('.dgptm-fe-survey-card');
+
+                $btn.prop('disabled', true);
+
+                $.post(dgptmSurveyEditor.ajaxUrl, {
+                    action: 'dgptm_survey_delete',
+                    nonce: dgptmSurveyEditor.nonce,
+                    survey_id: surveyId
+                }, function(resp) {
+                    if (resp.success) {
+                        $card.fadeOut(300, function() { $(this).remove(); });
+                        self.notify(resp.data.message);
+                    } else {
+                        self.notify(resp.data.message, 'error');
+                        $btn.prop('disabled', false);
+                    }
+                }).fail(function() {
+                    self.notify(dgptmSurveyEditor.strings.error, 'error');
+                    $btn.prop('disabled', false);
+                });
             });
         },
 

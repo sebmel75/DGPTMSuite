@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Zoho CRM & Zusätzliche Endpunkte (Hardened)
  * Description: Kombiniert den Zoho-CRM-Datenabruf (OAuth2) mit zusätzlichen Endpunkten. Enthält SSRF-Härtung, sichere OAuth-Weiterleitung, Admin-UI mit Anleitung sowie Debug-Logging. Neu: Pro Endpunkt kann per Toggle **„Nur interne Aufrufe“** erzwungen werden – dann sind Aufrufe ausschließlich aus internem WordPress/PHP-Code erlaubt (HMAC-Header, automatisch gesetzt bei internen Aufrufen). Die frühere Token-Header-Funktion (x-webhook-token) wurde entfernt. Shortcodes: [zoho_api_data], [zoho_api_data_ajax], [ifcrmfield], [zoho_api_antwort]/[dgptm_api_antwort], [api-abfrage], [api-abruf], [efn_barcode].
- * Version: 1.8.0
+ * Version: 1.8.1
  * Author: Sebastian Melzer (gehärtet)
  * Text Domain: dgptm-zoho
  */
@@ -10,7 +10,7 @@
 if ( ! defined('ABSPATH') ) exit;
 if ( ! defined('WPINC') )   exit;
 
-define('DGPTM_ZOHO_VERSION', '1.8.0');
+define('DGPTM_ZOHO_VERSION', '1.8.1');
 
 /**
  * ========================================================
@@ -740,15 +740,41 @@ class DGPTM_Zoho_Plugin {
     }
 
     private function fetch_zoho_data() {
-        if ( $this->zoho_data === null ) {
-            $this->zoho_data = $this->fetch_zoho_data_with_oauth();
-            
-            // Rollensynchronisation beim ersten Abruf nach Login durchführen
-            if (is_array($this->zoho_data) && !empty($this->zoho_data)) {
-                $role_manager = DGPTM_Role_Manager::get_instance();
-                $role_manager->sync_member_role($this->zoho_data);
-            }
+        if ( $this->zoho_data !== null ) {
+            return $this->zoho_data;
         }
+
+        $user_id = get_current_user_id();
+        if ( ! $user_id ) {
+            return [];
+        }
+
+        // Transient-Cache prüfen (30 Sekunden, pro User)
+        $cache_key = 'dgptm_zoho_data_' . $user_id;
+        $cached = get_transient( $cache_key );
+        if ( $cached !== false && is_array( $cached ) ) {
+            $this->zoho_data = $cached;
+            if ( ! empty( $cached ) ) {
+                $role_manager = DGPTM_Role_Manager::get_instance();
+                $role_manager->sync_member_role( $cached );
+            }
+            return $this->zoho_data;
+        }
+
+        // API abrufen
+        $this->zoho_data = $this->fetch_zoho_data_with_oauth();
+
+        // Cache speichern (30 Sekunden)
+        if ( is_array( $this->zoho_data ) ) {
+            set_transient( $cache_key, $this->zoho_data, 30 );
+        }
+
+        // Rollensynchronisation beim ersten Abruf nach Login durchführen
+        if ( is_array( $this->zoho_data ) && ! empty( $this->zoho_data ) ) {
+            $role_manager = DGPTM_Role_Manager::get_instance();
+            $role_manager->sync_member_role( $this->zoho_data );
+        }
+
         return $this->zoho_data;
     }
 
@@ -813,6 +839,60 @@ class DGPTM_Zoho_Plugin {
         $decoded = json_decode($body, true);
         if ( ! is_array($decoded) ) return [];
         return $this->extract_zoho_payload($decoded);
+    }
+
+    /**
+     * Daten direkt aus einem Zoho CRM Modul abrufen (z.B. Contacts, Leads).
+     * Nutzt die zoho_id des eingeloggten Users als Record-ID.
+     * 30 Sekunden Transient-Cache pro User + Modul.
+     */
+    private function fetch_zoho_module_data( $module_name ) {
+        $user_id = get_current_user_id();
+        if ( ! $user_id ) return [];
+
+        $record_id = get_user_meta( $user_id, 'zoho_id', true );
+        if ( empty( $record_id ) ) return [];
+
+        // Modul-Name sanitizen (nur alphanumerisch + Unterstrich)
+        $module_name = preg_replace( '/[^a-zA-Z0-9_]/', '', $module_name );
+        if ( empty( $module_name ) ) return [];
+
+        // Transient-Cache prüfen (30 Sekunden, pro User + Modul)
+        $cache_key = 'dgptm_zoho_mod_' . $user_id . '_' . $module_name;
+        $cached = get_transient( $cache_key );
+        if ( $cached !== false && is_array( $cached ) ) {
+            return $cached;
+        }
+
+        $access_token = $this->get_valid_access_token();
+        if ( is_wp_error( $access_token ) || empty( $access_token ) ) return [];
+
+        $url = 'https://www.zohoapis.eu/crm/v7/' . $module_name . '/' . $record_id;
+        $response = dgptm_safe_remote( 'GET', $url, [
+            'headers' => [
+                'Authorization' => 'Zoho-oauthtoken ' . $access_token,
+                'Accept'        => 'application/json',
+            ],
+            'timeout' => 20,
+        ] );
+
+        if ( is_wp_error( $response ) ) return [];
+        $body = wp_remote_retrieve_body( $response );
+        $decoded = json_decode( $body, true );
+        if ( ! is_array( $decoded ) ) return [];
+
+        // Zoho CRM v7 gibt { "data": [ { ... } ] } zurück
+        $data = [];
+        if ( isset( $decoded['data'][0] ) && is_array( $decoded['data'][0] ) ) {
+            $data = $decoded['data'][0];
+        }
+
+        // Cache speichern (30 Sekunden)
+        if ( ! empty( $data ) ) {
+            set_transient( $cache_key, $data, 30 );
+        }
+
+        return $data;
     }
 
     public function get_oauth_token() { return $this->get_valid_access_token(); }
@@ -1353,11 +1433,19 @@ define('WP_DEBUG_LOG', true);</code></li>
 
     // Shortcodes
     public function zoho_api_data_shortcode($atts) {
-        $atts = shortcode_atts(['field' => ''], $atts);
-        $data = $this->fetch_zoho_data();
-        if ( is_string($data) ) return '';
+        $atts = shortcode_atts(['field' => '', 'module' => ''], $atts);
         $fieldname = $atts['field'];
-        if ( $fieldname === '' || ! isset($data[$fieldname]) ) return '';
+        if ( $fieldname === '' ) return '';
+
+        // Wenn module angegeben → direkt CRM-Modul kontaktieren
+        if ( ! empty( $atts['module'] ) ) {
+            $data = $this->fetch_zoho_module_data( $atts['module'] );
+        } else {
+            $data = $this->fetch_zoho_data();
+        }
+
+        if ( is_string($data) ) return '';
+        if ( ! isset($data[$fieldname]) ) return '';
         $val = (string) $data[$fieldname];
 
         if ( filter_var($val, FILTER_VALIDATE_URL) && dgptm_is_allowed_url($val) ) {
@@ -1373,7 +1461,13 @@ define('WP_DEBUG_LOG', true);</code></li>
 
     public function zoho_api_data_ajax_shortcode($atts) {
         $this->counter++;
-        $atts = shortcode_atts(['field' => ''], $atts);
+        $atts = shortcode_atts(['field' => '', 'module' => ''], $atts);
+
+        // Wenn module angegeben → serverseitig rendern (window.zohoData kennt nur Standard-Daten)
+        if ( ! empty( $atts['module'] ) ) {
+            return $this->zoho_api_data_shortcode( $atts );
+        }
+
         $unique_id = 'zoho-data-' . $this->counter;
         ob_start(); ?>
         <span id="<?php echo esc_attr($unique_id); ?>" data-field="<?php echo esc_attr($atts['field']); ?>"></span>
@@ -1390,9 +1484,16 @@ define('WP_DEBUG_LOG', true);</code></li>
     }
 
     public function ifcrmfield_shortcode($atts, $content = null){
-        $data = $this->fetch_zoho_data();
+        $atts = shortcode_atts(['field' => '', 'value' => '', 'module' => ''], $atts);
+
+        // Wenn module angegeben → direkt CRM-Modul kontaktieren
+        if ( ! empty( $atts['module'] ) ) {
+            $data = $this->fetch_zoho_module_data( $atts['module'] );
+        } else {
+            $data = $this->fetch_zoho_data();
+        }
+
         if ( is_string($data) || $content === null ) return '';
-        $atts = shortcode_atts(['field' => '', 'value' => ''], $atts);
         $parent_field = $atts['field'];
         $content = preg_replace('/\[\/ifcrmfield\]/', '', $content);
 
@@ -1671,6 +1772,14 @@ class Additional_Zoho_Endpoints {
         $cache_key = $slug . '_' . md5( wp_json_encode( $query ) );
         if ( isset(self::$api_cache[$cache_key]) ) return self::$api_cache[$cache_key];
 
+        // Transient-Cache prüfen (30 Sekunden, request-übergreifend)
+        $transient_key = 'dgptm_api_' . md5( $cache_key );
+        $cached = get_transient( $transient_key );
+        if ( $cached !== false ) {
+            self::$api_cache[$cache_key] = $cached;
+            return $cached;
+        }
+
         $endpoint = $this->get_endpoint_by_slug($slug);
         if ( ! $endpoint ) {
             dgptm_log('get_api_data: endpoint not found', ['slug'=>$slug]);
@@ -1738,6 +1847,7 @@ class Additional_Zoho_Endpoints {
             }
         }
         self::$api_cache[$cache_key] = $decoded;
+        set_transient( $transient_key, $decoded, 30 );
         dgptm_log('get_api_data ok', ['slug'=>$slug]);
         return $decoded;
     }
@@ -1862,17 +1972,18 @@ public function api_abfrage_shortcode($atts) {
     
     // === CACHE-PRÜFUNG ===
     $cache_key = $slug . '_' . md5(wp_json_encode($all_params));
-    
-    // Prüfen, ob bereits gecacht
+    $transient_key = 'dgptm_api_' . md5( $cache_key );
+
+    // In-Memory-Cache prüfen
     if ( isset(self::$api_cache[$cache_key]) ) {
         dgptm_log('api_abfrage_shortcode: using cached response', [
             'slug' => $slug,
             'cache_key' => $cache_key
         ]);
-        
+
         $cached_data = self::$api_cache[$cache_key];
         $value = $this->get_nested_value($cached_data, $field);
-        
+
         if ( $value === null ) {
             dgptm_log('api_abfrage_shortcode: field not found in cache', [
                 'slug' => $slug,
@@ -1880,7 +1991,16 @@ public function api_abfrage_shortcode($atts) {
             ]);
             return '';
         }
-        
+
+        return esc_html( is_scalar($value) ? (string) $value : wp_json_encode($value) );
+    }
+
+    // Transient-Cache prüfen (30 Sekunden, request-übergreifend)
+    $cached_transient = get_transient( $transient_key );
+    if ( $cached_transient !== false ) {
+        self::$api_cache[$cache_key] = $cached_transient;
+        $value = $this->get_nested_value($cached_transient, $field);
+        if ( $value === null ) return '';
         return esc_html( is_scalar($value) ? (string) $value : wp_json_encode($value) );
     }
     // === ENDE CACHE-PRÜFUNG ===
@@ -1952,6 +2072,7 @@ public function api_abfrage_shortcode($atts) {
     
     // === DATEN CACHEN ===
     self::$api_cache[$cache_key] = $data;
+    set_transient( $transient_key, $data, 30 );
     dgptm_log('api_abfrage_shortcode: response cached', [
         'slug' => $slug,
         'cache_key' => $cache_key,

@@ -51,7 +51,7 @@
 
 .dgptm-fe-btn-primary {
     background: #2271b1;
-    color: #fff;
+    color: #fff !important;
     border-color: #2271b1;
 }
 

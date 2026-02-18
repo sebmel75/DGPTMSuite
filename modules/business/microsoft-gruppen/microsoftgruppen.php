@@ -8,7 +8,7 @@
  *              - Nur echte Microsoft 365-Gruppen („Unified“) werden angezeigt; optional auch Security-Gruppen.
  *              - Gruppen, deren Namen mit „ADMIN“ beginnen, sind ausgeblendet.
  *              - Einstellungsseite mit sichtbarer Microsoft-Kommunikation (Diagnose) und manuellem Gruppenabruf.
- * Version: 1.5.3
+ * Version: 1.5.4
  * Author: Sebastian Melzer
  */
 
@@ -74,7 +74,15 @@ class WP_MS365_Group_Manager {
         add_shortcode( 'ms365_group_manager', array( $this, 'render_group_manager_shortcode' ) );
         add_shortcode( 'ms365_has_any_group', array( $this, 'render_has_any_group_shortcode' ) );
 
+        // Invalidate group cache when plugin settings change
+        add_action( 'update_option_' . $this->option_name, array( $this, 'invalidate_group_cache' ) );
+    }
 
+    /**
+     * Invalidate tenant groups cache
+     */
+    public function invalidate_group_cache() {
+        delete_transient('wp_ms365_tenant_groups');
     }
 
     /**
@@ -667,6 +675,8 @@ if (!empty($last_trace)) {
             }
             $options['token_expires'] = time() + $expires_in;
             update_option( $this->option_name, $options );
+            // Clear cached groups since we have a new token
+            delete_transient('wp_ms365_tenant_groups');
             $this->record_graph_error('Refresh erfolgreich.');
             return true;
         }
@@ -696,6 +706,12 @@ if (!empty($last_trace)) {
      * Mit Pagination, $top und ausführlicher Diagnose.
      */
     private function get_tenant_groups() {
+        // Check transient cache first
+        $cached = get_transient('wp_ms365_tenant_groups');
+        if ($cached !== false && is_array($cached)) {
+            return $cached;
+        }
+
         $token = $this->get_access_token();
         if ( ! $token ) {
             return array();
@@ -758,8 +774,12 @@ if (!empty($last_trace)) {
 
         if (empty($groups)) {
             $this->record_graph_error('Keine passenden Gruppen gefunden (prüfe: verwendet ihr Security-Gruppen? Scopes? Token?).');
+            // Cache empty result for 5 minutes to avoid rapid retries on a failing API
+            set_transient('wp_ms365_tenant_groups', array(), 5 * MINUTE_IN_SECONDS);
         } else {
             $this->record_graph_error('Gruppen erfolgreich geladen: '.count($groups));
+            // Cache successful result for 1 hour
+            set_transient('wp_ms365_tenant_groups', array_values($groups), HOUR_IN_SECONDS);
         }
 
         return array_values($groups);
@@ -769,14 +789,37 @@ if (!empty($last_trace)) {
      * Nur Gruppen aus WP-Userprofil
      */
     private function get_user_allowed_groups() {
-        $all = $this->get_tenant_groups();
         $meta = get_user_meta( get_current_user_id(), 'ms365_allowed_groups', true );
-        if ( ! is_array($meta) ) {
-            $meta = array();
+        if ( ! is_array($meta) || empty($meta) ) {
+            return array();
         }
-        return array_filter( $all, function($g) use($meta){
+
+        $all = $this->get_tenant_groups();
+        $filtered = array_filter( $all, function($g) use($meta){
             return in_array($g['id'], $meta, true);
         });
+
+        // If API returned groups, use them
+        if (!empty($filtered)) {
+            return array_values($filtered);
+        }
+
+        // Fallback: build minimal group objects from stored names
+        $names = get_user_meta( get_current_user_id(), 'ms365_allowed_groups_names', true );
+        if ( ! is_array($names) || empty($names) ) {
+            return array();
+        }
+
+        $fallback = array();
+        foreach ($meta as $gid) {
+            if (isset($names[$gid])) {
+                $fallback[] = array(
+                    'id' => $gid,
+                    'displayName' => $names[$gid],
+                );
+            }
+        }
+        return $fallback;
     }
 
     /**
@@ -1101,6 +1144,9 @@ if (!empty($last_trace)) {
             wp_send_json_error('Keine Berechtigung.');
         }
         check_ajax_referer('wp_ms365_admin_diag');
+
+        // Clear cache so we fetch fresh data
+        delete_transient('wp_ms365_tenant_groups');
 
         $groups = $this->get_tenant_groups();
         if (empty($groups)) {
@@ -1596,6 +1642,18 @@ if (!empty($last_trace)) {
             }
         }
         update_user_meta($user_id, 'ms365_allowed_groups', $clean);
+
+        // Store group names for fallback when API is down
+        $all_groups = $this->get_tenant_groups();
+        $names = array();
+        foreach ($all_groups as $grp) {
+            if (in_array($grp['id'], $clean, true)) {
+                $names[$grp['id']] = $grp['displayName'];
+            }
+        }
+        if (!empty($names)) {
+            update_user_meta($user_id, 'ms365_allowed_groups_names', $names);
+        }
     }
 }
 

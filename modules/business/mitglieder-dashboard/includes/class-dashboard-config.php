@@ -20,21 +20,43 @@ class DGPTM_Dashboard_Config {
                 $this->config = $this->get_defaults();
                 update_option(self::OPTION_KEY, $this->config);
             } else {
-                // Repair corrupted template paths
+                // Auto-repair: fill missing fields from defaults
+                $defaults = $this->get_defaults();
+                $default_map = [];
+                foreach ($defaults['tabs'] as $dtab) {
+                    $default_map[$dtab['id']] = $dtab;
+                }
+
                 $repaired = false;
                 foreach ($this->config['tabs'] as &$tab) {
+                    // Ensure template path
                     $expected = 'tabs/tab-' . $tab['id'] . '.php';
                     if (empty($tab['template']) || $tab['template'] !== $expected) {
                         $tab['template'] = $expected;
                         $repaired = true;
                     }
-                    // Ensure parent_tab field exists
+                    // Ensure parent_tab
                     if (!isset($tab['parent_tab'])) {
-                        $tab['parent_tab'] = '';
+                        $tab['parent_tab'] = $default_map[$tab['id']]['parent_tab'] ?? '';
+                        $repaired = true;
+                    }
+                    // Ensure content_html - fill from defaults if missing
+                    if (!isset($tab['content_html'])) {
+                        $tab['content_html'] = $default_map[$tab['id']]['content_html'] ?? '';
                         $repaired = true;
                     }
                 }
                 unset($tab);
+
+                // Add tabs that exist in defaults but not in saved config
+                $saved_ids = array_column($this->config['tabs'], 'id');
+                foreach ($defaults['tabs'] as $dtab) {
+                    if (!in_array($dtab['id'], $saved_ids, true)) {
+                        $this->config['tabs'][] = $dtab;
+                        $repaired = true;
+                    }
+                }
+
                 if ($repaired) {
                     update_option(self::OPTION_KEY, $this->config);
                 }

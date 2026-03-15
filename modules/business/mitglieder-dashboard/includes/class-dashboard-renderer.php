@@ -159,14 +159,20 @@ class DGPTM_Dashboard_Renderer {
     }
 
     /**
-     * Render a single tab template
+     * Render a single tab - content_html (from admin) takes priority over template file
      */
     public function render_single_tab($tab, $user_id) {
+        // If admin-defined HTML content exists, use it (with shortcode processing)
+        if (!empty($tab['content_html'])) {
+            return do_shortcode(wp_kses_post($tab['content_html']));
+        }
+
+        // Otherwise fall back to template file
         $safe_id = preg_replace('/[^a-z0-9\-]/', '', $tab['id']);
         $template_file = DGPTM_DASHBOARD_PATH . 'templates/tabs/tab-' . $safe_id . '.php';
 
         if (!file_exists($template_file)) {
-            return '<div class="dgptm-tab-error">Template: tabs/tab-' . esc_html($safe_id) . '.php nicht vorhanden.</div>';
+            return '<div class="dgptm-tab-error">Kein Inhalt und kein Template fuer: ' . esc_html($tab['label']) . '</div>';
         }
 
         $crm_data    = $this->crm_cache->get_user_data($user_id);

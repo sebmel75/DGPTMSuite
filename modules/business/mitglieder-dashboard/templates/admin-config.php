@@ -113,6 +113,27 @@ $acf_fields = [
                             <th>Zeitfenster Ende</th>
                             <td><input type="datetime-local" class="dgptm-tab-datetime-end" value="<?php echo esc_attr($tab['datetime_end'] ?? ''); ?>"></td>
                         </tr>
+                        <tr>
+                            <th>Inhalt (HTML)</th>
+                            <td>
+                                <p class="description" style="margin-bottom:8px;">Optionaler HTML-Inhalt. Wenn leer, wird die Template-Datei verwendet. Shortcodes werden verarbeitet.</p>
+                                <?php
+                                $editor_id = 'dgptm_tab_content_' . preg_replace('/[^a-z0-9]/', '', $tab['id']);
+                                $content_html = $tab['content_html'] ?? '';
+                                wp_editor($content_html, $editor_id, [
+                                    'textarea_name' => 'tab_content_' . $tab['id'],
+                                    'textarea_rows' => 8,
+                                    'media_buttons' => true,
+                                    'teeny'         => false,
+                                    'quicktags'     => true,
+                                    'tinymce'       => [
+                                        'toolbar1' => 'formatselect,bold,italic,bullist,numlist,link,unlink,wp_adv',
+                                        'toolbar2' => 'strikethrough,hr,forecolor,removeformat,charmap,outdent,indent,undo,redo,wp_help',
+                                    ],
+                                ]);
+                                ?>
+                            </td>
+                        </tr>
                     </table>
                 </div>
             </div>

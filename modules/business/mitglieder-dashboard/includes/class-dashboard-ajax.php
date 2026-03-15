@@ -148,6 +148,7 @@ class DGPTM_Dashboard_Ajax {
                 $tab['order']            = absint($tab['order'] ?? 999);
                 // Template is derived from ID at render time, store for documentation only
                 $tab['template']         = 'tabs/tab-' . sanitize_key($tab['id'] ?? '') . '.php';
+                $tab['content_html']     = wp_kses_post(wp_unslash($tab['content_html'] ?? ''));
 
                 if (isset($tab['permission_roles']) && is_array($tab['permission_roles'])) {
                     $tab['permission_roles'] = array_map('sanitize_key', $tab['permission_roles']);

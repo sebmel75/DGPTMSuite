@@ -124,6 +124,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 10,
                     'parent_tab'       => '',
                     'template'         => 'tabs/tab-profil.php',
+                    'content_html'     => '',
                 ],
                 // Children of profil
                 [
@@ -139,6 +140,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 11,
                     'parent_tab'       => 'profil',
                     'template'         => 'tabs/tab-profil-stammdaten.php',
+                    'content_html'     => '[dgptm-daten-bearbeiten]',
                 ],
                 [
                     'id'               => 'profil-transaktionen',
@@ -153,6 +155,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 12,
                     'parent_tab'       => 'profil',
                     'template'         => 'tabs/tab-profil-transaktionen.php',
+                    'content_html'     => '[zoho_books_transactions]',
                 ],
                 [
                     'id'               => 'profil-lastschrift',
@@ -167,6 +170,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 13,
                     'parent_tab'       => 'profil',
                     'template'         => 'tabs/tab-profil-lastschrift.php',
+                    'content_html'     => "<h4>Lastschriftmandat</h4>\n[gcl_formidable]\n\n<h4 style=\"margin-top:20px\">Mitgliedsbescheinigung</h4>\n[webhook_ajax_trigger url=\"https://flow.zoho.eu/20086283718/flow/webhook/incoming?zapikey=1001.61e55251780c1730ee213bfe02d8a192.eb83171de88e8e99371cf264aa47e96c&isdebug=false\" method=\"POST\" user_field=\"zoho_id\" cooldown=\"6\" status_id=\"mgb\" cooldown_message=\"Du hast heute schon eine Bescheinigung angefordert.\"]\n[webhook_status_output id=\"mgb\"]\n\n<h4 style=\"margin-top:20px\">Studierendenstatus</h4>\n[dgptm-studistatus]",
                 ],
                 [
                     'id'               => 'profil-efn',
@@ -181,6 +185,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 14,
                     'parent_tab'       => 'profil',
                     'template'         => 'tabs/tab-profil-efn.php',
+                    'content_html'     => "<h4>EFN-Barcode</h4>\n[efn_barcode_js]\n\n<h4 style=\"margin-top:20px\">EFN-Etiketten drucken</h4>\n[efn_label_sheet]",
                 ],
                 [
                     'id'               => 'profil-fortbildung',
@@ -195,6 +200,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 15,
                     'parent_tab'       => 'profil',
                     'template'         => 'tabs/tab-profil-fortbildung.php',
+                    'content_html'     => "<a href=\"/mitgliedschaft/interner-bereich/fortbildungsnachweis/\" class=\"dgptm-btn dgptm-btn--primary\">Fortbildungsnachweis (inkl. Quiz)</a>\n\n[fobi_nachweis_pruefliste]",
                 ],
                 // === Other top-level tabs ===
                 [
@@ -210,6 +216,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 20,
                     'parent_tab'       => '',
                     'template'         => 'tabs/tab-jahrestagung.php',
+                    'content_html'     => "<h3>Jahrestagung</h3>\n<p><a href=\"/kiosk-jahrestagung/\">Anwesenheitserfassung</a> | <a href=\"/efn-kiosk/\">EFN Kiosk</a> | <a href=\"/mvv\">Anwesenheitserfassung MVV</a> | <a href=\"/mvvanwesenheit/\">Anwesenheitsliste MVV</a> | <a href=\"/jahrestagungsstreams2025/\">Alle Streams</a> | <a href=\"https://dgptm.sharepoint.com/:f:/g/EiNx__K-Vc9EgK7r3ZkKt1MBtW_4sNB0dxmWeeKVqtBO-Q?e=8WHfLt\" target=\"_blank\">Tagungsbuero (SharePoint)</a></p>",
                 ],
                 [
                     'id'               => 'mitgliederversammlung',
@@ -224,6 +231,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 30,
                     'parent_tab'       => '',
                     'template'         => 'tabs/tab-mitgliederversammlung.php',
+                    'content_html'     => '',
                 ],
                 [
                     'id'               => 'news',
@@ -238,6 +246,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 40,
                     'parent_tab'       => '',
                     'template'         => 'tabs/tab-news.php',
+                    'content_html'     => '',
                 ],
                 [
                     'id'               => 'admin',
@@ -252,6 +261,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 50,
                     'parent_tab'       => '',
                     'template'         => 'tabs/tab-admin.php',
+                    'content_html'     => '',
                 ],
                 [
                     'id'               => 'abstimmung',
@@ -266,6 +276,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 60,
                     'parent_tab'       => '',
                     'template'         => 'tabs/tab-abstimmung.php',
+                    'content_html'     => "<h3>Abstimmungsmanager</h3>\n<p><a href=\"/mitgliedschaft/interner-bereich/abstimmungsmanager/\">Abstimmungsmanager</a> | <a href=\"/mitgliedschaft/interner-bereich/abstimmungsmanager/abstimmungstool-beamer/\" target=\"_blank\">Beameranzeige (Vollbild)</a></p>\n[member_vote]",
                 ],
                 [
                     'id'               => 'eventtracker',
@@ -280,6 +291,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 70,
                     'parent_tab'       => '',
                     'template'         => 'tabs/tab-eventtracker.php',
+                    'content_html'     => '<h3>Eventtracker</h3>\n[event_tracker]',
                 ],
                 [
                     'id'               => 'zeitschrift',
@@ -294,6 +306,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 80,
                     'parent_tab'       => '',
                     'template'         => 'tabs/tab-zeitschrift.php',
+                    'content_html'     => '<h3>Zeitschriftenmanager</h3>\n<p><a href="/mitgliedschaft/interner-bereich/zeitschrift-manager/">Zeitschriftenmanager aufrufen</a></p>',
                 ],
                 [
                     'id'               => 'gehalt',
@@ -308,6 +321,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 90,
                     'parent_tab'       => '',
                     'template'         => 'tabs/tab-gehalt.php',
+                    'content_html'     => "<h3>Gehaltsbarometer</h3>\n[gehaltsbarometer_popup_guard id=\"37862\"]\n[gehaltsbarometer]\n[gehaltsbarometer_is][gehaltsbarometer_chart][/gehaltsbarometer_is]",
                 ],
                 [
                     'id'               => 'quiz',
@@ -322,6 +336,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 100,
                     'parent_tab'       => '',
                     'template'         => 'tabs/tab-quiz.php',
+                    'content_html'     => "<h3>Quizzmaster Area</h3>\n[ays_quiz_frontend_requests]\n[quiz_manager]",
                 ],
                 [
                     'id'               => 'webinar',
@@ -336,6 +351,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 110,
                     'parent_tab'       => '',
                     'template'         => 'tabs/tab-webinar.php',
+                    'content_html'     => '<h3>Webinar-Verwaltung</h3>\n[vimeo_webinar_manager]',
                 ],
                 [
                     'id'               => 'microsoft',
@@ -350,6 +366,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 120,
                     'parent_tab'       => '',
                     'template'         => 'tabs/tab-microsoft.php',
+                    'content_html'     => "<h3>Microsoft 365 Gruppen</h3>\n<p><strong>Achtung:</strong> Hier koennen Mitglieder zu Gruppen hinzugefuegt werden, die in Microsoft 365 definiert sind. Bitte sorgfaeltig verwenden.</p>\n[ms365_group_manager]",
                 ],
                 [
                     'id'               => 'ebcp',
@@ -364,6 +381,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 130,
                     'parent_tab'       => '',
                     'template'         => 'tabs/tab-ebcp.php',
+                    'content_html'     => '<h3>EBCP Delegierte</h3>\n[delegierte_liste]',
                 ],
                 [
                     'id'               => 'checklisten',
@@ -378,6 +396,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 140,
                     'parent_tab'       => '',
                     'template'         => 'tabs/tab-checklisten.php',
+                    'content_html'     => '<h3>Checklisten</h3>\n[clm_active_checklists]',
                 ],
                 [
                     'id'               => 'umfragen',
@@ -392,6 +411,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 150,
                     'parent_tab'       => '',
                     'template'         => 'tabs/tab-umfragen.php',
+                    'content_html'     => '<h3>Umfragen</h3>\n[dgptm_umfrage_editor]',
                 ],
                 [
                     'id'               => 'news-editor',
@@ -406,6 +426,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 160,
                     'parent_tab'       => '',
                     'template'         => 'tabs/tab-news-editor.php',
+                    'content_html'     => '<h3>News & Veranstaltungen bearbeiten</h3>\n<p><a href="/mitgliedschaft/interner-bereich/news-editor/">News erstellen und bearbeiten</a></p>',
                 ],
                 [
                     'id'               => 'stellenanzeigen',
@@ -420,6 +441,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 170,
                     'parent_tab'       => '',
                     'template'         => 'tabs/tab-stellenanzeigen.php',
+                    'content_html'     => '<h3>Stellenanzeigen verwalten</h3>\n[stellenanzeigen_editor]',
                 ],
                 [
                     'id'               => 'herzzentrum',
@@ -434,6 +456,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 180,
                     'parent_tab'       => '',
                     'template'         => 'tabs/tab-herzzentrum.php',
+                    'content_html'     => '<h3>Herzzentrum bearbeiten</h3>\n[hzb_edit_form_link]',
                 ],
                 [
                     'id'               => 'feedback',
@@ -448,6 +471,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 190,
                     'parent_tab'       => '',
                     'template'         => 'tabs/tab-feedback.php',
+                    'content_html'     => "<h3>Anregungen und Wuensche</h3>\n<p>Wir sind fuer alle Wuensche und Hinweise offen.</p>\n[formidable id=13]",
                 ],
             ],
             'settings' => [

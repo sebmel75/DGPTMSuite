@@ -74,7 +74,7 @@
     display: inline-block !important;
     padding: 11px 12px 9px !important;
     color: var(--dgptm-text-light) !important;
-    font-size: 10px !important;
+    font-size: 12px !important;
     font-weight: 700 !important;
     font-family: var(--dgptm-font) !important;
     letter-spacing: 0.01em;
@@ -169,7 +169,7 @@
     border-radius: 6px 6px 0 0 !important;
     background: transparent !important;
     color: var(--dgptm-text-muted) !important;
-    font-size: 10px !important;
+    font-size: 12px !important;
     font-weight: 400 !important;
     font-family: var(--dgptm-font) !important;
     text-decoration: none !important;
@@ -460,17 +460,25 @@
     line-height: 1.4;
 }
 
-.dgptm-btn--primary {
-    background: var(--dgptm-primary);
+.dgptm-dashboard .dgptm-btn--primary,
+.dgptm-dashboard a.dgptm-btn--primary,
+.dgptm-dashboard button.dgptm-btn--primary {
+    background: var(--dgptm-primary) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: var(--dgptm-radius-sm) !important;
+    box-shadow: none !important;
+    text-decoration: none !important;
+    text-transform: none !important;
+}
+
+.dgptm-dashboard .dgptm-btn--primary:hover,
+.dgptm-dashboard a.dgptm-btn--primary:hover {
+    background: var(--dgptm-primary-dark) !important;
     color: #fff !important;
 }
 
-.dgptm-btn--primary:hover {
-    background: var(--dgptm-primary-dark);
-    color: #fff !important;
-}
-
-.dgptm-btn--primary:visited {
+.dgptm-dashboard a.dgptm-btn--primary:visited {
     color: #fff !important;
 }
 
@@ -485,16 +493,22 @@
     opacity: 0.9;
 }
 
-.dgptm-btn--outline {
-    background: #fff;
-    border: 1.5px solid var(--dgptm-border);
-    color: var(--dgptm-text-muted);
+.dgptm-dashboard .dgptm-btn--outline,
+.dgptm-dashboard button.dgptm-btn--outline {
+    background: #fff !important;
+    border: 1px solid var(--dgptm-border) !important;
+    border-radius: var(--dgptm-radius-sm) !important;
+    color: var(--dgptm-text-muted) !important;
+    box-shadow: none !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
 }
 
-.dgptm-btn--outline:hover {
-    border-color: var(--dgptm-primary);
-    color: var(--dgptm-primary);
-    background: var(--dgptm-primary-lighter);
+.dgptm-dashboard .dgptm-btn--outline:hover,
+.dgptm-dashboard button.dgptm-btn--outline:hover {
+    border-color: var(--dgptm-primary) !important;
+    color: var(--dgptm-primary) !important;
+    background: var(--dgptm-primary-lighter) !important;
 }
 
 .dgptm-btn--sm {

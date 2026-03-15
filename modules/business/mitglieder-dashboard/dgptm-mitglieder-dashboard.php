@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('DGPTM_DASHBOARD_VERSION', '1.2.0');
+define('DGPTM_DASHBOARD_VERSION', '1.3.0');
 define('DGPTM_DASHBOARD_PATH', plugin_dir_path(__FILE__));
 define('DGPTM_DASHBOARD_URL', plugin_dir_url(__FILE__));
 

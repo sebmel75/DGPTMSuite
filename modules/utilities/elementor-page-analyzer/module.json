@@ -1,0 +1,24 @@
+{
+    "id": "elementor-page-analyzer",
+    "name": "DGPTM - Elementor Page Analyzer",
+    "description": "Analysiert Elementor-Seiten und erzeugt ein semantisches Blueprint mit Sichtbarkeitsbedingungen, Shortcodes und Berechtigungsmatrix fuer Claude Code",
+    "version": "1.0.0",
+    "author": "Sebastian Melzer",
+    "main_file": "dgptm-elementor-page-analyzer.php",
+    "dependencies": [],
+    "wp_dependencies": {
+        "plugins": ["elementor"]
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "utilities",
+    "icon": "dashicons-analytics",
+    "active": false,
+    "critical": false,
+    "flags": ["development"],
+    "comment": {
+        "text": "Exportiert Elementor-Seiten als semantisches Blueprint fuer Dashboard-Neubau",
+        "timestamp": 1742025600,
+        "user_id": 1
+    }
+}

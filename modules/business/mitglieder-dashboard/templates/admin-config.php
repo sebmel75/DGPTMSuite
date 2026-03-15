@@ -119,6 +119,31 @@ $acf_fields = [
             <?php endforeach; ?>
         </div>
 
+        <h3 style="margin-top:24px;">Neuen Tab erstellen</h3>
+        <div class="dgptm-new-tab-form" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px;">
+            <div>
+                <label style="display:block;font-size:12px;margin-bottom:2px;">ID (eindeutig, keine Leerzeichen)</label>
+                <input type="text" id="dgptm-new-tab-id" class="regular-text" placeholder="mein-neuer-tab" style="width:180px;">
+            </div>
+            <div>
+                <label style="display:block;font-size:12px;margin-bottom:2px;">Label</label>
+                <input type="text" id="dgptm-new-tab-label" class="regular-text" placeholder="Mein neuer Tab" style="width:200px;">
+            </div>
+            <div>
+                <label style="display:block;font-size:12px;margin-bottom:2px;">Uebergeordneter Tab</label>
+                <select id="dgptm-new-tab-parent" style="width:180px;">
+                    <option value="">-- Kein (Top-Level) --</option>
+                    <?php foreach ($all_tabs as $ptab) :
+                        if (!empty($ptab['parent_tab'])) continue;
+                    ?>
+                        <option value="<?php echo esc_attr($ptab['id']); ?>"><?php echo esc_html($ptab['label']); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <button type="button" class="button button-secondary" id="dgptm-add-tab">+ Tab erstellen</button>
+        </div>
+        <p class="description">Nach dem Erstellen: Template-Datei <code>templates/tabs/tab-{id}.php</code> im Modul-Ordner anlegen.</p>
+
         <p class="submit">
             <button type="button" class="button button-primary" id="dgptm-save-tabs">Alle Tabs speichern</button>
             <button type="button" class="button" id="dgptm-reset-tabs" style="margin-left: 8px;">Auf Standard zuruecksetzen</button>

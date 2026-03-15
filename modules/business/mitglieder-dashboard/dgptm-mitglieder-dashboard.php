@@ -64,6 +64,14 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
                 else $children[$t['parent']][] = $t;
             }
 
+            // Filter: hide top-level tabs that have no content, no link, and no children
+            $top = array_values(array_filter($top, function($t) use ($children) {
+                if (!empty($t['link'])) return true;           // Has link
+                if (!empty(trim($t['content'] ?? ''))) return true; // Has content
+                if (!empty($children[$t['id']])) return true;  // Has children
+                return false;
+            }));
+
             // First non-link tab is active
             $active = '';
             foreach ($top as $t) {
@@ -94,8 +102,9 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
 
                 $kids = $children[$t['id']] ?? [];
                 if (!empty($kids)) {
-                    // Folder tabs: parent + children
-                    $folder = array_merge([$t], $kids);
+                    // Folder tabs: include parent only if it has own content
+                    $parent_has_content = !empty(trim($t['content'] ?? ''));
+                    $folder = $parent_has_content ? array_merge([$t], $kids) : $kids;
                     $html .= '<div class="dgptm-folder">';
                     // Filter out link tabs for panel rendering, keep for nav
                     $folder_content = [];
@@ -161,8 +170,9 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
             }
 
             if (!empty($kids)) {
-                // Build folder HTML with first tab content rendered
-                $folder = array_merge([$tab], $kids);
+                // Build folder HTML - include parent only if it has own content
+                $parent_has_content = !empty(trim($tab['content'] ?? ''));
+                $folder = $parent_has_content ? array_merge([$tab], $kids) : $kids;
                 $html = '<div class="dgptm-folder"><div class="dgptm-folder-nav">';
                 $folder_content = [];
                 $first_content = true;

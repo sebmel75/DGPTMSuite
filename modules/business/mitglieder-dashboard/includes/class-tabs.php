@@ -56,6 +56,10 @@ class DGPTM_Dashboard_Tabs {
     public function get_visible_tabs($user_id) {
         return array_values(array_filter($this->get_all(), function($t) use ($user_id) {
             if (empty($t['active'])) return false;
+            // Hide tabs with no content, no link (unless they might have children)
+            if (empty(trim($t['content'] ?? '')) && empty($t['link']) && !empty($t['parent'])) {
+                return false;
+            }
             return $this->check_permission($user_id, $t);
         }));
     }

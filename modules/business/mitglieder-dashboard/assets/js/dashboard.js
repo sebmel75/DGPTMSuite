@@ -5,8 +5,8 @@ jQuery(function($) {
     var loaded = {};
     loaded[$d.data('active')] = true;
 
-    // Main tabs
-    $d.on('click', '.dgptm-nav-item', function(e) {
+    // Main tabs (skip link tabs - they have href and no data-tab)
+    $d.on('click', '.dgptm-nav-item[data-tab]', function(e) {
         e.preventDefault();
         var id = $(this).data('tab');
         $d.find('.dgptm-nav-item').removeClass('dgptm-nav-active');
@@ -20,8 +20,8 @@ jQuery(function($) {
         }
     });
 
-    // Folder sub-tabs
-    $d.on('click', '.dgptm-ftab', function(e) {
+    // Folder sub-tabs (skip link tabs)
+    $d.on('click', '.dgptm-ftab[data-ftab]', function(e) {
         e.preventDefault();
         var id = $(this).data('ftab');
         var $folder = $(this).closest('.dgptm-folder');

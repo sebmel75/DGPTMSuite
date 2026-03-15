@@ -117,7 +117,8 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
                     foreach ($folder_content as $fc) {
                         $f = $fc['tab'];
                         $html .= '<div class="dgptm-fpanel' . ($fc['first'] ? ' dgptm-fpanel-active' : '') . '" data-fpanel="' . esc_attr($f['id']) . '"' . ($fc['first'] ? '' : ' style="display:none"') . '>';
-                        if ($fc['first'] && $is_active) {
+                        if ($fc['first']) {
+                            // Always render first folder tab content (will be visible when parent tab is shown)
                             $html .= do_shortcode($f['content']);
                         } else {
                             $html .= '<div class="dgptm-loading">Wird geladen...</div>';
@@ -146,11 +147,53 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
         public function ajax_load_tab() {
             check_ajax_referer('dgptm_dash', 'nonce');
             $tab_id = sanitize_key($_POST['tab'] ?? '');
-            $tabs = DGPTM_Dashboard_Tabs::get_instance();
-            $tab = $tabs->get_tab($tab_id);
+            $tabs_mgr = DGPTM_Dashboard_Tabs::get_instance();
+            $tab = $tabs_mgr->get_tab($tab_id);
 
             if (!$tab) wp_send_json_error('Tab nicht gefunden');
 
+            // Check if this tab has children - if so, build folder structure
+            $user_id = get_current_user_id();
+            $all_visible = $tabs_mgr->get_visible_tabs($user_id);
+            $kids = [];
+            foreach ($all_visible as $t) {
+                if (($t['parent'] ?? '') === $tab_id) $kids[] = $t;
+            }
+
+            if (!empty($kids)) {
+                // Build folder HTML with first tab content rendered
+                $folder = array_merge([$tab], $kids);
+                $html = '<div class="dgptm-folder"><div class="dgptm-folder-nav">';
+                $folder_content = [];
+                $first_content = true;
+                foreach ($folder as $f) {
+                    if (!empty($f['link'])) {
+                        $target = (strpos($f['link'], home_url()) === 0) ? '' : ' target="_blank" rel="noopener"';
+                        $html .= '<a href="' . esc_url($f['link']) . '" class="dgptm-ftab dgptm-ftab-link"' . $target . '>'
+                            . esc_html($f['label']) . ' <span class="dgptm-link-icon">↗</span></a>';
+                    } else {
+                        $cls = $first_content ? ' dgptm-ftab-active' : '';
+                        $html .= '<a href="#" class="dgptm-ftab' . $cls . '" data-ftab="' . esc_attr($f['id']) . '">' . esc_html($f['label']) . '</a>';
+                        $folder_content[] = ['tab' => $f, 'first' => $first_content];
+                        $first_content = false;
+                    }
+                }
+                $html .= '</div>';
+                foreach ($folder_content as $fc) {
+                    $f = $fc['tab'];
+                    $html .= '<div class="dgptm-fpanel' . ($fc['first'] ? ' dgptm-fpanel-active' : '') . '" data-fpanel="' . esc_attr($f['id']) . '"' . ($fc['first'] ? '' : ' style="display:none"') . '>';
+                    if ($fc['first']) {
+                        $html .= do_shortcode($f['content']);
+                    } else {
+                        $html .= '<div class="dgptm-loading">Wird geladen...</div>';
+                    }
+                    $html .= '</div>';
+                }
+                $html .= '</div>';
+                wp_send_json_success(['html' => $html]);
+            }
+
+            // Simple tab - just render content
             wp_send_json_success(['html' => do_shortcode($tab['content'])]);
         }
 

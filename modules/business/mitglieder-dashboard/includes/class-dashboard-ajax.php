@@ -126,7 +126,10 @@ class DGPTM_Dashboard_Ajax {
         $config = json_decode($config_json, true);
 
         if (json_last_error() !== JSON_ERROR_NONE || !is_array($config)) {
-            wp_send_json_error(['message' => 'Ungueltige Konfiguration']);
+            if (function_exists('dgptm_log_error')) {
+                dgptm_log_error('Dashboard config save: JSON decode failed. Error: ' . json_last_error_msg() . ' Raw length: ' . strlen($config_json), 'mitglieder-dashboard');
+            }
+            wp_send_json_error(['message' => 'Ungueltige Konfiguration: ' . json_last_error_msg()]);
         }
 
         // Reset to defaults
@@ -148,14 +151,13 @@ class DGPTM_Dashboard_Ajax {
                 $tab['order']            = absint($tab['order'] ?? 999);
                 // Template is derived from ID at render time, store for documentation only
                 $tab['template']         = 'tabs/tab-' . sanitize_key($tab['id'] ?? '') . '.php';
-                // Preserve existing content_html if JS sends null (editor not rendered)
+                // Content HTML: admin-only, capability already verified
                 $new_html = $tab['content_html'] ?? null;
                 if ($new_html === null) {
-                    // JS couldn't read the editor - keep existing value
                     $existing_tab = $this->config->get_tab_by_id($tab['id'] ?? '');
                     $tab['content_html'] = $existing_tab['content_html'] ?? '';
                 } else {
-                    $tab['content_html'] = wp_kses_post(wp_unslash($new_html));
+                    $tab['content_html'] = $new_html;
                 }
 
                 if (isset($tab['permission_roles']) && is_array($tab['permission_roles'])) {
@@ -179,7 +181,17 @@ class DGPTM_Dashboard_Ajax {
 
         $this->config->save_config($config);
 
-        wp_send_json_success(['message' => 'Konfiguration gespeichert']);
+        // Return saved tab count and profil content length for verification
+        $profil_html_len = 0;
+        foreach ($config['tabs'] as $t) {
+            if ($t['id'] === 'profil') {
+                $profil_html_len = strlen($t['content_html'] ?? '');
+            }
+        }
+
+        wp_send_json_success([
+            'message' => 'Konfiguration gespeichert (' . count($config['tabs']) . ' Tabs, Profil HTML: ' . $profil_html_len . ' Zeichen)',
+        ]);
     }
 
     /**

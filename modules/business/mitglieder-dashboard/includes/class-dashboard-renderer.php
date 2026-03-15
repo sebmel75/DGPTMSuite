@@ -164,7 +164,7 @@ class DGPTM_Dashboard_Renderer {
     public function render_single_tab($tab, $user_id) {
         // If admin-defined HTML content exists, use it (with shortcode processing)
         if (!empty($tab['content_html'])) {
-            return do_shortcode(wp_kses_post($tab['content_html']));
+            return do_shortcode($tab['content_html']);
         }
 
         // Otherwise fall back to template file

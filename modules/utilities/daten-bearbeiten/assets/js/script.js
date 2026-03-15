@@ -1,11 +1,11 @@
 jQuery(document).ready(function($) {
     'use strict';
 
-    const $form = $('#dgptm-daten-form');
-    const $loadingMessage = $('#loading-message');
-    const $successMessage = $('#success-message');
-    const $submitBtn = $('#submit-btn');
-    const $formMessages = $('#form-messages');
+    let $form = $('#dgptm-daten-form');
+    let $loadingMessage = $('#loading-message');
+    let $successMessage = $('#success-message');
+    let $submitBtn = $('#submit-btn');
+    let $formMessages = $('#form-messages');
 
     let clinicsData = [];
     let selectedEmployer = {
@@ -547,9 +547,27 @@ jQuery(document).ready(function($) {
         $formMessages.html('<div class="error-message">' + message + '</div>').fadeIn();
     }
 
-    // Load data on page load
-    loadClinics();
-    loadMemberData();
+    // Load data on page load (only if form exists)
+    function initDatenBearbeiten() {
+        if ($('#dgptm-daten-form').length && !$('#dgptm-daten-form').data('loaded')) {
+            // Re-acquire DOM references (may have been loaded via AJAX)
+            $form = $('#dgptm-daten-form');
+            $loadingMessage = $('#loading-message');
+            $submitBtn = $('#submit-btn');
+            $formMessages = $('#form-messages');
+            $successMessage = $('#success-message');
+            loadClinics();
+            loadMemberData();
+            $form.data('loaded', true);
+        }
+    }
+
+    initDatenBearbeiten();
+
+    // Re-init when dashboard loads this tab via AJAX
+    $(document).on('dgptm_tab_loaded', function() {
+        initDatenBearbeiten();
+    });
 
     // ============================================
     // Student Status Form Functionality

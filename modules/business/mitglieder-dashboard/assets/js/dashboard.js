@@ -59,6 +59,8 @@ jQuery(function($) {
                     document.body.appendChild(s);
                     $(this).remove();
                 });
+                // Notify other modules that tab content was loaded
+                $(document).trigger('dgptm_tab_loaded', [id]);
             } else {
                 $target.html('<p style="color:red">' + (r.data || 'Fehler') + '</p>');
             }

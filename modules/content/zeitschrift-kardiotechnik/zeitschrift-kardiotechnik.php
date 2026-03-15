@@ -106,6 +106,13 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
                 true
             );
 
+            // On dashboard pages, enqueue all assets (tabs lazy-load shortcodes via AJAX)
+            global $post;
+            if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'dgptm_dashboard')) {
+                wp_enqueue_style('zk-frontend');
+                wp_enqueue_script('zk-frontend');
+            }
+
             // Admin Assets auch im Frontend registrieren (für Shortcode)
             wp_register_style(
                 'zk-admin',
@@ -121,6 +128,17 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
                 ZK_VERSION,
                 true
             );
+
+            // Enqueue admin assets on dashboard (for zeitschrift_verwaltung shortcode via AJAX)
+            if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'dgptm_dashboard')) {
+                wp_enqueue_style('zk-admin');
+                wp_enqueue_script('zk-admin');
+                wp_localize_script('zk-admin', 'zkAdmin', [
+                    'ajaxUrl' => admin_url('admin-ajax.php'),
+                    'adminUrl' => admin_url(),
+                    'nonce' => wp_create_nonce('zk_admin_nonce'),
+                ]);
+            }
         }
 
         public function enqueue_admin_assets($hook) {

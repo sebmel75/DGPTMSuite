@@ -11,7 +11,14 @@ $editor = DGPTM_Survey_Frontend_Editor::get_instance();
 $action = isset($_GET['survey_action']) ? sanitize_text_field($_GET['survey_action']) : '';
 $survey_id = isset($_GET['survey_id']) ? absint($_GET['survey_id']) : 0;
 
-$current_url = remove_query_arg(['survey_action', 'survey_id']);
+// Use the actual page URL (not admin-ajax.php) for edit links
+if (defined('DOING_AJAX') && DOING_AJAX) {
+    // In AJAX context: use the referer URL (the dashboard page)
+    $current_url = wp_get_referer() ?: home_url($_SERVER['REQUEST_URI'] ?? '/');
+    $current_url = remove_query_arg(['survey_action', 'survey_id'], $current_url);
+} else {
+    $current_url = remove_query_arg(['survey_action', 'survey_id']);
+}
 
 $question_types = [
     'text'     => 'Text (einzeilig)',

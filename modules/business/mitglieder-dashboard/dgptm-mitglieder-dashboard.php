@@ -72,10 +72,21 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
                 return false;
             }));
 
-            // First non-link tab is active
+            // Determine active tab
             $active = '';
-            foreach ($top as $t) {
-                if (empty($t['link'])) { $active = $t['id']; break; }
+            // Check URL for tab hint (e.g. survey_action=edit activates umfragen tab)
+            if (!empty($_GET['survey_action'])) {
+                foreach ($top as $t) {
+                    if (strpos($t['content'] ?? '', 'dgptm_umfrage_editor') !== false) {
+                        $active = $t['id']; break;
+                    }
+                }
+            }
+            // Default: first non-link tab
+            if (!$active) {
+                foreach ($top as $t) {
+                    if (empty($t['link'])) { $active = $t['id']; break; }
+                }
             }
             $html = '<div class="dgptm-dash" data-active="' . esc_attr($active) . '">';
 

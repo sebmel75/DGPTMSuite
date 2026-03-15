@@ -114,10 +114,10 @@
                         self.notify(resp.data.message);
                         if (!data.survey_id || data.survey_id === '0') {
                             // Redirect to edit this new survey
-                            var url = new URL(window.location.href);
+                            var url = new URL(window.location.href.split('#')[0]);
                             url.searchParams.set('survey_action', 'edit');
                             url.searchParams.set('survey_id', resp.data.survey_id);
-                            window.location.href = url.toString();
+                            window.location.href = url.toString() + '#tab-umfragen';
                         } else {
                             $btn.prop('disabled', false).text('Umfrage speichern');
                             if (resp.data.slug) {

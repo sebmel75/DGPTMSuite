@@ -148,8 +148,10 @@ if (!class_exists('DGPTM_Zoho_Books')) {
             }
 
             global $post;
-            if (has_shortcode($post->post_content, 'zoho_books_transactions') ||
-                has_shortcode($post->post_content, 'zoho_books_outstanding_banner')) {
+            $content = $post->post_content;
+            if (has_shortcode($content, 'zoho_books_transactions') ||
+                has_shortcode($content, 'zoho_books_outstanding_banner') ||
+                has_shortcode($content, 'dgptm_dashboard')) {
 
                 wp_enqueue_style(
                     'dgptm-zoho-books-frontend',

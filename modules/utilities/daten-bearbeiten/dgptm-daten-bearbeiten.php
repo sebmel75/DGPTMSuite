@@ -220,14 +220,15 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
          * Enqueue frontend assets
          */
         public function enqueue_frontend_assets() {
-            // Only enqueue on pages with shortcode
+            // Only enqueue on pages with shortcode (including dashboard which lazy-loads these)
             global $post;
-            if (!is_a($post, 'WP_Post') ||
-                (!has_shortcode($post->post_content, 'dgptm-daten-bearbeiten') &&
-                 !has_shortcode($post->post_content, 'dgptm-studistatus') &&
-                 !has_shortcode($post->post_content, 'dgptm-studistatus-banner'))) {
-                return;
-            }
+            if (!is_a($post, 'WP_Post')) return;
+            $content = $post->post_content;
+            $needed = has_shortcode($content, 'dgptm-daten-bearbeiten')
+                   || has_shortcode($content, 'dgptm-studistatus')
+                   || has_shortcode($content, 'dgptm-studistatus-banner')
+                   || has_shortcode($content, 'dgptm_dashboard');
+            if (!$needed) return;
 
             wp_enqueue_style(
                 'dgptm-daten-bearbeiten',

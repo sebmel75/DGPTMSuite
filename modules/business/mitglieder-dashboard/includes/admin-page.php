@@ -82,10 +82,16 @@ $top_tabs = array_filter($all_tabs, function($t) { return empty($t['parent']); }
                         <tr>
                             <th>Berechtigungstyp</th>
                             <td>
+                                <?php
+                                // Also detect sc: type
+                                if (strpos($perm, 'sc:') === 0) { $perm_type = 'shortcode'; $perm_sc = substr($perm, 3); }
+                                else { $perm_sc = ''; }
+                                ?>
                                 <select class="dt-perm-type">
                                     <option value="always" <?php selected($perm_type, 'always'); ?>>Immer sichtbar</option>
                                     <option value="acf_field" <?php selected($perm_type, 'acf_field'); ?>>ACF-Feld</option>
                                     <option value="role" <?php selected($perm_type, 'role'); ?>>WordPress-Rolle</option>
+                                    <option value="shortcode" <?php selected($perm_type, 'shortcode'); ?>>Shortcode (gibt 1/0 zurueck)</option>
                                     <option value="admin" <?php selected($perm_type, 'admin'); ?>>Nur Admins</option>
                                 </select>
                             </td>
@@ -103,6 +109,13 @@ $top_tabs = array_filter($all_tabs, function($t) { return empty($t['parent']); }
                         <tr class="dt-row-role" <?php if ($perm_type !== 'role') echo 'style="display:none;"'; ?>>
                             <th>Rollen (kommagetrennt)</th>
                             <td><input type="text" class="dt-perm-roles regular-text" value="<?php echo esc_attr($perm_roles); ?>" placeholder="administrator,editor,mitglied"></td>
+                        </tr>
+                        <tr class="dt-row-shortcode" <?php if ($perm_type !== 'shortcode') echo 'style="display:none;"'; ?>>
+                            <th>Shortcode-Name</th>
+                            <td>
+                                <input type="text" class="dt-perm-sc regular-text" value="<?php echo esc_attr($perm_sc); ?>" placeholder="umfrageberechtigung">
+                                <p class="description">Shortcode ohne Klammern. Muss <code>1</code> zurueckgeben fuer sichtbar, <code>0</code> fuer versteckt.</p>
+                            </td>
                         </tr>
                         <tr>
                             <th>Inhalt (HTML / Shortcodes)</th>
@@ -146,8 +159,40 @@ $top_tabs = array_filter($all_tabs, function($t) { return empty($t['parent']); }
     </div>
 
     <!-- Settings -->
+    <?php $settings = $tabs->get_settings(); ?>
     <div class="dgptm-admin-section" data-admin-panel="settings" style="display:none;">
         <h2>Allgemeine Einstellungen</h2>
-        <p class="description">Diese Einstellungen werden derzeit in der naechsten Version implementiert.</p>
+        <table class="form-table">
+            <tr>
+                <th>Admin-Bypass</th>
+                <td>
+                    <label>
+                        <input type="checkbox" id="dt-admin-bypass" <?php checked($settings['admin_bypass']); ?>>
+                        Administratoren sehen alle Tabs unabhaengig von Berechtigungsregeln
+                    </label>
+                    <p class="description">
+                        Wenn <strong>deaktiviert</strong>, werden auch fuer Administratoren nur die Tabs angezeigt,
+                        fuer die sie laut Berechtigung freigeschaltet sind. "Immer sichtbar" und "Nur Admins" Tabs
+                        bleiben davon unberuehrt.
+                    </p>
+                </td>
+            </tr>
+        </table>
+        <p class="submit">
+            <button type="button" class="button button-primary" id="dt-save-settings">Einstellungen speichern</button>
+        </p>
+
+        <hr>
+        <h3>Berechtigungstypen</h3>
+        <table class="widefat" style="max-width:700px;">
+            <thead><tr><th>Typ</th><th>Format</th><th>Beschreibung</th></tr></thead>
+            <tbody>
+                <tr><td><strong>Immer sichtbar</strong></td><td><code>always</code></td><td>Fuer alle eingeloggten Benutzer</td></tr>
+                <tr><td><strong>Nur Admins</strong></td><td><code>admin</code></td><td>Nur Benutzer mit manage_options</td></tr>
+                <tr><td><strong>ACF-Feld</strong></td><td><code>acf:feldname</code></td><td>ACF True/False Feld auf dem Benutzerprofil (z.B. <code>acf:testbereich</code>)</td></tr>
+                <tr><td><strong>WordPress-Rolle</strong></td><td><code>role:rolle1,rolle2</code></td><td>Benutzer mit einer der Rollen (OR-Logik)</td></tr>
+                <tr><td><strong>Shortcode</strong></td><td><code>sc:shortcode_name</code></td><td>Shortcode muss <code>1</code> zurueckgeben fuer sichtbar. Beispiel: <code>sc:umfrageberechtigung</code></td></tr>
+            </tbody>
+        </table>
     </div>
 </div>

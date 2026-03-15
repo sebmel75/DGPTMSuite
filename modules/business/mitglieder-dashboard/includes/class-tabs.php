@@ -2,17 +2,39 @@
 /**
  * Tab storage: simple array in wp_options.
  * Each tab: {id, label, parent, active, order, permission, content}
+ *
+ * Permission formats:
+ *   "always"                  - everyone
+ *   "admin"                   - manage_options capability
+ *   "acf:field_name"          - ACF True/False field on user profile
+ *   "role:role1,role2"        - WordPress user roles (OR)
+ *   "sc:shortcode_name"       - Shortcode that returns "1" = visible
  */
 if (!defined('ABSPATH')) exit;
 
 class DGPTM_Dashboard_Tabs {
     private static $instance = null;
     const OPT = 'dgptm_dash_tabs_v3';
+    const OPT_SETTINGS = 'dgptm_dash_settings';
 
     public static function get_instance() {
         if (!self::$instance) self::$instance = new self();
         return self::$instance;
     }
+
+    // ─── Settings ───
+
+    public function get_settings() {
+        return wp_parse_args(get_option(self::OPT_SETTINGS, []), [
+            'admin_bypass' => true,  // true = admins see all tabs regardless of rules
+        ]);
+    }
+
+    public function save_settings($settings) {
+        update_option(self::OPT_SETTINGS, $settings, false);
+    }
+
+    // ─── Tabs ───
 
     public function get_all() {
         $tabs = get_option(self::OPT, null);
@@ -48,7 +70,7 @@ class DGPTM_Dashboard_Tabs {
                 'active'     => !empty($t['active']),
                 'order'      => absint($t['order'] ?? 99),
                 'permission' => sanitize_text_field($t['permission'] ?? 'always'),
-                'content'    => $t['content'] ?? '',  // Raw HTML + shortcodes, admin-only
+                'content'    => $t['content'] ?? '',
             ];
         }
         update_option(self::OPT, $clean, false);
@@ -58,15 +80,23 @@ class DGPTM_Dashboard_Tabs {
         delete_option(self::OPT);
     }
 
+    // ─── Permission Check ───
+
     private function check_permission($user_id, $tab) {
         $perm = $tab['permission'] ?? 'always';
         if ($perm === 'always') return true;
-        if ($perm === 'admin') return user_can($user_id, 'manage_options');
+
+        $is_admin = user_can($user_id, 'manage_options');
+        $settings = $this->get_settings();
+        $admin_bypass = !empty($settings['admin_bypass']);
+
+        // "admin" permission: only admins
+        if ($perm === 'admin') return $is_admin;
 
         // ACF field check (e.g. "acf:testbereich")
         if (strpos($perm, 'acf:') === 0) {
+            if ($admin_bypass && $is_admin) return true;
             $field = substr($perm, 4);
-            if (user_can($user_id, 'manage_options')) return true;
             if (function_exists('get_field')) {
                 return !empty(get_field($field, 'user_' . $user_id));
             }
@@ -75,8 +105,8 @@ class DGPTM_Dashboard_Tabs {
 
         // Role check (e.g. "role:jahrestagung,administrator")
         if (strpos($perm, 'role:') === 0) {
+            if ($admin_bypass && $is_admin) return true;
             $roles = explode(',', substr($perm, 5));
-            if (user_can($user_id, 'manage_options')) return true;
             $user = get_userdata($user_id);
             if (!$user) return false;
             foreach ($roles as $r) {
@@ -85,8 +115,20 @@ class DGPTM_Dashboard_Tabs {
             return false;
         }
 
+        // Shortcode check (e.g. "sc:umfrageberechtigung")
+        // Shortcode must return "1" for visible, anything else = hidden
+        if (strpos($perm, 'sc:') === 0) {
+            if ($admin_bypass && $is_admin) return true;
+            $sc_name = substr($perm, 3);
+            if (!shortcode_exists($sc_name)) return false;
+            $result = do_shortcode('[' . $sc_name . ']');
+            return trim($result) === '1';
+        }
+
         return true;
     }
+
+    // ─── Defaults ───
 
     private function defaults() {
         return [

@@ -27,6 +27,7 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
             add_action('admin_menu', [$this, 'admin_menu']);
             add_action('admin_enqueue_scripts', [$this, 'admin_assets']);
             add_action('wp_ajax_dgptm_dash_save', [$this, 'ajax_save']);
+            add_action('wp_ajax_dgptm_dash_save_settings', [$this, 'ajax_save_settings']);
             add_action('wp_ajax_dgptm_dash_load_tab', [$this, 'ajax_load_tab']);
         }
 
@@ -149,6 +150,18 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
             if (!current_user_can('manage_options')) wp_die('Nope');
             $tabs = DGPTM_Dashboard_Tabs::get_instance();
             include DGPTM_DASHBOARD_PATH . 'includes/admin-page.php';
+        }
+
+        public function ajax_save_settings() {
+            check_ajax_referer('dgptm_dash_admin', 'nonce');
+            if (!current_user_can('manage_options')) wp_send_json_error('Keine Berechtigung');
+
+            $tabs = DGPTM_Dashboard_Tabs::get_instance();
+            $tabs->save_settings([
+                'admin_bypass' => ($_POST['admin_bypass'] ?? '1') === '1',
+            ]);
+
+            wp_send_json_success('Einstellungen gespeichert');
         }
 
         public function ajax_save() {

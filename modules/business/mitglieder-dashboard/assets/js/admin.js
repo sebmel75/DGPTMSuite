@@ -23,6 +23,7 @@ jQuery(function($) {
         var $item = $(this).closest('.dgptm-tab-config-item');
         $item.find('.dt-row-acf').toggle(val === 'acf_field');
         $item.find('.dt-row-role').toggle(val === 'role');
+        $item.find('.dt-row-shortcode').toggle(val === 'shortcode');
     });
 
     // Update label preview
@@ -36,6 +37,7 @@ jQuery(function($) {
         if (type === 'admin') return 'admin';
         if (type === 'acf_field') return 'acf:' + $item.find('.dt-perm-acf').val();
         if (type === 'role') return 'role:' + $.trim($item.find('.dt-perm-roles').val());
+        if (type === 'shortcode') return 'sc:' + $.trim($item.find('.dt-perm-sc').val());
         return 'always';
     }
 
@@ -77,6 +79,27 @@ jQuery(function($) {
             msg('Speichern fehlgeschlagen: ' + (e || s), 'error');
         }).always(function() {
             $btn.prop('disabled', false).text('Alle Tabs speichern');
+        });
+    });
+
+    // Save settings
+    $('#dt-save-settings').on('click', function() {
+        var $btn = $(this).prop('disabled', true).text('Speichern...');
+        $.ajax({
+            url: dgptmDashAdmin.ajax,
+            type: 'POST',
+            data: {
+                action: 'dgptm_dash_save_settings',
+                nonce: dgptmDashAdmin.nonce,
+                admin_bypass: $('#dt-admin-bypass').is(':checked') ? '1' : '0'
+            },
+            timeout: 10000
+        }).done(function(r) {
+            msg(r.success ? r.data : (r.data || 'Fehler'), r.success ? 'ok' : 'error');
+        }).fail(function(x, s, e) {
+            msg('Fehler: ' + (e || s), 'error');
+        }).always(function() {
+            $btn.prop('disabled', false).text('Einstellungen speichern');
         });
     });
 

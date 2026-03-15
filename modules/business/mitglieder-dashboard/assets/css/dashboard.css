@@ -66,8 +66,8 @@
     display: inline-block;
     padding: 11px 12px 9px;
     color: var(--dgptm-text-light);
-    font-size: 11.5px;
-    font-weight: 400;
+    font-size: 10px;
+    font-weight: 700;
     font-family: var(--dgptm-font);
     letter-spacing: 0.01em;
     text-decoration: none;
@@ -94,7 +94,7 @@
 .dgptm-tab-nav__item--active {
     color: var(--dgptm-primary);
     border-bottom-color: var(--dgptm-primary);
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .dgptm-tab-nav__item--active:hover {
@@ -121,9 +121,21 @@
     appearance: auto;
 }
 
+/* === EFN Barcode: mobile only === */
+.dgptm-efn-barcode-mobile {
+    display: none;
+    margin-bottom: var(--dgptm-gap);
+}
+
+@media (max-width: 768px) {
+    .dgptm-efn-barcode-mobile {
+        display: block;
+    }
+}
+
 /* === Folder Tab Design === */
 .dgptm-folder-tabs {
-    margin-top: var(--dgptm-gap-lg);
+    margin-top: 0;
 }
 
 .dgptm-folder-nav {
@@ -143,8 +155,8 @@
     border-radius: 6px 6px 0 0;
     background: transparent;
     color: var(--dgptm-text-muted);
-    font-size: 12.5px;
-    font-weight: 500;
+    font-size: 10px;
+    font-weight: 400;
     font-family: var(--dgptm-font);
     text-decoration: none;
     cursor: pointer;
@@ -207,7 +219,7 @@
 }
 
 .dgptm-tab-panel {
-    padding: var(--dgptm-gap-lg) 0;
+    padding: 8px 0 var(--dgptm-gap-lg) 0;
     animation: dgptm-fadein 0.2s ease;
 }
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * Tab: Mein Profil - CRM data, member status, accordion sections
+ * Tab: Mein Profil - Lightweight welcome + CRM data + sub-tabs for heavy content
  * Variables: $user_id, $crm_data, $permissions, $config
  */
 if (!defined('ABSPATH')) exit;
@@ -13,16 +13,26 @@ $mitgl_nr   = esc_html($crm_data['MitgliedsNr'] ?? '');
 $status     = esc_html($crm_data['Status'] ?? '');
 $efn        = esc_html($crm_data['EFN'] ?? '');
 $is_fallback = !empty($crm_data['_source']) && $crm_data['_source'] === 'wordpress_fallback';
+
+$display_name = trim("{$ansprache} {$vorname} {$nachname}");
+if (empty($display_name)) {
+    $wp_user = get_userdata($user_id);
+    $display_name = $wp_user ? $wp_user->display_name : '';
+}
 ?>
 
-<div class="dgptm-profile-header">
-    <h2><?php echo trim("{$ansprache} {$vorname} {$nachname}"); ?></h2>
-    <button class="dgptm-btn dgptm-btn--outline" id="dgptm-crm-refresh" title="CRM-Daten neu laden">
-        <span class="dashicons dashicons-update"></span> Aktualisieren
-    </button>
+<?php // Welcome Header ?>
+<div class="dgptm-welcome">
+    <h2>Willkommen, <?php echo $display_name; ?></h2>
+    <p>Mitgliederbereich der DGPTM</p>
+    <div class="dgptm-welcome__actions">
+        <button class="dgptm-btn dgptm-btn--outline dgptm-btn--sm" id="dgptm-crm-refresh" title="CRM-Daten neu laden">
+            <span class="dashicons dashicons-update"></span> Daten aktualisieren
+        </button>
+    </div>
 </div>
 
-<?php // Banners ?>
+<?php // Banners (lightweight - these shortcodes are fast) ?>
 <?php if (shortcode_exists('zoho_books_outstanding_banner')) : ?>
     <?php echo do_shortcode('[zoho_books_outstanding_banner]'); ?>
 <?php endif; ?>
@@ -38,8 +48,8 @@ $is_fallback = !empty($crm_data['_source']) && $crm_data['_source'] === 'wordpre
     </div>
 <?php endif; ?>
 
-<?php // Member Info ?>
-<?php if ($mitgl_art || $mitgl_nr || $status) : ?>
+<?php // Member Info Badges ?>
+<?php if ($mitgl_art || $mitgl_nr || $status || $efn) : ?>
 <div class="dgptm-profile-meta">
     <?php if ($mitgl_art) : ?>
         <span class="dgptm-badge dgptm-badge--primary"><?php echo $mitgl_art; ?></span>
@@ -56,109 +66,64 @@ $is_fallback = !empty($crm_data['_source']) && $crm_data['_source'] === 'wordpre
 </div>
 <?php endif; ?>
 
-<?php // EFN Barcode ?>
-<?php if ($efn && shortcode_exists('efn_barcode_js')) : ?>
-    <div class="dgptm-card">
-        <h3>EFN-Barcode</h3>
-        <?php echo do_shortcode('[efn_barcode_js]'); ?>
-    </div>
-<?php endif; ?>
-
-<?php // Fortbildungsnachweis Button ?>
-<div style="margin-bottom: var(--dgptm-gap);">
-    <a href="<?php echo esc_url(home_url('/mitgliedschaft/interner-bereich/fortbildungsnachweis/')); ?>"
-       class="dgptm-btn dgptm-btn--primary">
-        <span class="dashicons dashicons-welcome-learn-more"></span>
-        Fortbildungsnachweis (inkl. Quiz)
-    </a>
+<?php // Contact Data Card (rendered from cache, no shortcodes = fast) ?>
+<div class="dgptm-card">
+    <h3>Kontaktdaten</h3>
+    <dl class="dgptm-data-list">
+        <?php if (!empty($crm_data['Strasse'])) : ?>
+            <dt>Strasse</dt><dd><?php echo esc_html($crm_data['Strasse']); ?><?php if (!empty($crm_data['Zusatz'])) echo ', ' . esc_html($crm_data['Zusatz']); ?></dd>
+        <?php endif; ?>
+        <?php if (!empty($crm_data['PLZ']) || !empty($crm_data['Ort'])) : ?>
+            <dt>Ort</dt><dd><?php echo esc_html(trim(($crm_data['PLZ'] ?? '') . ' ' . ($crm_data['Ort'] ?? ''))); ?></dd>
+        <?php endif; ?>
+        <?php if (!empty($crm_data['TelDienst'])) : ?>
+            <dt>Telefon</dt><dd><?php echo esc_html($crm_data['TelDienst']); ?></dd>
+        <?php endif; ?>
+        <?php if (!empty($crm_data['TelMobil'])) : ?>
+            <dt>Mobil</dt><dd><?php echo esc_html($crm_data['TelMobil']); ?></dd>
+        <?php endif; ?>
+        <?php
+        $mails = array_filter([
+            $crm_data['Mail1'] ?? '',
+            $crm_data['Mail2'] ?? '',
+            $crm_data['Mail3'] ?? '',
+        ]);
+        if ($mails) : ?>
+            <dt>E-Mail</dt><dd><?php echo esc_html(implode(' | ', $mails)); ?></dd>
+        <?php endif; ?>
+    </dl>
 </div>
 
-<?php // Accordion Sections ?>
-<details class="dgptm-accordion" open>
-    <summary>Kontaktdaten & Stammdaten</summary>
-    <div class="dgptm-accordion__content">
-        <dl class="dgptm-data-list">
-            <?php if (!empty($crm_data['Strasse'])) : ?>
-                <dt>Strasse</dt><dd><?php echo esc_html($crm_data['Strasse']); ?></dd>
-            <?php endif; ?>
-            <?php if (!empty($crm_data['Zusatz'])) : ?>
-                <dt>Zusatz</dt><dd><?php echo esc_html($crm_data['Zusatz']); ?></dd>
-            <?php endif; ?>
-            <?php if (!empty($crm_data['PLZ']) || !empty($crm_data['Ort'])) : ?>
-                <dt>Ort</dt><dd><?php echo esc_html(($crm_data['PLZ'] ?? '') . ' ' . ($crm_data['Ort'] ?? '')); ?></dd>
-            <?php endif; ?>
-            <?php if (!empty($crm_data['TelDienst'])) : ?>
-                <dt>Telefon</dt><dd><?php echo esc_html($crm_data['TelDienst']); ?></dd>
-            <?php endif; ?>
-            <?php if (!empty($crm_data['TelMobil'])) : ?>
-                <dt>Mobil</dt><dd><?php echo esc_html($crm_data['TelMobil']); ?></dd>
-            <?php endif; ?>
-            <?php if (!empty($crm_data['TelZus'])) : ?>
-                <dt>Weiteres Telefon</dt><dd><?php echo esc_html($crm_data['TelZus']); ?></dd>
-            <?php endif; ?>
-            <?php
-            $mails = array_filter([
-                $crm_data['Mail1'] ?? '',
-                $crm_data['Mail2'] ?? '',
-                $crm_data['Mail3'] ?? '',
-            ]);
-            if ($mails) : ?>
-                <dt>E-Mail</dt><dd><?php echo esc_html(implode(' | ', $mails)); ?></dd>
-            <?php endif; ?>
-        </dl>
+<?php // Sub-Tab Navigation for heavy content ?>
+<nav class="dgptm-subtab-nav" data-subtab-group="profil">
+    <button class="dgptm-subtab-nav__item dgptm-subtab-nav__item--active" data-subtab="stammdaten">Stammdaten bearbeiten</button>
+    <button class="dgptm-subtab-nav__item" data-subtab="transaktionen">Rechnungen</button>
+    <button class="dgptm-subtab-nav__item" data-subtab="lastschrift">Lastschrift & Bescheinigung</button>
+    <?php if ($efn) : ?>
+    <button class="dgptm-subtab-nav__item" data-subtab="efn">EFN & Barcode</button>
+    <?php endif; ?>
+    <button class="dgptm-subtab-nav__item" data-subtab="fortbildung">Fortbildung</button>
+</nav>
 
-        <?php if (shortcode_exists('dgptm-daten-bearbeiten')) : ?>
-            <div style="margin-top: var(--dgptm-gap);">
-                <?php echo do_shortcode('[dgptm-daten-bearbeiten]'); ?>
-            </div>
-        <?php else : ?>
-            <a href="<?php echo esc_url(home_url('/mitgliedschaft/interner-bereich/daten-bearbeiten/')); ?>"
-               class="dgptm-btn dgptm-btn--outline" style="margin-top: var(--dgptm-gap);">
-                Daten bearbeiten
-            </a>
-        <?php endif; ?>
-    </div>
-</details>
+<?php // Sub-Tab Panels (lazy-loaded via AJAX) ?>
+<div class="dgptm-subtab-panel dgptm-subtab-panel--active" data-subtab-panel="stammdaten" data-subtab-loaded="false" data-subtab-action="profil_stammdaten">
+    <div class="dgptm-tab-loading"><div class="dgptm-spinner"></div><span>Wird geladen...</span></div>
+</div>
 
-<details class="dgptm-accordion">
-    <summary>Rechnungen & Transaktionen</summary>
-    <div class="dgptm-accordion__content">
-        <?php if (shortcode_exists('zoho_books_transactions')) : ?>
-            <?php echo do_shortcode('[zoho_books_transactions]'); ?>
-        <?php else : ?>
-            <p class="dgptm-text-muted">Transaktionsmodul nicht verfuegbar.</p>
-        <?php endif; ?>
-    </div>
-</details>
+<div class="dgptm-subtab-panel" data-subtab-panel="transaktionen" data-subtab-loaded="false" data-subtab-action="profil_transaktionen">
+    <div class="dgptm-tab-loading"><div class="dgptm-spinner"></div><span>Wird geladen...</span></div>
+</div>
 
-<details class="dgptm-accordion">
-    <summary>Lastschriftmandat & Mitgliedsbescheinigung</summary>
-    <div class="dgptm-accordion__content">
-        <?php if (shortcode_exists('gcl_formidable')) : ?>
-            <h4>Lastschriftmandat</h4>
-            <?php echo do_shortcode('[gcl_formidable]'); ?>
-        <?php endif; ?>
+<div class="dgptm-subtab-panel" data-subtab-panel="lastschrift" data-subtab-loaded="false" data-subtab-action="profil_lastschrift">
+    <div class="dgptm-tab-loading"><div class="dgptm-spinner"></div><span>Wird geladen...</span></div>
+</div>
 
-        <?php if (shortcode_exists('webhook_ajax_trigger')) : ?>
-            <h4 style="margin-top: 20px;">Mitgliedsbescheinigung</h4>
-            <?php echo do_shortcode('[webhook_ajax_trigger url="https://flow.zoho.eu/20086283718/flow/webhook/incoming?zapikey=1001.61e55251780c1730ee213bfe02d8a192.eb83171de88e8e99371cf264aa47e96c&isdebug=false" method="POST" user_field="zoho_id" cooldown="6" status_id="mgb" cooldown_message="Du hast heute schon eine Bescheinigung angefordert."]'); ?>
-            <?php echo do_shortcode('[webhook_status_output id="mgb"]'); ?>
-        <?php endif; ?>
+<?php if ($efn) : ?>
+<div class="dgptm-subtab-panel" data-subtab-panel="efn" data-subtab-loaded="false" data-subtab-action="profil_efn">
+    <div class="dgptm-tab-loading"><div class="dgptm-spinner"></div><span>Wird geladen...</span></div>
+</div>
+<?php endif; ?>
 
-        <?php if (shortcode_exists('dgptm-studistatus')) : ?>
-            <h4 style="margin-top: 20px;">Studierendenstatus</h4>
-            <?php echo do_shortcode('[dgptm-studistatus]'); ?>
-        <?php endif; ?>
-    </div>
-</details>
-
-<details class="dgptm-accordion">
-    <summary>EFN-Etiketten</summary>
-    <div class="dgptm-accordion__content">
-        <?php if (shortcode_exists('efn_label_sheet')) : ?>
-            <?php echo do_shortcode('[efn_label_sheet]'); ?>
-        <?php else : ?>
-            <p class="dgptm-text-muted">EFN-Modul nicht verfuegbar.</p>
-        <?php endif; ?>
-    </div>
-</details>
+<div class="dgptm-subtab-panel" data-subtab-panel="fortbildung" data-subtab-loaded="false" data-subtab-action="profil_fortbildung">
+    <div class="dgptm-tab-loading"><div class="dgptm-spinner"></div><span>Wird geladen...</span></div>
+</div>

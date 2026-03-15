@@ -1,6 +1,6 @@
 /**
- * DGPTM Mitglieder Dashboard - Frontend JavaScript
- * Tab switching, AJAX lazy loading, CRM refresh, deep linking
+ * DGPTM Mitglieder Dashboard v1.1
+ * Tab switching, sub-tabs, AJAX lazy loading, CRM refresh, deep linking
  */
 (function($) {
     'use strict';
@@ -12,127 +12,78 @@
         loading: false,
 
         init: function() {
-            var $dashboard = $('.dgptm-dashboard');
-            if (!$dashboard.length) return;
+            var $d = $('.dgptm-dashboard');
+            if (!$d.length) return;
 
-            this.activeTab = $dashboard.data('default-tab');
+            this.activeTab = $d.data('default-tab');
             this.loadedTabs[this.activeTab] = true;
 
-            this.bindTabClicks($dashboard);
-            this.bindMobileSelect($dashboard);
-            this.bindCRMRefresh($dashboard);
-            this.handleDeepLink($dashboard);
+            this.bindTabClicks($d);
+            this.bindMobileSelect($d);
+            this.bindSubTabs($d);
+            this.bindCRMRefresh($d);
+            this.handleDeepLink($d);
+
+            // Auto-load first visible sub-tab
+            this.autoLoadSubTabs($d);
         },
 
-        bindTabClicks: function($dashboard) {
-            var self = this;
+        // === Main Tab Navigation ===
 
-            $dashboard.on('click', '.dgptm-tab-nav__item', function(e) {
+        bindTabClicks: function($d) {
+            var self = this;
+            $d.on('click', '.dgptm-tab-nav__item', function(e) {
                 e.preventDefault();
-                var tabId = $(this).data('tab-id');
-                if (tabId && tabId !== self.activeTab) {
-                    self.switchTab($dashboard, tabId);
-                }
+                var id = $(this).data('tab-id');
+                if (id && id !== self.activeTab) self.switchTab($d, id);
             });
         },
 
-        bindMobileSelect: function($dashboard) {
+        bindMobileSelect: function($d) {
             var self = this;
-
-            $dashboard.on('change', '#dgptm-mobile-tab-select', function() {
-                var tabId = $(this).val();
-                if (tabId && tabId !== self.activeTab) {
-                    self.switchTab($dashboard, tabId);
-                }
+            $d.on('change', '#dgptm-mobile-tab-select', function() {
+                var id = $(this).val();
+                if (id && id !== self.activeTab) self.switchTab($d, id);
             });
         },
 
-        bindCRMRefresh: function($dashboard) {
-            var self = this;
-
-            $dashboard.on('click', '#dgptm-crm-refresh', function() {
-                var $btn = $(this);
-                $btn.prop('disabled', true);
-                $btn.find('.dashicons').addClass('dgptm-rotating');
-
-                $.post(dgptmDashboard.ajaxUrl, {
-                    action: 'dgptm_dashboard_refresh_crm',
-                    nonce: dgptmDashboard.nonce
-                }, function(resp) {
-                    $btn.prop('disabled', false);
-                    $btn.find('.dashicons').removeClass('dgptm-rotating');
-
-                    if (resp.success) {
-                        self.showToast(dgptmDashboard.strings.refreshed, 'success');
-                        // Reload current tab to reflect new CRM data
-                        self.loadedTabs = {};
-                        self.loadedTabs[self.activeTab] = false;
-                        self.loadTabContent($dashboard, self.activeTab, true);
-                    } else {
-                        self.showToast(resp.data.message || dgptmDashboard.strings.error, 'error');
-                    }
-                }).fail(function() {
-                    $btn.prop('disabled', false);
-                    $btn.find('.dashicons').removeClass('dgptm-rotating');
-                    self.showToast(dgptmDashboard.strings.error, 'error');
-                });
-            });
-        },
-
-        switchTab: function($dashboard, tabId) {
+        switchTab: function($d, tabId) {
             if (this.loading) return;
-
             this.activeTab = tabId;
 
-            // Update tab nav active state
-            $dashboard.find('.dgptm-tab-nav__item').removeClass('dgptm-tab-nav__item--active')
-                .attr('aria-selected', 'false');
-            $dashboard.find('.dgptm-tab-nav__item[data-tab-id="' + tabId + '"]')
-                .addClass('dgptm-tab-nav__item--active')
-                .attr('aria-selected', 'true');
+            // Update nav
+            $d.find('.dgptm-tab-nav__item').removeClass('dgptm-tab-nav__item--active').attr('aria-selected', 'false');
+            $d.find('.dgptm-tab-nav__item[data-tab-id="' + tabId + '"]').addClass('dgptm-tab-nav__item--active').attr('aria-selected', 'true');
+            $d.find('#dgptm-mobile-tab-select').val(tabId);
 
-            // Update mobile select
-            $dashboard.find('#dgptm-mobile-tab-select').val(tabId);
-
-            // Show/hide panels
-            $dashboard.find('.dgptm-tab-panel').hide().removeClass('dgptm-tab-panel--active');
-            var $panel = $dashboard.find('#dgptm-panel-' + tabId);
+            // Switch panels
+            $d.find('.dgptm-tab-panel').hide().removeClass('dgptm-tab-panel--active');
+            var $panel = $d.find('#dgptm-panel-' + tabId);
             $panel.show().addClass('dgptm-tab-panel--active');
 
-            // Lazy load if not loaded
+            // Lazy load
             if (!this.loadedTabs[tabId]) {
-                this.loadTabContent($dashboard, tabId, false);
+                this.loadTabContent($d, tabId);
             }
 
-            // Update URL hash
+            // URL hash
             if (history.replaceState) {
                 history.replaceState(null, null, '#tab-' + tabId);
             }
 
-            // Scroll to top of dashboard
-            var offset = $dashboard.offset().top - 80;
+            // Scroll
+            var offset = $d.offset().top - 80;
             if ($(window).scrollTop() > offset) {
                 $('html, body').animate({ scrollTop: offset }, 150);
             }
         },
 
-        loadTabContent: function($dashboard, tabId, forceReload) {
+        loadTabContent: function($d, tabId) {
             var self = this;
-            var $panel = $dashboard.find('#dgptm-panel-' + tabId);
-
-            if ($panel.data('loaded') === true && !forceReload) {
-                return;
-            }
+            var $panel = $d.find('#dgptm-panel-' + tabId);
 
             this.loading = true;
-
-            // Show spinner
-            $panel.html(
-                '<div class="dgptm-tab-loading">' +
-                '<div class="dgptm-spinner"></div>' +
-                '<span>' + dgptmDashboard.strings.loading + '</span>' +
-                '</div>'
-            );
+            $panel.html('<div class="dgptm-tab-loading"><div class="dgptm-spinner"></div><span>' + dgptmDashboard.strings.loading + '</span></div>');
 
             $.post(dgptmDashboard.ajaxUrl, {
                 action: 'dgptm_dashboard_load_tab',
@@ -140,81 +91,139 @@
                 tab_id: tabId
             }, function(resp) {
                 self.loading = false;
-
                 if (resp.success) {
                     $panel.html(resp.data.html);
                     $panel.data('loaded', true);
                     self.loadedTabs[tabId] = true;
-
-                    // Execute any inline scripts in the loaded content
                     self.executeScripts($panel);
-
-                    // Trigger custom event for other modules
+                    self.autoLoadSubTabs($d);
                     $(document).trigger('dgptm_tab_loaded', [tabId, $panel]);
                 } else {
-                    $panel.html(
-                        '<div class="dgptm-tab-error">' +
-                        '<span class="dashicons dashicons-warning"></span> ' +
-                        (resp.data.message || dgptmDashboard.strings.error) +
-                        '</div>'
-                    );
+                    $panel.html('<div class="dgptm-tab-error">' + (resp.data.message || dgptmDashboard.strings.error) + '</div>');
                 }
             }).fail(function() {
                 self.loading = false;
-                $panel.html(
-                    '<div class="dgptm-tab-error">' +
-                    '<span class="dashicons dashicons-warning"></span> ' +
-                    dgptmDashboard.strings.error +
-                    '</div>'
-                );
+                $panel.html('<div class="dgptm-tab-error">' + dgptmDashboard.strings.error + '</div>');
             });
         },
 
+        // === Sub-Tab Navigation ===
+
+        bindSubTabs: function($d) {
+            var self = this;
+
+            $d.on('click', '.dgptm-subtab-nav__item', function(e) {
+                e.preventDefault();
+                var $btn = $(this);
+                var subtabId = $btn.data('subtab');
+                var $nav = $btn.closest('.dgptm-subtab-nav');
+                var $parent = $btn.closest('.dgptm-tab-panel');
+
+                // Switch active pill
+                $nav.find('.dgptm-subtab-nav__item').removeClass('dgptm-subtab-nav__item--active');
+                $btn.addClass('dgptm-subtab-nav__item--active');
+
+                // Switch panels
+                $parent.find('.dgptm-subtab-panel').removeClass('dgptm-subtab-panel--active').hide();
+                var $panel = $parent.find('[data-subtab-panel="' + subtabId + '"]');
+                $panel.addClass('dgptm-subtab-panel--active').show();
+
+                // Lazy load sub-tab
+                if ($panel.data('subtab-loaded') !== true) {
+                    self.loadSubTabContent($panel);
+                }
+            });
+        },
+
+        autoLoadSubTabs: function($d) {
+            // Load the first active sub-tab in each visible panel
+            $d.find('.dgptm-tab-panel--active .dgptm-subtab-panel--active').each(function() {
+                var $panel = $(this);
+                if ($panel.data('subtab-loaded') !== true) {
+                    Dashboard.loadSubTabContent($panel);
+                }
+            });
+        },
+
+        loadSubTabContent: function($panel) {
+            var action = $panel.data('subtab-action');
+            if (!action) return;
+
+            $panel.html('<div class="dgptm-tab-loading"><div class="dgptm-spinner"></div><span>' + dgptmDashboard.strings.loading + '</span></div>');
+
+            $.post(dgptmDashboard.ajaxUrl, {
+                action: 'dgptm_dashboard_load_subtab',
+                nonce: dgptmDashboard.nonce,
+                subtab_id: action
+            }, function(resp) {
+                if (resp.success) {
+                    $panel.html(resp.data.html);
+                    $panel.data('subtab-loaded', true);
+                    Dashboard.executeScripts($panel);
+                } else {
+                    $panel.html('<div class="dgptm-tab-error">' + (resp.data.message || dgptmDashboard.strings.error) + '</div>');
+                }
+            }).fail(function() {
+                $panel.html('<div class="dgptm-tab-error">' + dgptmDashboard.strings.error + '</div>');
+            });
+        },
+
+        // === CRM Refresh ===
+
+        bindCRMRefresh: function($d) {
+            var self = this;
+            $d.on('click', '#dgptm-crm-refresh', function() {
+                var $btn = $(this);
+                $btn.prop('disabled', true).find('.dashicons').addClass('dgptm-rotating');
+
+                $.post(dgptmDashboard.ajaxUrl, {
+                    action: 'dgptm_dashboard_refresh_crm',
+                    nonce: dgptmDashboard.nonce
+                }, function(resp) {
+                    $btn.prop('disabled', false).find('.dashicons').removeClass('dgptm-rotating');
+                    if (resp.success) {
+                        self.showToast(dgptmDashboard.strings.refreshed, 'success');
+                        // Reload profil tab
+                        self.loadedTabs = {};
+                        self.loadTabContent($('.dgptm-dashboard'), 'profil');
+                    } else {
+                        self.showToast(resp.data.message || dgptmDashboard.strings.error, 'error');
+                    }
+                }).fail(function() {
+                    $btn.prop('disabled', false).find('.dashicons').removeClass('dgptm-rotating');
+                    self.showToast(dgptmDashboard.strings.error, 'error');
+                });
+            });
+        },
+
+        // === Utilities ===
+
         executeScripts: function($container) {
             $container.find('script').each(function() {
-                var script = document.createElement('script');
-                if (this.src) {
-                    script.src = this.src;
-                } else {
-                    script.textContent = this.textContent;
-                }
-                document.body.appendChild(script);
+                var s = document.createElement('script');
+                if (this.src) { s.src = this.src; } else { s.textContent = this.textContent; }
+                document.body.appendChild(s);
                 $(this).remove();
             });
         },
 
-        handleDeepLink: function($dashboard) {
+        handleDeepLink: function($d) {
             var hash = window.location.hash;
             if (hash && hash.indexOf('#tab-') === 0) {
                 var tabId = hash.replace('#tab-', '');
-                var $tab = $dashboard.find('.dgptm-tab-nav__item[data-tab-id="' + tabId + '"]');
-                if ($tab.length) {
-                    this.switchTab($dashboard, tabId);
+                if ($d.find('.dgptm-tab-nav__item[data-tab-id="' + tabId + '"]').length) {
+                    this.switchTab($d, tabId);
                 }
             }
         },
 
-        showToast: function(message, type) {
-            var $existing = $('.dgptm-toast');
-            if ($existing.length) $existing.remove();
-
-            var $toast = $('<div class="dgptm-toast dgptm-toast--' + (type || 'success') + '">')
-                .text(message)
-                .appendTo('body');
-
-            setTimeout(function() {
-                $toast.fadeOut(300, function() { $(this).remove(); });
-            }, 3000);
+        showToast: function(msg, type) {
+            $('.dgptm-toast').remove();
+            var $t = $('<div class="dgptm-toast dgptm-toast--' + (type || 'success') + '">').text(msg).appendTo('body');
+            setTimeout(function() { $t.fadeOut(300, function() { $(this).remove(); }); }, 3000);
         }
     };
 
-    // Rotating animation for refresh button
-    var style = document.createElement('style');
-    style.textContent = '.dgptm-rotating { animation: dgptm-spin 0.7s linear infinite; }';
-    document.head.appendChild(style);
-
-    $(document).ready(function() {
-        Dashboard.init();
-    });
+    $(document).ready(function() { Dashboard.init(); });
 
 })(jQuery);

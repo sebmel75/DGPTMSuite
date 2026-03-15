@@ -94,18 +94,18 @@ class DGPTM_Dashboard_CRM_Cache {
             return $this->get_fallback_data($user_id);
         }
 
-        // Try to use the CRM module's existing method
+        // Try to use the CRM module's existing data/methods
         if (class_exists('DGPTM_Zoho_CRM_Integration')) {
             $crm = DGPTM_Zoho_CRM_Integration::get_instance();
 
-            // Check if the CRM module has cached data
+            // 1) Check CRM module's own transient cache first
             $existing = get_transient('dgptm_zoho_data_' . $user_id);
             if ($existing && is_array($existing)) {
                 $this->record_cache_time($user_id);
                 return $existing;
             }
 
-            // Fetch via CRM module's internal API
+            // 2) Try the CRM module's fetch method
             if (method_exists($crm, 'fetch_zoho_data_for_user')) {
                 $data = $crm->fetch_zoho_data_for_user($user_id);
                 if (!empty($data) && is_array($data)) {
@@ -113,6 +113,24 @@ class DGPTM_Dashboard_CRM_Cache {
                     return $data;
                 }
             }
+
+            // 3) Try alternative method names
+            foreach (['get_contact_data', 'fetch_contact', 'get_user_crm_data'] as $method) {
+                if (method_exists($crm, $method)) {
+                    $data = $crm->$method($user_id);
+                    if (!empty($data) && is_array($data)) {
+                        $this->record_cache_time($user_id);
+                        return $data;
+                    }
+                }
+            }
+        }
+
+        // 4) Try direct Zoho CRM v7 API as fallback
+        $data = $this->fetch_zoho_v7_contact($zoho_id);
+        if (!empty($data)) {
+            $this->record_cache_time($user_id);
+            return $data;
         }
 
         // Direct Zoho CRM API call as fallback
@@ -126,7 +144,39 @@ class DGPTM_Dashboard_CRM_Cache {
     }
 
     /**
-     * Direct Zoho API call if CRM module method unavailable
+     * Fetch contact directly from Zoho CRM v7 API
+     */
+    private function fetch_zoho_v7_contact($zoho_id) {
+        $token = get_option('dgptm_zoho_access_token', '');
+        if (empty($token)) {
+            return [];
+        }
+
+        $url = 'https://www.zohoapis.eu/crm/v7/Contacts/' . $zoho_id;
+        $response = wp_remote_get($url, [
+            'headers' => ['Authorization' => 'Zoho-oauthtoken ' . $token],
+            'timeout' => 15,
+        ]);
+
+        if (is_wp_error($response)) {
+            return [];
+        }
+
+        $code = wp_remote_retrieve_response_code($response);
+        if ($code !== 200) {
+            return [];
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+        if (!empty($body['data'][0])) {
+            return $body['data'][0];
+        }
+
+        return [];
+    }
+
+    /**
+     * Fetch via custom API endpoint as fallback
      */
     private function fetch_direct($zoho_id, $user_id) {
         $api_url = get_option('dgptm_zoho_api_url', '');

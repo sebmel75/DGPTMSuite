@@ -149,8 +149,8 @@ class DGPTM_Dashboard_Ajax {
                 $tab['permission_field'] = sanitize_key($tab['permission_field'] ?? '');
                 $tab['active']           = !empty($tab['active']);
                 $tab['order']            = absint($tab['order'] ?? 999);
-                // Template is derived from ID at render time, store for documentation only
-                $tab['template']         = 'tabs/tab-' . sanitize_key($tab['id'] ?? '') . '.php';
+                // Remove legacy template field
+                unset($tab['template']);
                 // Content HTML: admin-only, capability already verified
                 $new_html = $tab['content_html'] ?? null;
                 if ($new_html === null) {

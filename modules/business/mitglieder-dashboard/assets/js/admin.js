@@ -106,7 +106,6 @@
                     datetime_end: $item.find('.dgptm-tab-datetime-end').val(),
                     active: $item.find('.dgptm-tab-active').is(':checked'),
                     order: (i + 1) * 10,
-                    template: 'tabs/tab-' + $item.data('tab-id') + '.php',
                     content_html: self.getEditorContent($item.data('tab-id'))
                 });
             });

@@ -100,6 +100,43 @@
     margin-bottom: 8px;
 }
 
+/* Group card: wraps questions with the same group_label */
+.dgptm-group-card {
+    background: #fff;
+    border: 1px solid var(--dgptm-gray-200);
+    border-radius: var(--dgptm-radius);
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    box-shadow: var(--dgptm-shadow);
+}
+
+.dgptm-group-card .dgptm-section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--dgptm-gray-800);
+    margin: 0 0 16px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--dgptm-primary-light);
+}
+
+.dgptm-group-card .dgptm-question {
+    border: none;
+    border-radius: 0;
+    padding: 14px 0;
+    margin-bottom: 0;
+    border-bottom: 1px solid var(--dgptm-gray-100);
+    box-shadow: none;
+}
+
+.dgptm-group-card .dgptm-question:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.dgptm-group-card .dgptm-question:hover {
+    box-shadow: none;
+}
+
 .dgptm-section-title {
     font-size: 20px;
     font-weight: 700;
@@ -109,7 +146,7 @@
     border-bottom: 2px solid var(--dgptm-primary-light);
 }
 
-/* Questions */
+/* Standalone questions (no group) */
 .dgptm-question {
     background: #fff;
     border: 1px solid var(--dgptm-gray-200);

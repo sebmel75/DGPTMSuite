@@ -259,6 +259,7 @@
                         var $target = $container.find('.dgptm-question[data-question-id="' + rule.goto_question_id + '"]');
                         if ($target.length) {
                             var found = false;
+                            var skippedIds = [];
                             $container.find('.dgptm-question').each(function() {
                                 if (this === $q[0]) {
                                     found = true;
@@ -266,11 +267,21 @@
                                 }
                                 if (found && this !== $target[0]) {
                                     $(this).addClass('dgptm-question-hidden');
+                                    skippedIds.push(String($(this).data('question-id')));
                                 }
                                 if (this === $target[0]) {
                                     found = false;
                                 }
                             });
+                            // Also hide children of skipped questions
+                            if (skippedIds.length) {
+                                $container.find('.dgptm-question[data-parent-id]').each(function() {
+                                    var pid = String($(this).data('parent-id'));
+                                    if (skippedIds.indexOf(pid) !== -1) {
+                                        $(this).addClass('dgptm-question-hidden');
+                                    }
+                                });
+                            }
                         }
                         break;
                     }

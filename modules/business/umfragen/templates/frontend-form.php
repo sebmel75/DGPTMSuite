@@ -66,6 +66,7 @@ if ($resume_data) {
             <div class="dgptm-survey-section" data-section="<?php echo esc_attr($group_index); ?>" <?php if (!$is_first) echo 'style="display:none;"'; ?>>
 
                 <?php if ($group_label) : ?>
+                    <div class="dgptm-group-card">
                     <h3 class="dgptm-section-title"><?php echo esc_html($group_label); ?></h3>
                 <?php endif; ?>
 
@@ -82,13 +83,16 @@ if ($resume_data) {
                             $prefill_decoded = $decoded;
                         }
                     }
+                    // Nested questions start hidden until parent answer matches
+                    $is_nested = !empty($q->parent_question_id);
+                    $initially_hidden = $is_nested && empty($prefill_val);
                 ?>
-                    <div class="dgptm-question<?php if (!empty($q->parent_question_id)) echo ' dgptm-question-nested'; ?>"
+                    <div class="dgptm-question<?php if ($is_nested) echo ' dgptm-question-nested'; ?><?php if ($initially_hidden) echo ' dgptm-question-hidden-nested'; ?>"
                          data-question-id="<?php echo esc_attr($q->id); ?>"
                          data-question-type="<?php echo esc_attr($q->question_type); ?>"
                          data-required="<?php echo esc_attr($q->is_required); ?>"
                          <?php if ($skip) : ?>data-skip-logic="<?php echo esc_attr(wp_json_encode($skip)); ?>"<?php endif; ?>
-                         <?php if (!empty($q->parent_question_id)) : ?>data-parent-id="<?php echo esc_attr($q->parent_question_id); ?>" data-parent-value="<?php echo esc_attr($q->parent_answer_value); ?>"<?php endif; ?>>
+                         <?php if ($is_nested) : ?>data-parent-id="<?php echo esc_attr($q->parent_question_id); ?>" data-parent-value="<?php echo esc_attr($q->parent_answer_value); ?>"<?php endif; ?>>
 
                         <label class="dgptm-question-label">
                             <?php echo esc_html($q->question_text); ?>
@@ -383,6 +387,10 @@ if ($resume_data) {
                         <div class="dgptm-question-error" style="display: none;"></div>
                     </div>
                 <?php endforeach; ?>
+
+                <?php if ($group_label) : ?>
+                    </div><!-- .dgptm-group-card -->
+                <?php endif; ?>
 
             </div>
         <?php

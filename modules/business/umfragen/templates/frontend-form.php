@@ -111,21 +111,48 @@ if ($resume_data) {
                                         elseif ($validation['pattern'] === 'url') $input_type = 'url';
                                         elseif ($validation['pattern'] === 'phone') $input_type = 'tel';
                                     }
-                                    ?>
-                                    <input type="<?php echo esc_attr($input_type); ?>"
-                                           name="<?php echo esc_attr($field_name); ?>"
-                                           class="dgptm-input dgptm-input-text"
-                                           value="<?php echo esc_attr($prefill_val); ?>"
-                                           <?php if ($q->is_required) echo 'required'; ?>>
-                                    <?php break;
+                                    $sub_qs = isset($validation['sub_questions']) ? $validation['sub_questions'] : [];
+                                    if (!empty($sub_qs)) :
+                                        $prefill_subs = $prefill_val ? json_decode($prefill_val, true) : [];
+                                        if (!is_array($prefill_subs)) $prefill_subs = [];
+                                        foreach ($sub_qs as $sq_label) : ?>
+                                            <div class="dgptm-subquestion">
+                                                <label class="dgptm-subquestion-label"><?php echo esc_html($sq_label); ?></label>
+                                                <input type="<?php echo esc_attr($input_type); ?>"
+                                                       name="<?php echo esc_attr($field_name); ?>[<?php echo esc_attr($sq_label); ?>]"
+                                                       class="dgptm-input dgptm-input-text dgptm-subq-field"
+                                                       value="<?php echo esc_attr($prefill_subs[$sq_label] ?? ''); ?>">
+                                            </div>
+                                        <?php endforeach;
+                                    else : ?>
+                                        <input type="<?php echo esc_attr($input_type); ?>"
+                                               name="<?php echo esc_attr($field_name); ?>"
+                                               class="dgptm-input dgptm-input-text"
+                                               value="<?php echo esc_attr($prefill_val); ?>"
+                                               <?php if ($q->is_required) echo 'required'; ?>>
+                                    <?php endif;
+                                    break;
 
                                 case 'textarea':
-                                    ?>
-                                    <textarea name="<?php echo esc_attr($field_name); ?>"
-                                              class="dgptm-input dgptm-input-textarea"
-                                              rows="4"
-                                              <?php if ($q->is_required) echo 'required'; ?>><?php echo esc_textarea($prefill_val); ?></textarea>
-                                    <?php break;
+                                    $sub_qs = isset($validation['sub_questions']) ? $validation['sub_questions'] : [];
+                                    if (!empty($sub_qs)) :
+                                        $prefill_subs = $prefill_val ? json_decode($prefill_val, true) : [];
+                                        if (!is_array($prefill_subs)) $prefill_subs = [];
+                                        foreach ($sub_qs as $sq_label) : ?>
+                                            <div class="dgptm-subquestion">
+                                                <label class="dgptm-subquestion-label"><?php echo esc_html($sq_label); ?></label>
+                                                <textarea name="<?php echo esc_attr($field_name); ?>[<?php echo esc_attr($sq_label); ?>]"
+                                                          class="dgptm-input dgptm-input-textarea dgptm-subq-field"
+                                                          rows="3"><?php echo esc_textarea($prefill_subs[$sq_label] ?? ''); ?></textarea>
+                                            </div>
+                                        <?php endforeach;
+                                    else : ?>
+                                        <textarea name="<?php echo esc_attr($field_name); ?>"
+                                                  class="dgptm-input dgptm-input-textarea"
+                                                  rows="4"
+                                                  <?php if ($q->is_required) echo 'required'; ?>><?php echo esc_textarea($prefill_val); ?></textarea>
+                                    <?php endif;
+                                    break;
 
                                 case 'number':
                                     ?>
@@ -336,6 +363,20 @@ if ($resume_data) {
                                     <?php break;
 
                             endswitch;
+
+                            // Free text field (for any question type if enabled)
+                            if (!empty($validation['allow_free_text'])) :
+                                $free_key = $field_name . '_free';
+                                $free_prefill = isset($resume_data['answers'][$q->id . '_free']) ? $resume_data['answers'][$q->id . '_free'] : '';
+                            ?>
+                                <div class="dgptm-free-text" style="margin-top: 10px;">
+                                    <label class="dgptm-free-text-label" style="font-size:13px;color:var(--dgptm-gray-500, #6b7280);display:block;margin-bottom:4px;">Weitere Anmerkungen (optional):</label>
+                                    <textarea name="answers[<?php echo esc_attr($q->id); ?>_free]"
+                                              class="dgptm-input dgptm-input-textarea dgptm-free-text-input"
+                                              rows="2"
+                                              placeholder="Freitext..."><?php echo esc_textarea($free_prefill); ?></textarea>
+                                </div>
+                            <?php endif;
                             ?>
                         </div>
 

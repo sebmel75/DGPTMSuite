@@ -312,6 +312,25 @@ select + .dgptm-other-text-input {
     width: 100%;
 }
 
+/* Sub-questions */
+.dgptm-subquestion {
+    margin-bottom: 10px;
+}
+
+.dgptm-subquestion-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--dgptm-gray-600, #4b5563);
+    margin-bottom: 4px;
+}
+
+/* Free text */
+.dgptm-free-text {
+    border-top: 1px solid var(--dgptm-gray-200, #e5e7eb);
+    padding-top: 10px;
+}
+
 /* Exclusive checkbox */
 .dgptm-checkbox-exclusive {
     border-top: 1px solid var(--dgptm-gray-200);

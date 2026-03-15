@@ -323,6 +323,7 @@
                 $item.find('.dgptm-matrix-row').toggle(type === 'matrix');
                 $item.find('.dgptm-number-row').toggle(type === 'number');
                 $item.find('.dgptm-text-validation-row').toggle(type === 'text');
+                $item.find('.dgptm-subquestions-row').toggle(type === 'text' || type === 'textarea');
 
                 // Update type badge
                 var label = $(this).find('option:selected').text();
@@ -393,6 +394,23 @@
             });
 
             $(document).on('click', '.dgptm-remove-choice', function() {
+                $(this).closest('.dgptm-choice-item').remove();
+            });
+
+            // --- Sub-questions ---
+
+            $(document).on('click', '.dgptm-add-subq', function() {
+                var $list = $(this).siblings('.dgptm-subquestions-list');
+                $list.append(
+                    '<div class="dgptm-choice-item">' +
+                    '<input type="text" class="dgptm-subq-input" value="" placeholder="Label der Unterfrage...">' +
+                    '<button type="button" class="button button-small dgptm-remove-subq">&times;</button>' +
+                    '</div>'
+                );
+                $list.find('.dgptm-subq-input').last().focus();
+            });
+
+            $(document).on('click', '.dgptm-remove-subq', function() {
                 $(this).closest('.dgptm-choice-item').remove();
             });
 
@@ -630,6 +648,23 @@
                     if (choicesWithText.length > 0) {
                         validation.choices_with_text = choicesWithText;
                     }
+                }
+
+                // Sub-questions (for text/textarea)
+                if (type === 'text' || type === 'textarea') {
+                    var subQuestions = [];
+                    $item.find('.dgptm-subq-input').each(function() {
+                        var val = $.trim($(this).val());
+                        if (val) subQuestions.push(val);
+                    });
+                    if (subQuestions.length > 0) {
+                        validation.sub_questions = subQuestions;
+                    }
+                }
+
+                // Free text field (for any type)
+                if ($item.find('.dgptm-q-free-text').is(':checked')) {
+                    validation.allow_free_text = true;
                 }
 
                 if (Object.keys(validation).length > 0) {

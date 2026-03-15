@@ -92,6 +92,7 @@ if (!class_exists('DGPTM_Umfragen')) {
 
             // Admin assets
             add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']);
+            add_action('wp_enqueue_scripts', [$this, 'maybe_enqueue_for_dashboard']);
 
             // File cleanup cron
             add_action('dgptm_survey_cleanup_files', [$this, 'cleanup_old_files']);
@@ -326,6 +327,16 @@ if (!class_exists('DGPTM_Umfragen')) {
         /**
          * Enqueue frontend assets (called from shortcode)
          */
+        /**
+         * Pre-load assets on dashboard pages for lazy-loaded tabs
+         */
+        public function maybe_enqueue_for_dashboard() {
+            global $post;
+            if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'dgptm_dashboard')) {
+                $this->enqueue_frontend_assets();
+            }
+        }
+
         public function enqueue_frontend_assets() {
             wp_enqueue_style(
                 'dgptm-umfragen-frontend',

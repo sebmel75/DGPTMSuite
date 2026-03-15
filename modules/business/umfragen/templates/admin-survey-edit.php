@@ -238,6 +238,33 @@ $question_types = [
                                     </div>
                                 </td>
                             </tr>
+                            <tr class="dgptm-subquestions-row" <?php if (!in_array($q->question_type, ['text', 'textarea'])) echo 'style="display:none;"'; ?>>
+                                <th><label>Unterfragen</label></th>
+                                <td>
+                                    <div class="dgptm-subquestions-list">
+                                        <?php
+                                        $sub_qs = isset($validation['sub_questions']) ? $validation['sub_questions'] : [];
+                                        foreach ($sub_qs as $sq) : ?>
+                                            <div class="dgptm-choice-item">
+                                                <input type="text" class="dgptm-subq-input" value="<?php echo esc_attr($sq); ?>" placeholder="z.B. Name, Adresse...">
+                                                <button type="button" class="button button-small dgptm-remove-subq">&times;</button>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                    <button type="button" class="button button-small dgptm-add-subq">+ Unterfrage</button>
+                                    <p class="description">Mehrere Textfelder mit eigenem Label unter einer Frage. Leer = normales einzelnes Textfeld.</p>
+                                </td>
+                            </tr>
+                            <tr class="dgptm-freetext-row">
+                                <th><label>Freie Antwort</label></th>
+                                <td>
+                                    <label>
+                                        <input type="checkbox" class="dgptm-q-free-text" <?php checked(!empty($validation['allow_free_text'])); ?>>
+                                        Freitextfeld unter der Frage anzeigen
+                                    </label>
+                                    <p class="description">Zusaetzliches Textfeld "Weitere Anmerkungen" unter jeder Frageform.</p>
+                                </td>
+                            </tr>
                             <tr class="dgptm-exclusive-row" <?php if ($q->question_type !== 'checkbox') echo 'style="display:none;"'; ?>>
                                 <th><label>Ausschluss-Option</label></th>
                                 <td>
@@ -413,6 +440,23 @@ $question_types = [
                                     "Sonstiges:"-Feld mit Texteingabe aktivieren
                                 </label>
                             </div>
+                        </td>
+                    </tr>
+                    <tr class="dgptm-subquestions-row" style="display:none;">
+                        <th><label>Unterfragen</label></th>
+                        <td>
+                            <div class="dgptm-subquestions-list"></div>
+                            <button type="button" class="button button-small dgptm-add-subq">+ Unterfrage</button>
+                            <p class="description">Mehrere Textfelder mit eigenem Label unter einer Frage.</p>
+                        </td>
+                    </tr>
+                    <tr class="dgptm-freetext-row">
+                        <th><label>Freie Antwort</label></th>
+                        <td>
+                            <label>
+                                <input type="checkbox" class="dgptm-q-free-text">
+                                Freitextfeld unter der Frage anzeigen
+                            </label>
                         </td>
                     </tr>
                     <tr class="dgptm-exclusive-row" style="display:none;">

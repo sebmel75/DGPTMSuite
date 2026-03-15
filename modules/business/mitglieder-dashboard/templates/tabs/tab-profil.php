@@ -19,11 +19,6 @@ $is_fallback = !empty($crm_data['_source']) && $crm_data['_source'] === 'wordpre
 <div class="dgptm-welcome">
     <h2>Willkommen, <?php echo esc_html($display_name); ?></h2>
     <p>Mitgliederbereich der DGPTM</p>
-    <div class="dgptm-welcome__actions">
-        <button class="dgptm-btn dgptm-btn--outline dgptm-btn--sm" id="dgptm-crm-refresh">
-            <span class="dashicons dashicons-update"></span> Daten aktualisieren
-        </button>
-    </div>
 </div>
 
 <?php if (shortcode_exists('zoho_books_outstanding_banner')) echo do_shortcode('[zoho_books_outstanding_banner]'); ?>

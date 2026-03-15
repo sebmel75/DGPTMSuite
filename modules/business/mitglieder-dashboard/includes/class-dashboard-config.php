@@ -19,6 +19,20 @@ class DGPTM_Dashboard_Config {
             if (empty($this->config) || empty($this->config['tabs'])) {
                 $this->config = $this->get_defaults();
                 update_option(self::OPTION_KEY, $this->config);
+            } else {
+                // Repair corrupted template paths (sanitize_file_name strips slashes)
+                $repaired = false;
+                foreach ($this->config['tabs'] as &$tab) {
+                    $expected = 'tabs/tab-' . $tab['id'] . '.php';
+                    if (empty($tab['template']) || $tab['template'] !== $expected) {
+                        $tab['template'] = $expected;
+                        $repaired = true;
+                    }
+                }
+                unset($tab);
+                if ($repaired) {
+                    update_option(self::OPTION_KEY, $this->config);
+                }
             }
         }
         return $this->config;

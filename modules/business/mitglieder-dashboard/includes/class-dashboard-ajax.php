@@ -202,7 +202,8 @@ class DGPTM_Dashboard_Ajax {
                 $tab['permission_field'] = sanitize_key($tab['permission_field'] ?? '');
                 $tab['active']           = !empty($tab['active']);
                 $tab['order']            = absint($tab['order'] ?? 999);
-                $tab['template']         = sanitize_file_name($tab['template'] ?? '');
+                // Template is derived from ID at render time, store for documentation only
+                $tab['template']         = 'tabs/tab-' . sanitize_key($tab['id'] ?? '') . '.php';
 
                 if (isset($tab['permission_roles']) && is_array($tab['permission_roles'])) {
                     $tab['permission_roles'] = array_map('sanitize_key', $tab['permission_roles']);

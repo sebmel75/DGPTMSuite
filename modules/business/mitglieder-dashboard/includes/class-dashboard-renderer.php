@@ -93,9 +93,16 @@ class DGPTM_Dashboard_Renderer {
             return '<div class="dgptm-tab-error">Keine Berechtigung.</div>';
         }
 
-        $template_file = DGPTM_DASHBOARD_PATH . 'templates/' . $tab['template'];
+        // Derive template path from tab ID (never trust stored path - sanitize_file_name strips slashes)
+        $safe_id = preg_replace('/[^a-z0-9\-]/', '', $tab['id']);
+        $template_file = DGPTM_DASHBOARD_PATH . 'templates/tabs/tab-' . $safe_id . '.php';
+
         if (!file_exists($template_file)) {
-            return '<div class="dgptm-tab-error">Template nicht vorhanden: ' . esc_html($tab['template']) . '</div>';
+            if (function_exists('dgptm_log_warning')) {
+                dgptm_log_warning('Dashboard template not found: ' . $template_file, 'mitglieder-dashboard');
+            }
+            return '<div class="dgptm-tab-error">Template nicht vorhanden: tabs/tab-' . esc_html($safe_id) . '.php'
+                . '<br><small style="color:#999">Pfad: ' . esc_html($template_file) . '</small></div>';
         }
 
         // Make data available to templates

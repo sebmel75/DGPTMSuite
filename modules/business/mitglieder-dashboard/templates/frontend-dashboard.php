@@ -5,6 +5,7 @@
  */
 if (!defined('ABSPATH')) exit;
 ?>
+<!-- DGPTM Dashboard v<?php echo DGPTM_DASHBOARD_VERSION; ?> | <?php echo date('Y-m-d H:i:s'); ?> | Tabs: <?php echo count($visible_tabs); ?> -->
 <div class="dgptm-dashboard" data-default-tab="<?php echo esc_attr($active_tab_id); ?>">
 
     <?php // Tab Navigation ?>

@@ -42,6 +42,16 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
         }
 
         private function load_includes() {
+            // Invalidate OPcache for dashboard files on admin requests
+            if (is_admin() && function_exists('opcache_invalidate')) {
+                $files = glob(DGPTM_DASHBOARD_PATH . '{includes/*.php,templates/*.php,templates/tabs/*.php}', GLOB_BRACE);
+                if ($files) {
+                    foreach ($files as $file) {
+                        opcache_invalidate($file, true);
+                    }
+                }
+            }
+
             require_once DGPTM_DASHBOARD_PATH . 'includes/class-dashboard-config.php';
             require_once DGPTM_DASHBOARD_PATH . 'includes/class-dashboard-permissions.php';
             require_once DGPTM_DASHBOARD_PATH . 'includes/class-crm-cache.php';

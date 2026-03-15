@@ -4,27 +4,26 @@ jQuery(function($) {
     // ─── Admin tab switching ───
     $('.nav-tab').on('click', function(e) {
         e.preventDefault();
-        var tab = $(this).data('admin-tab');
         $('.nav-tab').removeClass('nav-tab-active');
         $(this).addClass('nav-tab-active');
         $('.dgptm-admin-section').hide();
-        $('[data-admin-panel="' + tab + '"]').show();
+        $('[data-admin-panel="' + $(this).data('admin-tab') + '"]').show();
     });
 
     // ─── Toggle details ───
     $(document).on('click', '.dgptm-tab-expand', function() {
-        var $details = $(this).closest('.dgptm-tab-config-item').find('.dgptm-tab-config-details');
-        $details.slideToggle(200);
-        $(this).text($details.is(':visible') ? 'Zuklappen' : 'Details');
+        var $d = $(this).closest('.dgptm-tab-config-item').find('.dgptm-tab-config-details');
+        $d.slideToggle(200);
+        $(this).text($d.is(':visible') ? 'Zuklappen' : 'Details');
     });
 
     // ─── Permission type toggle ───
     $(document).on('change', '.dt-perm-type', function() {
-        var val = $(this).val();
-        var $item = $(this).closest('.dgptm-tab-config-item');
-        $item.find('.dt-row-acf').toggle(val === 'acf_field');
-        $item.find('.dt-row-role').toggle(val === 'role');
-        $item.find('.dt-row-shortcode').toggle(val === 'shortcode');
+        var v = $(this).val();
+        var $i = $(this).closest('.dgptm-tab-config-item');
+        $i.find('.dt-row-acf').toggle(v === 'acf_field');
+        $i.find('.dt-row-role').toggle(v === 'role');
+        $i.find('.dt-row-shortcode').toggle(v === 'shortcode');
     });
 
     // ─── Label preview ───
@@ -35,49 +34,19 @@ jQuery(function($) {
     // ─── Move Up / Down ───
     $(document).on('click', '.dgptm-move-up', function(e) {
         e.preventDefault();
+        e.stopPropagation();
         var $item = $(this).closest('.dgptm-tab-config-item');
         var $prev = $item.prev('.dgptm-tab-config-item');
-        if ($prev.length) {
-            $prev.before($item);
-            regroup();
-        }
+        if ($prev.length) $item.insertBefore($prev);
     });
 
     $(document).on('click', '.dgptm-move-down', function(e) {
         e.preventDefault();
+        e.stopPropagation();
         var $item = $(this).closest('.dgptm-tab-config-item');
         var $next = $item.next('.dgptm-tab-config-item');
-        if ($next.length) {
-            $next.after($item);
-            regroup();
-        }
+        if ($next.length) $item.insertAfter($next);
     });
-
-    // ─── Regroup: children after their parent ───
-    function regroup() {
-        var $list = $('#dgptm-tab-list');
-        // For each child, ensure it's right after its parent (or after last sibling)
-        $list.find('.dgptm-tab-config-item[data-parent!=""]').each(function() {
-            var parentId = $(this).data('parent');
-            if (!parentId) return;
-            var $parent = $list.find('.dgptm-tab-config-item[data-tab-id="' + parentId + '"]');
-            if (!$parent.length) return;
-
-            // Find last element that belongs to this parent
-            var $last = $parent;
-            $parent.nextAll('.dgptm-tab-config-item').each(function() {
-                if ($(this).data('parent') === parentId) $last = $(this);
-                else return false;
-            });
-
-            // If this item is not already right after parent/siblings, move it
-            var myIndex = $(this).index();
-            var lastIndex = $last.index();
-            if (myIndex <= $parent.index() || myIndex > lastIndex + 1) {
-                $last.after($(this));
-            }
-        });
-    }
 
     // ─── Build permission string ───
     function buildPerm($item) {
@@ -95,7 +64,7 @@ jQuery(function($) {
         $('#dgptm-tab-list .dgptm-tab-config-item').each(function(i) {
             var $t = $(this);
             tabs.push({
-                id:         $t.data('tab-id'),
+                id:         $t.attr('data-tab-id'),
                 label:      $t.find('.dt-label').val(),
                 parent:     $t.find('.dt-parent').val() || '',
                 permission: buildPerm($t),
@@ -115,69 +84,63 @@ jQuery(function($) {
     }
 
     // ─── Save tabs ───
-    $('#dt-save').on('click', function() {
-        var $btn = $(this);
-        var origText = $btn.text();
+    $(document).on('click', '#dt-save', function() {
+        var $btn = $(this), orig = $btn.text();
         $btn.prop('disabled', true).text('Speichern...');
         $.ajax({
-            url: dgptmDashAdmin.ajax,
-            type: 'POST',
-            data: { action: 'dgptm_dash_save', nonce: dgptmDashAdmin.nonce, tabs: JSON.stringify(collect()) },
-            timeout: 30000
+            url: dgptmDashAdmin.ajax, type: 'POST', timeout: 30000,
+            data: { action: 'dgptm_dash_save', nonce: dgptmDashAdmin.nonce, tabs: JSON.stringify(collect()) }
         }).done(function(r) {
             msg(r.success ? r.data : (r.data || 'Fehler'), r.success ? 'ok' : 'error');
         }).fail(function(x, s, e) {
             msg('Speichern fehlgeschlagen: ' + (e || s), 'error');
         }).always(function() {
-            $btn.prop('disabled', false).text(origText);
+            $btn.prop('disabled', false).text(orig);
         });
     });
 
     // ─── Save settings ───
     $(document).on('click', '#dt-save-settings', function() {
-        var $btn = $(this);
-        var origText = $btn.text();
+        var $btn = $(this), orig = $btn.text();
         $btn.prop('disabled', true).text('Speichern...');
         $.ajax({
-            url: dgptmDashAdmin.ajax,
-            type: 'POST',
+            url: dgptmDashAdmin.ajax, type: 'POST', timeout: 10000,
             data: {
                 action: 'dgptm_dash_save_settings',
                 nonce: dgptmDashAdmin.nonce,
                 admin_bypass: $('#dt-admin-bypass').is(':checked') ? '1' : '0'
-            },
-            timeout: 10000
+            }
         }).done(function(r) {
             msg(r.success ? r.data : (r.data || 'Fehler'), r.success ? 'ok' : 'error');
         }).fail(function(x, s, e) {
             msg('Fehler: ' + (e || s), 'error');
         }).always(function() {
-            $btn.prop('disabled', false).text(origText);
+            $btn.prop('disabled', false).text(orig);
         });
     });
 
     // ─── Reset ───
-    $('#dt-reset').on('click', function() {
-        if (!confirm('Alle Tabs auf Standard zuruecksetzen? Individuelle Aenderungen gehen verloren.')) return;
+    $(document).on('click', '#dt-reset', function() {
+        if (!confirm('Alle Tabs auf Standard zuruecksetzen?')) return;
         $.post(dgptmDashAdmin.ajax, { action: 'dgptm_dash_save', nonce: dgptmDashAdmin.nonce, tabs: '__RESET__' })
          .done(function() { location.reload(); });
     });
 
     // ─── Add tab ───
-    $('#dt-add-tab').on('click', function() {
+    $(document).on('click', '#dt-add-tab', function() {
         var id = $.trim($('#new-tab-id').val()).toLowerCase().replace(/[^a-z0-9-]/g, '');
         var label = $.trim($('#new-tab-label').val());
         var parent = $('#new-tab-parent').val() || '';
         if (!id || !label) { alert('ID und Label erforderlich'); return; }
-        if ($('#dgptm-tab-list .dgptm-tab-config-item[data-tab-id="' + id + '"]').length) { alert('ID existiert bereits'); return; }
+        if ($('#dgptm-tab-list [data-tab-id="' + id + '"]').length) { alert('ID existiert bereits'); return; }
 
         var parentBadge = parent ? '<span style="font-size:11px;color:#2271b1;background:#e8f0fe;padding:2px 8px;border-radius:3px;">↳ ' + parent + '</span>' : '';
         var childCls = parent ? ' dgptm-tab-child' : '';
 
         var html = '<div class="dgptm-tab-config-item' + childCls + '" data-tab-id="' + id + '" data-parent="' + parent + '">' +
             '<div class="dgptm-tab-config-header">' +
-            '<button type="button" class="button button-small dgptm-move-up" title="Hoch">▲</button>' +
-            '<button type="button" class="button button-small dgptm-move-down" title="Runter">▼</button>' +
+            '<button type="button" class="button button-small dgptm-move-up" title="Hoch">&#9650;</button>' +
+            '<button type="button" class="button button-small dgptm-move-down" title="Runter">&#9660;</button>' +
             '<strong class="dgptm-tab-config-label">' + $('<span>').text(label).html() + '</strong>' +
             '<code class="dgptm-tab-config-id">' + id + '</code>' +
             parentBadge +
@@ -190,21 +153,20 @@ jQuery(function($) {
             '<tr><th>Label</th><td><input type="text" class="dt-label regular-text" value="' + $('<span>').text(label).html() + '"></td></tr>' +
             '<tr><th>Direkter Link</th><td><input type="url" class="dt-link regular-text" value="" placeholder="https://..."></td></tr>' +
             '<tr><th>Uebergeordneter Tab</th><td><input type="text" class="dt-parent regular-text" value="' + parent + '"></td></tr>' +
-            '<tr><th>Berechtigungstyp</th><td><select class="dt-perm-type"><option value="always" selected>Immer sichtbar</option><option value="acf_field">ACF-Feld</option><option value="role">Rolle</option><option value="shortcode">Shortcode</option><option value="admin">Nur Admins</option></select></td></tr>' +
-            '<tr><th>Inhalt</th><td><textarea class="dt-content large-text code" rows="10" style="font-family:Consolas,monospace;font-size:12px;" placeholder="HTML und Shortcodes..."></textarea></td></tr>' +
+            '<tr><th>Berechtigungstyp</th><td><select class="dt-perm-type"><option value="always">Immer sichtbar</option><option value="acf_field">ACF-Feld</option><option value="role">Rolle</option><option value="shortcode">Shortcode</option><option value="admin">Nur Admins</option></select></td></tr>' +
+            '<tr><th>Inhalt</th><td><textarea class="dt-content large-text code" rows="10" style="font-family:Consolas,monospace;font-size:12px;"></textarea></td></tr>' +
             '</table></div></div>';
 
         $('#dgptm-tab-list').append(html);
         $('#new-tab-id, #new-tab-label').val('');
         $('#new-tab-parent').val('');
-        msg('Tab "' + label + '" erstellt. Bitte Inhalt eingeben und speichern.', 'ok');
-        regroup();
+        msg('Tab "' + label + '" erstellt. Inhalt eingeben und speichern.', 'ok');
     });
 
     // ─── Delete tab ───
     $(document).on('click', '.dgptm-tab-delete', function() {
         var $tab = $(this).closest('.dgptm-tab-config-item');
-        if (!confirm('Tab "' + $tab.data('tab-id') + '" loeschen?')) return;
+        if (!confirm('Tab "' + $tab.attr('data-tab-id') + '" loeschen?')) return;
         $tab.slideUp(200, function() { $(this).remove(); });
     });
 });

@@ -130,20 +130,27 @@
 
                 var config = self.collectConfig();
 
-                $.post(dgptmDashboardAdmin.ajaxUrl, {
-                    action: 'dgptm_dashboard_save_config',
-                    nonce: dgptmDashboardAdmin.nonce,
-                    config: JSON.stringify(config)
-                }, function(resp) {
-                    $btn.prop('disabled', false).text($btn.attr('id') === 'dgptm-save-tabs' ? 'Alle Tabs speichern' : 'Einstellungen speichern');
+                var originalText = $btn.text();
+
+                $.ajax({
+                    url: dgptmDashboardAdmin.ajaxUrl,
+                    type: 'POST',
+                    data: {
+                        action: 'dgptm_dashboard_save_config',
+                        nonce: dgptmDashboardAdmin.nonce,
+                        config: JSON.stringify(config)
+                    },
+                    timeout: 30000
+                }).done(function(resp) {
                     if (resp.success) {
                         self.notify(resp.data.message, 'success');
                     } else {
-                        self.notify(resp.data.message, 'error');
+                        self.notify(resp.data ? resp.data.message : 'Fehler beim Speichern', 'error');
                     }
-                }).fail(function() {
-                    $btn.prop('disabled', false);
-                    self.notify('AJAX-Fehler', 'error');
+                }).fail(function(xhr, status, error) {
+                    self.notify('Speichern fehlgeschlagen: ' + (error || status), 'error');
+                }).always(function() {
+                    $btn.prop('disabled', false).text(originalText);
                 });
             });
         },

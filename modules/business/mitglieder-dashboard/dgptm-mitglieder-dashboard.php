@@ -64,19 +64,31 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
                 else $children[$t['parent']][] = $t;
             }
 
-            $active = $top[0]['id'] ?? '';
+            // First non-link tab is active
+            $active = '';
+            foreach ($top as $t) {
+                if (empty($t['link'])) { $active = $t['id']; break; }
+            }
             $html = '<div class="dgptm-dash" data-active="' . esc_attr($active) . '">';
 
             // Main nav
             $html .= '<nav class="dgptm-nav">';
             foreach ($top as $t) {
-                $cls = $t['id'] === $active ? ' dgptm-nav-active' : '';
-                $html .= '<a href="#" class="dgptm-nav-item' . $cls . '" data-tab="' . esc_attr($t['id']) . '">' . esc_html($t['label']) . '</a>';
+                if (!empty($t['link'])) {
+                    // Direct link tab - opens URL, no panel
+                    $target = (strpos($t['link'], home_url()) === 0) ? '' : ' target="_blank" rel="noopener"';
+                    $html .= '<a href="' . esc_url($t['link']) . '" class="dgptm-nav-item dgptm-nav-link"' . $target . '>'
+                        . esc_html($t['label']) . ' <span class="dgptm-link-icon">↗</span></a>';
+                } else {
+                    $cls = $t['id'] === $active ? ' dgptm-nav-active' : '';
+                    $html .= '<a href="#" class="dgptm-nav-item' . $cls . '" data-tab="' . esc_attr($t['id']) . '">' . esc_html($t['label']) . '</a>';
+                }
             }
             $html .= '</nav>';
 
-            // Panels
+            // Panels (skip link tabs)
             foreach ($top as $t) {
+                if (!empty($t['link'])) continue; // Link tabs have no panel
                 $is_active = $t['id'] === $active;
                 $html .= '<div class="dgptm-panel' . ($is_active ? ' dgptm-panel-active' : '') . '" data-panel="' . esc_attr($t['id']) . '"' . ($is_active ? '' : ' style="display:none"') . '>';
 
@@ -85,15 +97,27 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
                     // Folder tabs: parent + children
                     $folder = array_merge([$t], $kids);
                     $html .= '<div class="dgptm-folder">';
+                    // Filter out link tabs for panel rendering, keep for nav
+                    $folder_content = [];
                     $html .= '<div class="dgptm-folder-nav">';
-                    foreach ($folder as $i => $f) {
-                        $cls = $i === 0 ? ' dgptm-ftab-active' : '';
-                        $html .= '<a href="#" class="dgptm-ftab' . $cls . '" data-ftab="' . esc_attr($f['id']) . '">' . esc_html($f['label']) . '</a>';
+                    $first_content = true;
+                    foreach ($folder as $f) {
+                        if (!empty($f['link'])) {
+                            $target = (strpos($f['link'], home_url()) === 0) ? '' : ' target="_blank" rel="noopener"';
+                            $html .= '<a href="' . esc_url($f['link']) . '" class="dgptm-ftab dgptm-ftab-link"' . $target . '>'
+                                . esc_html($f['label']) . ' <span class="dgptm-link-icon">↗</span></a>';
+                        } else {
+                            $cls = $first_content ? ' dgptm-ftab-active' : '';
+                            $html .= '<a href="#" class="dgptm-ftab' . $cls . '" data-ftab="' . esc_attr($f['id']) . '">' . esc_html($f['label']) . '</a>';
+                            $folder_content[] = ['tab' => $f, 'first' => $first_content];
+                            $first_content = false;
+                        }
                     }
                     $html .= '</div>';
-                    foreach ($folder as $i => $f) {
-                        $html .= '<div class="dgptm-fpanel' . ($i === 0 ? ' dgptm-fpanel-active' : '') . '" data-fpanel="' . esc_attr($f['id']) . '"' . ($i === 0 ? '' : ' style="display:none"') . '>';
-                        if ($i === 0 && $is_active) {
+                    foreach ($folder_content as $fc) {
+                        $f = $fc['tab'];
+                        $html .= '<div class="dgptm-fpanel' . ($fc['first'] ? ' dgptm-fpanel-active' : '') . '" data-fpanel="' . esc_attr($f['id']) . '"' . ($fc['first'] ? '' : ' style="display:none"') . '>';
+                        if ($fc['first'] && $is_active) {
                             $html .= do_shortcode($f['content']);
                         } else {
                             $html .= '<div class="dgptm-loading">Wird geladen...</div>';

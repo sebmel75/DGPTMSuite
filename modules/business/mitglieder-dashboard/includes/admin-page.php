@@ -64,6 +64,13 @@ $top_tabs = array_filter($all_tabs, function($t) { return empty($t['parent']); }
                             <td><input type="text" class="dt-label regular-text" value="<?php echo esc_attr($tab['label']); ?>"></td>
                         </tr>
                         <tr>
+                            <th>Direkter Link (URL)</th>
+                            <td>
+                                <input type="url" class="dt-link regular-text" value="<?php echo esc_attr($tab['link'] ?? ''); ?>" placeholder="https://...">
+                                <p class="description">Wenn gesetzt, oeffnet der Tab diesen Link statt Inhalt anzuzeigen. Inhalt-Feld wird ignoriert.</p>
+                            </td>
+                        </tr>
+                        <tr>
                             <th>Uebergeordneter Tab</th>
                             <td>
                                 <select class="dt-parent">

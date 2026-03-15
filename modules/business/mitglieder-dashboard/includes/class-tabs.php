@@ -70,6 +70,7 @@ class DGPTM_Dashboard_Tabs {
                 'active'     => !empty($t['active']),
                 'order'      => absint($t['order'] ?? 99),
                 'permission' => sanitize_text_field($t['permission'] ?? 'always'),
+                'link'       => esc_url_raw($t['link'] ?? ''),
                 'content'    => $t['content'] ?? '',
             ];
         }

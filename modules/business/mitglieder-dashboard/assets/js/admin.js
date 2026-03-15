@@ -51,6 +51,7 @@ jQuery(function($) {
                 label:      $t.find('.dt-label').val(),
                 parent:     $t.find('.dt-parent').val() || '',
                 permission: buildPerm($t),
+                link:       $.trim($t.find('.dt-link').val()) || '',
                 active:     $t.find('.dt-active').is(':checked'),
                 order:      (i + 1) * 10,
                 content:    $t.find('.dt-content').val()

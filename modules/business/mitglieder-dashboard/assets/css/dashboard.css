@@ -50,6 +50,11 @@
     transition: color .15s, border-color .15s;
 }
 .dgptm-dash a.dgptm-nav-item:hover { color: var(--dd-text) !important; }
+/* Link tabs */
+.dgptm-dash .dgptm-link-icon { font-size: 10px; opacity: .5; }
+.dgptm-dash a.dgptm-nav-link:hover .dgptm-link-icon,
+.dgptm-dash a.dgptm-ftab-link:hover .dgptm-link-icon { opacity: 1; }
+
 .dgptm-dash a.dgptm-nav-active,
 .dgptm-dash a.dgptm-nav-active:link,
 .dgptm-dash a.dgptm-nav-active:visited { color: var(--dd-primary) !important; border-bottom-color: var(--dd-primary) !important; }

@@ -80,10 +80,10 @@ add_shortcode( 'hzb_edit_form_content', function( $atts = array() ) {
 		</div>
 	</div>
 	<script>
-	jQuery(function($){
-		var $wrap = $('.hzb-editor-inline');
-		if (!$wrap.length || $wrap.data('hzb-loaded')) return;
-		$wrap.data('hzb-loaded', true);
+	(function($){
+		var $wrap = $('.hzb-editor-inline').not('[data-hzb-loaded]');
+		if (!$wrap.length) return;
+		$wrap.attr('data-hzb-loaded', '1');
 
 		var postId = <?php echo intval($post_id); ?>;
 
@@ -197,11 +197,26 @@ add_shortcode( 'hzb_edit_form_content', function( $atts = array() ) {
 				$ctrl.find('.hzb-image-preview').html('<span class="hzb-noimg">Kein Bild</span>');
 			});
 		}
-	});
+	})(jQuery);
 	</script>
 	<?php
 	return ob_get_clean();
 } );
+
+/**
+ * Pre-load editor assets on dashboard pages (lazy-loaded tabs need assets ready)
+ */
+add_action('wp_enqueue_scripts', function() {
+	global $post;
+	if ( is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'dgptm_dashboard') ) {
+		if ( is_user_logged_in() ) {
+			$editable = hzb_get_user_editable_herzzentren( get_current_user_id() );
+			if ( !empty($editable) ) {
+				hzb_enqueue_editor_assets();
+			}
+		}
+	}
+});
 
 /**
  * Editor-Assets (JS/CSS) + wp.editor

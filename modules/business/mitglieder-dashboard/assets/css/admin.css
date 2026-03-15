@@ -1,35 +1,49 @@
-/* Dashboard Admin */
-.dgptm-dash-admin { max-width: 1100px; }
+/* Dashboard Admin Config */
 
-.dgptm-adm-tab {
+.dgptm-dashboard-admin {
+    max-width: 960px;
+}
+
+.dgptm-admin-section {
     background: #fff;
     border: 1px solid #ccd0d4;
     border-radius: 4px;
-    margin-bottom: 8px;
+    padding: 20px;
+    margin-top: 20px;
 }
 
-.dgptm-adm-header {
+.dgptm-admin-section h2 {
+    margin-top: 0;
+}
+
+/* Tab List */
+.dgptm-tab-list {
+    min-height: 40px;
+}
+
+.dgptm-tab-config-item {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    margin-bottom: 6px;
+}
+
+.dgptm-tab-config-header {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 14px;
+    padding: 10px 12px;
     background: #f6f7f7;
     cursor: default;
     flex-wrap: wrap;
 }
 
-.dgptm-adm-num {
-    font-weight: 700;
-    color: #2271b1;
-    min-width: 24px;
-}
-
-.dgptm-adm-title {
+.dgptm-tab-config-label {
     flex: 1;
-    min-width: 120px;
+    min-width: 100px;
 }
 
-.dgptm-adm-id {
+.dgptm-tab-config-id {
     font-size: 11px;
     color: #666;
     background: #e0e6ed;
@@ -37,15 +51,7 @@
     border-radius: 3px;
 }
 
-.dgptm-adm-parent-badge {
-    font-size: 11px;
-    color: #2271b1;
-    background: #e8f0fe;
-    padding: 2px 8px;
-    border-radius: 3px;
-}
-
-.dgptm-adm-active-toggle {
+.dgptm-tab-config-toggle {
     font-size: 13px;
     cursor: pointer;
     display: flex;
@@ -53,32 +59,21 @@
     gap: 4px;
 }
 
-.dgptm-adm-body {
-    padding: 0 14px 14px;
+.dgptm-tab-config-details {
+    padding: 0 12px 12px;
     border-top: 1px solid #eee;
 }
 
-.dgptm-adm-body .form-table th {
-    width: 160px;
-    padding: 12px 0;
+.dgptm-tab-config-details .form-table th {
+    width: 180px;
+    padding: 8px 0;
     font-size: 13px;
 }
 
-.dgptm-adm-body .form-table td {
-    padding: 12px 0;
+.dgptm-tab-config-details .form-table td {
+    padding: 8px 0;
 }
 
-.dgptm-adm-body textarea.dt-content {
-    min-height: 160px;
-}
-
-.dgptm-adm-section {
-    background: #fff;
-    border: 1px solid #ccd0d4;
-    border-radius: 4px;
-    padding: 20px;
-}
-
-.dgptm-adm-section h2 {
-    margin-top: 0;
+.dgptm-tab-config-details textarea.dt-content {
+    min-height: 140px;
 }

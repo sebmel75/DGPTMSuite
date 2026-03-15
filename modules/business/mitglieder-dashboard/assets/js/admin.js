@@ -145,6 +145,85 @@ jQuery(function($) {
         msg('Tab "' + label + '" erstellt. Bitte Inhalt eingeben und speichern.', 'ok');
     });
 
+    // ─── Drag & Drop Sorting ───
+    (function() {
+        var dragItem = null;
+        var $list = $('#dgptm-tab-list');
+
+        $list.on('mousedown', '.dgptm-drag-handle', function() {
+            dragItem = $(this).closest('.dgptm-tab-config-item')[0];
+            dragItem.setAttribute('draggable', 'true');
+        });
+
+        $list.on('dragstart', '.dgptm-tab-config-item', function(e) {
+            if (!dragItem || dragItem !== this) { e.preventDefault(); return; }
+            $(this).addClass('dragging');
+            e.originalEvent.dataTransfer.effectAllowed = 'move';
+        });
+
+        $list.on('dragover', '.dgptm-tab-config-item', function(e) {
+            e.preventDefault();
+            e.originalEvent.dataTransfer.dropEffect = 'move';
+            $list.find('.drag-over').removeClass('drag-over');
+            $(this).addClass('drag-over');
+        });
+
+        $list.on('dragleave', '.dgptm-tab-config-item', function() {
+            $(this).removeClass('drag-over');
+        });
+
+        $list.on('drop', '.dgptm-tab-config-item', function(e) {
+            e.preventDefault();
+            $(this).removeClass('drag-over');
+            if (dragItem && dragItem !== this) {
+                var $drag = $(dragItem);
+                var $target = $(this);
+                // Move dragged item before or after target based on position
+                if ($drag.index() < $target.index()) {
+                    $target.after($drag);
+                } else {
+                    $target.before($drag);
+                }
+                // If dragged item is a parent, move its children along
+                reorderChildren();
+            }
+        });
+
+        $list.on('dragend', '.dgptm-tab-config-item', function() {
+            $(this).removeClass('dragging');
+            if (dragItem) {
+                dragItem.removeAttribute('draggable');
+                dragItem = null;
+            }
+            $list.find('.drag-over').removeClass('drag-over');
+        });
+
+        // Re-group children under their parents after any drag
+        function reorderChildren() {
+            $list.find('.dgptm-tab-config-item').each(function() {
+                var parent = $(this).data('parent');
+                if (parent) {
+                    var $parentItem = $list.find('.dgptm-tab-config-item[data-tab-id="' + parent + '"]');
+                    if ($parentItem.length) {
+                        // Find last sibling of this parent
+                        var $lastSibling = $parentItem;
+                        $parentItem.nextAll('.dgptm-tab-config-item').each(function() {
+                            if ($(this).data('parent') === parent) {
+                                $lastSibling = $(this);
+                            } else if (!$(this).data('parent') || $(this).data('parent') !== parent) {
+                                return false; // stop at next non-sibling
+                            }
+                        });
+                        // Move this child after the last sibling
+                        if ($(this).prev().data('tab-id') !== parent && $(this).prev().data('parent') !== parent) {
+                            $lastSibling.after($(this));
+                        }
+                    }
+                }
+            });
+        }
+    })();
+
     // Delete tab
     $(document).on('click', '.dgptm-tab-delete', function() {
         var $tab = $(this).closest('.dgptm-tab-config-item');

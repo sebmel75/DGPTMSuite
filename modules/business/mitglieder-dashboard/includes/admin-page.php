@@ -29,10 +29,37 @@ $top_tabs = array_filter($all_tabs, function($t) { return empty($t['parent']); }
     <!-- Tabs Config -->
     <div class="dgptm-admin-section" data-admin-panel="tabs">
         <h2>Tab-Verwaltung</h2>
-        <p class="description">Deaktivierte Tabs werden nicht angezeigt.</p>
+        <p class="description">Drag &amp; Drop zum Umsortieren. Unter-Tabs werden eingerueckt unter ihrem Haupt-Tab angezeigt.</p>
 
         <div id="dgptm-tab-list" class="dgptm-tab-list">
-            <?php foreach ($all_tabs as $tab) :
+            <?php
+            // Group: top-level tabs, each followed by their children
+            $grouped = [];
+            $child_map = [];
+            foreach ($all_tabs as $t) {
+                if (empty($t['parent'])) {
+                    $grouped[] = $t;
+                } else {
+                    $child_map[$t['parent']][] = $t;
+                }
+            }
+            $ordered_tabs = [];
+            foreach ($grouped as $g) {
+                $ordered_tabs[] = $g;
+                if (!empty($child_map[$g['id']])) {
+                    foreach ($child_map[$g['id']] as $c) {
+                        $ordered_tabs[] = $c;
+                    }
+                }
+            }
+            // Orphan children (parent not found)
+            foreach ($child_map as $pid => $kids) {
+                $found = false;
+                foreach ($grouped as $g) { if ($g['id'] === $pid) { $found = true; break; } }
+                if (!$found) { foreach ($kids as $c) $ordered_tabs[] = $c; }
+            }
+            ?>
+            <?php foreach ($ordered_tabs as $tab) :
                 // Parse permission for display
                 $perm = $tab['permission'] ?? 'always';
                 $perm_type = 'always';
@@ -44,9 +71,9 @@ $top_tabs = array_filter($all_tabs, function($t) { return empty($t['parent']); }
                 elseif (strpos($perm, 'role:') === 0) { $perm_type = 'role'; $perm_roles = substr($perm, 5); }
                 elseif (strpos($perm, 'sc:') === 0) { $perm_type = 'shortcode'; $perm_sc = substr($perm, 3); }
             ?>
-            <div class="dgptm-tab-config-item" data-tab-id="<?php echo esc_attr($tab['id']); ?>">
+            <div class="dgptm-tab-config-item<?php echo !empty($tab['parent']) ? ' dgptm-tab-child' : ''; ?>" data-tab-id="<?php echo esc_attr($tab['id']); ?>" data-parent="<?php echo esc_attr($tab['parent'] ?? ''); ?>">
                 <div class="dgptm-tab-config-header">
-                    <span class="dashicons <?php echo esc_attr(!empty($tab['parent']) ? 'dashicons-arrow-right-alt' : 'dashicons-menu'); ?>" style="color:#999;"></span>
+                    <span class="dgptm-drag-handle dashicons dashicons-move" title="Ziehen zum Umsortieren"></span>
                     <strong class="dgptm-tab-config-label"><?php echo esc_html($tab['label']); ?></strong>
                     <code class="dgptm-tab-config-id"><?php echo esc_html($tab['id']); ?></code>
                     <?php if (!empty($tab['parent'])) : ?>

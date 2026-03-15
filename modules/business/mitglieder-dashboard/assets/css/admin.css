@@ -48,23 +48,19 @@
     background: #f0f6fc;
 }
 
-/* Drag handle */
-.dgptm-drag-handle {
-    cursor: grab;
-    color: #999;
+/* Move buttons */
+.dgptm-move-up,
+.dgptm-move-down {
+    padding: 0 6px !important;
+    min-width: 24px;
+    font-size: 10px !important;
+    line-height: 22px !important;
+    color: #666 !important;
 }
 
-.dgptm-drag-handle:hover {
-    color: #333;
-}
-
-.dgptm-tab-config-item.dragging {
-    opacity: 0.4;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-}
-
-.dgptm-tab-config-item.drag-over {
-    border-top: 3px solid #2271b1;
+.dgptm-move-up:hover,
+.dgptm-move-down:hover {
+    color: #2271b1 !important;
 }
 
 .dgptm-tab-config-label {

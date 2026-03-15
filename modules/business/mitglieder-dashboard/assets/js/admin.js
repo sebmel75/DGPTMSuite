@@ -1,6 +1,7 @@
 jQuery(function($) {
+    'use strict';
 
-    // Admin tab switching (Tabs / Einstellungen)
+    // ─── Admin tab switching ───
     $('.nav-tab').on('click', function(e) {
         e.preventDefault();
         var tab = $(this).data('admin-tab');
@@ -10,14 +11,14 @@ jQuery(function($) {
         $('[data-admin-panel="' + tab + '"]').show();
     });
 
-    // Toggle details
+    // ─── Toggle details ───
     $(document).on('click', '.dgptm-tab-expand', function() {
         var $details = $(this).closest('.dgptm-tab-config-item').find('.dgptm-tab-config-details');
         $details.slideToggle(200);
         $(this).text($details.is(':visible') ? 'Zuklappen' : 'Details');
     });
 
-    // Permission type toggle
+    // ─── Permission type toggle ───
     $(document).on('change', '.dt-perm-type', function() {
         var val = $(this).val();
         var $item = $(this).closest('.dgptm-tab-config-item');
@@ -26,12 +27,59 @@ jQuery(function($) {
         $item.find('.dt-row-shortcode').toggle(val === 'shortcode');
     });
 
-    // Update label preview
+    // ─── Label preview ───
     $(document).on('input', '.dt-label', function() {
         $(this).closest('.dgptm-tab-config-item').find('.dgptm-tab-config-label').text($(this).val());
     });
 
-    // Build permission string from dropdowns
+    // ─── Move Up / Down ───
+    $(document).on('click', '.dgptm-move-up', function(e) {
+        e.preventDefault();
+        var $item = $(this).closest('.dgptm-tab-config-item');
+        var $prev = $item.prev('.dgptm-tab-config-item');
+        if ($prev.length) {
+            $prev.before($item);
+            regroup();
+        }
+    });
+
+    $(document).on('click', '.dgptm-move-down', function(e) {
+        e.preventDefault();
+        var $item = $(this).closest('.dgptm-tab-config-item');
+        var $next = $item.next('.dgptm-tab-config-item');
+        if ($next.length) {
+            $next.after($item);
+            regroup();
+        }
+    });
+
+    // ─── Regroup: children after their parent ───
+    function regroup() {
+        var $list = $('#dgptm-tab-list');
+        // For each child, ensure it's right after its parent (or after last sibling)
+        $list.find('.dgptm-tab-config-item[data-parent!=""]').each(function() {
+            var parentId = $(this).data('parent');
+            if (!parentId) return;
+            var $parent = $list.find('.dgptm-tab-config-item[data-tab-id="' + parentId + '"]');
+            if (!$parent.length) return;
+
+            // Find last element that belongs to this parent
+            var $last = $parent;
+            $parent.nextAll('.dgptm-tab-config-item').each(function() {
+                if ($(this).data('parent') === parentId) $last = $(this);
+                else return false;
+            });
+
+            // If this item is not already right after parent/siblings, move it
+            var myIndex = $(this).index();
+            var lastIndex = $last.index();
+            if (myIndex <= $parent.index() || myIndex > lastIndex + 1) {
+                $last.after($(this));
+            }
+        });
+    }
+
+    // ─── Build permission string ───
     function buildPerm($item) {
         var type = $item.find('.dt-perm-type').val();
         if (type === 'admin') return 'admin';
@@ -41,7 +89,7 @@ jQuery(function($) {
         return 'always';
     }
 
-    // Collect all tabs
+    // ─── Collect tabs ───
     function collect() {
         var tabs = [];
         $('#dgptm-tab-list .dgptm-tab-config-item').each(function(i) {
@@ -66,9 +114,11 @@ jQuery(function($) {
         $('html, body').animate({ scrollTop: 0 }, 200);
     }
 
-    // Save
+    // ─── Save tabs ───
     $('#dt-save').on('click', function() {
-        var $btn = $(this).prop('disabled', true).text('Speichern...');
+        var $btn = $(this);
+        var origText = $btn.text();
+        $btn.prop('disabled', true).text('Speichern...');
         $.ajax({
             url: dgptmDashAdmin.ajax,
             type: 'POST',
@@ -79,13 +129,15 @@ jQuery(function($) {
         }).fail(function(x, s, e) {
             msg('Speichern fehlgeschlagen: ' + (e || s), 'error');
         }).always(function() {
-            $btn.prop('disabled', false).text('Alle Tabs speichern');
+            $btn.prop('disabled', false).text(origText);
         });
     });
 
-    // Save settings
-    $('#dt-save-settings').on('click', function() {
-        var $btn = $(this).prop('disabled', true).text('Speichern...');
+    // ─── Save settings ───
+    $(document).on('click', '#dt-save-settings', function() {
+        var $btn = $(this);
+        var origText = $btn.text();
+        $btn.prop('disabled', true).text('Speichern...');
         $.ajax({
             url: dgptmDashAdmin.ajax,
             type: 'POST',
@@ -100,18 +152,18 @@ jQuery(function($) {
         }).fail(function(x, s, e) {
             msg('Fehler: ' + (e || s), 'error');
         }).always(function() {
-            $btn.prop('disabled', false).text('Einstellungen speichern');
+            $btn.prop('disabled', false).text(origText);
         });
     });
 
-    // Reset
+    // ─── Reset ───
     $('#dt-reset').on('click', function() {
         if (!confirm('Alle Tabs auf Standard zuruecksetzen? Individuelle Aenderungen gehen verloren.')) return;
         $.post(dgptmDashAdmin.ajax, { action: 'dgptm_dash_save', nonce: dgptmDashAdmin.nonce, tabs: '__RESET__' })
          .done(function() { location.reload(); });
     });
 
-    // Add tab
+    // ─── Add tab ───
     $('#dt-add-tab').on('click', function() {
         var id = $.trim($('#new-tab-id').val()).toLowerCase().replace(/[^a-z0-9-]/g, '');
         var label = $.trim($('#new-tab-label').val());
@@ -120,10 +172,12 @@ jQuery(function($) {
         if ($('#dgptm-tab-list .dgptm-tab-config-item[data-tab-id="' + id + '"]').length) { alert('ID existiert bereits'); return; }
 
         var parentBadge = parent ? '<span style="font-size:11px;color:#2271b1;background:#e8f0fe;padding:2px 8px;border-radius:3px;">↳ ' + parent + '</span>' : '';
+        var childCls = parent ? ' dgptm-tab-child' : '';
 
-        var html = '<div class="dgptm-tab-config-item" data-tab-id="' + id + '">' +
+        var html = '<div class="dgptm-tab-config-item' + childCls + '" data-tab-id="' + id + '" data-parent="' + parent + '">' +
             '<div class="dgptm-tab-config-header">' +
-            '<span class="dashicons dashicons-menu" style="color:#999;"></span>' +
+            '<button type="button" class="button button-small dgptm-move-up" title="Hoch">▲</button>' +
+            '<button type="button" class="button button-small dgptm-move-down" title="Runter">▼</button>' +
             '<strong class="dgptm-tab-config-label">' + $('<span>').text(label).html() + '</strong>' +
             '<code class="dgptm-tab-config-id">' + id + '</code>' +
             parentBadge +
@@ -134,97 +188,20 @@ jQuery(function($) {
             '<div class="dgptm-tab-config-details">' +
             '<table class="form-table">' +
             '<tr><th>Label</th><td><input type="text" class="dt-label regular-text" value="' + $('<span>').text(label).html() + '"></td></tr>' +
-            '<tr><th>Uebergeordneter Tab</th><td><input type="text" class="dt-parent regular-text" value="' + parent + '" placeholder="Tab-ID des Eltern-Tabs"></td></tr>' +
-            '<tr><th>Berechtigungstyp</th><td><select class="dt-perm-type"><option value="always" selected>Immer sichtbar</option><option value="acf_field">ACF-Feld</option><option value="role">Rolle</option><option value="admin">Nur Admins</option></select></td></tr>' +
-            '<tr><th>Inhalt</th><td><textarea class="dt-content large-text code" rows="10" style="font-family:Consolas,monospace;font-size:12px;" placeholder="HTML und Shortcodes eingeben..."></textarea></td></tr>' +
+            '<tr><th>Direkter Link</th><td><input type="url" class="dt-link regular-text" value="" placeholder="https://..."></td></tr>' +
+            '<tr><th>Uebergeordneter Tab</th><td><input type="text" class="dt-parent regular-text" value="' + parent + '"></td></tr>' +
+            '<tr><th>Berechtigungstyp</th><td><select class="dt-perm-type"><option value="always" selected>Immer sichtbar</option><option value="acf_field">ACF-Feld</option><option value="role">Rolle</option><option value="shortcode">Shortcode</option><option value="admin">Nur Admins</option></select></td></tr>' +
+            '<tr><th>Inhalt</th><td><textarea class="dt-content large-text code" rows="10" style="font-family:Consolas,monospace;font-size:12px;" placeholder="HTML und Shortcodes..."></textarea></td></tr>' +
             '</table></div></div>';
 
         $('#dgptm-tab-list').append(html);
         $('#new-tab-id, #new-tab-label').val('');
         $('#new-tab-parent').val('');
         msg('Tab "' + label + '" erstellt. Bitte Inhalt eingeben und speichern.', 'ok');
+        regroup();
     });
 
-    // ─── Drag & Drop Sorting ───
-    (function() {
-        var dragItem = null;
-        var $list = $('#dgptm-tab-list');
-
-        $list.on('mousedown', '.dgptm-drag-handle', function() {
-            dragItem = $(this).closest('.dgptm-tab-config-item')[0];
-            dragItem.setAttribute('draggable', 'true');
-        });
-
-        $list.on('dragstart', '.dgptm-tab-config-item', function(e) {
-            if (!dragItem || dragItem !== this) { e.preventDefault(); return; }
-            $(this).addClass('dragging');
-            e.originalEvent.dataTransfer.effectAllowed = 'move';
-        });
-
-        $list.on('dragover', '.dgptm-tab-config-item', function(e) {
-            e.preventDefault();
-            e.originalEvent.dataTransfer.dropEffect = 'move';
-            $list.find('.drag-over').removeClass('drag-over');
-            $(this).addClass('drag-over');
-        });
-
-        $list.on('dragleave', '.dgptm-tab-config-item', function() {
-            $(this).removeClass('drag-over');
-        });
-
-        $list.on('drop', '.dgptm-tab-config-item', function(e) {
-            e.preventDefault();
-            $(this).removeClass('drag-over');
-            if (dragItem && dragItem !== this) {
-                var $drag = $(dragItem);
-                var $target = $(this);
-                // Move dragged item before or after target based on position
-                if ($drag.index() < $target.index()) {
-                    $target.after($drag);
-                } else {
-                    $target.before($drag);
-                }
-                // If dragged item is a parent, move its children along
-                reorderChildren();
-            }
-        });
-
-        $list.on('dragend', '.dgptm-tab-config-item', function() {
-            $(this).removeClass('dragging');
-            if (dragItem) {
-                dragItem.removeAttribute('draggable');
-                dragItem = null;
-            }
-            $list.find('.drag-over').removeClass('drag-over');
-        });
-
-        // Re-group children under their parents after any drag
-        function reorderChildren() {
-            $list.find('.dgptm-tab-config-item').each(function() {
-                var parent = $(this).data('parent');
-                if (parent) {
-                    var $parentItem = $list.find('.dgptm-tab-config-item[data-tab-id="' + parent + '"]');
-                    if ($parentItem.length) {
-                        // Find last sibling of this parent
-                        var $lastSibling = $parentItem;
-                        $parentItem.nextAll('.dgptm-tab-config-item').each(function() {
-                            if ($(this).data('parent') === parent) {
-                                $lastSibling = $(this);
-                            } else if (!$(this).data('parent') || $(this).data('parent') !== parent) {
-                                return false; // stop at next non-sibling
-                            }
-                        });
-                        // Move this child after the last sibling
-                        if ($(this).prev().data('tab-id') !== parent && $(this).prev().data('parent') !== parent) {
-                            $lastSibling.after($(this));
-                        }
-                    }
-                }
-            });
-        }
-    })();
-
-    // Delete tab
+    // ─── Delete tab ───
     $(document).on('click', '.dgptm-tab-delete', function() {
         var $tab = $(this).closest('.dgptm-tab-config-item');
         if (!confirm('Tab "' + $tab.data('tab-id') + '" loeschen?')) return;

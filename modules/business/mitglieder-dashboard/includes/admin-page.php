@@ -73,7 +73,8 @@ $top_tabs = array_filter($all_tabs, function($t) { return empty($t['parent']); }
             ?>
             <div class="dgptm-tab-config-item<?php echo !empty($tab['parent']) ? ' dgptm-tab-child' : ''; ?>" data-tab-id="<?php echo esc_attr($tab['id']); ?>" data-parent="<?php echo esc_attr($tab['parent'] ?? ''); ?>">
                 <div class="dgptm-tab-config-header">
-                    <span class="dgptm-drag-handle dashicons dashicons-move" title="Ziehen zum Umsortieren"></span>
+                    <button type="button" class="button button-small dgptm-move-up" title="Hoch">&#9650;</button>
+                    <button type="button" class="button button-small dgptm-move-down" title="Runter">&#9660;</button>
                     <strong class="dgptm-tab-config-label"><?php echo esc_html($tab['label']); ?></strong>
                     <code class="dgptm-tab-config-id"><?php echo esc_html($tab['id']); ?></code>
                     <?php if (!empty($tab['parent'])) : ?>

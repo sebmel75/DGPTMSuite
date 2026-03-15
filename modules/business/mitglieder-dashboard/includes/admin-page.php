@@ -38,9 +38,11 @@ $top_tabs = array_filter($all_tabs, function($t) { return empty($t['parent']); }
                 $perm_type = 'always';
                 $perm_acf = '';
                 $perm_roles = '';
+                $perm_sc = '';
                 if ($perm === 'admin') $perm_type = 'admin';
                 elseif (strpos($perm, 'acf:') === 0) { $perm_type = 'acf_field'; $perm_acf = substr($perm, 4); }
                 elseif (strpos($perm, 'role:') === 0) { $perm_type = 'role'; $perm_roles = substr($perm, 5); }
+                elseif (strpos($perm, 'sc:') === 0) { $perm_type = 'shortcode'; $perm_sc = substr($perm, 3); }
             ?>
             <div class="dgptm-tab-config-item" data-tab-id="<?php echo esc_attr($tab['id']); ?>">
                 <div class="dgptm-tab-config-header">
@@ -89,11 +91,6 @@ $top_tabs = array_filter($all_tabs, function($t) { return empty($t['parent']); }
                         <tr>
                             <th>Berechtigungstyp</th>
                             <td>
-                                <?php
-                                // Also detect sc: type
-                                if (strpos($perm, 'sc:') === 0) { $perm_type = 'shortcode'; $perm_sc = substr($perm, 3); }
-                                else { $perm_sc = ''; }
-                                ?>
                                 <select class="dt-perm-type">
                                     <option value="always" <?php selected($perm_type, 'always'); ?>>Immer sichtbar</option>
                                     <option value="acf_field" <?php selected($perm_type, 'acf_field'); ?>>ACF-Feld</option>

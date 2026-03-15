@@ -4,7 +4,9 @@
  * This is now a normal tab. Sub-tabs are separate templates, rendered by the parent/child system.
  */
 if (!defined('ABSPATH')) exit;
-
+?>
+<!-- DEBUG: tab-profil.php loaded, crm_data keys: <?php echo implode(',', array_keys($crm_data ?? [])); ?>, user_id: <?php echo $user_id ?? 'NULL'; ?> -->
+<?php
 $ansprache = $crm_data['Ansprache'] ?? '';
 $vorname   = $crm_data['Vorname'] ?? '';
 $nachname  = $crm_data['Nachname'] ?? '';

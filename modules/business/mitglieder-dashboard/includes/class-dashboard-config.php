@@ -40,8 +40,8 @@ class DGPTM_Dashboard_Config {
                         $tab['parent_tab'] = $default_map[$tab['id']]['parent_tab'] ?? '';
                         $repaired = true;
                     }
-                    // Ensure content_html - fill from defaults if missing
-                    if (!isset($tab['content_html'])) {
+                    // Ensure content_html - fill from defaults if missing or empty
+                    if (!isset($tab['content_html']) || ($tab['content_html'] === '' && !empty($default_map[$tab['id']]['content_html']))) {
                         $tab['content_html'] = $default_map[$tab['id']]['content_html'] ?? '';
                         $repaired = true;
                     }
@@ -146,7 +146,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 10,
                     'parent_tab'       => '',
                     'template'         => 'tabs/tab-profil.php',
-                    'content_html'     => '',
+                    'content_html'     => "<h2>Willkommen im Mitgliederbereich</h2>\n<p>Mitgliederbereich der DGPTM</p>\n\n[zoho_books_outstanding_banner]\n[dgptm-studistatus-banner]\n\n<div class=\"dgptm-profile-meta\">\n<span class=\"dgptm-badge dgptm-badge--primary\">[zoho_api_data_ajax field=\"Mitgliedsart\"]</span>\n<span class=\"dgptm-badge dgptm-badge--primary\">Nr. [zoho_api_data_ajax field=\"MitgliedsNr\"]</span>\n<span class=\"dgptm-badge dgptm-badge--success\">[zoho_api_data_ajax field=\"Status\"]</span>\n<span class=\"dgptm-badge dgptm-badge--accent\">EFN: [zoho_api_data_ajax field=\"EFN\"]</span>\n</div>\n\n<div class=\"dgptm-card\">\n<h3>Kontaktdaten</h3>\n<dl class=\"dgptm-data-list\">\n<dt>Adresse</dt>\n<dd>[zoho_api_data_ajax field=\"Strasse\"]<br>[zoho_api_data_ajax field=\"PLZ\"] [zoho_api_data_ajax field=\"Ort\"]</dd>\n<dt>Telefon</dt>\n<dd>[zoho_api_data_ajax field=\"TelDienst\"]</dd>\n<dt>Mobil</dt>\n<dd>[zoho_api_data_ajax field=\"TelMobil\"]</dd>\n<dt>E-Mail</dt>\n<dd>[zoho_api_data_ajax field=\"Mail1\"]</dd>\n</dl>\n</div>\n\n<p><a href=\"/mitgliedschaft/interner-bereich/fortbildungsnachweis/\" class=\"dgptm-btn dgptm-btn--primary\">Fortbildungsnachweis (inkl. Quiz)</a></p>",
                 ],
                 // Children of profil
                 [
@@ -253,7 +253,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 30,
                     'parent_tab'       => '',
                     'template'         => 'tabs/tab-mitgliederversammlung.php',
-                    'content_html'     => '',
+                    'content_html'     => "<h3>Mitgliederversammlung 2025</h3>\n<p>Alle Mitglieder haben die Moeglichkeit alternativ online an der Mitgliederversammlung teilzunehmen.</p>\n[online_abstimmen_button meeting_number=\"82770189111\" kind=\"webinar\" test=\"1\"]\n<p style=\"color:red\">Rot = Nicht online teilnehmen</p>\n<p style=\"color:green\">Gruen = Online teilnehmen</p>\n[online_abstimmen_liste]",
                 ],
                 [
                     'id'               => 'news',
@@ -268,7 +268,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 40,
                     'parent_tab'       => '',
                     'template'         => 'tabs/tab-news.php',
-                    'content_html'     => '',
+                    'content_html'     => "<h3>News &amp; Veranstaltungen</h3>\n<h4>Nachrichten fuer Mitglieder</h4>\n[news-modal category=\"intern\" layout=\"list\" title_length=\"100\" show_pubdate=true]\n\n<h4>Veranstaltungen</h4>\n[news-modal category=\"events\" layout=\"list\" sort_field=\"event_start\" sort_dir=\"ASC\" title_length=\"50\"]",
                 ],
                 [
                     'id'               => 'admin',
@@ -283,7 +283,7 @@ class DGPTM_Dashboard_Config {
                     'order'            => 50,
                     'parent_tab'       => '',
                     'template'         => 'tabs/tab-admin.php',
-                    'content_html'     => '',
+                    'content_html'     => "<h3>Admin &amp; Testbereich</h3>\n[timeline_manager]\n[gehaltsbarometer_statistik]\n[wissens_bot]\n[herzzentren_benutzer_liste]\n[doi_liste]\n[publikation_list_frontend count=\"5\"]\n[publikation_edit_frontend]\n[list_blaue_seiten]\n[efn_label_sheet default=\"Avery L7160 (63.5x38.1, 3x8)\" show_text=\"yes\"]\n[fortbildung_bestaetigung]\n[events_by_month]",
                 ],
                 [
                     'id'               => 'abstimmung',

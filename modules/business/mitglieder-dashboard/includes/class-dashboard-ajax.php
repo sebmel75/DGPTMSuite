@@ -148,7 +148,15 @@ class DGPTM_Dashboard_Ajax {
                 $tab['order']            = absint($tab['order'] ?? 999);
                 // Template is derived from ID at render time, store for documentation only
                 $tab['template']         = 'tabs/tab-' . sanitize_key($tab['id'] ?? '') . '.php';
-                $tab['content_html']     = wp_kses_post(wp_unslash($tab['content_html'] ?? ''));
+                // Preserve existing content_html if JS sends null (editor not rendered)
+                $new_html = $tab['content_html'] ?? null;
+                if ($new_html === null) {
+                    // JS couldn't read the editor - keep existing value
+                    $existing_tab = $this->config->get_tab_by_id($tab['id'] ?? '');
+                    $tab['content_html'] = $existing_tab['content_html'] ?? '';
+                } else {
+                    $tab['content_html'] = wp_kses_post(wp_unslash($new_html));
+                }
 
                 if (isset($tab['permission_roles']) && is_array($tab['permission_roles'])) {
                     $tab['permission_roles'] = array_map('sanitize_key', $tab['permission_roles']);

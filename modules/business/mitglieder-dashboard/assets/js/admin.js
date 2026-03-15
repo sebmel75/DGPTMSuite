@@ -81,17 +81,10 @@
         },
 
         getEditorContent: function(tabId) {
-            var editorId = 'dgptm_tab_content_' + tabId.replace(/[^a-z0-9]/g, '');
-            // Try TinyMCE first
-            if (typeof tinymce !== 'undefined') {
-                var editor = tinymce.get(editorId);
-                if (editor && !editor.isHidden()) {
-                    return editor.getContent();
-                }
-            }
-            // Fallback to textarea
-            var $textarea = $('#' + editorId);
-            return $textarea.length ? $textarea.val() : '';
+            // Read directly from textarea (reliable, works in hidden panels)
+            var $item = $('#dgptm-tab-list .dgptm-tab-config-item[data-tab-id="' + tabId + '"]');
+            var $textarea = $item.find('.dgptm-tab-content-html');
+            return $textarea.length ? $textarea.val() : null;
         },
 
         collectConfig: function() {

@@ -1,0 +1,24 @@
+{
+    "id": "mitglieder-dashboard",
+    "name": "DGPTM - Mitglieder Dashboard",
+    "description": "Modernes Mitglieder-Dashboard mit Tab-Navigation, AJAX Lazy-Loading, CRM-Caching und berechtigungsbasierter Sichtbarkeit",
+    "version": "1.0.0",
+    "author": "Sebastian Melzer",
+    "main_file": "dgptm-mitglieder-dashboard.php",
+    "dependencies": [],
+    "wp_dependencies": {
+        "plugins": ["advanced-custom-fields"]
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "business",
+    "icon": "dashicons-dashboard",
+    "active": false,
+    "critical": false,
+    "flags": ["development"],
+    "comment": {
+        "text": "Ersetzt die Elementor-basierte Interner-Bereich-Seite durch ein schnelles, responsives Dashboard",
+        "timestamp": 1742025600,
+        "user_id": 1
+    }
+}

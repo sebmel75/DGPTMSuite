@@ -90,6 +90,7 @@
                     id: $item.data('tab-id'),
                     label: $item.find('.dgptm-tab-label').val(),
                     icon: $item.find('.dgptm-tab-icon').val(),
+                    parent_tab: $item.find('.dgptm-tab-parent').val() || '',
                     permission_type: $item.find('.dgptm-tab-permission-type').val(),
                     permission_field: $item.find('.dgptm-tab-permission-field').val(),
                     permission_roles: roles ? roles.split(',').map(function(r) { return $.trim(r); }) : [],

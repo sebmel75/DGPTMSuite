@@ -63,6 +63,23 @@ $acf_fields = [
                             <td><input type="text" class="dgptm-tab-icon regular-text" value="<?php echo esc_attr($tab['icon'] ?? ''); ?>" placeholder="dashicons-admin-page"></td>
                         </tr>
                         <tr>
+                            <th>Uebergeordneter Tab</th>
+                            <td>
+                                <select class="dgptm-tab-parent">
+                                    <option value="">-- Kein (Top-Level) --</option>
+                                    <?php foreach ($all_tabs as $ptab) :
+                                        if ($ptab['id'] === $tab['id']) continue;
+                                        if (!empty($ptab['parent_tab'])) continue; // Only top-level as parents
+                                    ?>
+                                        <option value="<?php echo esc_attr($ptab['id']); ?>" <?php selected($tab['parent_tab'] ?? '', $ptab['id']); ?>>
+                                            <?php echo esc_html($ptab['label']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <p class="description">Wird als Unter-Tab (Folder) unter dem gewaehlten Tab angezeigt.</p>
+                            </td>
+                        </tr>
+                        <tr>
                             <th>Berechtigungstyp</th>
                             <td>
                                 <select class="dgptm-tab-permission-type">

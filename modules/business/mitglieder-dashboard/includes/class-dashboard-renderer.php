@@ -1,6 +1,6 @@
 <?php
 /**
- * Dashboard Renderer - Shortcode handler, tab navigation, content rendering
+ * Dashboard Renderer - Supports parent/child tab hierarchy with folder sub-tabs
  */
 
 if (!defined('ABSPATH')) {
@@ -32,22 +32,18 @@ class DGPTM_Dashboard_Renderer {
         }
 
         $user_id = get_current_user_id();
-
-        // Preload permissions for efficiency
         $this->permissions->preload_permissions($user_id);
 
-        // Get visible tabs
-        $visible_tabs = $this->permissions->get_visible_tabs($user_id);
+        // Only top-level tabs in main nav
+        $visible_tabs = $this->get_visible_top_level_tabs($user_id);
 
         if (empty($visible_tabs)) {
             return '<div class="dgptm-dashboard-empty"><p>Keine Inhalte verfuegbar.</p></div>';
         }
 
-        // Determine active tab
         $default_tab = $this->config->get_setting('default_tab', 'profil');
         $active_tab_id = $default_tab;
 
-        // Check if default tab is visible, otherwise use first visible
         $found = false;
         foreach ($visible_tabs as $tab) {
             if ($tab['id'] === $active_tab_id) {
@@ -59,25 +55,41 @@ class DGPTM_Dashboard_Renderer {
             $active_tab_id = $visible_tabs[0]['id'];
         }
 
-        // Preload CRM data
         $crm_data = $this->crm_cache->get_user_data($user_id);
 
-        // Enqueue assets
         DGPTM_Mitglieder_Dashboard::get_instance()->enqueue_frontend_assets();
 
-        // Inject CSS custom properties from settings
         $primary = esc_attr($this->config->get_setting('primary_color', '#005792'));
         $accent  = esc_attr($this->config->get_setting('accent_color', '#bd1622'));
         wp_add_inline_style('dgptm-dashboard-frontend', ":root{--dgptm-primary:{$primary};--dgptm-accent:{$accent};}");
 
-        // Render
         ob_start();
         include DGPTM_DASHBOARD_PATH . 'templates/frontend-dashboard.php';
         return ob_get_clean();
     }
 
     /**
-     * Render tab content (used by both initial load and AJAX)
+     * Get visible top-level tabs for a user
+     */
+    public function get_visible_top_level_tabs($user_id) {
+        $top_level = $this->config->get_top_level_tabs();
+        return array_values(array_filter($top_level, function ($tab) use ($user_id) {
+            return !empty($tab['active']) && $this->permissions->user_can_see_tab($user_id, $tab);
+        }));
+    }
+
+    /**
+     * Get visible child tabs for a parent
+     */
+    public function get_visible_children($parent_id, $user_id) {
+        $children = $this->config->get_child_tabs($parent_id);
+        return array_values(array_filter($children, function ($tab) use ($user_id) {
+            return !empty($tab['active']) && $this->permissions->user_can_see_tab($user_id, $tab);
+        }));
+    }
+
+    /**
+     * Render a tab panel content - handles parent tabs with children automatically
      */
     public function render_tab_content($tab_id, $user_id = null) {
         if (!$user_id) {
@@ -93,33 +105,81 @@ class DGPTM_Dashboard_Renderer {
             return '<div class="dgptm-tab-error">Keine Berechtigung.</div>';
         }
 
-        // Derive template path from tab ID (never trust stored path - sanitize_file_name strips slashes)
+        // Check if this tab has children - if so, render folder layout
+        $children = $this->get_visible_children($tab_id, $user_id);
+
+        if (!empty($children)) {
+            return $this->render_parent_with_children($tab, $children, $user_id);
+        }
+
+        // Simple tab - just render its template
+        return $this->render_single_tab($tab, $user_id);
+    }
+
+    /**
+     * Render a parent tab with folder sub-tabs for its children
+     */
+    private function render_parent_with_children($parent, $children, $user_id) {
+        // Parent tab is the first folder tab, children follow
+        $all_folder_tabs = array_merge([$parent], $children);
+
+        $crm_data    = $this->crm_cache->get_user_data($user_id);
+        $permissions = $this->permissions;
+        $config      = $this->config;
+
+        ob_start();
+        ?>
+        <div class="dgptm-folder-tabs" data-subtab-group="<?php echo esc_attr($parent['id']); ?>">
+            <div class="dgptm-folder-nav">
+                <?php foreach ($all_folder_tabs as $i => $ftab) : ?>
+                    <a href="#"
+                       class="dgptm-folder-tab<?php echo $i === 0 ? ' dgptm-folder-tab--active' : ''; ?>"
+                       data-subtab="<?php echo esc_attr($ftab['id']); ?>">
+                        <?php echo esc_html($ftab['label']); ?>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+            <div class="dgptm-folder-content">
+                <?php foreach ($all_folder_tabs as $i => $ftab) : ?>
+                    <div class="dgptm-subtab-panel<?php echo $i === 0 ? ' dgptm-subtab-panel--active' : ''; ?>"
+                         data-subtab-panel="<?php echo esc_attr($ftab['id']); ?>"
+                         data-subtab-loaded="<?php echo $i === 0 ? 'true' : 'false'; ?>"
+                         data-subtab-action="<?php echo esc_attr($ftab['id']); ?>">
+                        <?php if ($i === 0) : ?>
+                            <?php echo $this->render_single_tab($ftab, $user_id); ?>
+                        <?php else : ?>
+                            <div class="dgptm-tab-loading"><div class="dgptm-spinner"></div><span>Wird geladen...</span></div>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    /**
+     * Render a single tab template
+     */
+    public function render_single_tab($tab, $user_id) {
         $safe_id = preg_replace('/[^a-z0-9\-]/', '', $tab['id']);
         $template_file = DGPTM_DASHBOARD_PATH . 'templates/tabs/tab-' . $safe_id . '.php';
 
         if (!file_exists($template_file)) {
-            if (function_exists('dgptm_log_warning')) {
-                dgptm_log_warning('Dashboard template not found: ' . $template_file, 'mitglieder-dashboard');
-            }
-            return '<div class="dgptm-tab-error">Template nicht vorhanden: tabs/tab-' . esc_html($safe_id) . '.php'
-                . '<br><small style="color:#999">Pfad: ' . esc_html($template_file) . '</small></div>';
+            return '<div class="dgptm-tab-error">Template: tabs/tab-' . esc_html($safe_id) . '.php nicht vorhanden.</div>';
         }
 
-        // Make data available to templates
         $crm_data    = $this->crm_cache->get_user_data($user_id);
         $permissions = $this->permissions;
         $config      = $this->config;
 
         ob_start();
         include $template_file;
-        $html = ob_get_clean();
-
-        // Process shortcodes in the template output
-        return do_shortcode($html);
+        return do_shortcode(ob_get_clean());
     }
 
     /**
-     * Render the tab navigation bar
+     * Render the main tab navigation (top-level only)
      */
     public function render_tab_navigation($visible_tabs, $active_tab_id) {
         $use_dropdown = $this->config->get_setting('mobile_dropdown', true);
@@ -128,7 +188,6 @@ class DGPTM_Dashboard_Renderer {
             <div class="dgptm-tab-nav__scroll">
                 <?php foreach ($visible_tabs as $tab) :
                     $is_active = ($tab['id'] === $active_tab_id);
-                    $icon = $tab['icon'] ?? 'dashicons-admin-page';
                 ?>
                     <a href="#tab-<?php echo esc_attr($tab['id']); ?>"
                        class="dgptm-tab-nav__item<?php echo $is_active ? ' dgptm-tab-nav__item--active' : ''; ?>"

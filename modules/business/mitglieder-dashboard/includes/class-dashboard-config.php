@@ -1,6 +1,6 @@
 <?php
 /**
- * Dashboard Configuration - Tab definitions, wp_options storage
+ * Dashboard Configuration - Tab definitions with parent/child hierarchy
  */
 
 if (!defined('ABSPATH')) {
@@ -20,12 +20,17 @@ class DGPTM_Dashboard_Config {
                 $this->config = $this->get_defaults();
                 update_option(self::OPTION_KEY, $this->config);
             } else {
-                // Repair corrupted template paths (sanitize_file_name strips slashes)
+                // Repair corrupted template paths
                 $repaired = false;
                 foreach ($this->config['tabs'] as &$tab) {
                     $expected = 'tabs/tab-' . $tab['id'] . '.php';
                     if (empty($tab['template']) || $tab['template'] !== $expected) {
                         $tab['template'] = $expected;
+                        $repaired = true;
+                    }
+                    // Ensure parent_tab field exists
+                    if (!isset($tab['parent_tab'])) {
+                        $tab['parent_tab'] = '';
                         $repaired = true;
                     }
                 }
@@ -57,6 +62,31 @@ class DGPTM_Dashboard_Config {
         return $tabs;
     }
 
+    /**
+     * Get only top-level tabs (no parent)
+     */
+    public function get_top_level_tabs() {
+        return array_values(array_filter($this->get_tabs(), function ($tab) {
+            return empty($tab['parent_tab']);
+        }));
+    }
+
+    /**
+     * Get child tabs for a given parent
+     */
+    public function get_child_tabs($parent_id) {
+        return array_values(array_filter($this->get_tabs(), function ($tab) use ($parent_id) {
+            return ($tab['parent_tab'] ?? '') === $parent_id;
+        }));
+    }
+
+    /**
+     * Check if a tab has children
+     */
+    public function has_children($tab_id) {
+        return !empty($this->get_child_tabs($tab_id));
+    }
+
     public function get_tab_by_id($tab_id) {
         foreach ($this->get_tabs() as $tab) {
             if ($tab['id'] === $tab_id) {
@@ -66,9 +96,21 @@ class DGPTM_Dashboard_Config {
         return null;
     }
 
+    /**
+     * Get all tab IDs (for admin dropdown)
+     */
+    public function get_all_tab_ids() {
+        $ids = [];
+        foreach ($this->get_tabs() as $tab) {
+            $ids[$tab['id']] = $tab['label'];
+        }
+        return $ids;
+    }
+
     public function get_defaults() {
         return [
             'tabs' => [
+                // === Top-level: Mein Profil (parent with children) ===
                 [
                     'id'               => 'profil',
                     'label'            => 'Mein Profil',
@@ -80,8 +122,81 @@ class DGPTM_Dashboard_Config {
                     'datetime_end'     => '',
                     'active'           => true,
                     'order'            => 10,
+                    'parent_tab'       => '',
                     'template'         => 'tabs/tab-profil.php',
                 ],
+                // Children of profil
+                [
+                    'id'               => 'profil-stammdaten',
+                    'label'            => 'Stammdaten bearbeiten',
+                    'icon'             => '',
+                    'permission_type'  => 'always',
+                    'permission_field' => '',
+                    'permission_roles' => [],
+                    'datetime_start'   => '',
+                    'datetime_end'     => '',
+                    'active'           => true,
+                    'order'            => 11,
+                    'parent_tab'       => 'profil',
+                    'template'         => 'tabs/tab-profil-stammdaten.php',
+                ],
+                [
+                    'id'               => 'profil-transaktionen',
+                    'label'            => 'Rechnungen',
+                    'icon'             => '',
+                    'permission_type'  => 'always',
+                    'permission_field' => '',
+                    'permission_roles' => [],
+                    'datetime_start'   => '',
+                    'datetime_end'     => '',
+                    'active'           => true,
+                    'order'            => 12,
+                    'parent_tab'       => 'profil',
+                    'template'         => 'tabs/tab-profil-transaktionen.php',
+                ],
+                [
+                    'id'               => 'profil-lastschrift',
+                    'label'            => 'Lastschrift & Bescheinigung',
+                    'icon'             => '',
+                    'permission_type'  => 'always',
+                    'permission_field' => '',
+                    'permission_roles' => [],
+                    'datetime_start'   => '',
+                    'datetime_end'     => '',
+                    'active'           => true,
+                    'order'            => 13,
+                    'parent_tab'       => 'profil',
+                    'template'         => 'tabs/tab-profil-lastschrift.php',
+                ],
+                [
+                    'id'               => 'profil-efn',
+                    'label'            => 'EFN-Etiketten',
+                    'icon'             => '',
+                    'permission_type'  => 'always',
+                    'permission_field' => '',
+                    'permission_roles' => [],
+                    'datetime_start'   => '',
+                    'datetime_end'     => '',
+                    'active'           => true,
+                    'order'            => 14,
+                    'parent_tab'       => 'profil',
+                    'template'         => 'tabs/tab-profil-efn.php',
+                ],
+                [
+                    'id'               => 'profil-fortbildung',
+                    'label'            => 'Fortbildung',
+                    'icon'             => '',
+                    'permission_type'  => 'always',
+                    'permission_field' => '',
+                    'permission_roles' => [],
+                    'datetime_start'   => '',
+                    'datetime_end'     => '',
+                    'active'           => true,
+                    'order'            => 15,
+                    'parent_tab'       => 'profil',
+                    'template'         => 'tabs/tab-profil-fortbildung.php',
+                ],
+                // === Other top-level tabs ===
                 [
                     'id'               => 'jahrestagung',
                     'label'            => 'Jahrestagung',
@@ -93,6 +208,7 @@ class DGPTM_Dashboard_Config {
                     'datetime_end'     => '',
                     'active'           => true,
                     'order'            => 20,
+                    'parent_tab'       => '',
                     'template'         => 'tabs/tab-jahrestagung.php',
                 ],
                 [
@@ -106,6 +222,7 @@ class DGPTM_Dashboard_Config {
                     'datetime_end'     => '',
                     'active'           => true,
                     'order'            => 30,
+                    'parent_tab'       => '',
                     'template'         => 'tabs/tab-mitgliederversammlung.php',
                 ],
                 [
@@ -119,6 +236,7 @@ class DGPTM_Dashboard_Config {
                     'datetime_end'     => '',
                     'active'           => true,
                     'order'            => 40,
+                    'parent_tab'       => '',
                     'template'         => 'tabs/tab-news.php',
                 ],
                 [
@@ -132,6 +250,7 @@ class DGPTM_Dashboard_Config {
                     'datetime_end'     => '',
                     'active'           => true,
                     'order'            => 50,
+                    'parent_tab'       => '',
                     'template'         => 'tabs/tab-admin.php',
                 ],
                 [
@@ -145,6 +264,7 @@ class DGPTM_Dashboard_Config {
                     'datetime_end'     => '',
                     'active'           => true,
                     'order'            => 60,
+                    'parent_tab'       => '',
                     'template'         => 'tabs/tab-abstimmung.php',
                 ],
                 [
@@ -158,6 +278,7 @@ class DGPTM_Dashboard_Config {
                     'datetime_end'     => '',
                     'active'           => true,
                     'order'            => 70,
+                    'parent_tab'       => '',
                     'template'         => 'tabs/tab-eventtracker.php',
                 ],
                 [
@@ -171,6 +292,7 @@ class DGPTM_Dashboard_Config {
                     'datetime_end'     => '',
                     'active'           => true,
                     'order'            => 80,
+                    'parent_tab'       => '',
                     'template'         => 'tabs/tab-zeitschrift.php',
                 ],
                 [
@@ -184,6 +306,7 @@ class DGPTM_Dashboard_Config {
                     'datetime_end'     => '',
                     'active'           => true,
                     'order'            => 90,
+                    'parent_tab'       => '',
                     'template'         => 'tabs/tab-gehalt.php',
                 ],
                 [
@@ -197,6 +320,7 @@ class DGPTM_Dashboard_Config {
                     'datetime_end'     => '',
                     'active'           => true,
                     'order'            => 100,
+                    'parent_tab'       => '',
                     'template'         => 'tabs/tab-quiz.php',
                 ],
                 [
@@ -210,6 +334,7 @@ class DGPTM_Dashboard_Config {
                     'datetime_end'     => '',
                     'active'           => true,
                     'order'            => 110,
+                    'parent_tab'       => '',
                     'template'         => 'tabs/tab-webinar.php',
                 ],
                 [
@@ -223,6 +348,7 @@ class DGPTM_Dashboard_Config {
                     'datetime_end'     => '',
                     'active'           => true,
                     'order'            => 120,
+                    'parent_tab'       => '',
                     'template'         => 'tabs/tab-microsoft.php',
                 ],
                 [
@@ -236,6 +362,7 @@ class DGPTM_Dashboard_Config {
                     'datetime_end'     => '',
                     'active'           => true,
                     'order'            => 130,
+                    'parent_tab'       => '',
                     'template'         => 'tabs/tab-ebcp.php',
                 ],
                 [
@@ -249,6 +376,7 @@ class DGPTM_Dashboard_Config {
                     'datetime_end'     => '',
                     'active'           => true,
                     'order'            => 140,
+                    'parent_tab'       => '',
                     'template'         => 'tabs/tab-checklisten.php',
                 ],
                 [
@@ -262,6 +390,7 @@ class DGPTM_Dashboard_Config {
                     'datetime_end'     => '',
                     'active'           => true,
                     'order'            => 150,
+                    'parent_tab'       => '',
                     'template'         => 'tabs/tab-umfragen.php',
                 ],
                 [
@@ -275,6 +404,7 @@ class DGPTM_Dashboard_Config {
                     'datetime_end'     => '',
                     'active'           => true,
                     'order'            => 160,
+                    'parent_tab'       => '',
                     'template'         => 'tabs/tab-news-editor.php',
                 ],
                 [
@@ -288,6 +418,7 @@ class DGPTM_Dashboard_Config {
                     'datetime_end'     => '',
                     'active'           => true,
                     'order'            => 170,
+                    'parent_tab'       => '',
                     'template'         => 'tabs/tab-stellenanzeigen.php',
                 ],
                 [
@@ -301,6 +432,7 @@ class DGPTM_Dashboard_Config {
                     'datetime_end'     => '',
                     'active'           => true,
                     'order'            => 180,
+                    'parent_tab'       => '',
                     'template'         => 'tabs/tab-herzzentrum.php',
                 ],
                 [
@@ -314,14 +446,15 @@ class DGPTM_Dashboard_Config {
                     'datetime_end'     => '',
                     'active'           => true,
                     'order'            => 190,
+                    'parent_tab'       => '',
                     'template'         => 'tabs/tab-feedback.php',
                 ],
             ],
             'settings' => [
-                'cache_ttl'      => 900,
-                'primary_color'  => '#005792',
-                'accent_color'   => '#bd1622',
-                'default_tab'    => 'profil',
+                'cache_ttl'       => 900,
+                'primary_color'   => '#005792',
+                'accent_color'    => '#bd1622',
+                'default_tab'     => 'profil',
                 'mobile_dropdown' => true,
             ],
         ];

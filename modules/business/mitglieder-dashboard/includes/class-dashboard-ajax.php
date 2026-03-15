@@ -63,91 +63,34 @@ class DGPTM_Dashboard_Ajax {
     }
 
     /**
-     * Lazy-load a sub-tab's content (profile sub-sections)
+     * Lazy-load a sub-tab's content (generalized: any child tab)
      */
     public function ajax_load_subtab() {
         check_ajax_referer('dgptm_dashboard_nonce', 'nonce');
 
-        $subtab_id = sanitize_key($_POST['subtab_id'] ?? '');
+        $subtab_id = sanitize_text_field($_POST['subtab_id'] ?? '');
         $user_id   = get_current_user_id();
 
         if (!$subtab_id || !$user_id) {
             wp_send_json_error(['message' => 'Ungueltige Anfrage']);
         }
 
-        $html = $this->render_subtab($subtab_id, $user_id);
+        // Load as a regular tab via render_single_tab
+        $tab = $this->config->get_tab_by_id($subtab_id);
+        if (!$tab) {
+            wp_send_json_error(['message' => 'Sub-Tab nicht gefunden: ' . $subtab_id]);
+        }
+
+        if (!$this->permissions->user_can_see_tab($user_id, $tab)) {
+            wp_send_json_error(['message' => 'Keine Berechtigung']);
+        }
+
+        $html = $this->renderer->render_single_tab($tab, $user_id);
 
         wp_send_json_success([
-            'html'      => do_shortcode($html),
+            'html'      => $html,
             'subtab_id' => $subtab_id,
         ]);
-    }
-
-    /**
-     * Render sub-tab content based on ID
-     */
-    private function render_subtab($subtab_id, $user_id) {
-        switch ($subtab_id) {
-            case 'profil_stammdaten':
-                ob_start();
-                if (shortcode_exists('dgptm-daten-bearbeiten')) {
-                    echo do_shortcode('[dgptm-daten-bearbeiten]');
-                } else {
-                    echo '<a href="' . esc_url(home_url('/mitgliedschaft/interner-bereich/daten-bearbeiten/')) . '" class="dgptm-btn dgptm-btn--outline">Daten bearbeiten</a>';
-                }
-                return ob_get_clean();
-
-            case 'profil_transaktionen':
-                if (shortcode_exists('zoho_books_transactions')) {
-                    return do_shortcode('[zoho_books_transactions]');
-                }
-                return '<p style="color:var(--dgptm-text-muted)">Transaktionsmodul nicht verfuegbar.</p>';
-
-            case 'profil_lastschrift':
-                ob_start();
-                if (shortcode_exists('gcl_formidable')) {
-                    echo '<h4>Lastschriftmandat</h4>';
-                    echo do_shortcode('[gcl_formidable]');
-                }
-                if (shortcode_exists('webhook_ajax_trigger')) {
-                    echo '<h4 style="margin-top:20px">Mitgliedsbescheinigung</h4>';
-                    echo do_shortcode('[webhook_ajax_trigger url="https://flow.zoho.eu/20086283718/flow/webhook/incoming?zapikey=1001.61e55251780c1730ee213bfe02d8a192.eb83171de88e8e99371cf264aa47e96c&isdebug=false" method="POST" user_field="zoho_id" cooldown="6" status_id="mgb" cooldown_message="Du hast heute schon eine Bescheinigung angefordert."]');
-                    echo do_shortcode('[webhook_status_output id="mgb"]');
-                }
-                if (shortcode_exists('dgptm-studistatus')) {
-                    echo '<h4 style="margin-top:20px">Studierendenstatus</h4>';
-                    echo do_shortcode('[dgptm-studistatus]');
-                }
-                return ob_get_clean();
-
-            case 'profil_efn':
-                ob_start();
-                if (shortcode_exists('efn_barcode_js')) {
-                    echo '<div class="dgptm-card"><h3>EFN-Barcode</h3>';
-                    echo do_shortcode('[efn_barcode_js]');
-                    echo '</div>';
-                }
-                if (shortcode_exists('efn_label_sheet')) {
-                    echo '<div class="dgptm-card"><h3>EFN-Etiketten</h3>';
-                    echo do_shortcode('[efn_label_sheet]');
-                    echo '</div>';
-                }
-                return ob_get_clean();
-
-            case 'profil_fortbildung':
-                ob_start();
-                echo '<a href="' . esc_url(home_url('/mitgliedschaft/interner-bereich/fortbildungsnachweis/')) . '" class="dgptm-btn dgptm-btn--primary">';
-                echo '<span class="dashicons dashicons-welcome-learn-more"></span> Fortbildungsnachweis (inkl. Quiz)</a>';
-                if (shortcode_exists('fobi_nachweis_pruefliste')) {
-                    echo '<div style="margin-top:var(--dgptm-gap)">';
-                    echo do_shortcode('[fobi_nachweis_pruefliste]');
-                    echo '</div>';
-                }
-                return ob_get_clean();
-
-            default:
-                return '<p style="color:var(--dgptm-text-muted)">Unbekannter Sub-Tab.</p>';
-        }
     }
 
     /**
@@ -198,6 +141,7 @@ class DGPTM_Dashboard_Ajax {
                 $tab['id']               = sanitize_key($tab['id'] ?? '');
                 $tab['label']            = sanitize_text_field($tab['label'] ?? '');
                 $tab['icon']             = sanitize_text_field($tab['icon'] ?? 'dashicons-admin-page');
+                $tab['parent_tab']       = sanitize_key($tab['parent_tab'] ?? '');
                 $tab['permission_type']  = sanitize_key($tab['permission_type'] ?? 'always');
                 $tab['permission_field'] = sanitize_key($tab['permission_field'] ?? '');
                 $tab['active']           = !empty($tab['active']);

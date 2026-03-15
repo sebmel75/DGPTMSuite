@@ -129,13 +129,16 @@ $top_tabs = array_filter($all_tabs, function($t) { return empty($t['parent']); }
                             </td>
                         </tr>
                         <tr class="dt-row-acf" <?php if ($perm_type !== 'acf_field') echo 'style="display:none;"'; ?>>
-                            <th>ACF-Feld</th>
+                            <th>ACF-Feld(er)</th>
                             <td>
-                                <select class="dt-perm-acf">
-                                    <?php foreach ($acf_fields as $key => $label) : ?>
-                                        <option value="<?php echo esc_attr($key); ?>" <?php selected($perm_acf, $key); ?>><?php echo esc_html($label); ?></option>
+                                <input type="text" class="dt-perm-acf regular-text" value="<?php echo esc_attr($perm_acf); ?>" placeholder="testbereich" list="dt-acf-fields-list">
+                                <p class="description">Kommagetrennt fuer mehrere (OR-Logik): <code>testbereich,umfragen,webinar</code></p>
+                                <datalist id="dt-acf-fields-list">
+                                    <?php foreach ($acf_fields as $key => $label) :
+                                        if (empty($key)) continue; ?>
+                                        <option value="<?php echo esc_attr($key); ?>">
                                     <?php endforeach; ?>
-                                </select>
+                                </datalist>
                             </td>
                         </tr>
                         <tr class="dt-row-role" <?php if ($perm_type !== 'role') echo 'style="display:none;"'; ?>>
@@ -221,7 +224,7 @@ $top_tabs = array_filter($all_tabs, function($t) { return empty($t['parent']); }
             <tbody>
                 <tr><td><strong>Immer sichtbar</strong></td><td><code>always</code></td><td>Fuer alle eingeloggten Benutzer</td></tr>
                 <tr><td><strong>Nur Admins</strong></td><td><code>admin</code></td><td>Nur Benutzer mit manage_options</td></tr>
-                <tr><td><strong>ACF-Feld</strong></td><td><code>acf:feldname</code></td><td>ACF True/False Feld auf dem Benutzerprofil (z.B. <code>acf:testbereich</code>)</td></tr>
+                <tr><td><strong>ACF-Feld</strong></td><td><code>acf:feld1,feld2</code></td><td>ACF True/False Felder auf dem Benutzerprofil. Mehrere kommagetrennt (OR-Logik). Z.B. <code>acf:testbereich,umfragen</code></td></tr>
                 <tr><td><strong>WordPress-Rolle</strong></td><td><code>role:rolle1,rolle2</code></td><td>Benutzer mit einer der Rollen (OR-Logik)</td></tr>
                 <tr><td><strong>Shortcode</strong></td><td><code>sc:shortcode_name</code></td><td>Shortcode muss <code>1</code> oder <code>true</code> zurueckgeben fuer sichtbar. Beispiel: <code>sc:umfrageberechtigung</code></td></tr>
             </tbody>

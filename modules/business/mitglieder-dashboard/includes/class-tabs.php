@@ -98,14 +98,18 @@ class DGPTM_Dashboard_Tabs {
         // "admin" permission: only admins
         if ($perm === 'admin') return $is_admin;
 
-        // ACF field check (e.g. "acf:testbereich")
+        // ACF field check (e.g. "acf:testbereich" or "acf:testbereich,umfragen,webinar")
         if (strpos($perm, 'acf:') === 0) {
             if ($admin_bypass && $is_admin) return true;
-            $field = substr($perm, 4);
-            if (function_exists('get_field')) {
-                return !empty(get_field($field, 'user_' . $user_id));
+            $fields = array_map('trim', explode(',', substr($perm, 4)));
+            foreach ($fields as $field) {
+                if (empty($field)) continue;
+                $val = function_exists('get_field')
+                    ? get_field($field, 'user_' . $user_id)
+                    : get_user_meta($user_id, $field, true);
+                if (!empty($val)) return true; // OR-Logik: eines genuegt
             }
-            return !empty(get_user_meta($user_id, $field, true));
+            return false;
         }
 
         // Role check (e.g. "role:jahrestagung,administrator")

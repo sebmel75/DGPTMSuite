@@ -7,13 +7,24 @@
 
     var FEEditor = {
 
+        _bound: false,
+
         init: function() {
-            this.bindSurveyForm();
-            this.bindQuestionBuilder();
-            this.bindSharing();
-            this.bindSurveyList();
+            // Only init if editor elements exist on page
+            if (!$('.dgptm-fe-editor-wrap, .dgptm-fe-survey-list').length) return;
+
+            // Bind document-level event handlers only once
+            if (!this._bound) {
+                this._bound = true;
+                this.bindSurveyForm();
+                this.bindQuestionBuilder();
+                this.bindSharing();
+                this.bindSurveyList();
+                this.bindCopyLinks();
+            }
+
+            // These can be called multiple times safely
             this.initSortable();
-            this.bindCopyLinks();
             this.populateParentDropdowns();
         },
 
@@ -548,7 +559,13 @@
         }
     };
 
+    // Init on page load
     $(document).ready(function() {
+        FEEditor.init();
+    });
+
+    // Re-init when loaded via AJAX dashboard tab
+    $(document).on('dgptm_tab_loaded', function() {
         FEEditor.init();
     });
 

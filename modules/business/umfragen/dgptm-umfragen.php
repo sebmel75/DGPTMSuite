@@ -332,8 +332,14 @@ if (!class_exists('DGPTM_Umfragen')) {
          */
         public function maybe_enqueue_for_dashboard() {
             global $post;
-            if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'dgptm_dashboard')) {
-                $this->enqueue_frontend_assets();
+            if (!is_a($post, 'WP_Post') || !has_shortcode($post->post_content, 'dgptm_dashboard')) {
+                return;
+            }
+            // Survey frontend assets (for embedded surveys)
+            $this->enqueue_frontend_assets();
+            // Survey editor assets (for [dgptm_umfrage_editor] in tabs)
+            if (is_user_logged_in() && self::user_can_manage_surveys()) {
+                $this->enqueue_frontend_editor_assets();
             }
         }
 

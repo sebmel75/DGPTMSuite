@@ -114,35 +114,36 @@
         bindSubTabs: function($d) {
             var self = this;
 
-            $d.on('click', '.dgptm-subtab-nav__item', function(e) {
+            $d.on('click', '.dgptm-folder-tab', function(e) {
                 e.preventDefault();
-                var $btn = $(this);
-                var subtabId = $btn.data('subtab');
-                var $nav = $btn.closest('.dgptm-subtab-nav');
-                var $parent = $btn.closest('.dgptm-tab-panel');
+                var $tab = $(this);
+                var subtabId = $tab.data('subtab');
+                var $folder = $tab.closest('.dgptm-folder-tabs');
 
-                // Switch active pill
-                $nav.find('.dgptm-subtab-nav__item').removeClass('dgptm-subtab-nav__item--active');
-                $btn.addClass('dgptm-subtab-nav__item--active');
+                // Switch active folder tab
+                $folder.find('.dgptm-folder-tab').removeClass('dgptm-folder-tab--active');
+                $tab.addClass('dgptm-folder-tab--active');
 
                 // Switch panels
-                $parent.find('.dgptm-subtab-panel').removeClass('dgptm-subtab-panel--active').hide();
-                var $panel = $parent.find('[data-subtab-panel="' + subtabId + '"]');
+                $folder.find('.dgptm-subtab-panel').removeClass('dgptm-subtab-panel--active').hide();
+                var $panel = $folder.find('[data-subtab-panel="' + subtabId + '"]');
                 $panel.addClass('dgptm-subtab-panel--active').show();
 
                 // Lazy load sub-tab
                 if ($panel.data('subtab-loaded') !== true) {
                     self.loadSubTabContent($panel);
                 }
+
+                return false;
             });
         },
 
         autoLoadSubTabs: function($d) {
-            // Load the first active sub-tab in each visible panel
-            $d.find('.dgptm-tab-panel--active .dgptm-subtab-panel--active').each(function() {
-                var $panel = $(this);
-                if ($panel.data('subtab-loaded') !== true) {
-                    Dashboard.loadSubTabContent($panel);
+            // Load the first active sub-tab in each visible folder
+            $d.find('.dgptm-tab-panel--active .dgptm-folder-tabs').each(function() {
+                var $activePanel = $(this).find('.dgptm-subtab-panel--active');
+                if ($activePanel.length && $activePanel.data('subtab-loaded') !== true) {
+                    Dashboard.loadSubTabContent($activePanel);
                 }
             });
         },

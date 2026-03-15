@@ -123,14 +123,14 @@ class DGPTM_Dashboard_Renderer {
                     $is_active = ($tab['id'] === $active_tab_id);
                     $icon = $tab['icon'] ?? 'dashicons-admin-page';
                 ?>
-                    <button class="dgptm-tab-nav__item<?php echo $is_active ? ' dgptm-tab-nav__item--active' : ''; ?>"
-                            role="tab"
-                            aria-selected="<?php echo $is_active ? 'true' : 'false'; ?>"
-                            aria-controls="dgptm-panel-<?php echo esc_attr($tab['id']); ?>"
-                            data-tab-id="<?php echo esc_attr($tab['id']); ?>">
-                        <span class="dashicons <?php echo esc_attr($icon); ?>"></span>
+                    <a href="#tab-<?php echo esc_attr($tab['id']); ?>"
+                       class="dgptm-tab-nav__item<?php echo $is_active ? ' dgptm-tab-nav__item--active' : ''; ?>"
+                       role="tab"
+                       aria-selected="<?php echo $is_active ? 'true' : 'false'; ?>"
+                       aria-controls="dgptm-panel-<?php echo esc_attr($tab['id']); ?>"
+                       data-tab-id="<?php echo esc_attr($tab['id']); ?>">
                         <span class="dgptm-tab-nav__label"><?php echo esc_html($tab['label']); ?></span>
-                    </button>
+                    </a>
                 <?php endforeach; ?>
             </div>
         </nav>

@@ -34,8 +34,10 @@
             var self = this;
             $d.on('click', '.dgptm-tab-nav__item', function(e) {
                 e.preventDefault();
+                e.stopPropagation();
                 var id = $(this).data('tab-id');
                 if (id && id !== self.activeTab) self.switchTab($d, id);
+                return false;
             });
         },
 

@@ -23,12 +23,21 @@
                 self.bindSkipLogic($container);
                 self.bindNesting($container);
                 self.bindExclusiveCheckbox($container);
+                self.bindTextInputs($container);
                 self.bindFileUploads($container);
                 self.bindSaveProgress($form, $container);
 
                 // Apply skip-logic and nesting on load (for pre-filled forms)
                 self.evaluateSkipLogic($container);
                 self.evaluateNesting($container);
+
+                // Skip initial section if empty
+                if (self.totalSections > 1 && !self.sectionHasVisibleQuestions($container, 0)) {
+                    var first = self.findNextVisibleSection($container, 0, 1);
+                    if (first !== -1) {
+                        self.goToSection($container, first);
+                    }
+                }
             });
         },
 
@@ -41,11 +50,17 @@
                 if (!self.validateSection($container, self.currentSection)) {
                     return;
                 }
-                self.goToSection($container, self.currentSection + 1);
+                var next = self.findNextVisibleSection($container, self.currentSection + 1, 1);
+                if (next !== -1) {
+                    self.goToSection($container, next);
+                }
             });
 
             $container.on('click', '.dgptm-btn-prev', function() {
-                self.goToSection($container, self.currentSection - 1);
+                var prev = self.findNextVisibleSection($container, self.currentSection - 1, -1);
+                if (prev !== -1) {
+                    self.goToSection($container, prev);
+                }
             });
         },
 
@@ -56,20 +71,48 @@
             $container.find('.dgptm-survey-section').hide();
             $container.find('.dgptm-survey-section[data-section="' + index + '"]').fadeIn(200);
 
-            // Update progress
-            var progress = Math.round(((index + 1) / this.totalSections) * 100);
+            // Calculate progress based on visible sections
+            var visibleSections = [];
+            for (var i = 0; i < this.totalSections; i++) {
+                if (this.sectionHasVisibleQuestions($container, i)) {
+                    visibleSections.push(i);
+                }
+            }
+            var currentPos = visibleSections.indexOf(index);
+            var totalVisible = visibleSections.length || 1;
+            if (currentPos < 0) currentPos = 0;
+            var progress = Math.round(((currentPos + 1) / totalVisible) * 100);
             $container.find('.dgptm-progress-fill').css('width', progress + '%');
-            $container.find('.dgptm-current-section').text(index + 1);
+            $container.find('.dgptm-current-section').text(currentPos + 1);
 
-            // Show/hide nav buttons
-            $container.find('.dgptm-btn-prev').toggle(index > 0);
-            $container.find('.dgptm-btn-next').toggle(index < this.totalSections - 1);
-            $container.find('.dgptm-btn-submit').toggle(index === this.totalSections - 1);
+            // Show/hide nav buttons based on visible sections
+            var hasPrev = this.findNextVisibleSection($container, index - 1, -1) !== -1;
+            var hasNext = this.findNextVisibleSection($container, index + 1, 1) !== -1;
+            $container.find('.dgptm-btn-prev').toggle(hasPrev);
+            $container.find('.dgptm-btn-next').toggle(hasNext);
+            $container.find('.dgptm-btn-submit').toggle(!hasNext);
 
             // Scroll to top of form
             $('html, body').animate({
                 scrollTop: $container.offset().top - 60
             }, 200);
+        },
+
+        sectionHasVisibleQuestions: function($container, index) {
+            var $section = $container.find('.dgptm-survey-section[data-section="' + index + '"]');
+            if (!$section.length) return false;
+            return $section.find('.dgptm-question').not('.dgptm-question-hidden').not('.dgptm-question-hidden-nested').length > 0;
+        },
+
+        findNextVisibleSection: function($container, fromIndex, direction) {
+            var i = fromIndex;
+            while (i >= 0 && i < this.totalSections) {
+                if (this.sectionHasVisibleQuestions($container, i)) {
+                    return i;
+                }
+                i += direction;
+            }
+            return -1;
         },
 
         // --- Validation ---
@@ -312,6 +355,44 @@
             });
         },
 
+        // --- Text Inputs for Choices / "Sonstiges:" ---
+
+        bindTextInputs: function($container) {
+            // Radio: show/hide text input when selection changes
+            $container.on('change', '.dgptm-question input[type="radio"]', function() {
+                var $q = $(this).closest('.dgptm-question');
+                // Hide all choice text inputs and other text inputs
+                $q.find('.dgptm-choice-text-input, .dgptm-other-text-input').hide();
+                // Show text input for the selected option
+                var $label = $(this).closest('.dgptm-radio-label, .dgptm-other-label');
+                if ($(this).val() === '__other__') {
+                    $label.find('.dgptm-other-text-input').show().focus();
+                } else {
+                    $label.find('.dgptm-choice-text-input').show().focus();
+                }
+            });
+
+            // Checkbox: show/hide text input when checkbox changes
+            $container.on('change', '.dgptm-question input[type="checkbox"]', function() {
+                var $label = $(this).closest('label');
+                var isChecked = $(this).is(':checked');
+                if ($(this).val() === '__other__') {
+                    var $ti = $label.find('.dgptm-other-text-input');
+                    isChecked ? $ti.show().focus() : $ti.hide();
+                } else {
+                    var $ti = $label.find('.dgptm-choice-text-input');
+                    isChecked ? $ti.show().focus() : $ti.hide();
+                }
+            });
+
+            // Select: show/hide "Sonstiges" text input
+            $container.on('change', '.dgptm-question select', function() {
+                var $q = $(this).closest('.dgptm-question');
+                var $ti = $q.find('.dgptm-other-text-input');
+                $(this).val() === '__other__' ? $ti.show().focus() : $ti.hide();
+            });
+        },
+
         // --- File Uploads ---
 
         bindFileUploads: function($container) {
@@ -510,16 +591,40 @@
                         break;
                     case 'radio':
                         var radioVal = $q.find('input[type="radio"]:checked').val();
-                        if (radioVal !== undefined) answers[qId] = radioVal;
+                        if (radioVal !== undefined) {
+                            var textVal = '';
+                            var $checkedLabel = $q.find('input[type="radio"]:checked').closest('label');
+                            if (radioVal === '__other__') {
+                                textVal = $.trim($checkedLabel.find('.dgptm-other-text-input').val() || '');
+                            } else {
+                                textVal = $.trim($checkedLabel.find('.dgptm-choice-text-input').val() || '');
+                            }
+                            answers[qId] = textVal ? radioVal + '|||' + textVal : radioVal;
+                        }
                         break;
                     case 'select':
                         var selectVal = $q.find('select').val();
-                        if (selectVal) answers[qId] = selectVal;
+                        if (selectVal) {
+                            if (selectVal === '__other__') {
+                                var otherText = $.trim($q.find('.dgptm-other-text-input').val() || '');
+                                answers[qId] = otherText ? '__other__|||' + otherText : '__other__';
+                            } else {
+                                answers[qId] = selectVal;
+                            }
+                        }
                         break;
                     case 'checkbox':
                         var cbVals = [];
                         $q.find('input[type="checkbox"]:checked').each(function() {
-                            cbVals.push($(this).val());
+                            var cbVal = $(this).val();
+                            var textVal = '';
+                            var $lbl = $(this).closest('label');
+                            if (cbVal === '__other__') {
+                                textVal = $.trim($lbl.find('.dgptm-other-text-input').val() || '');
+                            } else {
+                                textVal = $.trim($lbl.find('.dgptm-choice-text-input').val() || '');
+                            }
+                            cbVals.push(textVal ? cbVal + '|||' + textVal : cbVal);
                         });
                         if (cbVals.length > 0) answers[qId] = cbVals;
                         break;

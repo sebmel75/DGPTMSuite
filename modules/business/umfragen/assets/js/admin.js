@@ -382,6 +382,10 @@
                 $list.append(
                     '<div class="dgptm-choice-item">' +
                     '<input type="text" class="dgptm-choice-input" value="" placeholder="Option...">' +
+                    '<label class="dgptm-choice-text-toggle" title="Textfeld anhaengen">' +
+                    '<input type="checkbox" class="dgptm-choice-has-text">' +
+                    '<small>Textfeld</small>' +
+                    '</label>' +
                     '<button type="button" class="button button-small dgptm-remove-choice">&times;</button>' +
                     '</div>'
                 );
@@ -609,6 +613,23 @@
                 if (type === 'checkbox') {
                     var exclusive = $.trim($item.find('.dgptm-q-exclusive').val());
                     if (exclusive) validation.exclusive_option = exclusive;
+                }
+
+                // "Sonstiges:" and per-choice text fields
+                if (type === 'radio' || type === 'checkbox' || type === 'select') {
+                    if ($item.find('.dgptm-q-allow-other').is(':checked')) {
+                        validation.allow_other = true;
+                    }
+                    var choicesWithText = [];
+                    $item.find('.dgptm-choice-item').each(function() {
+                        var val = $.trim($(this).find('.dgptm-choice-input').val());
+                        if (val && $(this).find('.dgptm-choice-has-text').is(':checked')) {
+                            choicesWithText.push(val);
+                        }
+                    });
+                    if (choicesWithText.length > 0) {
+                        validation.choices_with_text = choicesWithText;
+                    }
                 }
 
                 if (Object.keys(validation).length > 0) {

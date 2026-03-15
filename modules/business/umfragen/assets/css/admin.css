@@ -147,6 +147,30 @@
     max-width: 300px;
 }
 
+/* Choice text toggle */
+.dgptm-choice-text-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #666;
+    white-space: nowrap;
+}
+
+.dgptm-choice-text-toggle input {
+    margin: 0;
+}
+
+.dgptm-other-option {
+    margin-top: 8px;
+}
+
+.dgptm-other-option label {
+    cursor: pointer;
+    font-size: 13px;
+}
+
 /* Skip logic */
 .dgptm-skip-rule {
     display: flex;

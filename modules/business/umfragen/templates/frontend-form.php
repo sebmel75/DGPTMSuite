@@ -139,31 +139,87 @@ if ($resume_data) {
                                     <?php break;
 
                                 case 'radio':
+                                    $cwt = isset($validation['choices_with_text']) ? $validation['choices_with_text'] : [];
+                                    $pf_base = $prefill_val;
+                                    $pf_text = '';
+                                    if ($prefill_val && strpos($prefill_val, '|||') !== false) {
+                                        list($pf_base, $pf_text) = explode('|||', $prefill_val, 2);
+                                    }
                                     if (is_array($choices)) :
-                                        foreach ($choices as $choice) : ?>
-                                            <label class="dgptm-radio-label">
+                                        foreach ($choices as $choice) :
+                                            $has_text = in_array($choice, $cwt, true);
+                                            $is_checked = ($pf_base === $choice);
+                                            $ct_val = ($is_checked && $has_text) ? $pf_text : '';
+                                            ?>
+                                            <label class="dgptm-radio-label<?php if ($has_text) echo ' dgptm-has-text'; ?>">
                                                 <input type="radio"
                                                        name="<?php echo esc_attr($field_name); ?>"
                                                        value="<?php echo esc_attr($choice); ?>"
-                                                       <?php checked($prefill_val, $choice); ?>
+                                                       <?php checked($is_checked); ?>
                                                        <?php if ($q->is_required) echo 'required'; ?>>
                                                 <span><?php echo esc_html($choice); ?></span>
+                                                <?php if ($has_text) : ?>
+                                                    <input type="text" class="dgptm-choice-text-input dgptm-input-text"
+                                                           value="<?php echo esc_attr($ct_val); ?>"
+                                                           placeholder="Bitte angeben..."
+                                                           style="<?php if (!$is_checked) echo 'display:none;'; ?>">
+                                                <?php endif; ?>
                                             </label>
                                         <?php endforeach;
                                     endif;
+                                    if (!empty($validation['allow_other'])) :
+                                        $other_checked = ($pf_base === '__other__');
+                                        $other_text = $other_checked ? $pf_text : '';
+                                        ?>
+                                        <label class="dgptm-radio-label dgptm-other-label">
+                                            <input type="radio"
+                                                   name="<?php echo esc_attr($field_name); ?>"
+                                                   value="__other__"
+                                                   <?php checked($other_checked); ?>
+                                                   <?php if ($q->is_required) echo 'required'; ?>>
+                                            <span>Sonstiges:</span>
+                                            <input type="text" class="dgptm-other-text-input dgptm-input-text"
+                                                   value="<?php echo esc_attr($other_text); ?>"
+                                                   placeholder="Bitte angeben..."
+                                                   style="<?php if (!$other_checked) echo 'display:none;'; ?>">
+                                        </label>
+                                    <?php endif;
                                     break;
 
                                 case 'checkbox':
+                                    $cwt = isset($validation['choices_with_text']) ? $validation['choices_with_text'] : [];
                                     $checked_vals = is_array($prefill_decoded) ? $prefill_decoded : [];
+                                    // Parse prefill: extract base values and texts
+                                    $checked_bases = [];
+                                    $checked_texts = [];
+                                    foreach ($checked_vals as $cv) {
+                                        if (strpos($cv, '|||') !== false) {
+                                            list($base, $text) = explode('|||', $cv, 2);
+                                            $checked_bases[] = $base;
+                                            $checked_texts[$base] = $text;
+                                        } else {
+                                            $checked_bases[] = $cv;
+                                        }
+                                    }
                                     $exclusive_opt = isset($validation['exclusive_option']) ? $validation['exclusive_option'] : '';
                                     if (is_array($choices)) :
-                                        foreach ($choices as $choice) : ?>
-                                            <label class="dgptm-checkbox-label">
+                                        foreach ($choices as $choice) :
+                                            $has_text = in_array($choice, $cwt, true);
+                                            $is_checked = in_array($choice, $checked_bases, true);
+                                            $ct_val = ($is_checked && $has_text && isset($checked_texts[$choice])) ? $checked_texts[$choice] : '';
+                                            ?>
+                                            <label class="dgptm-checkbox-label<?php if ($has_text) echo ' dgptm-has-text'; ?>">
                                                 <input type="checkbox"
                                                        name="<?php echo esc_attr($field_name); ?>[]"
                                                        value="<?php echo esc_attr($choice); ?>"
-                                                       <?php checked(in_array($choice, $checked_vals, true)); ?>>
+                                                       <?php checked($is_checked); ?>>
                                                 <span><?php echo esc_html($choice); ?></span>
+                                                <?php if ($has_text) : ?>
+                                                    <input type="text" class="dgptm-choice-text-input dgptm-input-text"
+                                                           value="<?php echo esc_attr($ct_val); ?>"
+                                                           placeholder="Bitte angeben..."
+                                                           style="<?php if (!$is_checked) echo 'display:none;'; ?>">
+                                                <?php endif; ?>
                                             </label>
                                         <?php endforeach;
                                     endif;
@@ -172,13 +228,34 @@ if ($resume_data) {
                                             <input type="checkbox"
                                                    name="<?php echo esc_attr($field_name); ?>[]"
                                                    value="<?php echo esc_attr($exclusive_opt); ?>"
-                                                   <?php checked(in_array($exclusive_opt, $checked_vals, true)); ?>>
+                                                   <?php checked(in_array($exclusive_opt, $checked_bases, true)); ?>>
                                             <span><?php echo esc_html($exclusive_opt); ?></span>
+                                        </label>
+                                    <?php endif;
+                                    if (!empty($validation['allow_other'])) :
+                                        $other_checked = in_array('__other__', $checked_bases, true);
+                                        $other_text = isset($checked_texts['__other__']) ? $checked_texts['__other__'] : '';
+                                        ?>
+                                        <label class="dgptm-checkbox-label dgptm-other-label">
+                                            <input type="checkbox"
+                                                   name="<?php echo esc_attr($field_name); ?>[]"
+                                                   value="__other__"
+                                                   <?php checked($other_checked); ?>>
+                                            <span>Sonstiges:</span>
+                                            <input type="text" class="dgptm-other-text-input dgptm-input-text"
+                                                   value="<?php echo esc_attr($other_text); ?>"
+                                                   placeholder="Bitte angeben..."
+                                                   style="<?php if (!$other_checked) echo 'display:none;'; ?>">
                                         </label>
                                     <?php endif;
                                     break;
 
                                 case 'select':
+                                    $pf_base = $prefill_val;
+                                    $pf_text = '';
+                                    if ($prefill_val && strpos($prefill_val, '|||') !== false) {
+                                        list($pf_base, $pf_text) = explode('|||', $prefill_val, 2);
+                                    }
                                     ?>
                                     <select name="<?php echo esc_attr($field_name); ?>"
                                             class="dgptm-input dgptm-input-select"
@@ -186,13 +263,22 @@ if ($resume_data) {
                                         <option value="">-- Bitte waehlen --</option>
                                         <?php if (is_array($choices)) :
                                             foreach ($choices as $choice) : ?>
-                                                <option value="<?php echo esc_attr($choice); ?>" <?php selected($prefill_val, $choice); ?>>
+                                                <option value="<?php echo esc_attr($choice); ?>" <?php selected($pf_base, $choice); ?>>
                                                     <?php echo esc_html($choice); ?>
                                                 </option>
                                             <?php endforeach;
-                                        endif; ?>
+                                        endif;
+                                        if (!empty($validation['allow_other'])) : ?>
+                                            <option value="__other__" <?php selected($pf_base, '__other__'); ?>>Sonstiges...</option>
+                                        <?php endif; ?>
                                     </select>
-                                    <?php break;
+                                    <?php if (!empty($validation['allow_other'])) : ?>
+                                        <input type="text" class="dgptm-other-text-input dgptm-input dgptm-input-text"
+                                               value="<?php echo esc_attr($pf_text); ?>"
+                                               placeholder="Bitte angeben..."
+                                               style="margin-top: 8px; <?php if ($pf_base !== '__other__') echo 'display:none;'; ?>">
+                                    <?php endif;
+                                    break;
 
                                 case 'matrix':
                                     $rows = isset($choices['rows']) ? $choices['rows'] : [];

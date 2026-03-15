@@ -266,6 +266,52 @@
     line-height: 1.4;
 }
 
+/* "Sonstiges:" and choice text inputs */
+.dgptm-other-label {
+    border-top: 1px solid var(--dgptm-gray-200);
+    margin-top: 4px;
+    padding-top: 10px;
+}
+
+.dgptm-radio-label.dgptm-has-text,
+.dgptm-checkbox-label.dgptm-has-text,
+.dgptm-other-label {
+    flex-wrap: wrap;
+}
+
+.dgptm-choice-text-input,
+.dgptm-other-text-input {
+    flex-basis: calc(100% - 28px);
+    margin-left: 28px;
+    margin-top: 6px;
+    padding: 8px 12px;
+    border: 1.5px solid var(--dgptm-gray-200);
+    border-radius: var(--dgptm-radius-sm);
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--dgptm-gray-700);
+    background: var(--dgptm-gray-50);
+    transition: border-color var(--dgptm-transition), box-shadow var(--dgptm-transition);
+    box-sizing: border-box;
+    width: auto;
+}
+
+.dgptm-choice-text-input:focus,
+.dgptm-other-text-input:focus {
+    border-color: var(--dgptm-primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    background: #fff;
+}
+
+/* Select "Sonstiges" text input */
+select + .dgptm-other-text-input {
+    flex-basis: auto;
+    margin-left: 0;
+    max-width: 500px;
+    width: 100%;
+}
+
 /* Exclusive checkbox */
 .dgptm-checkbox-exclusive {
     border-top: 1px solid var(--dgptm-gray-200);

@@ -217,14 +217,25 @@ $question_types = [
                                     <div class="dgptm-choices-list">
                                         <?php
                                         $flat_choices = is_array($choices) && !isset($choices['rows']) ? $choices : [];
+                                        $cwt = isset($validation['choices_with_text']) ? $validation['choices_with_text'] : [];
                                         foreach ($flat_choices as $choice) : ?>
                                             <div class="dgptm-choice-item">
                                                 <input type="text" class="dgptm-choice-input" value="<?php echo esc_attr($choice); ?>">
+                                                <label class="dgptm-choice-text-toggle" title="Textfeld anhaengen">
+                                                    <input type="checkbox" class="dgptm-choice-has-text" <?php checked(in_array($choice, $cwt, true)); ?>>
+                                                    <small>Textfeld</small>
+                                                </label>
                                                 <button type="button" class="button button-small dgptm-remove-choice">&times;</button>
                                             </div>
                                         <?php endforeach; ?>
                                     </div>
                                     <button type="button" class="button button-small dgptm-add-choice">+ Option</button>
+                                    <div class="dgptm-other-option" style="margin-top: 8px;">
+                                        <label>
+                                            <input type="checkbox" class="dgptm-q-allow-other" <?php checked(!empty($validation['allow_other'])); ?>>
+                                            "Sonstiges:"-Feld mit Texteingabe aktivieren
+                                        </label>
+                                    </div>
                                 </td>
                             </tr>
                             <tr class="dgptm-exclusive-row" <?php if ($q->question_type !== 'checkbox') echo 'style="display:none;"'; ?>>
@@ -396,6 +407,12 @@ $question_types = [
                         <td>
                             <div class="dgptm-choices-list"></div>
                             <button type="button" class="button button-small dgptm-add-choice">+ Option</button>
+                            <div class="dgptm-other-option" style="margin-top: 8px;">
+                                <label>
+                                    <input type="checkbox" class="dgptm-q-allow-other">
+                                    "Sonstiges:"-Feld mit Texteingabe aktivieren
+                                </label>
+                            </div>
                         </td>
                     </tr>
                     <tr class="dgptm-exclusive-row" style="display:none;">

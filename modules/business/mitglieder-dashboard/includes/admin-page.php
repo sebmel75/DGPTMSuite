@@ -146,7 +146,7 @@ $top_tabs = array_filter($all_tabs, function($t) { return empty($t['parent']); }
                             <th>Shortcode-Name</th>
                             <td>
                                 <input type="text" class="dt-perm-sc regular-text" value="<?php echo esc_attr($perm_sc); ?>" placeholder="umfrageberechtigung">
-                                <p class="description">Shortcode ohne Klammern. Muss <code>1</code> zurueckgeben fuer sichtbar, <code>0</code> fuer versteckt.</p>
+                                <p class="description">Shortcode ohne Klammern. Muss <code>1</code> oder <code>true</code> zurueckgeben fuer sichtbar.</p>
                             </td>
                         </tr>
                         <tr>
@@ -223,7 +223,7 @@ $top_tabs = array_filter($all_tabs, function($t) { return empty($t['parent']); }
                 <tr><td><strong>Nur Admins</strong></td><td><code>admin</code></td><td>Nur Benutzer mit manage_options</td></tr>
                 <tr><td><strong>ACF-Feld</strong></td><td><code>acf:feldname</code></td><td>ACF True/False Feld auf dem Benutzerprofil (z.B. <code>acf:testbereich</code>)</td></tr>
                 <tr><td><strong>WordPress-Rolle</strong></td><td><code>role:rolle1,rolle2</code></td><td>Benutzer mit einer der Rollen (OR-Logik)</td></tr>
-                <tr><td><strong>Shortcode</strong></td><td><code>sc:shortcode_name</code></td><td>Shortcode muss <code>1</code> zurueckgeben fuer sichtbar. Beispiel: <code>sc:umfrageberechtigung</code></td></tr>
+                <tr><td><strong>Shortcode</strong></td><td><code>sc:shortcode_name</code></td><td>Shortcode muss <code>1</code> oder <code>true</code> zurueckgeben fuer sichtbar. Beispiel: <code>sc:umfrageberechtigung</code></td></tr>
             </tbody>
         </table>
     </div>

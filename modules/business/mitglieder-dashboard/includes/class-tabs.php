@@ -121,13 +121,13 @@ class DGPTM_Dashboard_Tabs {
         }
 
         // Shortcode check (e.g. "sc:umfrageberechtigung")
-        // Shortcode must return "1" for visible, anything else = hidden
+        // Shortcode must return "1" or "true" for visible
         if (strpos($perm, 'sc:') === 0) {
             if ($admin_bypass && $is_admin) return true;
             $sc_name = substr($perm, 3);
             if (!shortcode_exists($sc_name)) return false;
-            $result = do_shortcode('[' . $sc_name . ']');
-            return trim($result) === '1';
+            $result = strtolower(trim(do_shortcode('[' . $sc_name . ']')));
+            return ($result === '1' || $result === 'true');
         }
 
         return true;

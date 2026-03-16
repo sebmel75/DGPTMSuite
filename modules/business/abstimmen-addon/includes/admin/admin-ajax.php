@@ -5,56 +5,13 @@ if (!defined('ABSPATH')) exit;
 add_action('wp_ajax_dgptm_get_manager_settings','dgptm_get_manager_settings_fn');
 function dgptm_get_manager_settings_fn(){
     if(!dgptm_is_manager()) wp_send_json_error('Keine Rechte.');
+    // Settings are now inline in the manager dashboard.
+    // This endpoint is kept for backwards compatibility.
     $beamer_state = dgptm_get_beamer_state();
     ob_start(); ?>
-    <div class="fieldset" style="border:1px solid #ccc;padding:10px;border-radius:8px;margin-bottom:14px;">
-      <h3>Beamer-Einstellungen</h3>
-      <form id="dgptm_beamerSettingsForm">
-        <label>Text im Beamer (wenn keine Frage aktiv ist):<br>
-          <textarea name="dgptm_no_poll_text" rows="2" cols="60"><?php echo esc_html(get_option('dgptm_no_poll_text','Bitte warten …')); ?></textarea>
-        </label><br><br>
-        <div class="inline" style="display:flex;align-items:center;gap:8px;">
-          <label class="switch" title="QR-Code im Beamer ein-/ausblenden (oben rechts)">
-            <input type="checkbox" id="beamerQrSwitch" <?php checked(!empty($beamer_state['qr_visible'])); ?>>
-            <span class="slider round"></span>
-          </label>
-          <span>QR-Code im Beamer anzeigen</span>
-        </div>
-        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn" id="beamerOverall" type="button">Gesamtstatistik im Beamer</button>
-          <button class="btn" id="beamerAuto" type="button">Beamer: Live-Anzeige</button>
-          <button type="submit" class="btn">Speichern</button>
-        </div>
-      </form>
-    </div>
-
-    <div class="fieldset" style="border:1px solid #ccc;padding:10px;border-radius:8px;margin-bottom:14px;">
-      <h3>Registrierungsfunktion (Kiosk/Scanner)</h3>
-      <form id="dgptm_registrationForm">
-        <label class="inline" style="display:flex;align-items:center;gap:8px;">
-          <input type="checkbox" name="enabled" value="1" <?php checked((int)get_option('dgptm_registration_enabled',0),1); ?>>
-          <span>Registrierung aktiv</span>
-        </label>
-        <div style="margin-top:8px;">
-          <label>Ziel-Umfrage (ID): <input type="number" name="poll_id" value="<?php echo (int)get_option('dgptm_registration_poll_id',0); ?>" style="width:120px;"></label>
-        </div>
-        <div style="margin-top:8px;">
-          <label>Lookup-WebHook-URL: <input type="text" name="endpoint" value="<?php echo esc_attr(get_option('dgptm_member_lookup_endpoint','')); ?>" style="width:100%;"></label>
-        </div>
-        <div style="margin-top:8px;">
-          <label>Mail-Betreff: <input type="text" name="mail_subject" value="<?php echo esc_attr(get_option('dgptm_registration_email_subject','Ihr Abstimmungslink')); ?>" style="width:100%;"></label>
-        </div>
-        <div style="margin-top:8px;">
-          <label>Mail-Text (Platzhalter: {first_name} {last_name} {member_no} {status} {poll_name} {link} {token})<br>
-            <textarea name="mail_body" rows="5" style="width:100%;"><?php echo esc_textarea(get_option('dgptm_registration_email_body','Hallo {first_name} {last_name},\n\nhier ist Ihr persönlicher Abstimmungslink für {poll_name}:\n{link}\n\nMitgliedsnummer: {member_no}\nStatus: {status}\n\nViele Grüße')); ?></textarea>
-          </label>
-        </div>
-        <div style="margin-top:10px;">
-          <button type="submit" class="btn">Einstellungen speichern</button>
-          <button type="button" class="btn" id="dgptm_showRegistered">Registrierte Mitglieder anzeigen</button>
-        </div>
-      </form>
-      <div id="dgptm_registeredList" style="margin-top:10px;"></div>
+    <div style="font-size:13px;">
+      <p style="color:#64748b;">Einstellungen sind jetzt direkt im Manager-Dashboard integriert.</p>
+      <p>Beamer-Status: <strong><?php echo esc_html($beamer_state['mode'] ?? 'auto'); ?></strong> · QR: <?php echo !empty($beamer_state['qr_visible']) ? 'Ein' : 'Aus'; ?></p>
     </div>
     <?php
     $html = ob_get_clean();
@@ -64,7 +21,7 @@ function dgptm_get_manager_settings_fn(){
 add_action('wp_ajax_dgptm_save_beamer_settings','dgptm_save_beamer_settings_fn');
 function dgptm_save_beamer_settings_fn(){
     if(!dgptm_is_manager()) wp_send_json_error('Keine Rechte.');
-    update_option('dgptm_no_poll_text', isset($_POST['dgptm_no_poll_text'])?sanitize_text_field($_POST['dgptm_no_poll_text']):'');
+    update_option('dgptm_no_poll_text', isset($_POST['dgptm_no_poll_text'])?wp_kses_post($_POST['dgptm_no_poll_text']):'');
     wp_send_json_success();
 }
 
@@ -147,125 +104,152 @@ function dgptm_get_poll_details_fn(){
     }
 
     ob_start(); ?>
-    <p class="muted">
-      <strong>Benutzeranmeldung:</strong> <?php echo $poll->requires_signup?'Ja':'Nein'; ?><br>
-      <strong>Logo (nur aktives Poll-Logo wird im Beamer genutzt):</strong>
-      <?php if(!empty($poll->logo_url)){
-        if(dgptm_is_image_ext($poll->logo_url)){
-          echo '<div style="margin-top:5px;"><img src="'.esc_url($poll->logo_url).'" alt="Poll-Logo" style="max-width:200px;"><br><a href="'.esc_url($poll->logo_url).'" download>Bild herunterladen</a></div>';
-        } else { echo esc_html($poll->logo_url); }
-      } else { echo 'Kein Logo definiert.'; } ?>
-    </p>
+    <div class="mp-detail">
+      <!-- Meta kompakt -->
+      <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--mp-gray,#64748b);margin-bottom:8px;">
+        <span>Anmeldung: <strong><?php echo $poll->requires_signup ? 'Ja' : 'Nein'; ?></strong></span>
+        <?php if (!empty($poll->logo_url) && dgptm_is_image_ext($poll->logo_url)): ?>
+          <span>Logo: <img src="<?php echo esc_url($poll->logo_url); ?>" alt="" style="height:18px;vertical-align:middle;border-radius:3px;"></span>
+        <?php endif; ?>
+      </div>
 
-    <div style="margin:12px 0;">
-      <h4>Teilnahme per QR-Code</h4>
-      <div class="muted" style="margin-bottom:6px;">Externe Teilnahme (Namensabfrage für Nicht-Eingeloggte). Sichtbarkeit im Beamer über „Einstellungen → Beamer-Einstellungen“ steuerbar.</div>
+      <!-- QR-Code (versteckt, bei Bedarf einblenden) -->
       <?php $qrUrl = add_query_arg(array('dgptm_member'=>1,'poll_id'=>$poll->id), home_url('/')); ?>
-      <div><strong>URL:</strong> <code id="qrUrlText_<?php echo (int)$poll->id; ?>" data-qr="<?php echo esc_url($qrUrl); ?>"><?php echo esc_html($qrUrl); ?></code></div>
-      <div style="margin-top:6px;">
-        <button class="btn" data-pid="<?php echo (int)$poll->id; ?>" onclick="dgptmDownloadQR(<?php echo (int)$poll->id; ?>)">QR als PNG herunterladen</button>
+      <div style="margin-bottom:6px;">
+        <button class="mp-btn mp-btn-xs mp-qr-toggle" data-pid="<?php echo (int)$poll->id; ?>">QR-Code</button>
+        <code id="qrUrlText_<?php echo (int)$poll->id; ?>" data-qr="<?php echo esc_url($qrUrl); ?>" style="font-size:10px;color:var(--mp-gray,#64748b);"><?php echo esc_html($qrUrl); ?></code>
       </div>
-      <canvas id="qrCanvas_<?php echo (int)$poll->id; ?>" class="qrcode-canvas" width="260" height="260"></canvas>
-    </div>
-
-    <hr>
-    <h4>Fragen</h4>
-    <?php
-      $questions = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}dgptm_abstimmung_poll_questions WHERE poll_id=%d ORDER BY created ASC",$poll->id));
-      if($questions):
-        foreach($questions as $q):
-          $choices = json_decode($q->choices,true); if(!is_array($choices)) $choices=array();
-          $choicesStr = implode(', ', $choices);
-          $is_results_one = false; // wird per Klick gesetzt
-    ?>
-      <div style="border:1px solid #ccc;margin:5px;padding:5px;border-radius:6px;">
-        <strong>Frage:</strong> <?php echo esc_html($q->question); ?>
-        <?php if($q->status==='active') echo '<span class="muted" style="margin-left:8px;">(AKTIV)</span>'; ?>
-        <div class="muted">Status: <?php echo esc_html($q->status); ?>,
-        max. Stimmen: <?php echo (int)$q->max_votes; ?>,
-        Ergebnis freigegeben:
-        <label class="switch" style="margin-left:6px;">
-          <input type="checkbox" class="resultReleaseSwitch" data-qid="<?php echo (int)$q->id; ?>" <?php checked($q->results_released); ?>>
-          <span class="slider round"></span>
-        </label>
-        &nbsp; | &nbsp; In Gesamtstatistik:
-        <label class="switch" title="Diese Frage in der Gesamtstatistik berücksichtigen">
-          <input type="checkbox" class="overallSwitch" data-qid="<?php echo (int)$q->id; ?>" <?php checked(!empty($q->in_overall)); ?>>
-          <span class="slider round"></span>
-        </label>
-        </div>
-
-        <form class="inline updateQuestionForm" data-qid="<?php echo (int)$q->id; ?>" style="margin-top:6px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-          <input type="hidden" name="question_text" value="<?php echo esc_attr($q->question); ?>">
-          <input type="hidden" name="question_choices" value="<?php echo esc_attr($choicesStr); ?>">
-          <input type="hidden" name="max_votes" value="<?php echo (int)$q->max_votes; ?>">
-          <input type="hidden" name="is_anonymous" value="<?php echo $q->is_anonymous ? 1 : 0; ?>">
-          <label>Diagramm:
-            <select name="chart_type">
-              <option value="bar" <?php selected($q->chart_type,'bar'); ?>>Balken</option>
-              <option value="pie" <?php selected($q->chart_type,'pie'); ?>>Kuchen</option>
-            </select>
-          </label>
-          <button type="submit" class="btn">Speichern</button>
-        </form>
-
-        <div class="row-actions" style="margin:6px 0;">
-          <?php if($q->status=='prepared'): ?>
-            <button class="questionCtrlBtn btn" data-action="dgptm_activate_poll_question" data-qid="<?php echo (int)$q->id; ?>">Aktivieren</button>
-          <?php elseif($q->status=='active'): ?>
-            <button class="questionCtrlBtn btn" data-action="dgptm_stop_poll_question" data-qid="<?php echo (int)$q->id; ?>">Schließen</button>
-          <?php elseif($q->status=='stopped'): ?>
-            <button class="questionCtrlBtn btn" data-action="dgptm_prepare_poll_question" data-qid="<?php echo (int)$q->id; ?>">Erneut stellen</button>
-          <?php endif; ?>
-          <label class="switch" title="Statistik dieser Frage im Beamer anzeigen/verbergen" style="margin-left:12px;">
-            <input type="checkbox" class="beamerDisplaySwitch" data-qid="<?php echo (int)$q->id; ?>" data-pid="<?php echo (int)$poll->id; ?>" <?php checked($is_results_one); ?>>
-            <span class="slider round"></span>
-          </label>
-          <button class="deleteQuestionBtn btn" data-qid="<?php echo (int)$q->id; ?>">Frage löschen</button>
-          <button class="showVotesBtn btn" data-qid="<?php echo (int)$q->id; ?>">Stimmen anzeigen</button>
-        </div>
-
-        <div id="votesArea_<?php echo (int)$q->id; ?>" style="display:none;"></div>
+      <div id="qrSection_<?php echo (int)$poll->id; ?>" class="mp-qr">
+        <canvas id="qrCanvas_<?php echo (int)$poll->id; ?>" width="180" height="180"></canvas>
+        <div style="margin-top:4px;"><button class="mp-btn mp-btn-xs" onclick="dgptmDownloadQR(<?php echo (int)$poll->id; ?>)">PNG herunterladen</button></div>
       </div>
-    <?php endforeach; else: ?>
-      <p>Noch keine Fragen</p>
-    <?php endif; ?>
 
-    <hr>
-    <h4>Neue Frage anlegen</h4>
-    <form class="addQuestionForm">
-      <input type="hidden" name="poll_id" value="<?php echo (int)$poll->id; ?>">
-      <label>Fragetext:<br><input type="text" name="question_text" required></label><br>
-      <label>Antworten (Komma-getrennt):<br><textarea name="question_choices"></textarea></label><br>
-      <label>max. Stimmen: <input type="number" name="max_votes" value="1"></label><br>
-      <label>Anonym? <input type="checkbox" name="is_anonymous"></label><br>
-      <label>Diagramm:
-        <select name="chart_type">
-          <option value="bar" selected>Balken</option>
-          <option value="pie">Kuchen</option>
-        </select>
-      </label><br>
-      <label>Zeitlimit (Sekunden, 0 = kein Timer): <input type="number" name="time_limit" value="0" min="0" style="width:80px"></label><br>
-      <label><input type="checkbox" name="auto_close"> Automatisch schliessen nach Ablauf</label><br>
-      <label>Mehrheitsregel:
-        <select name="majority_type">
-          <option value="simple">Einfache Mehrheit (&gt;50%)</option>
-          <option value="two_thirds">2/3-Mehrheit</option>
-          <option value="absolute">Absolute Mehrheit</option>
-        </select>
-      </label><br>
-      <label>Quorum (0 = keins): <input type="number" name="quorum" value="0" min="0" style="width:80px"></label><br>
-      <button type="submit" class="btn">Frage anlegen</button>
-    </form>
+      <!-- Beamer-Inhalt -->
+      <div class="mp-panel" style="margin:6px 0;">
+        <div class="mp-panel-head" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open');">
+          <span class="arrow">▶</span> Beamer Pause-Inhalt (HTML)
+        </div>
+        <div class="mp-panel-body">
+          <textarea id="beamerContent_<?php echo (int)$poll->id; ?>" rows="2" style="width:100%;font-size:12px;"><?php echo esc_textarea(isset($poll->beamer_content) ? $poll->beamer_content : ''); ?></textarea>
+          <div style="margin-top:4px;display:flex;gap:6px;align-items:center;font-size:12px;">
+            <label class="mp-sw"><input type="checkbox" class="beamerContentToggle" data-pid="<?php echo (int)$poll->id; ?>" <?php checked(!empty($poll->beamer_content_active)); ?>><span></span></label>
+            <span>Anzeigen</span>
+            <button class="mp-btn mp-btn-xs saveBeamerContentBtn" data-pid="<?php echo (int)$poll->id; ?>">Speichern</button>
+            <span style="color:var(--mp-gray,#64748b);font-size:10px;">HTML erlaubt: &lt;b&gt;, &lt;img&gt;, &lt;br&gt;, etc.</span>
+          </div>
+        </div>
+      </div>
 
-    <hr>
-    <button class="showParticipantsBtn btn" data-pid="<?php echo (int)$poll->id; ?>">Teilnehmer anzeigen</button>
-    <div id="participantsArea_<?php echo (int)$poll->id; ?>" style="display:none;"></div>
+      <!-- Fragen -->
+      <h4 style="margin:8px 0 4px;">Fragen</h4>
+      <?php
+        $questions = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}dgptm_abstimmung_poll_questions WHERE poll_id=%d ORDER BY created ASC",$poll->id));
+        if ($questions):
+          foreach ($questions as $q):
+            $choices = json_decode($q->choices, true); if (!is_array($choices)) $choices = array();
+            $choicesStr = implode(', ', $choices);
+            $current_display = isset($q->display_type) ? $q->display_type : 'cards';
+            $current_images = isset($q->choice_images) ? $q->choice_images : '';
+            $statusBadge = 'mp-badge-' . $q->status;
+      ?>
+        <div class="mp-qcard">
+          <div class="mp-qcard-head">
+            <div>
+              <div class="mp-qcard-q"><?php echo esc_html($q->question); ?></div>
+              <div class="mp-qcard-meta">
+                <span class="mp-badge <?php echo $statusBadge; ?>"><?php echo esc_html($q->status); ?></span>
+                · <?php echo (int)$q->max_votes; ?> Stimmen
+                <?php if ($q->is_anonymous): ?> · Anonym<?php endif; ?>
+                <?php if ((int)$q->time_limit > 0): ?> · <?php echo (int)$q->time_limit; ?>s<?php if ($q->auto_close): ?> (auto)<?php endif; ?><?php endif; ?>
+                <?php
+                  $majLabels = array('simple'=>'>50%','two_thirds'=>'⅔','absolute'=>'absolut');
+                  if (isset($q->majority_type) && $q->majority_type !== 'simple'):
+                ?> · <?php echo $majLabels[$q->majority_type] ?? $q->majority_type; ?><?php endif; ?>
+                <?php if ((int)($q->quorum ?? 0) > 0): ?> · Quorum <?php echo (int)$q->quorum; ?><?php endif; ?>
+              </div>
+            </div>
+            <div style="display:flex;gap:4px;align-items:center;flex-shrink:0;">
+              <label class="mp-sw" title="Ergebnis freigeben"><input type="checkbox" class="resultReleaseSwitch" data-qid="<?php echo (int)$q->id; ?>" <?php checked($q->results_released); ?>><span></span></label>
+              <span style="font-size:10px;color:var(--mp-gray,#64748b);">Frei</span>
+              <label class="mp-sw" title="In Gesamtstatistik"><input type="checkbox" class="overallSwitch" data-qid="<?php echo (int)$q->id; ?>" <?php checked(!empty($q->in_overall)); ?>><span></span></label>
+              <span style="font-size:10px;color:var(--mp-gray,#64748b);">Gesamt</span>
+            </div>
+          </div>
+          <div class="mp-qcard-actions">
+            <?php if ($q->status == 'prepared'): ?>
+              <button class="questionCtrlBtn mp-btn mp-btn-g mp-btn-xs" data-action="dgptm_activate_poll_question" data-qid="<?php echo (int)$q->id; ?>">▶ Start</button>
+            <?php elseif ($q->status == 'active'): ?>
+              <button class="questionCtrlBtn mp-btn mp-btn-d" data-action="dgptm_stop_poll_question" data-qid="<?php echo (int)$q->id; ?>">■ Stop</button>
+            <?php elseif ($q->status == 'stopped'): ?>
+              <button class="questionCtrlBtn mp-btn mp-btn-xs" data-action="dgptm_prepare_poll_question" data-qid="<?php echo (int)$q->id; ?>">↻ Reset</button>
+            <?php endif; ?>
+            <label class="mp-sw" title="Im Beamer zeigen"><input type="checkbox" class="beamerDisplaySwitch" data-qid="<?php echo (int)$q->id; ?>" data-pid="<?php echo (int)$poll->id; ?>"><span></span></label>
+            <span style="font-size:10px;color:var(--mp-gray,#64748b);">Beamer</span>
+            <form class="updateQuestionForm" data-qid="<?php echo (int)$q->id; ?>" style="display:inline-flex;gap:4px;align-items:center;margin:0;">
+              <input type="hidden" name="question_text" value="<?php echo esc_attr($q->question); ?>">
+              <input type="hidden" name="question_choices" value="<?php echo esc_attr($choicesStr); ?>">
+              <input type="hidden" name="max_votes" value="<?php echo (int)$q->max_votes; ?>">
+              <input type="hidden" name="is_anonymous" value="<?php echo $q->is_anonymous ? 1 : 0; ?>">
+              <select name="display_type" style="font-size:11px;padding:2px 4px;">
+                <option value="cards" <?php selected($current_display,'cards'); ?>>Karten</option>
+                <option value="horizontal_bars" <?php selected($current_display,'horizontal_bars'); ?>>Balken</option>
+                <option value="vertical_bars" <?php selected($current_display,'vertical_bars'); ?>>Säulen</option>
+              </select>
+              <button type="submit" class="mp-btn mp-btn-xs">OK</button>
+            </form>
+            <button class="showVotesBtn mp-btn mp-btn-xs" data-qid="<?php echo (int)$q->id; ?>">Stimmen</button>
+            <button class="deleteQuestionBtn mp-btn mp-btn-d" data-qid="<?php echo (int)$q->id; ?>">×</button>
+          </div>
+          <div id="votesArea_<?php echo (int)$q->id; ?>" style="display:none;"></div>
+        </div>
+      <?php endforeach; else: ?>
+        <div style="color:var(--mp-gray,#64748b);font-size:12px;padding:4px 0;">Noch keine Fragen</div>
+      <?php endif; ?>
 
-    <hr>
-    <div>
-      <a class="btn" href="<?php echo esc_url(admin_url('admin-ajax.php?action=dgptm_export_poll_complete&poll_id='.(int)$poll->id.'&format=csv')); ?>" target="_blank">Als CSV exportieren</a>
-      <a class="btn" href="<?php echo esc_url(admin_url('admin-ajax.php?action=dgptm_export_poll_complete&poll_id='.(int)$poll->id.'&format=pdf')); ?>" target="_blank">Als PDF exportieren</a>
+      <!-- Neue Frage -->
+      <div class="mp-panel" style="margin-top:8px;">
+        <div class="mp-panel-head" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open');">
+          <span class="arrow">▶</span> Neue Frage anlegen
+        </div>
+        <div class="mp-panel-body">
+          <form class="addQuestionForm">
+            <input type="hidden" name="poll_id" value="<?php echo (int)$poll->id; ?>">
+            <div class="mp-row"><label>Frage:</label><input type="text" name="question_text" required style="flex:1;min-width:200px;"></div>
+            <div class="mp-row"><label>Antworten (kommagetrennt):</label><input type="text" name="question_choices" style="flex:1;min-width:200px;"></div>
+            <div class="mp-row">
+              <label>Max:</label><input type="number" name="max_votes" value="1" style="width:50px;">
+              <label class="mp-sw"><input type="checkbox" name="is_anonymous"><span></span></label><label>Anonym</label>
+              <label>Darstellung:</label>
+              <select name="display_type" style="font-size:12px;">
+                <option value="cards">Karten</option>
+                <option value="horizontal_bars">Balken</option>
+                <option value="vertical_bars">Säulen</option>
+              </select>
+            </div>
+            <div class="mp-row">
+              <label>Timer (s):</label><input type="number" name="time_limit" value="0" min="0" style="width:60px;">
+              <label class="mp-sw"><input type="checkbox" name="auto_close"><span></span></label><label>Auto-Close</label>
+              <label>Mehrheit:</label>
+              <select name="majority_type" style="font-size:12px;">
+                <option value="simple">&gt;50%</option>
+                <option value="two_thirds">⅔</option>
+                <option value="absolute">Absolut</option>
+              </select>
+              <label>Quorum:</label><input type="number" name="quorum" value="0" min="0" style="width:50px;">
+            </div>
+            <div class="mp-row"><label>Bilder-URLs (optional):</label><input type="text" name="choice_images" placeholder="url1, url2, ..." style="flex:1;"></div>
+            <div class="mp-row"><button type="submit" class="mp-btn mp-btn-p">Anlegen</button></div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Teilnehmer & Export -->
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px;">
+        <button class="showParticipantsBtn mp-btn mp-btn-xs" data-pid="<?php echo (int)$poll->id; ?>">Teilnehmer</button>
+        <a class="mp-btn mp-btn-xs" href="<?php echo esc_url(admin_url('admin-ajax.php?action=dgptm_export_poll_complete&poll_id='.(int)$poll->id.'&format=csv')); ?>" target="_blank">CSV</a>
+        <a class="mp-btn mp-btn-xs" href="<?php echo esc_url(admin_url('admin-ajax.php?action=dgptm_export_poll_complete&poll_id='.(int)$poll->id.'&format=pdf')); ?>" target="_blank">PDF</a>
+      </div>
+      <div id="participantsArea_<?php echo (int)$poll->id; ?>" style="display:none;"></div>
     </div>
     <?php
     $html = ob_get_clean();
@@ -279,6 +263,8 @@ function dgptm_create_poll_fn(){
     if(empty($_POST['poll_name'])) wp_send_json_error('Name fehlt.');
     global $wpdb;
     $guest_voting = isset($_POST['guest_voting']) ? 1 : 0;
+    $beamer_content = isset($_POST['beamer_content']) ? wp_kses_post($_POST['beamer_content']) : '';
+    $beamer_content_active = !empty($_POST['beamer_content_active']) ? 1 : 0;
     $wpdb->insert($wpdb->prefix.'dgptm_abstimmung_polls',array(
         'name'=>sanitize_text_field($_POST['poll_name']),
         'status'=>'prepared',
@@ -286,7 +272,9 @@ function dgptm_create_poll_fn(){
         'requires_signup'=>!empty($_POST['requires_signup'])?1:0,
         'time_limit'=>0,
         'logo_url'=>isset($_POST['poll_logo_url'])?sanitize_text_field($_POST['poll_logo_url']):'',
-        'guest_voting'=>$guest_voting
+        'guest_voting'=>$guest_voting,
+        'beamer_content'=>$beamer_content,
+        'beamer_content_active'=>$beamer_content_active
     ));
     $wpdb->insert_id ? wp_send_json_success('Umfrage angelegt.') : wp_send_json_error('Fehler beim Anlegen der Umfrage.');
 }
@@ -338,7 +326,25 @@ function dgptm_add_poll_question_fn(){
     global $wpdb;
     $pid=intval($_POST['poll_id']);
     $choices = isset($_POST['question_choices']) ? array_map('trim', explode(',', $_POST['question_choices'])) : array();
-    $chart_type = (isset($_POST['chart_type']) && in_array($_POST['chart_type'],array('bar','pie'),true)) ? $_POST['chart_type'] : 'bar';
+    $display_type = isset($_POST['display_type']) ? sanitize_text_field($_POST['display_type']) : 'cards';
+    if (!in_array($display_type, array('cards', 'horizontal_bars', 'vertical_bars'), true)) {
+        $display_type = 'cards';
+    }
+    // Backwards compatibility: map display_type to chart_type
+    $chart_type = 'bar';
+    if ($display_type === 'horizontal_bars') $chart_type = 'bar';
+    elseif ($display_type === 'vertical_bars') $chart_type = 'pie';
+
+    // Parse choice_images
+    $choice_images_raw = isset($_POST['choice_images']) ? sanitize_text_field($_POST['choice_images']) : '';
+    $choice_images_arr = array();
+    if (!empty($choice_images_raw)) {
+        $choice_images_arr = array_map('trim', explode(',', $choice_images_raw));
+        $choice_images_arr = array_map('esc_url_raw', $choice_images_arr);
+        $choice_images_arr = array_filter($choice_images_arr);
+    }
+    $choice_images_json = !empty($choice_images_arr) ? wp_json_encode(array_values($choice_images_arr)) : null;
+
     $time_limit    = isset($_POST['time_limit']) ? absint($_POST['time_limit']) : 0;
     $auto_close    = !empty($_POST['auto_close']) ? 1 : 0;
     $majority_type = isset($_POST['majority_type']) ? sanitize_text_field($_POST['majority_type']) : 'simple';
@@ -361,6 +367,8 @@ function dgptm_add_poll_question_fn(){
         'is_repeatable'=>1,
         'is_anonymous'=>!empty($_POST['is_anonymous'])?1:0,
         'chart_type'=>$chart_type,
+        'display_type'=>$display_type,
+        'choice_images'=>$choice_images_json,
         'in_overall'=>0,
         'auto_close'=>$auto_close,
         'majority_type'=>$majority_type,
@@ -385,7 +393,26 @@ function dgptm_update_poll_question_fn(){
     if(empty($_POST['question_id']) || empty($_POST['question_text'])) wp_send_json_error('Frage-ID oder Fragetext fehlt.');
     global $wpdb; $qid=intval($_POST['question_id']);
     $choices = isset($_POST['question_choices']) ? array_map('trim', explode(',', $_POST['question_choices'])) : array();
-    $chart_type = (isset($_POST['chart_type']) && in_array($_POST['chart_type'],array('bar','pie'),true)) ? $_POST['chart_type'] : 'bar';
+
+    $display_type = isset($_POST['display_type']) ? sanitize_text_field($_POST['display_type']) : 'cards';
+    if (!in_array($display_type, array('cards', 'horizontal_bars', 'vertical_bars'), true)) {
+        $display_type = 'cards';
+    }
+    // Backwards compatibility: map display_type to chart_type
+    $chart_type = 'bar';
+    if ($display_type === 'horizontal_bars') $chart_type = 'bar';
+    elseif ($display_type === 'vertical_bars') $chart_type = 'pie';
+
+    // Parse choice_images
+    $choice_images_raw = isset($_POST['choice_images']) ? sanitize_text_field($_POST['choice_images']) : '';
+    $choice_images_arr = array();
+    if (!empty($choice_images_raw)) {
+        $choice_images_arr = array_map('trim', explode(',', $choice_images_raw));
+        $choice_images_arr = array_map('esc_url_raw', $choice_images_arr);
+        $choice_images_arr = array_filter($choice_images_arr);
+    }
+    $choice_images_json = !empty($choice_images_arr) ? wp_json_encode(array_values($choice_images_arr)) : null;
+
     $time_limit    = isset($_POST['time_limit']) ? absint($_POST['time_limit']) : 0;
     $auto_close    = !empty($_POST['auto_close']) ? 1 : 0;
     $majority_type = isset($_POST['majority_type']) ? sanitize_text_field($_POST['majority_type']) : 'simple';
@@ -402,6 +429,8 @@ function dgptm_update_poll_question_fn(){
         'max_votes'=>isset($_POST['max_votes'])?intval($_POST['max_votes']):1,
         'is_anonymous'=>!empty($_POST['is_anonymous'])?1:0,
         'chart_type'=>$chart_type,
+        'display_type'=>$display_type,
+        'choice_images'=>$choice_images_json,
         'time_limit'=>$time_limit,
         'auto_close'=>$auto_close,
         'majority_type'=>$majority_type,
@@ -537,4 +566,35 @@ function dgptm_toggle_vote_invalid_fn(){
     $new = $row->is_invalid?0:1;
     $res=$wpdb->update($wpdb->prefix.'dgptm_abstimmung_votes',array('is_invalid'=>$new),array('id'=>$vid));
     ($res!==false)?wp_send_json_success():wp_send_json_error('Fehler beim Umschalten.');
+}
+
+// ===== BEAMER CONTENT =====
+add_action('wp_ajax_dgptm_toggle_beamer_content', 'dgptm_toggle_beamer_content_fn');
+function dgptm_toggle_beamer_content_fn() {
+    if (!dgptm_is_manager()) wp_send_json_error('Keine Rechte.');
+    global $wpdb;
+    $poll_id = absint($_POST['poll_id'] ?? 0);
+    if (!$poll_id) wp_send_json_error('Keine poll_id.');
+    $active = !empty($_POST['active']) ? 1 : 0;
+    $wpdb->update(
+        $wpdb->prefix . 'dgptm_abstimmung_polls',
+        ['beamer_content_active' => $active],
+        ['id' => $poll_id]
+    );
+    wp_send_json_success('Beamer-Inhalt ' . ($active ? 'aktiviert' : 'deaktiviert') . '.');
+}
+
+add_action('wp_ajax_dgptm_save_beamer_content', 'dgptm_save_beamer_content_fn');
+function dgptm_save_beamer_content_fn() {
+    if (!dgptm_is_manager()) wp_send_json_error('Keine Rechte.');
+    global $wpdb;
+    $poll_id = absint($_POST['poll_id'] ?? 0);
+    if (!$poll_id) wp_send_json_error('Keine poll_id.');
+    $content = isset($_POST['beamer_content']) ? wp_kses_post($_POST['beamer_content']) : '';
+    $wpdb->update(
+        $wpdb->prefix . 'dgptm_abstimmung_polls',
+        ['beamer_content' => $content],
+        ['id' => $poll_id]
+    );
+    wp_send_json_success('Beamer-Inhalt gespeichert.');
 }

@@ -1,13 +1,10 @@
 <?php
 // File: includes/beamer/view.php
-// Corporate Dark Beamer — Redesign v4.1.0
+// Clean White Beamer — v4.2.0
+// Komplett AJAX-basiert, keinerlei Benutzerinteraktion noetig.
 
 if (!defined('ABSPATH')) exit;
 
-/**
- * Shortcode: [beamer_view]
- * Corporate Dark Design mit Ergebnis-Karten, Timer-Countdown, Mehrheitsanzeige.
- */
 if (!function_exists('dgptm_beamer_view')) {
     function dgptm_beamer_view() {
         wp_enqueue_style( 'dgptm-abstimmen-frontend' );
@@ -19,369 +16,281 @@ if (!function_exists('dgptm_beamer_view')) {
         ob_start(); ?>
 
         <style>
-          /* === Corporate Dark Beamer === */
-          html, body { margin:0; padding:0; height:100%; overflow:hidden; }
-          #dgptm_beamer {
-            width:100%; height:100vh; position:relative; overflow:hidden;
-            background:#111827; color:#fff;
+          html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#fff;}
+          *{box-sizing:border-box;}
+          #dgptm_beamer{
+            width:100%;height:100vh;position:relative;overflow:hidden;
+            background:#fff;color:#1e293b;
             font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
           }
-          .dgptm-beamer-accent {
-            position:absolute; top:0; left:0; right:0; height:4px;
-            background:linear-gradient(90deg,#2d6cdf,#06b6d4);
-            z-index:10;
-          }
-          /* Clock / Timer */
-          .dgptm-beamer-clock {
-            position:absolute; top:18px; left:20px;
-            font-size:18px; font-weight:700; letter-spacing:1px;
-            color:rgba(255,255,255,0.9); z-index:10;
-          }
-          .dgptm-beamer-clock.dgptm-timer-active {
-            font-size:28px; color:#f87171; font-weight:800;
-          }
-          .dgptm-beamer-clock.dgptm-timer-urgent {
-            animation: dgptm-beamer-pulse 0.7s ease-in-out infinite alternate;
-          }
-          @keyframes dgptm-beamer-pulse { from{opacity:1;} to{opacity:0.4;} }
-
+          /* Accent bar */
+          .dgptm-b-accent{position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#2d6cdf,#06b6d4);z-index:10;}
+          /* Clock */
+          .dgptm-b-clock{position:absolute;top:16px;left:20px;font-size:18px;font-weight:700;color:#64748b;z-index:10;}
+          .dgptm-b-clock.timer-active{font-size:32px;color:#dc2626;font-weight:800;}
+          .dgptm-b-clock.timer-urgent{animation:bpulse .7s ease-in-out infinite alternate;}
+          @keyframes bpulse{from{opacity:1}to{opacity:.35}}
           /* Poll name */
-          .dgptm-beamer-poll-name {
-            position:absolute; top:18px; right:20px;
-            font-size:14px; color:rgba(255,255,255,0.5); z-index:10;
-          }
-          /* Main content */
-          .dgptm-beamer-content {
-            position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-            width:90%; max-width:1200px; text-align:center;
-          }
-          /* QR code */
-          .dgptm-beamer-qr {
-            position:absolute; bottom:20px; right:20px; z-index:10;
-            background:#fff; border-radius:8px; padding:6px;
-            box-shadow:0 2px 12px rgba(0,0,0,0.4);
-            display:none;
-          }
-          .dgptm-beamer-qr canvas { width:64px!important; height:64px!important; }
-
-          /* === Idle State === */
-          .dgptm-idle-logo { max-width:40%; max-height:40vh; opacity:0.7; margin-bottom:20px; }
-          .dgptm-idle-text { font-size:20px; opacity:0.4; }
-
-          /* === Active Voting === */
-          .dgptm-voting-label {
-            font-size:12px; text-transform:uppercase; letter-spacing:3px;
-            color:rgba(255,255,255,0.4); margin-bottom:12px;
-          }
-          .dgptm-voting-question {
-            font-size:clamp(24px,4vw,38px); font-weight:700; line-height:1.3;
-            margin-bottom:24px;
-          }
-          .dgptm-voting-progress { width:60%; margin:0 auto; }
-          .dgptm-voting-stats {
-            display:flex; justify-content:space-between;
-            font-size:13px; color:rgba(255,255,255,0.5); margin-bottom:6px;
-          }
-          .dgptm-progress-bar {
-            height:8px; background:rgba(255,255,255,0.1); border-radius:4px; overflow:hidden;
-          }
-          .dgptm-progress-fill {
-            height:100%; border-radius:4px; transition:width 0.5s ease;
-            background:linear-gradient(90deg,#3b82f6,#06b6d4);
-          }
-
-          /* === Waiting for Release === */
-          .dgptm-waiting-text {
-            font-size:22px; color:rgba(255,255,255,0.6);
-          }
-          .dgptm-waiting-dot {
-            display:inline-block; width:10px; height:10px; border-radius:50%;
-            background:#fbbf24; margin-left:8px; vertical-align:middle;
-            animation: dgptm-beamer-pulse 1.2s ease-in-out infinite alternate;
-          }
-
-          /* === Result Cards === */
-          .dgptm-beamer-question-title {
-            font-size:clamp(18px,3vw,26px); font-weight:600;
-            margin-bottom:24px; color:rgba(255,255,255,0.85);
-          }
-          .dgptm-beamer-cards {
-            display:flex; gap:16px; justify-content:center; flex-wrap:wrap;
-          }
-          .dgptm-beamer-result-card {
-            flex:1 1 160px; max-width:240px;
-            border:1px solid rgba(255,255,255,0.15);
-            border-radius:14px; padding:20px 16px; text-align:center;
-            transition:transform 0.3s ease, opacity 0.3s ease;
-            animation: dgptm-card-in 0.5s ease-out both;
-          }
-          @keyframes dgptm-card-in {
-            from { opacity:0; transform:translateY(20px); }
-            to { opacity:1; transform:translateY(0); }
-          }
-          .dgptm-card-pct {
-            font-size:clamp(32px,5vw,52px); font-weight:800; line-height:1;
-          }
-          .dgptm-card-label {
-            font-size:15px; font-weight:600; margin-top:8px;
-            color:rgba(255,255,255,0.9);
-          }
-          .dgptm-card-count {
-            font-size:12px; color:rgba(255,255,255,0.4); margin-top:4px;
-          }
+          .dgptm-b-pollname{position:absolute;top:16px;right:20px;font-size:14px;color:#94a3b8;z-index:10;}
+          /* Content */
+          .dgptm-b-content{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:1200px;text-align:center;}
+          /* QR */
+          .dgptm-b-qr{position:absolute;bottom:20px;right:20px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px;box-shadow:0 2px 8px rgba(0,0,0,.08);display:none;z-index:10;}
+          .dgptm-b-qr canvas{width:72px!important;height:72px!important;}
+          /* Idle */
+          .b-idle-logo{max-width:30%;max-height:30vh;opacity:.6;margin-bottom:16px;}
+          .b-idle-text{font-size:22px;color:#94a3b8;}
+          /* Voting active */
+          .b-vote-label{font-size:12px;text-transform:uppercase;letter-spacing:3px;color:#94a3b8;margin-bottom:10px;}
+          .b-vote-question{font-size:clamp(26px,4vw,42px);font-weight:700;line-height:1.25;margin-bottom:28px;color:#0f172a;}
+          .b-vote-progress{width:55%;margin:0 auto;}
+          .b-vote-stats{display:flex;justify-content:space-between;font-size:13px;color:#94a3b8;margin-bottom:6px;}
+          .b-progress-bar{height:10px;background:#f1f5f9;border-radius:5px;overflow:hidden;}
+          .b-progress-fill{height:100%;border-radius:5px;transition:width .5s;background:linear-gradient(90deg,#3b82f6,#06b6d4);}
+          /* Waiting */
+          .b-waiting{font-size:22px;color:#64748b;}
+          .b-waiting-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#f59e0b;margin-left:8px;vertical-align:middle;animation:bpulse 1.2s ease-in-out infinite alternate;}
+          /* Result cards */
+          .b-q-title{font-size:clamp(18px,3vw,28px);font-weight:600;margin-bottom:24px;color:#334155;}
+          .b-cards{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;}
+          .b-card{flex:1 1 160px;max-width:260px;border-radius:16px;padding:24px 16px;text-align:center;border:2px solid #e2e8f0;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.04);animation:bcardin .5s ease-out both;}
+          @keyframes bcardin{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+          .b-card-img{width:80px;height:80px;border-radius:50%;object-fit:cover;margin:0 auto 10px;display:block;border:3px solid #e2e8f0;}
+          .b-card-pct{font-size:clamp(36px,5vw,56px);font-weight:800;line-height:1;}
+          .b-card-label{font-size:16px;font-weight:600;margin-top:8px;color:#334155;}
+          .b-card-count{font-size:13px;color:#94a3b8;margin-top:4px;}
+          /* Horizontal bars */
+          .b-hbars{display:flex;flex-direction:column;gap:14px;max-width:700px;margin:0 auto;text-align:left;}
+          .b-hbar-row .b-hbar-head{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px;}
+          .b-hbar-row .b-hbar-head .b-hbar-name{font-weight:600;color:#334155;display:flex;align-items:center;gap:8px;}
+          .b-hbar-row .b-hbar-head .b-hbar-name img{width:28px;height:28px;border-radius:50%;object-fit:cover;}
+          .b-hbar-row .b-hbar-val{font-weight:700;}
+          .b-hbar-track{height:32px;background:#f1f5f9;border-radius:8px;overflow:hidden;}
+          .b-hbar-fill{height:100%;border-radius:8px;display:flex;align-items:center;padding-left:12px;font-size:14px;font-weight:700;color:#fff;transition:width .6s ease;}
+          /* Vertical bars (columns) */
+          .b-vbars{display:flex;gap:20px;justify-content:center;align-items:flex-end;height:260px;}
+          .b-vbar{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;max-width:120px;}
+          .b-vbar-pct{font-size:18px;font-weight:800;}
+          .b-vbar-col{width:100%;border-radius:8px 8px 0 0;transition:height .6s ease;min-height:4px;}
+          .b-vbar-label{font-size:12px;font-weight:600;color:#64748b;text-align:center;}
+          .b-vbar-img{width:40px;height:40px;border-radius:50%;object-fit:cover;}
           /* Result text */
-          .dgptm-beamer-result-text {
-            margin-top:20px; font-size:16px; font-weight:600;
-          }
-          .dgptm-result-passed { color:#4ade80; }
-          .dgptm-result-failed { color:#f87171; }
-
-          /* === All Results Grid === */
-          .dgptm-results-grid {
-            display:grid; grid-template-columns:repeat(auto-fit,minmax(400px,1fr));
-            gap:24px; text-align:center;
-          }
-          .dgptm-results-grid .dgptm-beamer-question-title { font-size:16px; margin-bottom:12px; }
-          .dgptm-results-grid .dgptm-beamer-result-card { padding:12px 10px; }
-          .dgptm-results-grid .dgptm-card-pct { font-size:28px; }
-          .dgptm-results-grid .dgptm-card-label { font-size:12px; }
-          .dgptm-results-grid .dgptm-beamer-result-text { font-size:13px; }
+          .b-result-text{margin-top:20px;font-size:17px;font-weight:600;}
+          .b-result-passed{color:#16a34a;}
+          .b-result-failed{color:#dc2626;}
+          /* All results grid */
+          .b-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:28px;text-align:center;}
+          .b-grid .b-q-title{font-size:16px;margin-bottom:14px;}
+          .b-grid .b-card{padding:14px 10px;}
+          .b-grid .b-card-pct{font-size:30px;}
+          .b-grid .b-card-label{font-size:13px;}
+          .b-grid .b-result-text{font-size:14px;}
+          /* Custom content */
+          .b-custom{font-size:20px;line-height:1.6;color:#334155;max-width:800px;margin:0 auto;}
+          .b-custom img{max-width:100%;height:auto;border-radius:12px;}
         </style>
 
         <div id="dgptm_beamer">
-          <div class="dgptm-beamer-accent"></div>
-          <div id="dgptm_beamerClock" class="dgptm-beamer-clock">--:--</div>
-          <div id="dgptm_beamerPollName" class="dgptm-beamer-poll-name"></div>
-          <div id="dgptm_beamerContent" class="dgptm-beamer-content"></div>
-          <div id="dgptm_beamerQR" class="dgptm-beamer-qr"></div>
+          <div class="dgptm-b-accent"></div>
+          <div id="bClock" class="dgptm-b-clock">--:--</div>
+          <div id="bPollName" class="dgptm-b-pollname"></div>
+          <div id="bContent" class="dgptm-b-content"></div>
+          <div id="bQR" class="dgptm-b-qr"></div>
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
         <script>
         (function(){
-          var ajaxUrl = '<?php echo esc_js(admin_url("admin-ajax.php")); ?>';
-          var homeUrl = '<?php echo esc_js(home_url("/")); ?>';
-          var noPollText = <?php echo wp_json_encode($no_poll_text); ?>;
-          var COLORS = ['#4ade80','#f87171','#fbbf24','#60a5fa','#a78bfa','#fb923c','#e879f9','#34d399'];
-          var pollInterval = 3000;
-          var clockTimer = null;
-          var lastRemainingFromServer = null;
-          var localRemaining = null;
+          var AX='<?php echo esc_js(admin_url("admin-ajax.php")); ?>';
+          var HOME='<?php echo esc_js(home_url("/")); ?>';
+          var IDLE_TEXT=<?php echo wp_json_encode($no_poll_text); ?>;
+          var COLORS=['#22c55e','#ef4444','#f59e0b','#3b82f6','#8b5cf6','#f97316','#ec4899','#14b8a6'];
+          var poll=3000, clockTick=null, localR=null, lastR=null, qrDone=false;
 
-          function esc(s){ var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
-          function hexToRgba(hex, a){
-            var r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
-            return 'rgba('+r+','+g+','+b+','+a+')';
-          }
+          function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+          function hexRgba(h,a){var r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return'rgba('+r+','+g+','+b+','+a+')';}
 
-          // === Clock ===
-          function startClockTick(){
-            if(clockTimer) clearInterval(clockTimer);
-            clockTimer = setInterval(function(){
-              var el = document.getElementById('dgptm_beamerClock');
-              if(!el) return;
-              if(localRemaining !== null){
-                localRemaining--;
-                if(localRemaining < 0) localRemaining = 0;
-                var m = Math.floor(localRemaining/60), s = localRemaining%60;
-                el.textContent = m+':'+String(s).padStart(2,'0');
-                el.classList.add('dgptm-timer-active');
-                el.classList.toggle('dgptm-timer-urgent', localRemaining < 10);
-              } else {
-                var now = new Date();
-                el.textContent = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-                el.classList.remove('dgptm-timer-active','dgptm-timer-urgent');
+          // Clock
+          function startClock(){
+            if(clockTick)clearInterval(clockTick);
+            clockTick=setInterval(function(){
+              var el=document.getElementById('bClock');if(!el)return;
+              if(localR!==null){
+                localR--;if(localR<0)localR=0;
+                var m=Math.floor(localR/60),s=localR%60;
+                el.textContent=m+':'+String(s).padStart(2,'0');
+                el.className='dgptm-b-clock timer-active'+(localR<10?' timer-urgent':'');
+              }else{
+                var n=new Date();
+                el.textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+                el.className='dgptm-b-clock';
               }
-            }, 1000);
+            },1000);
           }
-          startClockTick();
+          startClock();
 
-          // === QR ===
-          var qrDrawn = false;
-          function drawQR(pollId){
-            var el = document.getElementById('dgptm_beamerQR');
-            if(!el || qrDrawn) { if(el) el.style.display='block'; return; }
-            var url = homeUrl + '?dgptm_member=1&poll_id=' + pollId;
-            el.innerHTML = '';
-            var canvas = document.createElement('canvas');
-            el.appendChild(canvas);
-            if(typeof QRCode !== 'undefined' && QRCode.toCanvas){
-              QRCode.toCanvas(canvas, url, {width:64, margin:1, errorCorrectionLevel:'M'});
+          // QR
+          function showQR(pid){
+            var el=document.getElementById('bQR');if(!el)return;
+            if(!qrDone){
+              el.innerHTML='';var c=document.createElement('canvas');el.appendChild(c);
+              if(typeof QRCode!=='undefined'&&QRCode.toCanvas)QRCode.toCanvas(c,HOME+'?dgptm_member=1&poll_id='+pid,{width:72,margin:1,errorCorrectionLevel:'M'});
+              qrDone=true;
             }
-            el.style.display = 'block';
-            qrDrawn = true;
+            el.style.display='block';
           }
-          function hideQR(){ var el=document.getElementById('dgptm_beamerQR'); if(el) el.style.display='none'; }
+          function hideQR(){var el=document.getElementById('bQR');if(el)el.style.display='none';}
 
-          // === Render States ===
-          function renderIdle(data){
-            localRemaining = null;
-            var html = '';
-            if(data.active_poll && data.active_poll.logo_url){
-              html += '<img src="'+esc(data.active_poll.logo_url)+'" class="dgptm-idle-logo" alt="Logo">';
-            }
-            html += '<div class="dgptm-idle-text">'+esc(noPollText)+'</div>';
-            document.getElementById('dgptm_beamerContent').innerHTML = html;
+          // === Render functions ===
+          function renderIdle(d){
+            localR=null;
+            var h='';
+            if(d.active_poll&&d.active_poll.logo_url)h+='<img src="'+esc(d.active_poll.logo_url)+'" class="b-idle-logo" alt="">';
+            h+='<div class="b-idle-text">'+IDLE_TEXT+'</div>';
+            document.getElementById('bContent').innerHTML=h;
             hideQR();
           }
 
-          function renderActiveVoting(data){
-            var q = data.active_question;
-            var res = data.active_results || {};
-            var total = res.total_votes || 0;
-            var att = data.attendees || 0;
-            var pct = att > 0 ? Math.round(total/att*100) : 0;
-
-            // Timer sync
-            if(data.timer && data.timer.remaining_seconds !== null && data.timer.time_limit > 0){
-              if(lastRemainingFromServer !== data.timer.remaining_seconds){
-                localRemaining = Math.max(0, data.timer.remaining_seconds);
-                lastRemainingFromServer = data.timer.remaining_seconds;
-              }
-            } else {
-              localRemaining = null;
-            }
-
-            var html = '<div class="dgptm-voting-label">Abstimmung</div>';
-            html += '<div class="dgptm-voting-question">'+esc(q.question)+'</div>';
-            html += '<div class="dgptm-voting-progress">';
-            html += '<div class="dgptm-voting-stats"><span>'+total+' von '+att+' Stimmen</span><span>'+pct+'%</span></div>';
-            html += '<div class="dgptm-progress-bar"><div class="dgptm-progress-fill" style="width:'+pct+'%"></div></div>';
-            html += '</div>';
-            document.getElementById('dgptm_beamerContent').innerHTML = html;
-
-            if(data.active_poll) drawQR(data.active_poll.id);
+          function renderCustomContent(d){
+            localR=null;
+            var html=d.active_poll.beamer_content||'';
+            document.getElementById('bContent').innerHTML='<div class="b-custom">'+html+'</div>';
+            if(d.beamer_state&&d.beamer_state.qr_visible&&d.active_poll)showQR(d.active_poll.id);else hideQR();
           }
 
-          function renderWaitingForRelease(data){
-            localRemaining = null;
-            var html = '<div class="dgptm-waiting-text">Abstimmung beendet — Ergebnis wird ausgewertet <span class="dgptm-waiting-dot"></span></div>';
-            document.getElementById('dgptm_beamerContent').innerHTML = html;
+          function renderVoting(d){
+            var q=d.active_question,res=d.active_results||{};
+            var total=res.total_votes||0,att=d.attendees||0,pct=att>0?Math.round(total/att*100):0;
+            if(d.timer&&d.timer.remaining_seconds!==null&&d.timer.time_limit>0){
+              if(lastR!==d.timer.remaining_seconds){localR=Math.max(0,d.timer.remaining_seconds);lastR=d.timer.remaining_seconds;}
+            }else localR=null;
+            var h='<div class="b-vote-label">Abstimmung</div>';
+            h+='<div class="b-vote-question">'+esc(q.question)+'</div>';
+            h+='<div class="b-vote-progress"><div class="b-vote-stats"><span>'+total+' von '+att+' Stimmen</span><span>'+pct+'%</span></div>';
+            h+='<div class="b-progress-bar"><div class="b-progress-fill" style="width:'+pct+'%"></div></div></div>';
+            document.getElementById('bContent').innerHTML=h;
+            if(d.active_poll)showQR(d.active_poll.id);
+          }
+
+          function renderWaiting(d){
+            localR=null;
+            document.getElementById('bContent').innerHTML='<div class="b-waiting">Abstimmung beendet — Ergebnis wird ausgewertet <span class="b-waiting-dot"></span></div>';
             hideQR();
           }
 
-          function buildResultCards(qData){
-            var choices = qData.choices;
-            if(typeof choices === 'string'){ try{ choices = JSON.parse(choices); }catch(e){ choices=[]; } }
-            if(!Array.isArray(choices)) choices = [];
-            var votes = qData.votes || [];
-            var totalVotes = qData.total_votes || 0;
+          // === Result renderers ===
+          function buildResults(q){
+            var choices=q.choices;if(typeof choices==='string'){try{choices=JSON.parse(choices)}catch(e){choices=[]}}
+            if(!Array.isArray(choices))choices=[];
+            var votes=q.votes||[],total=q.total_votes||0;
+            var images=q.choice_images;if(typeof images==='string'){try{images=JSON.parse(images)}catch(e){images=null}}
+            if(!Array.isArray(images))images=null;
+            var dt=q.display_type||q.chart_type||'cards';
 
-            var html = '<div class="dgptm-beamer-question-title">'+esc(qData.question)+'</div>';
-            html += '<div class="dgptm-beamer-cards">';
-            for(var i=0; i<choices.length; i++){
-              var count = votes[i] || 0;
-              var pct = totalVotes > 0 ? Math.round(count/totalVotes*100) : 0;
-              var color = COLORS[i % COLORS.length];
-              var delay = (i * 0.1).toFixed(1);
-              html += '<div class="dgptm-beamer-result-card" style="border-color:'+color+';background:'+hexToRgba(color,0.12)+';animation-delay:'+delay+'s">';
-              html += '<div class="dgptm-card-pct" style="color:'+color+'">'+pct+'%</div>';
-              html += '<div class="dgptm-card-label">'+esc(choices[i])+'</div>';
-              html += '<div class="dgptm-card-count">'+count+' Stimmen</div>';
-              html += '</div>';
-            }
-            html += '</div>';
+            var h='<div class="b-q-title">'+esc(q.question)+'</div>';
 
-            if(qData.majority){
-              var m = qData.majority;
-              var icon = m.passed ? '\u2713' : '\u2717';
-              var cls = m.passed ? 'dgptm-result-passed' : 'dgptm-result-failed';
-              html += '<div class="dgptm-beamer-result-text '+cls+'">'+icon+' '+esc(m.label);
-              html += ' \u00b7 '+totalVotes+' Stimmen';
-              if(m.quorum > 0){
-                html += ' \u00b7 Quorum '+(m.quorum_met ? 'erreicht' : 'nicht erreicht');
-              }
-              html += '</div>';
+            if(dt==='horizontal_bars'){
+              h+=buildHBars(choices,votes,total,images);
+            }else if(dt==='vertical_bars'){
+              h+=buildVBars(choices,votes,total,images);
+            }else{
+              h+=buildCards(choices,votes,total,images);
             }
-            return html;
+
+            if(q.majority){
+              var m=q.majority,icon=m.passed?'\u2713':'\u2717',cls=m.passed?'b-result-passed':'b-result-failed';
+              h+='<div class="b-result-text '+cls+'">'+icon+' '+esc(m.label)+' \u00b7 '+total+' Stimmen';
+              if(m.quorum>0)h+=' \u00b7 Quorum '+(m.quorum_met?'erreicht':'nicht erreicht');
+              h+='</div>';
+            }
+            return h;
           }
 
-          function renderSingleResult(data){
-            localRemaining = null;
-            var q = data.state_question;
-            if(!q || !q.released){
-              renderIdle(data); return;
+          function buildCards(choices,votes,total,images){
+            var h='<div class="b-cards">';
+            for(var i=0;i<choices.length;i++){
+              var cnt=votes[i]||0,pct=total>0?Math.round(cnt/total*100):0,c=COLORS[i%COLORS.length];
+              var delay=(i*.1).toFixed(1);
+              h+='<div class="b-card" style="border-color:'+c+';animation-delay:'+delay+'s">';
+              if(images&&images[i])h+='<img src="'+esc(images[i])+'" class="b-card-img" alt="" style="border-color:'+c+'">';
+              h+='<div class="b-card-pct" style="color:'+c+'">'+pct+'%</div>';
+              h+='<div class="b-card-label">'+esc(choices[i])+'</div>';
+              h+='<div class="b-card-count">'+cnt+' Stimmen</div></div>';
             }
-            document.getElementById('dgptm_beamerContent').innerHTML = buildResultCards(q);
-            hideQR();
+            return h+'</div>';
           }
 
-          function renderAllResults(data){
-            localRemaining = null;
-            var qs = data.state_questions;
-            if(!qs || !qs.length){ renderIdle(data); return; }
-            var html = '<div class="dgptm-results-grid">';
-            for(var i=0; i<qs.length; i++){
-              html += '<div>' + buildResultCards(qs[i]) + '</div>';
+          function buildHBars(choices,votes,total,images){
+            var h='<div class="b-hbars">';
+            for(var i=0;i<choices.length;i++){
+              var cnt=votes[i]||0,pct=total>0?Math.round(cnt/total*100):0,c=COLORS[i%COLORS.length];
+              h+='<div class="b-hbar-row"><div class="b-hbar-head"><span class="b-hbar-name">';
+              if(images&&images[i])h+='<img src="'+esc(images[i])+'" alt="">';
+              h+=esc(choices[i])+'</span><span class="b-hbar-val" style="color:'+c+'">'+cnt+' ('+pct+'%)</span></div>';
+              h+='<div class="b-hbar-track"><div class="b-hbar-fill" style="width:'+pct+'%;background:'+c+'">'+( pct>8?pct+'%':'')+'</div></div></div>';
             }
-            html += '</div>';
-            document.getElementById('dgptm_beamerContent').innerHTML = html;
-            hideQR();
+            return h+'</div>';
           }
 
-          // === Main Render ===
-          function renderBeamer(data){
-            // Poll name
-            var nameEl = document.getElementById('dgptm_beamerPollName');
-            if(nameEl) nameEl.textContent = (data.active_poll ? data.active_poll.name : '');
-
-            var st = data.beamer_state || {};
-
-            if(st.mode === 'results_all' && data.state_questions){
-              renderAllResults(data);
-              pollInterval = 3000;
-            } else if(st.mode === 'results_one' && data.state_question){
-              renderSingleResult(data);
-              pollInterval = 3000;
-            } else if(data.active_question && data.active_question.status === 'active'){
-              renderActiveVoting(data);
-              pollInterval = 1000;
-            } else if(data.active_question && data.active_question.status === 'stopped'){
-              if(data.active_question.results_released){
-                // Ergebnis schon freigegeben aber kein results_one Modus
-                document.getElementById('dgptm_beamerContent').innerHTML = buildResultCards(data.active_question);
-                localRemaining = null;
-                pollInterval = 3000;
-              } else {
-                renderWaitingForRelease(data);
-                pollInterval = 2000;
-              }
-            } else {
-              renderIdle(data);
-              pollInterval = 3000;
+          function buildVBars(choices,votes,total,images){
+            var maxV=Math.max.apply(null,votes.concat([1]));
+            var h='<div class="b-vbars">';
+            for(var i=0;i<choices.length;i++){
+              var cnt=votes[i]||0,pct=total>0?Math.round(cnt/total*100):0,c=COLORS[i%COLORS.length];
+              var barH=Math.round((cnt/maxV)*200);
+              h+='<div class="b-vbar">';
+              h+='<div class="b-vbar-pct" style="color:'+c+'">'+pct+'%</div>';
+              h+='<div class="b-vbar-col" style="height:'+barH+'px;background:'+c+'"></div>';
+              if(images&&images[i])h+='<img src="'+esc(images[i])+'" class="b-vbar-img" alt="">';
+              h+='<div class="b-vbar-label">'+esc(choices[i])+'</div></div>';
             }
-
-            // QR visibility
-            if(st.qr_visible && data.active_poll){
-              drawQR(data.active_poll.id);
-            } else if(!data.active_question || data.active_question.status !== 'active'){
-              hideQR();
-            }
+            return h+'</div>';
           }
 
-          // === Polling Loop ===
-          function fetchPayload(){
-            var xhr = new XMLHttpRequest();
-            xhr.open('POST', ajaxUrl, true);
-            xhr.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
-            xhr.onreadystatechange = function(){
-              if(xhr.readyState !== 4) return;
-              if(xhr.status === 200){
-                try {
-                  var resp = JSON.parse(xhr.responseText);
-                  if(resp && resp.success && resp.data){
-                    renderBeamer(resp.data);
-                  }
-                } catch(e){}
-              } else {
-                pollInterval = 5000;
-              }
-              setTimeout(fetchPayload, pollInterval);
+          // === Main ===
+          function render(d){
+            document.getElementById('bPollName').textContent=d.active_poll?d.active_poll.name:'';
+            var st=d.beamer_state||{};
+
+            // Custom content mode
+            if(d.active_poll&&d.active_poll.beamer_content_active&&d.active_poll.beamer_content){
+              renderCustomContent(d);poll=3000;return;
+            }
+            if(st.mode==='results_all'&&d.state_questions){
+              localR=null;
+              var h='<div class="b-grid">';
+              for(var i=0;i<d.state_questions.length;i++)h+='<div>'+buildResults(d.state_questions[i])+'</div>';
+              h+='</div>';
+              document.getElementById('bContent').innerHTML=h;hideQR();poll=3000;
+            }else if(st.mode==='results_one'&&d.state_question){
+              localR=null;
+              if(!d.state_question.released){renderIdle(d);return;}
+              document.getElementById('bContent').innerHTML=buildResults(d.state_question);hideQR();poll=3000;
+            }else if(d.active_question&&d.active_question.status==='active'){
+              renderVoting(d);poll=1000;
+            }else if(d.active_question&&d.active_question.status==='stopped'){
+              if(d.active_question.results_released){
+                localR=null;document.getElementById('bContent').innerHTML=buildResults(d.active_question);hideQR();poll=3000;
+              }else{renderWaiting(d);poll=2000;}
+            }else{renderIdle(d);poll=3000;}
+
+            if(st.qr_visible&&d.active_poll)showQR(d.active_poll.id);
+          }
+
+          // === AJAX loop ===
+          function fetch(){
+            var x=new XMLHttpRequest();
+            x.open('POST',AX,true);
+            x.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
+            x.onreadystatechange=function(){
+              if(x.readyState!==4)return;
+              if(x.status===200){try{var r=JSON.parse(x.responseText);if(r&&r.success&&r.data)render(r.data);}catch(e){}}
+              else poll=5000;
+              setTimeout(fetch,poll);
             };
-            xhr.send('action=dgptm_get_beamer_payload');
+            x.send('action=dgptm_get_beamer_payload');
           }
-          fetchPayload();
-
+          fetch();
         })();
         </script>
         <?php
@@ -389,9 +298,6 @@ if (!function_exists('dgptm_beamer_view')) {
     }
 }
 
-// Failsafe shortcode registration
 if (!shortcode_exists('beamer_view')) {
-    add_action('init', function(){
-        add_shortcode('beamer_view', 'dgptm_beamer_view');
-    }, 5);
+    add_action('init', function(){ add_shortcode('beamer_view','dgptm_beamer_view'); }, 5);
 }

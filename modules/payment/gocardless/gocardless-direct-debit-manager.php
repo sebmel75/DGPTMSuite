@@ -86,7 +86,9 @@ class GCL_Formidable_Integration {
         $res = wp_remote_request( "https://api.gocardless.com/$endpoint", $args );
 
         if ( is_wp_error( $res ) ) {
-            $this->log( "GC API ERROR → " . $res->get_error_message() );
+            if ( function_exists('dgptm_log_error') ) {
+                dgptm_log_error( "GC API ERROR → " . $res->get_error_message(), 'gocardless' );
+            }
         } else {
             $code = wp_remote_retrieve_response_code( $res );
             $body = wp_remote_retrieve_body( $res );

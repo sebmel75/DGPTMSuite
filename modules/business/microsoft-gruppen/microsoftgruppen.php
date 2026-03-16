@@ -523,6 +523,9 @@ if (!empty($last_trace)) {
             $response = wp_remote_post( $this->token_endpoint, $args );
             if ( is_wp_error( $response ) ) {
                 $this->log_debug_info('OAuth WP_Error', $response->get_error_message());
+                if (function_exists('dgptm_log_error')) {
+                    dgptm_log_error('OAuth WP_Error: ' . $response->get_error_message(), 'microsoft-gruppen');
+                }
                 $this->record_graph_error('OAuth Fehler: ' . $response->get_error_message());
                 return;
             }
@@ -538,6 +541,9 @@ if (!empty($last_trace)) {
                 $this->record_graph_error('OAuth erfolgreich.');
             } else {
                 $this->log_debug_info('OAuth Response Body Fehler', $body);
+                if (function_exists('dgptm_log_error')) {
+                    dgptm_log_error('OAuth Response Body Fehler', 'microsoft-gruppen');
+                }
                 $this->record_graph_error('OAuth Antwort ohne Token: ' . substr(json_encode($body),0,500));
             }
 
@@ -599,6 +605,9 @@ if (!empty($last_trace)) {
             $token   = $this->dec($options['access_token'] ?? '');
             if (empty($token)) {
                 $this->log_debug_info('get_access_token decrypt after refresh failed', $options['access_token'] ?? '(missing)');
+                if (function_exists('dgptm_log_error')) {
+                    dgptm_log_error('get_access_token decrypt after refresh failed', 'microsoft-gruppen');
+                }
                 $this->record_graph_error('Token nach Refresh leer. Bitte neu verbinden.');
                 return false;
             }
@@ -663,6 +672,9 @@ if (!empty($last_trace)) {
         $response = wp_remote_post( $this->token_endpoint, $args );
         if ( is_wp_error($response) ) {
             $this->log_debug_info('refresh_access_token WP_Error', $response->get_error_message());
+            if (function_exists('dgptm_log_error')) {
+                dgptm_log_error('refresh_access_token WP_Error: ' . $response->get_error_message(), 'microsoft-gruppen');
+            }
             $this->record_graph_error('Refresh-Fehler: ' . $response->get_error_message());
             return false;
         }
@@ -684,6 +696,9 @@ if (!empty($last_trace)) {
         }
 
         $this->log_debug_info('refresh_access_token Fehler', $body);
+        if (function_exists('dgptm_log_error')) {
+            dgptm_log_error('refresh_access_token Fehler', 'microsoft-gruppen');
+        }
         $this->record_graph_error('Refresh-Antwort ungültig: ' . substr(json_encode($body),0,500));
         return false;
     }

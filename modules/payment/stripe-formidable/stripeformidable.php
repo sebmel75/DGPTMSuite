@@ -82,7 +82,9 @@ class Stripe_Formidable_Integration {
         $opts = get_option( $this->opt_name, [] );
         $sk   = trim( $opts['stripe_secret'] ?? '' );
         if ( ! $sk ) {
-            $this->log("Missing Stripe secret key");
+            if ( function_exists('dgptm_log_error') ) {
+                dgptm_log_error("Missing Stripe secret key", 'stripe-formidable');
+            }
             return null;
         }
         $url  = "https://api.stripe.com/v1/$endpoint";
@@ -95,7 +97,9 @@ class Stripe_Formidable_Integration {
         $this->log("Stripe $method $endpoint " . json_encode($data));
         $res = wp_remote_request( $url, $args );
         if ( is_wp_error($res) ) {
-            $this->log("Stripe API error: " . $res->get_error_message());
+            if ( function_exists('dgptm_log_error') ) {
+                dgptm_log_error("Stripe API error: " . $res->get_error_message(), 'stripe-formidable');
+            }
             return null;
         }
         return $res;

@@ -23,6 +23,8 @@ if (!function_exists('dgptm_activate_plugin')) {
             time_limit INT NOT NULL DEFAULT 0,
             logo_url VARCHAR(500) DEFAULT '',
             guest_voting TINYINT(1) NOT NULL DEFAULT 1,
+            beamer_content TEXT DEFAULT NULL,
+            beamer_content_active TINYINT(1) NOT NULL DEFAULT 0,
             PRIMARY KEY (id)
         ) $charset_collate;";
 
@@ -46,6 +48,8 @@ if (!function_exists('dgptm_activate_plugin')) {
             majority_type VARCHAR(20) NOT NULL DEFAULT 'simple',
             quorum INT NOT NULL DEFAULT 0,
             started_at DATETIME DEFAULT NULL,
+            choice_images TEXT DEFAULT NULL,
+            display_type VARCHAR(20) NOT NULL DEFAULT 'cards',
             PRIMARY KEY (id),
             KEY poll_id (poll_id)
         ) $charset_collate;";
@@ -168,6 +172,20 @@ if (!function_exists('dgptm_maybe_upgrade_db')) {
             $wpdb->query("ALTER TABLE $t ADD COLUMN voted_questions TEXT DEFAULT NULL");
         }
 
-        update_option('dgptm_db_version', '4.1.0');
+        // === v4.2.0: Images, display types, beamer content ===
+        if (!$has($q, 'choice_images')) {
+            $wpdb->query("ALTER TABLE $q ADD COLUMN choice_images TEXT DEFAULT NULL");
+        }
+        if (!$has($q, 'display_type')) {
+            $wpdb->query("ALTER TABLE $q ADD COLUMN display_type VARCHAR(20) NOT NULL DEFAULT 'cards'");
+        }
+        if (!$has($p, 'beamer_content')) {
+            $wpdb->query("ALTER TABLE $p ADD COLUMN beamer_content TEXT DEFAULT NULL");
+        }
+        if (!$has($p, 'beamer_content_active')) {
+            $wpdb->query("ALTER TABLE $p ADD COLUMN beamer_content_active TINYINT(1) NOT NULL DEFAULT 0");
+        }
+
+        update_option('dgptm_db_version', '4.2.0');
     }
 }

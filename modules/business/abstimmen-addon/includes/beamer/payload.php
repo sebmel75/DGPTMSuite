@@ -38,12 +38,21 @@ if (!function_exists('dgptm_build_results_payload')) {
             }
         }
 
+        // Choice images
+        $choice_images = null;
+        if (!empty($q->choice_images)) {
+            $decoded = json_decode($q->choice_images, true);
+            if (is_array($decoded)) $choice_images = $decoded;
+        }
+
         $result = array(
-            'released'    => true,
-            'choices'     => array_values($choices),
-            'votes'       => array_values($vote_counts),
-            'total_votes' => $total,
-            'chart_type'  => $q->chart_type ?: 'bar',
+            'released'      => true,
+            'choices'       => array_values($choices),
+            'votes'         => array_values($vote_counts),
+            'total_votes'   => $total,
+            'chart_type'    => $q->chart_type ?: 'bar',
+            'display_type'  => $q->display_type ?? 'cards',
+            'choice_images' => $choice_images,
         );
 
         // Majority-Auswertung

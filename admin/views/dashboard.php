@@ -29,15 +29,15 @@ $stored_categories = get_option('dgptm_suite_categories', []);
 
 // Standard-Kategorien
 $default_categories = [
-    'core-infrastructure' => ['name' => __('Core Infrastructure', 'dgptm-suite'), 'description' => '', 'color' => '#e74c3c'],
-    'business' => ['name' => __('Business Logic', 'dgptm-suite'), 'description' => '', 'color' => '#3498db'],
-    'payment' => ['name' => __('Payment', 'dgptm-suite'), 'description' => '', 'color' => '#2ecc71'],
-    'auth' => ['name' => __('Authentication', 'dgptm-suite'), 'description' => '', 'color' => '#f39c12'],
-    'media' => ['name' => __('Media', 'dgptm-suite'), 'description' => '', 'color' => '#9b59b6'],
-    'content' => ['name' => __('Content Management', 'dgptm-suite'), 'description' => '', 'color' => '#1abc9c'],
-    'acf-tools' => ['name' => __('ACF Tools', 'dgptm-suite'), 'description' => '', 'color' => '#34495e'],
-    'utilities' => ['name' => __('Utilities', 'dgptm-suite'), 'description' => '', 'color' => '#95a5a6'],
-    'uncategorized' => ['name' => __('Uncategorized', 'dgptm-suite'), 'description' => '', 'color' => '#7f8c8d'],
+    'core-infrastructure' => ['name' => __('Kern-Infrastruktur', 'dgptm-suite'), 'description' => '', 'color' => '#e74c3c'],
+    'business' => ['name' => __('Geschaeftslogik', 'dgptm-suite'), 'description' => '', 'color' => '#3498db'],
+    'payment' => ['name' => __('Zahlung', 'dgptm-suite'), 'description' => '', 'color' => '#2ecc71'],
+    'auth' => ['name' => __('Authentifizierung', 'dgptm-suite'), 'description' => '', 'color' => '#f39c12'],
+    'media' => ['name' => __('Medien', 'dgptm-suite'), 'description' => '', 'color' => '#9b59b6'],
+    'content' => ['name' => __('Inhaltsverwaltung', 'dgptm-suite'), 'description' => '', 'color' => '#1abc9c'],
+    'acf-tools' => ['name' => __('ACF-Werkzeuge', 'dgptm-suite'), 'description' => '', 'color' => '#34495e'],
+    'utilities' => ['name' => __('Hilfsmittel', 'dgptm-suite'), 'description' => '', 'color' => '#95a5a6'],
+    'uncategorized' => ['name' => __('Nicht kategorisiert', 'dgptm-suite'), 'description' => '', 'color' => '#7f8c8d'],
 ];
 
 // Merge mit gespeicherten Kategorien

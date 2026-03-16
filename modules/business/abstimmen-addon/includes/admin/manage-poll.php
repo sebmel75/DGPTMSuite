@@ -20,8 +20,7 @@ if (!function_exists('dgptm_manage_poll')) {
 
         global $wpdb;
         $polls = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}dgptm_abstimmung_polls ORDER BY created DESC");
-        $beamer_state = json_decode(get_option('dgptm_beamer_state', wp_json_encode(array('mode'=>'auto'))), true);
-        if(!is_array($beamer_state)) $beamer_state = array('mode'=>'auto');
+        $beamer_state = dgptm_get_beamer_state();
 
         ob_start(); ?>
         <style>

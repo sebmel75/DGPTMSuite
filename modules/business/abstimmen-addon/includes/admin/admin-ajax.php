@@ -5,8 +5,7 @@ if (!defined('ABSPATH')) exit;
 add_action('wp_ajax_dgptm_get_manager_settings','dgptm_get_manager_settings_fn');
 function dgptm_get_manager_settings_fn(){
     if(!dgptm_is_manager()) wp_send_json_error('Keine Rechte.');
-    $beamer_state = json_decode(get_option('dgptm_beamer_state', wp_json_encode(array('mode'=>'auto'))), true);
-    if(!is_array($beamer_state)) $beamer_state = array('mode'=>'auto');
+    $beamer_state = dgptm_get_beamer_state();
     ob_start(); ?>
     <div class="fieldset" style="border:1px solid #ccc;padding:10px;border-radius:8px;margin-bottom:14px;">
       <h3>Beamer-Einstellungen</h3>
@@ -73,8 +72,7 @@ add_action('wp_ajax_dgptm_toggle_beamer_qr','dgptm_toggle_beamer_qr_fn');
 function dgptm_toggle_beamer_qr_fn(){
     if(!dgptm_is_manager()) wp_send_json_error('Keine Rechte.');
     $visible = !empty($_POST['visible']) ? 1 : 0;
-    $state = json_decode(get_option('dgptm_beamer_state', wp_json_encode(array('mode'=>'auto'))), true);
-    if(!is_array($state)) $state=array('mode'=>'auto');
+    $state = dgptm_get_beamer_state();
     $state['qr_visible'] = $visible ? true : false;
     update_option('dgptm_beamer_state', wp_json_encode($state));
     wp_send_json_success();
@@ -84,8 +82,7 @@ add_action('wp_ajax_dgptm_set_beamer_state','dgptm_set_beamer_state_fn');
 function dgptm_set_beamer_state_fn(){
     if(!dgptm_is_manager()) wp_send_json_error('Keine Rechte.');
     $mode = sanitize_text_field(isset($_POST['mode'])?$_POST['mode']:'auto');
-    $st = json_decode(get_option('dgptm_beamer_state', wp_json_encode(array('mode'=>'auto'))), true);
-    if(!is_array($st)) $st=array('mode'=>'auto');
+    $st = dgptm_get_beamer_state();
     $qr_keep = !empty($st['qr_visible']);
     $st = array('mode'=>$mode, 'qr_visible'=>$qr_keep);
 
@@ -123,8 +120,7 @@ function dgptm_set_beamer_state_overall_fn(){
     if(!$poll) wp_send_json_error('Keine aktive Umfrage.');
     $cnt=(int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->prefix}dgptm_abstimmung_poll_questions WHERE poll_id=%d AND status='stopped' AND results_released=1 AND in_overall=1",$poll->id));
     if($cnt<=0) wp_send_json_error('Keine freigegebenen, markierten Fragen vorhanden.');
-    $state = json_decode(get_option('dgptm_beamer_state', wp_json_encode(array('mode'=>'auto'))), true);
-    if(!is_array($state)) $state=array('mode'=>'auto');
+    $state = dgptm_get_beamer_state();
     $state['mode']='results_all';
     $state['poll_id']=$poll->id;
     update_option('dgptm_beamer_state', wp_json_encode($state));
@@ -300,8 +296,8 @@ function dgptm_toggle_beamer_all_for_poll_fn(){
     if(empty($_POST['poll_id'])) wp_send_json_error('poll_id fehlt.');
     global $wpdb;
     $pid=intval($_POST['poll_id']);
-    $state = json_decode(get_option('dgptm_beamer_state', wp_json_encode(array('mode'=>'auto'))), true);
-    if(is_array($state) && isset($state['mode']) && $state['mode']==='results_all' && !empty($state['poll_id']) && (int)$state['poll_id']===$pid){
+    $state = dgptm_get_beamer_state();
+    if(isset($state['mode']) && $state['mode']==='results_all' && !empty($state['poll_id']) && (int)$state['poll_id']===$pid){
         update_option('dgptm_beamer_state', wp_json_encode(array('mode'=>'auto','qr_visible'=>!empty($state['qr_visible']))));
         wp_send_json_success(array('state'=>'off'));
     }

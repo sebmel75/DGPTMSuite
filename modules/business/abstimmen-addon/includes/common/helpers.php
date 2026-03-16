@@ -1,6 +1,25 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
+/**
+ * Beamer-State aus der Datenbank lesen.
+ * Vertraegt sowohl JSON-Strings als auch bereits deserialisierte Arrays
+ * (PHP 8 wirft einen TypeError wenn json_decode() ein Array bekommt).
+ */
+if (!function_exists('dgptm_get_beamer_state')) {
+    function dgptm_get_beamer_state() {
+        $raw = get_option('dgptm_beamer_state', array('mode' => 'auto'));
+        if (is_array($raw)) {
+            return $raw;
+        }
+        if (is_string($raw)) {
+            $decoded = json_decode($raw, true);
+            return is_array($decoded) ? $decoded : array('mode' => 'auto');
+        }
+        return array('mode' => 'auto');
+    }
+}
+
 // Manager-Recht über Usermeta
 if (!function_exists('dgptm_is_manager')) {
     function dgptm_is_manager($user_id = null) {

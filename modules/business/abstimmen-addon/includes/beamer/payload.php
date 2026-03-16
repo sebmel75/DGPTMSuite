@@ -31,8 +31,7 @@ if (!function_exists('dgptm_get_beamer_payload_fn')) {
     add_action('wp_ajax_nopriv_dgptm_get_beamer_payload','dgptm_get_beamer_payload_fn');
     function dgptm_get_beamer_payload_fn(){
         global $wpdb;
-        $state = json_decode( get_option('dgptm_beamer_state', wp_json_encode(array('mode'=>'auto'))), true );
-        if(!is_array($state)) $state=array('mode'=>'auto');
+        $state = dgptm_get_beamer_state();
 
         $poll=$wpdb->get_row("SELECT * FROM {$wpdb->prefix}dgptm_abstimmung_polls WHERE status='active' LIMIT 1");
         $payload=array('beamer_state'=>$state,'active_poll'=>null,'active_question'=>null,'active_results'=>null,'attendees'=>0);

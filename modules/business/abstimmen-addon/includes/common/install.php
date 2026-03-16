@@ -22,6 +22,7 @@ if (!function_exists('dgptm_activate_plugin')) {
             requires_signup TINYINT(1) NOT NULL DEFAULT 0,
             time_limit INT NOT NULL DEFAULT 0,
             logo_url VARCHAR(500) DEFAULT '',
+            guest_voting TINYINT(1) NOT NULL DEFAULT 1,
             PRIMARY KEY (id)
         ) $charset_collate;";
 
@@ -41,6 +42,10 @@ if (!function_exists('dgptm_activate_plugin')) {
             is_anonymous TINYINT(1) NOT NULL DEFAULT 0,
             chart_type VARCHAR(10) NOT NULL DEFAULT 'bar',
             in_overall TINYINT(1) NOT NULL DEFAULT 0,
+            auto_close TINYINT(1) NOT NULL DEFAULT 0,
+            majority_type VARCHAR(20) NOT NULL DEFAULT 'simple',
+            quorum INT NOT NULL DEFAULT 0,
+            started_at DATETIME DEFAULT NULL,
             PRIMARY KEY (id),
             KEY poll_id (poll_id)
         ) $charset_collate;";
@@ -72,6 +77,7 @@ if (!function_exists('dgptm_activate_plugin')) {
             email VARCHAR(255) DEFAULT '',
             token VARCHAR(190) DEFAULT '',
             source VARCHAR(50) DEFAULT '',
+            voted_questions TEXT DEFAULT NULL,
             PRIMARY KEY (id),
             KEY poll_id (poll_id),
             KEY token (token),
@@ -142,6 +148,26 @@ if (!function_exists('dgptm_maybe_upgrade_db')) {
             $wpdb->query("ALTER TABLE $t ADD UNIQUE KEY uniq_member (poll_id, member_no)");
         }
 
-        update_option('dgptm_db_version', DGPTMVOTE_VERSION);
+        // === v4.1.0 Redesign: Timer, Majority, Anonymous ===
+        if (!$has($q, 'auto_close')) {
+            $wpdb->query("ALTER TABLE $q ADD COLUMN auto_close TINYINT(1) NOT NULL DEFAULT 0");
+        }
+        if (!$has($q, 'majority_type')) {
+            $wpdb->query("ALTER TABLE $q ADD COLUMN majority_type VARCHAR(20) NOT NULL DEFAULT 'simple'");
+        }
+        if (!$has($q, 'quorum')) {
+            $wpdb->query("ALTER TABLE $q ADD COLUMN quorum INT NOT NULL DEFAULT 0");
+        }
+        if (!$has($q, 'started_at')) {
+            $wpdb->query("ALTER TABLE $q ADD COLUMN started_at DATETIME DEFAULT NULL");
+        }
+        if (!$has($p, 'guest_voting')) {
+            $wpdb->query("ALTER TABLE $p ADD COLUMN guest_voting TINYINT(1) NOT NULL DEFAULT 1");
+        }
+        if (!$has($t, 'voted_questions')) {
+            $wpdb->query("ALTER TABLE $t ADD COLUMN voted_questions TEXT DEFAULT NULL");
+        }
+
+        update_option('dgptm_db_version', '4.1.0');
     }
 }

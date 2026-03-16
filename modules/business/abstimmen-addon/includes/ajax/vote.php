@@ -23,6 +23,14 @@ if (!function_exists('dgptm_get_member_view_fn')) {
             wp_send_json_error(array('html'=>'<div style="text-align:center;"><em>Keine aktive Umfrage.</em></div>'));
         }
 
+        // Guest gate: wenn guest_voting deaktiviert und nicht eingeloggt
+        if(isset($poll->guest_voting) && empty($poll->guest_voting) && !is_user_logged_in()){
+            wp_send_json_success(array(
+                'html' => '<div class="dgptm-guest-blocked" style="text-align:center;padding:30px;"><p>Bitte melden Sie sich an um abzustimmen.</p><a href="' . esc_url(wp_login_url()) . '" class="btn" style="display:inline-block;margin-top:12px;padding:10px 20px;background:#2d6cdf;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">Anmelden</a></div>',
+                'has_active' => false,
+            ));
+        }
+
         // Token handling
         $valid_token = false;
         if($token!==''){
@@ -60,17 +68,52 @@ if (!function_exists('dgptm_get_member_view_fn')) {
         $choices = json_decode($q->choices,true); if(!is_array($choices)) $choices=array();
         $type = ($q->max_votes==1)?'radio':'checkbox';
 
+        // Timer
+        $timer_html = '';
+        if (function_exists('dgptm_get_remaining_seconds')) {
+            $remaining = dgptm_get_remaining_seconds($q);
+            if ($remaining !== null) {
+                $mins = floor(max(0, $remaining) / 60);
+                $secs = max(0, $remaining) % 60;
+                $ac = isset($q->auto_close) ? (int)$q->auto_close : 0;
+                $timer_html = '<div class="dgptm-vote-timer" data-remaining="' . (int)$remaining . '" data-auto-close="' . $ac . '">';
+                $timer_html .= '<span class="dgptm-countdown">' . $mins . ':' . str_pad($secs, 2, '0', STR_PAD_LEFT) . '</span>';
+                $timer_html .= '</div>';
+            }
+        }
+
+        // Anonym-Hinweis
+        $anon_html = '';
+        $submit_label = 'Abstimmen';
+        if (!empty($q->is_anonymous)) {
+            $anon_html = '<div class="dgptm-anon-notice" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin:10px 0;font-size:13px;color:#1e40af;">Diese Abstimmung ist anonym. Ihre Stimme kann nicht zu Ihnen zurueckverfolgt werden.</div>';
+            $submit_label = 'Abstimmen (endgueltig)';
+        }
+
+        // Mehrheitsregel-Info
+        $majority_html = '';
+        $maj = isset($q->majority_type) ? $q->majority_type : 'simple';
+        $q_quorum = isset($q->quorum) ? (int)$q->quorum : 0;
+        if ($maj !== 'simple' || $q_quorum > 0) {
+            $labels = array('simple' => 'Einfache Mehrheit', 'two_thirds' => '2/3-Mehrheit', 'absolute' => 'Absolute Mehrheit');
+            $majority_html = '<div class="dgptm-majority-info" style="text-align:center;font-size:12px;color:#6b7280;margin:8px 0;">Erforderlich: ' . ($labels[$maj] ?? $maj);
+            if ($q_quorum > 0) $majority_html .= ' &middot; Quorum: ' . $q_quorum . ' Stimmen';
+            $majority_html .= '</div>';
+        }
+
         $html  = '<div class="row">';
         $html .= '<div class="col">';
         $html .= '<div id="dgptm_joinWrap" style="text-align:center;margin:6px 0;"><button class="btn" id="dgptm_joinBtn">Jetzt teilnehmen</button></div>';
+        $html .= $timer_html;
         $html .= '<h3 style="text-align:center;margin:8px 0;">Aktive Frage</h3><strong style="display:block;text-align:center;margin-bottom:10px;">'.esc_html($q->question).'</strong>';
+        $html .= $anon_html . $majority_html;
         $html .= '<form id="dgptm_memberVoteForm" data-qid="'.(int)$q->id.'" data-max-votes="'.(int)$q->max_votes.'">';
         $html .= '<input type="hidden" name="action" value="dgptm_cast_vote">';
         $html .= '<input type="hidden" name="question_id" value="'.(int)$q->id.'">';
         foreach($choices as $ix=>$txt){
             $html .= '<label class="choice"><input type="'.$type.'" name="choices[]" value="'.(int)$ix.'"> '.esc_html($txt).'</label>';
         }
-        $html .= '<div style="margin-top:10px;"><button type="submit" class="btn">Abstimmen</button></div></form><div id="dgptm_memberVoteFeedback" style="margin-top:8px;"></div></div>';
+        $html .= '<div style="margin-top:10px;"><button type="submit" class="btn">' . esc_html($submit_label) . '</button></div></form><div id="dgptm_memberVoteFeedback" style="margin-top:8px;"></div></div>';
         $html .= '</div>';
 
         wp_send_json_success(array('html'=>$html,'question_id'=>$q->id));
@@ -151,44 +194,90 @@ if (!function_exists('dgptm_cast_vote_fn')) {
         $maxv=(int)$q->max_votes;
         if(count($choices)>$maxv) wp_send_json_error('Maximal '.$maxv.' Antworten erlaubt.');
 
-        $user_id=0; $cookie_id='';
-        if(is_user_logged_in()){
-            $user_id=get_current_user_id();
-        } else {
-            $cn=DGPTMVOTE_COOKIE;
-            if(empty($_COOKIE[$cn])){
-                $rand='anon_'.wp_generate_uuid4();
-                setcookie($cn,$rand,time()+3600*24*365,'/');
-                $_COOKIE[$cn]=$rand;
+        // Check auto-close before accepting vote
+        if (function_exists('dgptm_check_auto_close') && dgptm_check_auto_close($q)) {
+            wp_send_json_error('Die Abstimmungszeit ist abgelaufen.');
+        }
+
+        // Get question's anonymous flag
+        $is_anon = !empty($q->is_anonymous);
+
+        if ($is_anon) {
+            // === ANONYMOUS VOTING ===
+            // Find participant
+            if (!function_exists('dgptm_get_current_participant')) {
+                wp_send_json_error('Anonyme Abstimmung ist derzeit nicht verfügbar.');
             }
-            $cookie_id=sanitize_text_field($_COOKIE[$cn]);
-        }
+            $participant = dgptm_get_current_participant((int)$q->poll_id);
+            if (!$participant) {
+                wp_send_json_error('Bitte treten Sie zuerst der Abstimmung bei.');
+            }
 
-        if($user_id>0){
-            $wpdb->delete($wpdb->prefix.'dgptm_abstimmung_votes',array('question_id'=>$qid,'user_id'=>$user_id));
+            // Check if already voted (no re-voting for anonymous)
+            if (function_exists('dgptm_has_voted_anonymous') && dgptm_has_voted_anonymous($participant->id, $qid)) {
+                wp_send_json_error('Sie haben bei dieser Frage bereits abgestimmt. Anonyme Stimmen koennen nicht geaendert werden.');
+            }
+
+            // Insert votes WITHOUT identifying data
+            $vt = current_time('mysql');
+            foreach ($choices as $ch) {
+                $wpdb->insert($wpdb->prefix . 'dgptm_abstimmung_votes', array(
+                    'question_id'  => $qid,
+                    'choice_index' => (int)$ch,
+                    'user_id'      => 0,
+                    'vote_time'    => $vt,
+                    'ip'           => 'anonymous',
+                    'is_invalid'   => 0,
+                ));
+            }
+
+            // Track that this participant voted (but not how)
+            if (function_exists('dgptm_mark_voted_anonymous')) {
+                dgptm_mark_voted_anonymous($participant->id, $qid);
+            }
+
+            do_action('dgptm_vote_cast', $qid, $choices, 0, (int)$q->poll_id);
+            wp_send_json_success('Ihre Stimme wurde anonym gezaehlt.');
+
         } else {
-            $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->prefix}dgptm_abstimmung_votes WHERE question_id=%d AND ip=%s",$qid,'COOKIE:'.$cookie_id));
-        }
-
-        $vt=current_time('mysql');
-        foreach($choices as $ch){
-            $data=array(
-              'question_id'=>$qid,
-              'choice_index'=>(int)$ch,
-              'vote_time'=>$vt,
-              'is_invalid'=>0
-            );
-            if($user_id>0){
-                $data['user_id']=$user_id;
-                $data['ip']=$_SERVER['REMOTE_ADDR']??'';
+            // === NON-ANONYMOUS VOTING (existing logic) ===
+            $user_id=0; $cookie_id='';
+            if(is_user_logged_in()){
+                $user_id=get_current_user_id();
             } else {
-                $data['user_id']=0;
-                $data['ip']='COOKIE:'.$cookie_id;
+                $cn=DGPTMVOTE_COOKIE;
+                if(empty($_COOKIE[$cn])){
+                    $rand='anon_'.wp_generate_uuid4();
+                    setcookie($cn,$rand,time()+3600*24*365,'/');
+                    $_COOKIE[$cn]=$rand;
+                }
+                $cookie_id=sanitize_text_field($_COOKIE[$cn]);
             }
-            $wpdb->insert($wpdb->prefix.'dgptm_abstimmung_votes',$data);
-        }
 
-        if($q->is_anonymous==0){
+            if($user_id>0){
+                $wpdb->delete($wpdb->prefix.'dgptm_abstimmung_votes',array('question_id'=>$qid,'user_id'=>$user_id));
+            } else {
+                $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->prefix}dgptm_abstimmung_votes WHERE question_id=%d AND ip=%s",$qid,'COOKIE:'.$cookie_id));
+            }
+
+            $vt=current_time('mysql');
+            foreach($choices as $ch){
+                $data=array(
+                  'question_id'=>$qid,
+                  'choice_index'=>(int)$ch,
+                  'vote_time'=>$vt,
+                  'is_invalid'=>0
+                );
+                if($user_id>0){
+                    $data['user_id']=$user_id;
+                    $data['ip']=$_SERVER['REMOTE_ADDR']??'';
+                } else {
+                    $data['user_id']=0;
+                    $data['ip']='COOKIE:'.$cookie_id;
+                }
+                $wpdb->insert($wpdb->prefix.'dgptm_abstimmung_votes',$data);
+            }
+
             $poll_id=(int)$q->poll_id;
             $tbl=$wpdb->prefix.'dgptm_abstimmung_participants';
             if($user_id>0){
@@ -206,19 +295,19 @@ if (!function_exists('dgptm_cast_vote_fn')) {
                     $wpdb->insert($tbl,array('poll_id'=>$poll_id,'user_id'=>0,'fullname'=>$pname,'cookie_id'=>$cookie_id,'joined_time'=>current_time('mysql'),'source'=>'vote'));
                 }
             }
+
+            /**
+             * Fires after a vote has been successfully cast.
+             *
+             * @param int   $qid      The question ID.
+             * @param array $choices  The selected choice indices.
+             * @param int   $user_id  The user ID (0 if anonymous).
+             * @param int   $poll_id  The poll ID.
+             */
+            do_action('dgptm_vote_cast', $qid, $choices, $user_id, (int)$q->poll_id);
+
+            wp_send_json_success('Stimme wurde erfolgreich abgegeben.');
         }
-
-        /**
-         * Fires after a vote has been successfully cast.
-         *
-         * @param int   $qid      The question ID.
-         * @param array $choices  The selected choice indices.
-         * @param int   $user_id  The user ID (0 if anonymous).
-         * @param int   $poll_id  The poll ID.
-         */
-        do_action('dgptm_vote_cast', $qid, $choices, $user_id, (int)$q->poll_id);
-
-        wp_send_json_success('Stimme wurde erfolgreich abgegeben.');
     }
 }
 

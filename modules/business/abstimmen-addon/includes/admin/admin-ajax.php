@@ -137,6 +137,15 @@ function dgptm_get_poll_details_fn(){
     $poll=$wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}dgptm_abstimmung_polls WHERE id=%d",$pid));
     if(!$poll) wp_send_json_error('Umfrage nicht gefunden.');
 
+    // Auto-close check for active questions
+    $active_q = $wpdb->get_row($wpdb->prepare(
+        "SELECT * FROM {$wpdb->prefix}dgptm_abstimmung_poll_questions WHERE poll_id = %d AND status = 'active' LIMIT 1",
+        $pid
+    ));
+    if ($active_q && function_exists('dgptm_check_auto_close')) {
+        dgptm_check_auto_close($active_q);
+    }
+
     ob_start(); ?>
     <p class="muted">
       <strong>Benutzeranmeldung:</strong> <?php echo $poll->requires_signup?'Ja':'Nein'; ?><br>
@@ -236,6 +245,16 @@ function dgptm_get_poll_details_fn(){
           <option value="pie">Kuchen</option>
         </select>
       </label><br>
+      <label>Zeitlimit (Sekunden, 0 = kein Timer): <input type="number" name="time_limit" value="0" min="0" style="width:80px"></label><br>
+      <label><input type="checkbox" name="auto_close"> Automatisch schliessen nach Ablauf</label><br>
+      <label>Mehrheitsregel:
+        <select name="majority_type">
+          <option value="simple">Einfache Mehrheit (&gt;50%)</option>
+          <option value="two_thirds">2/3-Mehrheit</option>
+          <option value="absolute">Absolute Mehrheit</option>
+        </select>
+      </label><br>
+      <label>Quorum (0 = keins): <input type="number" name="quorum" value="0" min="0" style="width:80px"></label><br>
       <button type="submit" class="btn">Frage anlegen</button>
     </form>
 
@@ -259,13 +278,15 @@ function dgptm_create_poll_fn(){
     if(!dgptm_is_manager()) wp_send_json_error('Keine Rechte.');
     if(empty($_POST['poll_name'])) wp_send_json_error('Name fehlt.');
     global $wpdb;
+    $guest_voting = isset($_POST['guest_voting']) ? 1 : 0;
     $wpdb->insert($wpdb->prefix.'dgptm_abstimmung_polls',array(
         'name'=>sanitize_text_field($_POST['poll_name']),
         'status'=>'prepared',
         'created'=>current_time('mysql'),
         'requires_signup'=>!empty($_POST['requires_signup'])?1:0,
         'time_limit'=>0,
-        'logo_url'=>isset($_POST['poll_logo_url'])?sanitize_text_field($_POST['poll_logo_url']):''
+        'logo_url'=>isset($_POST['poll_logo_url'])?sanitize_text_field($_POST['poll_logo_url']):'',
+        'guest_voting'=>$guest_voting
     ));
     $wpdb->insert_id ? wp_send_json_success('Umfrage angelegt.') : wp_send_json_error('Fehler beim Anlegen der Umfrage.');
 }
@@ -318,6 +339,16 @@ function dgptm_add_poll_question_fn(){
     $pid=intval($_POST['poll_id']);
     $choices = isset($_POST['question_choices']) ? array_map('trim', explode(',', $_POST['question_choices'])) : array();
     $chart_type = (isset($_POST['chart_type']) && in_array($_POST['chart_type'],array('bar','pie'),true)) ? $_POST['chart_type'] : 'bar';
+    $time_limit    = isset($_POST['time_limit']) ? absint($_POST['time_limit']) : 0;
+    $auto_close    = !empty($_POST['auto_close']) ? 1 : 0;
+    $majority_type = isset($_POST['majority_type']) ? sanitize_text_field($_POST['majority_type']) : 'simple';
+    $quorum        = isset($_POST['quorum']) ? absint($_POST['quorum']) : 0;
+
+    // Validate majority_type
+    if (!in_array($majority_type, array('simple', 'two_thirds', 'absolute'), true)) {
+        $majority_type = 'simple';
+    }
+
     $res = $wpdb->insert($wpdb->prefix.'dgptm_abstimmung_poll_questions',array(
         'poll_id'=>$pid,
         'question'=>sanitize_text_field($_POST['question_text']),
@@ -325,12 +356,15 @@ function dgptm_add_poll_question_fn(){
         'max_votes'=>isset($_POST['max_votes'])?intval($_POST['max_votes']):1,
         'status'=>'prepared',
         'created'=>current_time('mysql'),
-        'time_limit'=>0,
+        'time_limit'=>$time_limit,
         'max_choices'=>0,
         'is_repeatable'=>1,
         'is_anonymous'=>!empty($_POST['is_anonymous'])?1:0,
         'chart_type'=>$chart_type,
-        'in_overall'=>0
+        'in_overall'=>0,
+        'auto_close'=>$auto_close,
+        'majority_type'=>$majority_type,
+        'quorum'=>$quorum
     ));
     $wpdb->insert_id ? wp_send_json_success('Frage angelegt.') : wp_send_json_error('Fehler beim Anlegen der Frage.');
 }
@@ -352,12 +386,26 @@ function dgptm_update_poll_question_fn(){
     global $wpdb; $qid=intval($_POST['question_id']);
     $choices = isset($_POST['question_choices']) ? array_map('trim', explode(',', $_POST['question_choices'])) : array();
     $chart_type = (isset($_POST['chart_type']) && in_array($_POST['chart_type'],array('bar','pie'),true)) ? $_POST['chart_type'] : 'bar';
+    $time_limit    = isset($_POST['time_limit']) ? absint($_POST['time_limit']) : 0;
+    $auto_close    = !empty($_POST['auto_close']) ? 1 : 0;
+    $majority_type = isset($_POST['majority_type']) ? sanitize_text_field($_POST['majority_type']) : 'simple';
+    $quorum        = isset($_POST['quorum']) ? absint($_POST['quorum']) : 0;
+
+    // Validate majority_type
+    if (!in_array($majority_type, array('simple', 'two_thirds', 'absolute'), true)) {
+        $majority_type = 'simple';
+    }
+
     $res=$wpdb->update($wpdb->prefix.'dgptm_abstimmung_poll_questions',array(
         'question'=>sanitize_text_field($_POST['question_text']),
         'choices'=>wp_json_encode($choices),
         'max_votes'=>isset($_POST['max_votes'])?intval($_POST['max_votes']):1,
         'is_anonymous'=>!empty($_POST['is_anonymous'])?1:0,
-        'chart_type'=>$chart_type
+        'chart_type'=>$chart_type,
+        'time_limit'=>$time_limit,
+        'auto_close'=>$auto_close,
+        'majority_type'=>$majority_type,
+        'quorum'=>$quorum
     ),array('id'=>$qid));
     ($res!==false)?wp_send_json_success('Frage aktualisiert.'):wp_send_json_error('Fehler beim Aktualisieren.');
 }
@@ -379,7 +427,12 @@ function dgptm_activate_poll_question_fn(){
     $q=$wpdb->get_row($wpdb->prepare("SELECT poll_id FROM {$wpdb->prefix}dgptm_abstimmung_poll_questions WHERE id=%d",$qid));
     if(!$q) wp_send_json_error('Frage nicht gefunden.');
     $wpdb->query($wpdb->prepare("UPDATE {$wpdb->prefix}dgptm_abstimmung_poll_questions SET status='stopped', ended=%s WHERE poll_id=%d AND status='active'", current_time('mysql'), $q->poll_id));
-    $res=$wpdb->update($wpdb->prefix.'dgptm_abstimmung_poll_questions',array('status'=>'active','created'=>current_time('mysql'),'ended'=>null),array('id'=>$qid));
+    $res=$wpdb->update($wpdb->prefix.'dgptm_abstimmung_poll_questions',array(
+        'status'=>'active',
+        'created'=>current_time('mysql'),
+        'started_at'=>current_time('mysql'),
+        'ended'=>null
+    ),array('id'=>$qid));
     ($res!==false)?wp_send_json_success('Frage aktiviert.'):wp_send_json_error('Fehler beim Aktivieren.');
 }
 

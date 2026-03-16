@@ -20,6 +20,192 @@ if (!function_exists('dgptm_get_beamer_state')) {
     }
 }
 
+/**
+ * Evaluate majority result for a question.
+ *
+ * @param array  $vote_counts  Associative array: choice_index => count
+ * @param int    $total_votes  Total valid votes cast
+ * @param int    $attendees    Number of attendees (participants)
+ * @param string $majority_type 'simple', 'two_thirds', 'absolute'
+ * @param int    $quorum       Minimum votes required (0 = none)
+ * @return array ['passed' => bool, 'winner_index' => int|null, 'label' => string, 'quorum_met' => bool]
+ */
+if (!function_exists('dgptm_evaluate_majority')) {
+    function dgptm_evaluate_majority($vote_counts, $total_votes, $attendees, $majority_type = 'simple', $quorum = 0) {
+        $result = [
+            'passed'       => false,
+            'winner_index' => null,
+            'label'        => '',
+            'quorum_met'   => ($quorum <= 0 || $total_votes >= $quorum),
+            'quorum'       => $quorum,
+            'total_votes'  => $total_votes,
+            'attendees'    => $attendees,
+        ];
+
+        if (!$result['quorum_met']) {
+            $result['label'] = 'Quorum nicht erreicht (' . $total_votes . '/' . $quorum . ')';
+            return $result;
+        }
+
+        if (empty($vote_counts) || $total_votes === 0) {
+            $result['label'] = 'Keine Stimmen abgegeben';
+            return $result;
+        }
+
+        // Find the winner (highest votes)
+        arsort($vote_counts);
+        $winner_index = array_key_first($vote_counts);
+        $winner_votes = $vote_counts[$winner_index];
+        $result['winner_index'] = $winner_index;
+
+        $threshold = 0;
+        $rule_label = '';
+
+        switch ($majority_type) {
+            case 'two_thirds':
+                $threshold = $total_votes * (2 / 3);
+                $rule_label = '2/3-Mehrheit';
+                break;
+            case 'absolute':
+                $threshold = $attendees / 2;
+                $rule_label = 'Absolute Mehrheit';
+                break;
+            case 'simple':
+            default:
+                $threshold = $total_votes / 2;
+                $rule_label = 'Einfache Mehrheit';
+                break;
+        }
+
+        $result['passed'] = ($winner_votes > $threshold);
+        $status = $result['passed'] ? 'Angenommen' : 'Abgelehnt';
+        $result['label'] = $status . ' (' . $rule_label . ')';
+
+        return $result;
+    }
+}
+
+/**
+ * Calculate remaining seconds for a question's timer.
+ *
+ * @param object $question DB row with started_at and time_limit
+ * @return int|null Remaining seconds, null if no timer, negative if expired
+ */
+if (!function_exists('dgptm_get_remaining_seconds')) {
+    function dgptm_get_remaining_seconds($question) {
+        if (empty($question->time_limit) || (int)$question->time_limit <= 0) {
+            return null;
+        }
+        if (empty($question->started_at)) {
+            return (int)$question->time_limit;
+        }
+        $started = strtotime($question->started_at);
+        $expires = $started + (int)$question->time_limit;
+        return $expires - time();
+    }
+}
+
+/**
+ * Check if a question's timer has expired and auto-close if configured.
+ *
+ * @param object $question DB row
+ * @return bool True if question was auto-closed
+ */
+if (!function_exists('dgptm_check_auto_close')) {
+    function dgptm_check_auto_close($question) {
+        if (empty($question->auto_close) || $question->status !== 'active') {
+            return false;
+        }
+        $remaining = dgptm_get_remaining_seconds($question);
+        if ($remaining !== null && $remaining <= 0) {
+            global $wpdb;
+            $wpdb->update(
+                $wpdb->prefix . 'dgptm_abstimmung_poll_questions',
+                ['status' => 'stopped', 'ended' => current_time('mysql')],
+                ['id' => $question->id]
+            );
+            return true;
+        }
+        return false;
+    }
+}
+
+/**
+ * Check if a participant already voted on a specific question (anonymous tracking).
+ *
+ * @param int $participant_id Participant DB row ID
+ * @param int $question_id   Question ID
+ * @return bool
+ */
+if (!function_exists('dgptm_has_voted_anonymous')) {
+    function dgptm_has_voted_anonymous($participant_id, $question_id) {
+        global $wpdb;
+        $raw = $wpdb->get_var($wpdb->prepare(
+            "SELECT voted_questions FROM {$wpdb->prefix}dgptm_abstimmung_participants WHERE id = %d",
+            $participant_id
+        ));
+        if (empty($raw)) return false;
+        $arr = json_decode($raw, true);
+        return is_array($arr) && in_array((int)$question_id, $arr, true);
+    }
+}
+
+/**
+ * Mark that a participant voted on a question (anonymous tracking).
+ *
+ * @param int $participant_id Participant DB row ID
+ * @param int $question_id   Question ID
+ */
+if (!function_exists('dgptm_mark_voted_anonymous')) {
+    function dgptm_mark_voted_anonymous($participant_id, $question_id) {
+        global $wpdb;
+        $raw = $wpdb->get_var($wpdb->prepare(
+            "SELECT voted_questions FROM {$wpdb->prefix}dgptm_abstimmung_participants WHERE id = %d",
+            $participant_id
+        ));
+        $arr = !empty($raw) ? json_decode($raw, true) : [];
+        if (!is_array($arr)) $arr = [];
+        if (!in_array((int)$question_id, $arr, true)) {
+            $arr[] = (int)$question_id;
+            $wpdb->update(
+                $wpdb->prefix . 'dgptm_abstimmung_participants',
+                ['voted_questions' => wp_json_encode($arr)],
+                ['id' => $participant_id]
+            );
+        }
+    }
+}
+
+/**
+ * Find participant record for current user/cookie.
+ *
+ * @param int $poll_id
+ * @return object|null Participant DB row
+ */
+if (!function_exists('dgptm_get_current_participant')) {
+    function dgptm_get_current_participant($poll_id) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'dgptm_abstimmung_participants';
+
+        if (is_user_logged_in()) {
+            return $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM $table WHERE poll_id = %d AND user_id = %d LIMIT 1",
+                $poll_id, get_current_user_id()
+            ));
+        }
+
+        $cookie = isset($_COOKIE[DGPTMVOTE_COOKIE]) ? sanitize_text_field($_COOKIE[DGPTMVOTE_COOKIE]) : '';
+        if (!empty($cookie)) {
+            return $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM $table WHERE poll_id = %d AND cookie_id = %s LIMIT 1",
+                $poll_id, $cookie
+            ));
+        }
+
+        return null;
+    }
+}
+
 // Manager-Recht über Usermeta
 if (!function_exists('dgptm_is_manager')) {
     function dgptm_is_manager($user_id = null) {

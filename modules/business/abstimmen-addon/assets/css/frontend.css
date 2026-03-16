@@ -378,6 +378,55 @@
     }
 }
 
+/* ===== Timer (Member Vote) ===== */
+.dgptm-vote-timer {
+    text-align: center;
+    margin: 10px 0;
+    font-size: clamp(20px, 4vw, 32px);
+    font-weight: 800;
+    color: #333;
+}
+.dgptm-vote-timer.dgptm-timer-urgent .dgptm-countdown {
+    color: #dc2626;
+    animation: dgptm-pulse 0.8s ease-in-out infinite alternate;
+}
+@keyframes dgptm-pulse { from { opacity: 1; } to { opacity: 0.5; } }
+
+/* ===== Anonymous Notice ===== */
+.dgptm-anon-notice {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 10px 0;
+    font-size: 13px;
+    color: #1e40af;
+}
+
+/* ===== Majority Info ===== */
+.dgptm-majority-info {
+    text-align: center;
+    font-size: 12px;
+    color: #6b7280;
+    margin: 8px 0;
+}
+
+/* ===== Guest Blocked ===== */
+.dgptm-guest-blocked {
+    text-align: center;
+    padding: 30px;
+}
+.dgptm-guest-blocked .btn {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 10px 20px;
+    background: #2d6cdf;
+    color: #fff;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+}
+
 /* ===== Print Styles ===== */
 @media print {
     .dgptm-presence .scan-input,

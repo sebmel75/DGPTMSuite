@@ -76,6 +76,7 @@ if (!function_exists('dgptm_manage_poll')) {
               <label>Umfragename: <input type="text" name="poll_name" required></label><br><br>
               <label>Benutzer müssen sich anmelden? <input type="checkbox" name="requires_signup"></label><br><br>
               <label>Logo-URL (jpg/jpeg/png möglich):<br><input type="text" name="poll_logo_url" placeholder="https://..."></label><br><br>
+              <label><input type="checkbox" name="guest_voting" checked> Gaeste erlauben (QR + Name-Gate)</label><br><br>
               <button type="submit" class="btn">Umfrage anlegen</button>
             </form>
           </div>

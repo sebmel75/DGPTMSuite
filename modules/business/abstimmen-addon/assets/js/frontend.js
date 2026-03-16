@@ -47,6 +47,7 @@
                 success: function(response) {
                     if (response.success) {
                         $container.html(response.data.html);
+                        VotingInterface.initCountdown();
                     } else {
                         $container.html(response.data.html || '<p>Fehler beim Laden</p>');
                     }
@@ -188,6 +189,44 @@
                     $btn.prop('disabled', false);
                 }
             });
+        },
+
+        initCountdown: function() {
+            var timerEl = document.querySelector('.dgptm-vote-timer');
+            if (!timerEl) return;
+            var remaining = parseInt(timerEl.dataset.remaining, 10);
+            var autoClose = parseInt(timerEl.dataset.autoClose, 10);
+            var countdownEl = timerEl.querySelector('.dgptm-countdown');
+            if (!countdownEl || isNaN(remaining)) return;
+
+            if (this._countdownInterval) clearInterval(this._countdownInterval);
+
+            this._countdownInterval = setInterval(function() {
+                remaining--;
+                if (remaining <= 0) {
+                    clearInterval(VotingInterface._countdownInterval);
+                    countdownEl.textContent = '0:00';
+                    if (autoClose) {
+                        var form = document.getElementById('dgptm_memberVoteArea') || document.getElementById('dgptm_memberVoteForm');
+                        if (form) {
+                            form.style.opacity = '0.5';
+                            form.style.pointerEvents = 'none';
+                            var btns = form.querySelectorAll('button, input[type=submit]');
+                            for (var b = 0; b < btns.length; b++) btns[b].disabled = true;
+                        }
+                        timerEl.insertAdjacentHTML('afterend', '<div style="text-align:center;padding:12px;margin:10px 0;border-radius:8px;font-weight:700;background:#fef2f2;color:#991b1b;border:1px solid #fecaca;">Zeit abgelaufen</div>');
+                    } else {
+                        timerEl.insertAdjacentHTML('afterend', '<div style="text-align:center;padding:12px;margin:10px 0;border-radius:8px;font-weight:700;background:#fffbeb;color:#92400e;border:1px solid #fde68a;">Zeit abgelaufen — Abstimmung noch offen</div>');
+                    }
+                    return;
+                }
+                var m = Math.floor(remaining / 60);
+                var s = remaining % 60;
+                countdownEl.textContent = m + ':' + String(s).padStart(2, '0');
+                if (remaining < 10) {
+                    timerEl.classList.add('dgptm-timer-urgent');
+                }
+            }, 1000);
         },
 
         showMessage: function(message, type) {

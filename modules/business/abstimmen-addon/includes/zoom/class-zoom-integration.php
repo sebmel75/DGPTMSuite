@@ -27,5 +27,9 @@ function dgptm_abstimmen_init_zoom_integration() {
 	}
 }
 
-// Initialize on plugins_loaded with higher priority
-add_action( 'plugins_loaded', 'dgptm_abstimmen_init_zoom_integration', 5 );
+// Sofort initialisieren wenn plugins_loaded bereits gelaufen ist
+if ( did_action( 'plugins_loaded' ) ) {
+	dgptm_abstimmen_init_zoom_integration();
+} else {
+	add_action( 'plugins_loaded', 'dgptm_abstimmen_init_zoom_integration', 5 );
+}

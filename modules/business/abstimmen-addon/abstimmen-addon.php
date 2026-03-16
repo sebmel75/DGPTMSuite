@@ -125,7 +125,11 @@ final class DGPTM_Abstimmen_Addon {
 		add_action( 'admin_notices', array( $this, 'migration_admin_notice' ) );
 
 		// Shortcodes registration (Voting System base shortcodes)
-		add_action( 'init', array( $this, 'register_base_shortcodes' ), 5 );
+		if ( did_action( 'init' ) ) {
+			$this->register_base_shortcodes();
+		} else {
+			add_action( 'init', array( $this, 'register_base_shortcodes' ), 5 );
+		}
 
 		// Query vars for member view
 		add_filter( 'query_vars', 'dgptm_add_query_var' );
@@ -271,5 +275,10 @@ function dgptm_abstimmen_addon_init() {
 	return DGPTM_Abstimmen_Addon::instance();
 }
 
-// Hook into plugins_loaded to ensure WordPress is fully loaded
-add_action( 'plugins_loaded', 'dgptm_abstimmen_addon_init', 1 );
+// Sofort initialisieren wenn plugins_loaded bereits gelaufen ist
+// (z.B. wenn via DGPTM Suite Module Loader geladen)
+if ( did_action( 'plugins_loaded' ) ) {
+	dgptm_abstimmen_addon_init();
+} else {
+	add_action( 'plugins_loaded', 'dgptm_abstimmen_addon_init', 1 );
+}

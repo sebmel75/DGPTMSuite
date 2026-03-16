@@ -225,7 +225,17 @@ class DGPTM_Module_Settings_Manager {
             dgptm_set_module_log_level($module_id, $settings['debug_level']);
         }
 
-        return update_option($option_name, $settings);
+        $result = update_option($option_name, $settings);
+
+        /**
+         * Fires after module settings have been saved.
+         *
+         * @param string $module_id The module ID.
+         * @param array  $settings  The saved settings.
+         */
+        do_action('dgptm_module_settings_saved', $module_id, $settings);
+
+        return $result;
     }
 
     /**

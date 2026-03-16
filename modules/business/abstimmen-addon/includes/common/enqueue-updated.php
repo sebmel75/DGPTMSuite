@@ -69,21 +69,21 @@ function dgptm_abstimmen_enqueue_admin_assets( $hook ) {
 add_action( 'admin_enqueue_scripts', 'dgptm_abstimmen_enqueue_admin_assets' );
 
 /**
- * Enqueue Frontend Assets
+ * Register Frontend Assets (lazy loading: enqueued only when shortcode is rendered)
  */
 function dgptm_abstimmen_enqueue_frontend_assets() {
 	$version = DGPTM_ABSTIMMEN_VERSION;
 
-	// Frontend CSS
-	wp_enqueue_style(
+	// Frontend CSS - register only
+	wp_register_style(
 		'dgptm-abstimmen-frontend',
 		DGPTM_ABSTIMMEN_URL . 'assets/css/frontend.css',
 		array(),
 		$version
 	);
 
-	// Frontend JavaScript
-	wp_enqueue_script(
+	// Frontend JavaScript - register only
+	wp_register_script(
 		'dgptm-abstimmen-frontend',
 		DGPTM_ABSTIMMEN_URL . 'assets/js/frontend.js',
 		array( 'jquery' ),
@@ -91,7 +91,7 @@ function dgptm_abstimmen_enqueue_frontend_assets() {
 		true
 	);
 
-	// Localize script for AJAX
+	// Localize script for AJAX (works with registered scripts)
 	$rest_nonce = '';
 	if ( is_user_logged_in() ) {
 		$rest_nonce = wp_create_nonce( 'wp_rest' );
@@ -109,21 +109,39 @@ function dgptm_abstimmen_enqueue_frontend_assets() {
 		)
 	);
 
-	// Chart.js for beamer view
-	if ( is_page() && has_shortcode( get_post()->post_content, 'beamer_view' ) ) {
-		wp_enqueue_script(
-			'chartjs',
-			'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
-			array(),
-			'4.4.0',
-			true
-		);
+	// Chart.js for beamer view - register only
+	wp_register_script(
+		'chartjs',
+		'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
+		array(),
+		'4.4.0',
+		true
+	);
+
+	// Fallback: enqueue if shortcode detected in post content
+	global $post;
+	if ( is_a( $post, 'WP_Post' ) ) {
+		$content = $post->post_content;
+		if (
+			has_shortcode( $content, 'manage_poll' ) ||
+			has_shortcode( $content, 'beamer_view' ) ||
+			has_shortcode( $content, 'member_vote' ) ||
+			has_shortcode( $content, 'abstimmungsmanager_toggle' ) ||
+			has_shortcode( $content, 'dgptm_registration_monitor' )
+		) {
+			wp_enqueue_style( 'dgptm-abstimmen-frontend' );
+			wp_enqueue_script( 'dgptm-abstimmen-frontend' );
+		}
+
+		if ( has_shortcode( $content, 'beamer_view' ) ) {
+			wp_enqueue_script( 'chartjs' );
+		}
 	}
 }
 add_action( 'wp_enqueue_scripts', 'dgptm_abstimmen_enqueue_frontend_assets' );
 
 /**
- * Conditional Asset Loading based on Shortcode
+ * Conditional Asset Loading based on Shortcode (additional libraries)
  */
 function dgptm_abstimmen_conditional_assets() {
 	global $post;
@@ -134,7 +152,7 @@ function dgptm_abstimmen_conditional_assets() {
 
 	$content = $post->post_content;
 
-	// Load QR Code library if manage_poll shortcode present
+	// Load QR Code library if manage_poll or registration_monitor shortcode present
 	if ( has_shortcode( $content, 'manage_poll' ) || has_shortcode( $content, 'dgptm_registration_monitor' ) ) {
 		wp_enqueue_script(
 			'qrcode-lib',
@@ -147,13 +165,7 @@ function dgptm_abstimmen_conditional_assets() {
 
 	// Load Chart.js if beamer_view shortcode present
 	if ( has_shortcode( $content, 'beamer_view' ) ) {
-		wp_enqueue_script(
-			'chartjs',
-			'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
-			array(),
-			'4.4.0',
-			true
-		);
+		wp_enqueue_script( 'chartjs' );
 	}
 }
 add_action( 'wp_enqueue_scripts', 'dgptm_abstimmen_conditional_assets', 20 );
@@ -194,9 +206,27 @@ function dgptm_abstimmen_inline_styles() {
 add_action( 'wp_enqueue_scripts', 'dgptm_abstimmen_inline_styles', 30 );
 
 /**
- * Preload Critical Assets
+ * Preload Critical Assets (only when shortcodes are present on the page)
  */
 function dgptm_abstimmen_preload_assets() {
+	global $post;
+	if ( ! is_a( $post, 'WP_Post' ) ) {
+		return;
+	}
+
+	$content = $post->post_content;
+	$has_voting_shortcode = (
+		has_shortcode( $content, 'manage_poll' ) ||
+		has_shortcode( $content, 'beamer_view' ) ||
+		has_shortcode( $content, 'member_vote' ) ||
+		has_shortcode( $content, 'abstimmungsmanager_toggle' ) ||
+		has_shortcode( $content, 'dgptm_registration_monitor' )
+	);
+
+	if ( ! $has_voting_shortcode ) {
+		return;
+	}
+
 	// Preload critical CSS
 	echo '<link rel="preload" href="' . esc_url( DGPTM_ABSTIMMEN_URL . 'assets/css/frontend.css' ) . '" as="style">' . "\n";
 

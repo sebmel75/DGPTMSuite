@@ -439,8 +439,7 @@ final class Gehaltsbarometer {
     /* --------------------------------------------------------------------- */
 
     public function enqueue_scripts(): void {
-        wp_enqueue_script( 'jquery' );
-
+        // Register scripts only (lazy loading: enqueued in shortcode callbacks)
         wp_register_script(
             'gb-map-script',
             false,
@@ -457,7 +456,6 @@ final class Gehaltsbarometer {
         ] );
 
         wp_add_inline_script( 'gb-map-script', $this->get_inline_js() );
-        wp_enqueue_script( 'gb-map-script' );
 
         // Popup-Guard Script
         wp_register_script(
@@ -525,7 +523,24 @@ jQuery(function($){
 JS;
 
         wp_add_inline_script( 'gb-popup-guard', $guard_js );
-        wp_enqueue_script( 'gb-popup-guard' );
+
+        // Fallback: enqueue if shortcode detected in post content
+        global $post;
+        if ( $post && (
+            has_shortcode( $post->post_content, 'gehaltsbarometer' ) ||
+            has_shortcode( $post->post_content, 'gehaltsbarometer_statistik' ) ||
+            has_shortcode( $post->post_content, 'gehaltsbarometer_einladung' ) ||
+            has_shortcode( $post->post_content, 'gehaltsbarometer_chart' ) ||
+            has_shortcode( $post->post_content, 'gehaltsbarometer_is' ) ||
+            has_shortcode( $post->post_content, 'gehaltsbarometer_isnot' ) ||
+            has_shortcode( $post->post_content, 'gehaltsbarometer_filled' )
+        ) ) {
+            wp_enqueue_script( 'gb-map-script' );
+        }
+
+        if ( $post && has_shortcode( $post->post_content, 'gehaltsbarometer_popup_guard' ) ) {
+            wp_enqueue_script( 'gb-popup-guard' );
+        }
     }
 
     private function get_inline_js(): string {
@@ -1200,6 +1215,7 @@ JS;
     /* --------------------------------------------------------------------- */
 
     public function render_gehaltsbarometer(): string {
+        wp_enqueue_script( 'gb-map-script' );
 
         $intro = str_replace( '{jahr}', gmdate( 'Y' ), (string) $this->get_setting( 'form_intro', '' ) );
 
@@ -1247,6 +1263,7 @@ JS;
     }
 
     public function render_gehaltsbarometer_chart(): string {
+        wp_enqueue_script( 'gb-map-script' );
 
         global $wpdb;
         $year_now = (int) gmdate( 'Y' );
@@ -1424,6 +1441,7 @@ JS;
     /* --------------------------------------------------------------------- */
 
     public function render_statistik(): string {
+        wp_enqueue_script( 'gb-map-script' );
 
         if ( ! current_user_can( 'manage_options' ) ) {
             return '<p>Keine Berechtigung.</p>';

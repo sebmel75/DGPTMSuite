@@ -121,7 +121,9 @@ class WP_MS365_Group_Manager {
 
         $safe = $sanitize($data);
         if (is_array($safe) || is_object($safe)) { $safe = print_r($safe, true); }
-        error_log("[MS365 Debug] $title: $safe");
+        if (function_exists('dgptm_log_verbose')) {
+            dgptm_log_verbose("$title: $safe", 'microsoft-gruppen');
+        }
     }
 
     /**

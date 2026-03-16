@@ -199,13 +199,15 @@ class DGPTM_Plugin_Manager {
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('dgptm_suite_nonce'),
             'strings' => [
-                'activate' => __('Activate', 'dgptm-suite'),
-                'deactivate' => __('Deactivate', 'dgptm-suite'),
-                'confirm_deactivate' => __('Are you sure you want to deactivate this module?', 'dgptm-suite'),
-                'confirm_export' => __('Export this module as standalone plugin?', 'dgptm-suite'),
-                'exporting' => __('Exporting...', 'dgptm-suite'),
-                'activating' => __('Activating...', 'dgptm-suite'),
-                'deactivating' => __('Deactivating...', 'dgptm-suite'),
+                'activate' => __('Aktivieren', 'dgptm-suite'),
+                'deactivate' => __('Deaktivieren', 'dgptm-suite'),
+                'active_label' => __('Aktiv', 'dgptm-suite'),
+                'inactive_label' => __('Inaktiv', 'dgptm-suite'),
+                'confirm_deactivate' => __('Moechten Sie dieses Modul wirklich deaktivieren?', 'dgptm-suite'),
+                'confirm_export' => __('Dieses Modul als eigenstaendiges Plugin exportieren?', 'dgptm-suite'),
+                'exporting' => __('Exportiere...', 'dgptm-suite'),
+                'activating' => __('Aktiviere...', 'dgptm-suite'),
+                'deactivating' => __('Deaktiviere...', 'dgptm-suite'),
             ]
         ]);
     }
@@ -1328,9 +1330,9 @@ class DGPTM_Plugin_Manager {
             $categories = $this->get_categories();
             $modules_by_category = $this->get_modules_by_category();
 
-            error_log('DGPTM render_categories: Categories count = ' . count($categories));
-            error_log('DGPTM render_categories: modules_by_category count = ' . count($modules_by_category));
-            error_log('DGPTM render_categories: modules_by_category = ' . print_r(array_keys($modules_by_category), true));
+            dgptm_log_verbose('render_categories: Categories count = ' . count($categories), 'plugin-manager');
+            dgptm_log_verbose('render_categories: modules_by_category count = ' . count($modules_by_category), 'plugin-manager');
+            dgptm_log_verbose('render_categories: modules_by_category = ' . print_r(array_keys($modules_by_category), true), 'plugin-manager');
 
             // Check if view file exists
             $view_file = DGPTM_SUITE_PATH . 'admin/views/categories.php';
@@ -1340,7 +1342,7 @@ class DGPTM_Plugin_Manager {
 
             include $view_file;
         } catch (Exception $e) {
-            error_log('DGPTM Categories Error: ' . $e->getMessage());
+            dgptm_log_error('Categories Error: ' . $e->getMessage(), 'plugin-manager');
             wp_die('Error loading categories page: ' . esc_html($e->getMessage()));
         }
     }
@@ -1390,15 +1392,15 @@ class DGPTM_Plugin_Manager {
         // Wenn module_loader verfügbar ist, verwende ihn
         if (isset($dgptm_suite) && isset($dgptm_suite->module_loader)) {
             $modules = $dgptm_suite->module_loader->get_available_modules();
-            error_log('DGPTM Categories: Using module_loader - Found ' . count($modules) . ' modules');
+            dgptm_log_verbose('Categories: Using module_loader - Found ' . count($modules) . ' modules', 'plugin-manager');
         } else {
             // Fallback: Direkter Scan wenn module_loader nicht verfügbar
-            error_log('DGPTM Categories: module_loader not available, using direct scan');
+            dgptm_log_verbose('Categories: module_loader not available, using direct scan', 'plugin-manager');
             $modules = $this->scan_modules_direct();
         }
 
         if (empty($modules)) {
-            error_log('DGPTM Categories: No modules found!');
+            dgptm_log_error('Categories: No modules found!', 'plugin-manager');
             return [];
         }
 
@@ -1423,7 +1425,7 @@ class DGPTM_Plugin_Manager {
             });
         }
 
-        error_log('DGPTM Categories: Grouped into ' . count($grouped) . ' categories: ' . implode(', ', array_keys($grouped)));
+        dgptm_log_verbose('Categories: Grouped into ' . count($grouped) . ' categories: ' . implode(', ', array_keys($grouped)), 'plugin-manager');
         return $grouped;
     }
 
@@ -1435,7 +1437,7 @@ class DGPTM_Plugin_Manager {
         $found_modules = [];
 
         if (!is_dir($modules_dir)) {
-            error_log('DGPTM Categories: Modules directory not found: ' . $modules_dir);
+            dgptm_log_error('Categories: Modules directory not found: ' . $modules_dir, 'plugin-manager');
             return [];
         }
 
@@ -1478,7 +1480,7 @@ class DGPTM_Plugin_Manager {
             }
         }
 
-        error_log('DGPTM Categories: Direct scan found ' . count($found_modules) . ' modules');
+        dgptm_log_verbose('Categories: Direct scan found ' . count($found_modules) . ' modules', 'plugin-manager');
         return $found_modules;
     }
 
@@ -1592,11 +1594,11 @@ class DGPTM_Plugin_Manager {
         $module_id = sanitize_key($_POST['module_id'] ?? '');
         $new_category = sanitize_key($_POST['new_category'] ?? '');
 
-        error_log("DGPTM move_module: Attempting to move '$module_id' to '$new_category'");
+        dgptm_log_verbose("move_module: Attempting to move '$module_id' to '$new_category'", 'plugin-manager');
 
         if (empty($module_id) || empty($new_category)) {
             add_settings_error('dgptm_categories', 'invalid_input', 'Module ID and category are required.');
-            error_log("DGPTM move_module: Failed - missing module_id or category");
+            dgptm_log_error("move_module: Failed - missing module_id or category", 'plugin-manager');
             return;
         }
 
@@ -1611,61 +1613,61 @@ class DGPTM_Plugin_Manager {
         if (isset($dgptm_suite) && isset($dgptm_suite->module_loader)) {
             $all_modules = $dgptm_suite->module_loader->get_available_modules();
             $module_info = $all_modules[$module_id] ?? null;
-            error_log("DGPTM move_module: Using module_loader, found " . count($all_modules) . " modules");
+            dgptm_log_verbose("move_module: Using module_loader, found " . count($all_modules) . " modules", 'plugin-manager');
         } else {
             // Fallback: Direkter Scan
-            error_log("DGPTM move_module: module_loader not available, using direct scan");
+            dgptm_log_verbose("move_module: module_loader not available, using direct scan", 'plugin-manager');
             $all_modules = $this->scan_modules_direct();
             $module_info = $all_modules[$module_id] ?? null;
         }
 
         if (!$module_info) {
             add_settings_error('dgptm_categories', 'module_not_found', "Module '$module_id' not found.");
-            error_log("DGPTM move_module: Module '$module_id' not found in module list");
+            dgptm_log_error("move_module: Module '$module_id' not found in module list", 'plugin-manager');
             return;
         }
 
-        error_log("DGPTM move_module: Found module at path: " . $module_info['path']);
+        dgptm_log_verbose("move_module: Found module at path: " . $module_info['path'], 'plugin-manager');
 
         // Update module.json
         $config_file = $module_info['path'] . 'module.json';
 
-        error_log("DGPTM move_module: Config file path: $config_file");
+        dgptm_log_verbose("move_module: Config file path: $config_file", 'plugin-manager');
 
         if (!file_exists($config_file)) {
             add_settings_error('dgptm_categories', 'config_not_found', "Module configuration file not found: $config_file");
-            error_log("DGPTM move_module: Config file not found: $config_file");
+            dgptm_log_error("move_module: Config file not found: $config_file", 'plugin-manager');
             return;
         }
 
         $json_content = file_get_contents($config_file);
-        error_log("DGPTM move_module: Read JSON content (" . strlen($json_content) . " bytes)");
+        dgptm_log_verbose("move_module: Read JSON content (" . strlen($json_content) . " bytes)", 'plugin-manager');
 
         $config = json_decode($json_content, true);
 
         if (!$config) {
             add_settings_error('dgptm_categories', 'json_error', 'Could not parse module.json file.');
-            error_log("DGPTM move_module: JSON decode failed");
+            dgptm_log_error("move_module: JSON decode failed", 'plugin-manager');
             return;
         }
 
         $old_category = $config['category'] ?? 'uncategorized';
-        error_log("DGPTM move_module: Old category: $old_category, New category: $new_category");
+        dgptm_log_verbose("move_module: Old category: $old_category, New category: $new_category", 'plugin-manager');
 
         $config['category'] = $new_category;
 
         $json_output = json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        error_log("DGPTM move_module: Writing JSON (" . strlen($json_output) . " bytes)");
+        dgptm_log_verbose("move_module: Writing JSON (" . strlen($json_output) . " bytes)", 'plugin-manager');
 
         $result = file_put_contents($config_file, $json_output);
 
         if ($result === false) {
             add_settings_error('dgptm_categories', 'write_error', "Could not write to module configuration file: $config_file");
-            error_log("DGPTM move_module: file_put_contents failed");
+            dgptm_log_error("move_module: file_put_contents failed", 'plugin-manager');
             return;
         }
 
-        error_log("DGPTM move_module: Successfully wrote $result bytes to $config_file");
+        dgptm_log_verbose("move_module: Successfully wrote $result bytes to $config_file", 'plugin-manager');
 
         $module_name = $config['name'] ?? $module_id;
         $categories = $this->get_categories();
@@ -1679,7 +1681,7 @@ class DGPTM_Plugin_Manager {
             'success'
         );
 
-        error_log("DGPTM move_module: Success - Module '$module_name' moved from '$old_cat_name' to '$new_cat_name'");
+        dgptm_log_verbose("move_module: Success - Module '$module_name' moved from '$old_cat_name' to '$new_cat_name'", 'plugin-manager');
     }
 
     /**
@@ -1695,7 +1697,7 @@ class DGPTM_Plugin_Manager {
 
         // Sicherheitscheck
         if (!isset($dgptm_suite) || !isset($dgptm_suite->module_loader)) {
-            error_log('DGPTM Categories: Cannot move modules - loader not available');
+            dgptm_log_error('Categories: Cannot move modules - loader not available', 'plugin-manager');
             return;
         }
 

@@ -67,7 +67,9 @@ final class EBCPDGPTM_Guidelines_Translator_Addon {
         }
         if ($cid) $context['cid'] = $cid;
         $msg = '[EBCP-Translator] ' . $label . ': ' . (function_exists('wp_json_encode') ? wp_json_encode($context) : json_encode($context));
-        @error_log($msg);
+        if (function_exists('dgptm_log_warning')) {
+            dgptm_log_warning($msg, 'ebcp-guidelines');
+        }
         if ($this->_log_file_enabled()) {
             $upload = wp_get_upload_dir();
             $dir = trailingslashit($upload['basedir']) . 'ebcp-logs';

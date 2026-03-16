@@ -208,6 +208,16 @@ if (!function_exists('dgptm_cast_vote_fn')) {
             }
         }
 
+        /**
+         * Fires after a vote has been successfully cast.
+         *
+         * @param int   $qid      The question ID.
+         * @param array $choices  The selected choice indices.
+         * @param int   $user_id  The user ID (0 if anonymous).
+         * @param int   $poll_id  The poll ID.
+         */
+        do_action('dgptm_vote_cast', $qid, $choices, $user_id, (int)$q->poll_id);
+
         wp_send_json_success('Stimme wurde erfolgreich abgegeben.');
     }
 }

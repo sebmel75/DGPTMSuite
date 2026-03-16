@@ -61,8 +61,8 @@ class GCL_Formidable_Integration {
 
     /** Debug-Logger */
     private function log( $msg ) {
-        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( "[GCL] " . print_r( $msg, true ) );
+        if ( function_exists('dgptm_log_verbose') ) {
+            dgptm_log_verbose( print_r( $msg, true ), 'gocardless' );
         }
     }
 

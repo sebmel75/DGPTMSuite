@@ -450,8 +450,8 @@ if (!class_exists('DGPTM_GitHub_Sync')) {
          * Log message
          */
         private function log($message) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('[DGPTM GitHub Sync] ' . $message);
+            if (function_exists('dgptm_log_info')) {
+                dgptm_log_info($message, 'github-sync');
             }
         }
 

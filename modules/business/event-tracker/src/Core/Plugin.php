@@ -98,6 +98,10 @@ class Plugin {
 		add_action( 'edit_user_profile', [ $this, 'render_user_meta' ] );
 		add_action( 'personal_options_update', [ $this, 'save_user_meta' ] );
 		add_action( 'edit_user_profile_update', [ $this, 'save_user_meta' ] );
+
+		// Cache invalidation for event list transients
+		add_action( 'save_post_' . Constants::CPT, [ $this, 'flush_event_list_cache' ] );
+		add_action( 'deleted_post', [ $this, 'flush_event_list_cache_on_delete' ] );
 	}
 
 	/**
@@ -310,5 +314,41 @@ class Plugin {
 		} else {
 			delete_user_meta( $user_id, Constants::USER_META_ACCESS );
 		}
+	}
+
+	/**
+	 * Flush event list transient cache when an event is saved/updated.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	public function flush_event_list_cache( $post_id ) {
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+			return;
+		}
+		if ( wp_is_post_revision( $post_id ) ) {
+			return;
+		}
+		$this->delete_event_transients();
+	}
+
+	/**
+	 * Flush event list transient cache when a post is deleted (checks post type).
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	public function flush_event_list_cache_on_delete( $post_id ) {
+		if ( get_post_type( $post_id ) === Constants::CPT ) {
+			$this->delete_event_transients();
+		}
+	}
+
+	/**
+	 * Delete all dgptm_events_* transients from the database.
+	 */
+	private function delete_event_transients() {
+		global $wpdb;
+		$wpdb->query(
+			"DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_dgptm_events_%' OR option_name LIKE '_transient_timeout_dgptm_events_%'"
+		);
 	}
 }

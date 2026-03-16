@@ -72,8 +72,8 @@ class Stripe_Formidable_Integration {
 
     /* Logging helper */
     private function log( string $msg ): void {
-        if ( defined('WP_DEBUG') && WP_DEBUG ) {
-            error_log("[Stripe-Formidable] $msg");
+        if ( function_exists('dgptm_log_verbose') ) {
+            dgptm_log_verbose($msg, 'stripe-formidable');
         }
     }
 

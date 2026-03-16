@@ -12,6 +12,9 @@ if (!defined('ABSPATH')) exit;
  */
 if (!function_exists('dgptm_member_vote')) {
     function dgptm_member_vote(){
+        wp_enqueue_style( 'dgptm-abstimmen-frontend' );
+        wp_enqueue_script( 'dgptm-abstimmen-frontend' );
+
         $poll_id = isset($_GET['poll_id']) ? intval($_GET['poll_id']) : 0;
         $token   = isset($_GET['token']) ? sanitize_text_field($_GET['token']) : '';
         ob_start(); ?>

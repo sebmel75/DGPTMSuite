@@ -176,9 +176,11 @@ jobs:
           DEPLOYED=false
           for TARGET_PATH in "${PATHS[@]}"; do
             echo "Trying: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${TARGET_PATH}/"
-            if sshpass -e rsync -avz \
+            if sshpass -e rsync -avz --delete \
                   --exclude='exports/' \
                   --exclude='*.log' \
+                  --exclude='data/' \
+                  --exclude='cache/' \
                   -e "ssh -o StrictHostKeyChecking=no" \
                   ./deploy-package/ \
                   "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${TARGET_PATH}/" 2>&1; then

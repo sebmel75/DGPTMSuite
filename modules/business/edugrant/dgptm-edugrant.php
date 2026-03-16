@@ -71,18 +71,18 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
         }
 
         /**
-         * Enqueue frontend assets
+         * Register frontend assets (lazy loading: enqueued only when shortcode is rendered)
          */
         public function enqueue_assets() {
             if (!is_admin()) {
-                wp_enqueue_style(
+                wp_register_style(
                     'dgptm-edugrant-style',
                     $this->plugin_url . 'assets/css/edugrant.css',
                     [],
                     '1.0.0'
                 );
 
-                wp_enqueue_script(
+                wp_register_script(
                     'dgptm-edugrant-script',
                     $this->plugin_url . 'assets/js/edugrant.js',
                     ['jquery'],
@@ -100,7 +100,26 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
                         'confirmSubmit' => __('Möchten Sie diesen EduGrant-Antrag wirklich einreichen?', 'dgptm-edugrant'),
                     ]
                 ]);
+
+                // Fallback: enqueue if shortcode detected in post content
+                global $post;
+                if ($post && (
+                    has_shortcode($post->post_content, 'edugrant_events') ||
+                    has_shortcode($post->post_content, 'meine_edugrantes') ||
+                    has_shortcode($post->post_content, 'edugrant_antragsformular')
+                )) {
+                    wp_enqueue_style('dgptm-edugrant-style');
+                    wp_enqueue_script('dgptm-edugrant-script');
+                }
             }
+        }
+
+        /**
+         * Enqueue assets when shortcode is actually rendered
+         */
+        private function enqueue_shortcode_assets() {
+            wp_enqueue_style('dgptm-edugrant-style');
+            wp_enqueue_script('dgptm-edugrant-script');
         }
 
         /**
@@ -433,6 +452,8 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
          * Shortcode: Display available events
          */
         public function shortcode_events($atts) {
+            $this->enqueue_shortcode_assets();
+
             $atts = shortcode_atts([
                 'show_past' => 'false',
                 'limit' => 20
@@ -457,6 +478,8 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
          * Shortcode: Display user's EduGrants
          */
         public function shortcode_user_edugrantes($atts) {
+            $this->enqueue_shortcode_assets();
+
             if (!is_user_logged_in()) {
                 return '<div class="edugrant-notice">Bitte melden Sie sich an, um Ihre EduGrants zu sehen.</div>';
             }
@@ -484,6 +507,8 @@ if (!class_exists('DGPTM_EduGrant_Manager')) {
          * Now supports both logged-in members and guests
          */
         public function shortcode_application_form($atts) {
+            $this->enqueue_shortcode_assets();
+
             $atts = shortcode_atts([
                 'event_id' => '',
                 'edugrant_code' => ''

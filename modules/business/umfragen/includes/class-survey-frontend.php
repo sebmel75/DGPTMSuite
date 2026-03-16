@@ -340,6 +340,15 @@ class DGPTM_Survey_Frontend {
             dgptm_log_info('Umfrage-Antwort eingegangen: Survey=' . $survey_id . ', Response=' . $response_id, 'umfragen');
         }
 
+        /**
+         * Fires after a survey has been completed and all answers saved.
+         *
+         * @param int    $survey_id   The survey ID.
+         * @param int    $response_id The response ID.
+         * @param object $survey      The survey object.
+         */
+        do_action('dgptm_survey_completed', $survey_id, $response_id, $survey);
+
         wp_send_json_success([
             'message'     => 'Vielen Dank fuer Ihre Teilnahme!',
             'response_id' => $response_id,

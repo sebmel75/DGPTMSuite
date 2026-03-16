@@ -209,6 +209,8 @@ function dgptm_staz_settings_page() {
  * Shortcode zur Anzeige der Stellenanzeigen
  */
 function dgptm_staz_render_shortcode( $atts ) {
+    wp_enqueue_style( 'dgptm-staz-styles' );
+
     ob_start();
 
     $today = date( 'Y-m-d' );
@@ -293,6 +295,8 @@ add_shortcode( 'stellenanzeigen', 'dgptm_staz_render_shortcode' );
  *    - Leitet nach dem Erstellen direkt auf [stellenanzeige_bearbeiten] um
  */
 function dgptm_staz_render_editor_shortcode() {
+    wp_enqueue_style( 'dgptm-staz-styles' );
+
     if ( ! is_user_logged_in() ) {
         return '<p>Bitte melde dich an, um Stellenanzeigen zu verwalten.</p>';
     }
@@ -403,6 +407,8 @@ add_shortcode( 'stellenanzeigen_editor', 'dgptm_staz_render_editor_shortcode' );
  *    Zeigt das Bearbeitungsformular für eine Stellenanzeige (abhängig von GET-Parameter "staz_id")
  */
 function dgptm_staz_render_bearbeiten_shortcode() {
+    wp_enqueue_style( 'dgptm-staz-styles' );
+
     if ( ! is_user_logged_in() ) {
         return '<p>Bitte melde dich an, um Stellenanzeigen zu verwalten.</p>';
     }
@@ -894,12 +900,22 @@ function dgptm_staz_admin_caps() {
 add_action( 'init', 'dgptm_staz_admin_caps', 11 );
 
 /**
- * 7) Styles im Frontend laden
+ * 7) Styles im Frontend registrieren (lazy loading: enqueued nur wenn Shortcode gerendert wird)
  */
-function dgptm_staz_enqueue_styles() {
-    wp_enqueue_style( 'dgptm-staz-styles', plugin_dir_url( __FILE__ ) . 'css/dgptm-staz-styles.css', array(), '2.0' );
+function dgptm_staz_register_styles() {
+    wp_register_style( 'dgptm-staz-styles', plugin_dir_url( __FILE__ ) . 'css/dgptm-staz-styles.css', array(), '2.0' );
+
+    // Fallback: enqueue if shortcode detected in post content
+    global $post;
+    if ( $post && (
+        has_shortcode( $post->post_content, 'stellenanzeigen' ) ||
+        has_shortcode( $post->post_content, 'stellenanzeigen_editor' ) ||
+        has_shortcode( $post->post_content, 'stellenanzeige_bearbeiten' )
+    ) ) {
+        wp_enqueue_style( 'dgptm-staz-styles' );
+    }
 }
-add_action( 'wp_enqueue_scripts', 'dgptm_staz_enqueue_styles' );
+add_action( 'wp_enqueue_scripts', 'dgptm_staz_register_styles' );
 
 /**
  * 8) Admin-Notice: Benutzer über ACF-Feld informieren

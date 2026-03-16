@@ -1,8 +1,9 @@
+<?php
 /**
  * Shortcode [news-list]
  *
  * Zeigt eine Tabelle aller Einträge des Custom Post Types "newsbereich"
- * (z. B. publish + future). Jeder Eintrag hat:
+ * (z. B. publish + future). Jeder Eintrag hat:
  *  - Vorschaubild (cnp_news_thumbnail)
  *  - Nur-Text-Titel
  *  - Veröffentlichung / Anzeigen-bis
@@ -12,6 +13,8 @@
  *  1) current_user_can('edit_newsbereiche'), um die Liste zu sehen
  *  2) current_user_can('edit_others_newsbereiche'), um fremde Einträge anzuzeigen
  *  3) current_user_can('delete_newsbereich', $post_id), um Einträge löschen zu dürfen
+ *
+ * Transient-Caching: 5 Minuten TTL, invalidiert bei save_post für "newsbereich".
  */
 function cnp_news_list_shortcode() {
     // 1) Berechtigungscheck
@@ -19,12 +22,41 @@ function cnp_news_list_shortcode() {
         return __('Keine Berechtigung, News zu sehen.', 'custom-news-plugin');
     }
 
+    // 1b) Lösch-Aktion abfangen (VOR dem Cache-Check, da sie einen Redirect auslöst)
+    if (isset($_GET['cnp_delete_news'])) {
+        $del_id = (int) $_GET['cnp_delete_news'];
+        if (isset($_GET['cnp_nonce']) && wp_verify_nonce($_GET['cnp_nonce'], 'cnp_delete_news_' . $del_id)) {
+            if (current_user_can('delete_newsbereich', $del_id)) {
+                wp_delete_post($del_id, true);  // Hard delete
+                // Cache wird über save_post-Hook invalidiert
+                wp_safe_redirect(remove_query_arg(array('cnp_delete_news','cnp_nonce')));
+                exit;
+            }
+        }
+    }
+
+    // 2) Transient-Cache prüfen
+    // Cache-Key berücksichtigt User-ID und Capabilities, da die Ausgabe nutzerspezifisch ist
+    $user_id = get_current_user_id();
+    $can_edit_others = current_user_can('edit_others_newsbereiche') ? '1' : '0';
+    $cache_key = 'dgptm_news_' . md5($user_id . '_' . $can_edit_others);
+
+    // Nicht cachen wenn Lösch-Aktion fehlgeschlagen ist (Fehlermeldung anzeigen)
+    $skip_cache = isset($_GET['cnp_delete_news']);
+
+    if (!$skip_cache) {
+        $cached = get_transient($cache_key);
+        if ($cached !== false) {
+            return $cached;
+        }
+    }
+
     ob_start();
     ?>
     <div class="cnp-news-list">
         <h2>Liste aller News</h2>
         <?php
-        // 2) Query-Einstellungen
+        // 3) Query-Einstellungen
         $args = array(
             'post_type'      => 'newsbereich',
             // Falls du "future" mit anzeigen willst:
@@ -39,7 +71,7 @@ function cnp_news_list_shortcode() {
             $args['author'] = get_current_user_id();
         }
 
-        // 3) Posts holen
+        // 4) Posts holen
         $query = new WP_Query($args);
 
         if (!$query->have_posts()) {
@@ -60,7 +92,7 @@ function cnp_news_list_shortcode() {
                 $query->the_post();
                 $news_id = get_the_ID();
 
-                // a) Metadaten holen (z. B. publish_date, display_until)
+                // a) Metadaten holen (z. B. publish_date, display_until)
                 $publish_date = get_post_meta($news_id, '_cnp_publish_date', true);
                 $display_until = get_post_meta($news_id, '_cnp_display_until', true);
 
@@ -84,8 +116,8 @@ function cnp_news_list_shortcode() {
                 $plain_title = wp_strip_all_tags(get_the_title());
 
                 // e) Thumbnail
-                $thumb_html = (has_post_thumbnail($news_id)) 
-                    ? get_the_post_thumbnail($news_id, 'cnp_news_thumbnail') 
+                $thumb_html = (has_post_thumbnail($news_id))
+                    ? get_the_post_thumbnail($news_id, 'cnp_news_thumbnail')
                     : 'Kein Bild';
 
                 // f) Nonce für das Löschen
@@ -98,7 +130,7 @@ function cnp_news_list_shortcode() {
                 echo '<td>' . (!empty($du_str) ? $du_str : '-') . '</td>';
                 echo '<td>' . esc_html($status_label) . '</td>';
                 echo '<td>
-                        <a href="' . esc_url(add_query_arg('cnp_edit_news', $news_id)) . '" 
+                        <a href="' . esc_url(add_query_arg('cnp_edit_news', $news_id)) . '"
                            class="button">Bearbeiten</a>
                         <a href="' . esc_url(add_query_arg(array('cnp_delete_news' => $news_id, 'cnp_nonce' => $delete_nonce))) . '"
                            class="button button-secondary"
@@ -114,25 +146,54 @@ function cnp_news_list_shortcode() {
     </div>
 
     <?php
-    // 4) Lösch-Aktion abfangen
+    // 5) Fehlermeldung bei fehlgeschlagener Lösch-Aktion
     if (isset($_GET['cnp_delete_news'])) {
         $del_id = (int) $_GET['cnp_delete_news'];
-        // Sicherheitsprüfung
         if (!isset($_GET['cnp_nonce']) || !wp_verify_nonce($_GET['cnp_nonce'], 'cnp_delete_news_' . $del_id)) {
             echo '<div class="notice notice-error"><p>Ungültige Sicherheitsprüfung fürs Löschen.</p></div>';
-        } else {
-            // Berechtigung zum Löschen dieses Beitrags?
-            if (current_user_can('delete_newsbereich', $del_id)) {
-                wp_delete_post($del_id, true);  // Hard delete
-                // Nach dem Löschen => Reload ohne Parameter
-                wp_safe_redirect(remove_query_arg(array('cnp_delete_news','cnp_nonce')));
-                exit;
-            } else {
-                echo '<div class="notice notice-error"><p>Keine Berechtigung zum Löschen.</p></div>';
-            }
+        } elseif (!current_user_can('delete_newsbereich', $del_id)) {
+            echo '<div class="notice notice-error"><p>Keine Berechtigung zum Löschen.</p></div>';
         }
     }
 
-    return ob_get_clean();
+    $output = ob_get_clean();
+
+    // 6) Ausgabe im Transient cachen (5 Minuten TTL)
+    if (!$skip_cache) {
+        set_transient($cache_key, $output, 5 * MINUTE_IN_SECONDS);
+    }
+
+    return $output;
 }
 add_shortcode('news-list', 'cnp_news_list_shortcode');
+
+/**
+ * Cache-Invalidierung: Alle dgptm_news_* Transients löschen wenn ein
+ * "newsbereich"-Beitrag gespeichert, aktualisiert oder gelöscht wird.
+ */
+add_action('save_post_newsbereich', function ($post_id) {
+    // Kein Cache-Flush bei Autosaves oder Revisionen
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+        return;
+    }
+    if (wp_is_post_revision($post_id)) {
+        return;
+    }
+    cnp_news_flush_transient_cache();
+});
+
+add_action('deleted_post', function ($post_id) {
+    if (get_post_type($post_id) === 'newsbereich') {
+        cnp_news_flush_transient_cache();
+    }
+});
+
+/**
+ * Löscht alle dgptm_news_* Transients aus der Datenbank.
+ */
+function cnp_news_flush_transient_cache() {
+    global $wpdb;
+    $wpdb->query(
+        "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_dgptm_news_%' OR option_name LIKE '_transient_timeout_dgptm_news_%'"
+    );
+}

@@ -53,9 +53,7 @@ if ( ! function_exists('dgptm_log') ) {
             $safe = dgptm_redact_array($context);
             $message .= ' ' . wp_json_encode($safe, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
         }
-        if ( defined('WP_DEBUG_LOG') && WP_DEBUG_LOG ) {
-            error_log($prefix . $message);
-        }
+        dgptm_log_verbose($message, 'crm-abruf');
     }
 }
 
@@ -674,6 +672,7 @@ class DGPTM_Zoho_Plugin {
 
         add_shortcode('zoho_api_data',      [$this, 'zoho_api_data_shortcode']);
         add_shortcode('zoho_api_data_ajax', [$this, 'zoho_api_data_ajax_shortcode']);
+        add_shortcode('zoho_profile_card',  [$this, 'zoho_profile_card_shortcode']);
         add_shortcode('ifcrmfield',         [$this, 'ifcrmfield_shortcode']);
 
         register_uninstall_hook(__FILE__, ['DGPTM_Zoho_Plugin', 'uninstall']);
@@ -773,6 +772,14 @@ class DGPTM_Zoho_Plugin {
         if ( is_array( $this->zoho_data ) && ! empty( $this->zoho_data ) ) {
             $role_manager = DGPTM_Role_Manager::get_instance();
             $role_manager->sync_member_role( $this->zoho_data );
+
+            /**
+             * Fires after user data has been loaded from the Zoho CRM API.
+             *
+             * @param array $zoho_data The Zoho CRM data for the current user.
+             * @param int   $user_id   The WordPress user ID.
+             */
+            do_action('dgptm_user_data_loaded', $this->zoho_data, $user_id);
         }
 
         return $this->zoho_data;
@@ -1478,6 +1485,72 @@ define('WP_DEBUG_LOG', true);</code></li>
                 var name = el.getAttribute('data-field') || '';
                 el.textContent = window.zohoData[name] || '';
             });
+        </script>
+        <?php
+        return ob_get_clean();
+    }
+
+    /**
+     * Profil-Karte Shortcode: Rendert mehrere Felder in einem HTML-Block
+     * Nutzung: [zoho_profile_card fields="Vorname,Nachname,Mitgliedsart,Status,EFN"]
+     * Optionale Attribute: class (CSS-Klasse), layout (list|inline|table)
+     */
+    public function zoho_profile_card_shortcode($atts) {
+        $atts = shortcode_atts([
+            'fields'  => '',
+            'labels'  => '',
+            'class'   => 'dgptm-profile-card',
+            'layout'  => 'list',
+        ], $atts, 'zoho_profile_card');
+
+        if (empty($atts['fields'])) return '';
+
+        $fields = array_map('trim', explode(',', $atts['fields']));
+        $labels = !empty($atts['labels'])
+            ? array_map('trim', explode(',', $atts['labels']))
+            : $fields;
+
+        $field_json = wp_json_encode($fields);
+        $label_json = wp_json_encode($labels);
+        $layout = esc_attr($atts['layout']);
+        $css_class = esc_attr($atts['class']);
+
+        $card_id = 'zoho-profile-card-' . (++$this->counter);
+
+        ob_start(); ?>
+        <div id="<?php echo esc_attr($card_id); ?>" class="<?php echo $css_class; ?>" data-layout="<?php echo $layout; ?>"></div>
+        <script>
+        document.addEventListener('DOMContentLoaded', function(){
+            if (!window.zohoData) return;
+            var card = document.getElementById('<?php echo esc_js($card_id); ?>');
+            var fields = <?php echo $field_json; ?>;
+            var labels = <?php echo $label_json; ?>;
+            var layout = '<?php echo $layout; ?>';
+            var html = '';
+            if (layout === 'table') {
+                html = '<table class="dgptm-profile-table">';
+                for (var i = 0; i < fields.length; i++) {
+                    var val = window.zohoData[fields[i]] || '';
+                    if (val) html += '<tr><th>' + labels[i] + '</th><td>' + val + '</td></tr>';
+                }
+                html += '</table>';
+            } else if (layout === 'inline') {
+                var items = [];
+                for (var i = 0; i < fields.length; i++) {
+                    var val = window.zohoData[fields[i]] || '';
+                    if (val) items.push('<span class="dgptm-profile-item"><strong>' + labels[i] + ':</strong> ' + val + '</span>');
+                }
+                html = items.join(' &middot; ');
+            } else {
+                html = '<dl class="dgptm-profile-list">';
+                for (var i = 0; i < fields.length; i++) {
+                    var val = window.zohoData[fields[i]] || '';
+                    if (val) html += '<dt>' + labels[i] + '</dt><dd>' + val + '</dd>';
+                }
+                html += '</dl>';
+            }
+            card.innerHTML = html;
+        });
         </script>
         <?php
         return ob_get_clean();

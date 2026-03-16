@@ -207,7 +207,9 @@ class Wissens_Bot_Scholar_Connector {
                 }
             }
         } catch (Exception $e) {
-            error_log('Google Scholar Parse Error: ' . $e->getMessage());
+            if (function_exists('dgptm_log_error')) {
+                dgptm_log_error('Google Scholar Parse Error: ' . $e->getMessage(), 'wissens-bot');
+            }
         }
         
         return $articles;

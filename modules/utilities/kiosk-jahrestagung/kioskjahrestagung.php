@@ -1116,7 +1116,9 @@ final class Bummern_Code_Scanner {
         ]);
 
         if (is_wp_error($response)) {
-            error_log('BCS CRM Error: ' . $response->get_error_message());
+            if (function_exists('dgptm_log_error')) {
+                dgptm_log_error('CRM Error: ' . $response->get_error_message(), 'kiosk-jahrestagung');
+            }
             return null;
         }
 
@@ -1124,9 +1126,11 @@ final class Bummern_Code_Scanner {
         $body = wp_remote_retrieve_body($response);
         $data = json_decode($body, true);
 
-        error_log('BCS CRM Query: ' . $url);
-        error_log('BCS CRM HTTP: ' . $http_code);
-        error_log('BCS CRM Response: ' . substr($body, 0, 500));
+        if (function_exists('dgptm_log_verbose')) {
+            dgptm_log_verbose('CRM Query: ' . $url, 'kiosk-jahrestagung');
+            dgptm_log_verbose('CRM HTTP: ' . $http_code, 'kiosk-jahrestagung');
+            dgptm_log_verbose('CRM Response: ' . substr($body, 0, 500), 'kiosk-jahrestagung');
+        }
 
         // 204 = No Content (keine Ergebnisse)
         if ($http_code === 204) {

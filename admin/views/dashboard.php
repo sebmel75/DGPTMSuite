@@ -87,18 +87,18 @@ foreach ($active_checkouts as $checkout_info) {
 
     <?php settings_errors('dgptm_suite_notices'); ?>
 
-    <!-- Active Checkouts Warning -->
+    <!-- Aktive Checkouts Warnung -->
     <?php if (!empty($active_checkouts)): ?>
         <div class="notice notice-warning">
             <p>
-                <strong><?php _e('Active Module Checkouts:', 'dgptm-suite'); ?></strong>
-                <?php printf(_n('%d module is checked out for editing.', '%d modules are checked out for editing.', $checkout_count, 'dgptm-suite'), $checkout_count); ?>
+                <strong><?php _e('Aktive Modul-Checkouts:', 'dgptm-suite'); ?></strong>
+                <?php printf(_n('%d Modul ist zur Bearbeitung ausgecheckt.', '%d Module sind zur Bearbeitung ausgecheckt.', $checkout_count, 'dgptm-suite'), $checkout_count); ?>
                 <?php foreach ($active_checkouts as $checkout_id => $checkout_info): ?>
                     <br>
-                    • <strong><?php echo esc_html($checkout_info['module_id']); ?></strong>
-                    (<?php echo esc_html(human_time_diff($checkout_info['checked_out_at'], time())); ?> ago)
+                    &bull; <strong><?php echo esc_html($checkout_info['module_id']); ?></strong>
+                    (<?php printf(__('vor %s', 'dgptm-suite'), esc_html(human_time_diff($checkout_info['checked_out_at'], time()))); ?>)
                     <button type="button" class="button button-small dgptm-checkin-show" data-checkout-id="<?php echo esc_attr($checkout_id); ?>" data-module-id="<?php echo esc_attr($checkout_info['module_id']); ?>">
-                        <?php _e('Upload Update', 'dgptm-suite'); ?>
+                        <?php _e('Update hochladen', 'dgptm-suite'); ?>
                     </button>
                 <?php endforeach; ?>
             </p>
@@ -109,19 +109,19 @@ foreach ($active_checkouts as $checkout_info) {
     <div class="dgptm-stats">
         <div class="dgptm-stat-box">
             <div class="dgptm-stat-number"><?php echo $total_modules; ?></div>
-            <div class="dgptm-stat-label"><?php _e('Total Modules', 'dgptm-suite'); ?></div>
+            <div class="dgptm-stat-label"><?php _e('Module gesamt', 'dgptm-suite'); ?></div>
         </div>
         <div class="dgptm-stat-box">
             <div class="dgptm-stat-number"><?php echo $active_count; ?></div>
-            <div class="dgptm-stat-label"><?php _e('Active Modules', 'dgptm-suite'); ?></div>
+            <div class="dgptm-stat-label"><?php _e('Aktive Module', 'dgptm-suite'); ?></div>
         </div>
         <div class="dgptm-stat-box">
             <div class="dgptm-stat-number"><?php echo $loaded_count; ?></div>
-            <div class="dgptm-stat-label"><?php _e('Loaded Modules', 'dgptm-suite'); ?></div>
+            <div class="dgptm-stat-label"><?php _e('Geladene Module', 'dgptm-suite'); ?></div>
         </div>
         <div class="dgptm-stat-box">
             <div class="dgptm-stat-number"><?php echo count($categories); ?></div>
-            <div class="dgptm-stat-label"><?php _e('Categories', 'dgptm-suite'); ?></div>
+            <div class="dgptm-stat-label"><?php _e('Kategorien', 'dgptm-suite'); ?></div>
         </div>
         <div class="dgptm-stat-box dgptm-stat-debug-level">
             <?php
@@ -165,18 +165,30 @@ foreach ($active_checkouts as $checkout_info) {
 
     <!-- Suchfeld -->
     <div class="dgptm-search-box">
-        <input type="text" id="dgptm-module-search" placeholder="<?php esc_attr_e('Search modules...', 'dgptm-suite'); ?>" />
+        <input type="text" id="dgptm-module-search" placeholder="<?php esc_attr_e('Module suchen...', 'dgptm-suite'); ?>" />
         <select id="dgptm-category-filter">
-            <option value=""><?php _e('All Categories', 'dgptm-suite'); ?></option>
+            <option value=""><?php _e('Alle Kategorien', 'dgptm-suite'); ?></option>
             <?php foreach ($categories as $cat_id => $cat_data): ?>
                 <option value="<?php echo esc_attr($cat_id); ?>"><?php echo esc_html($cat_data['name'] ?? $cat_id); ?></option>
             <?php endforeach; ?>
         </select>
         <select id="dgptm-status-filter">
-            <option value=""><?php _e('All Modules', 'dgptm-suite'); ?></option>
-            <option value="active"><?php _e('Active Only', 'dgptm-suite'); ?></option>
-            <option value="inactive"><?php _e('Inactive Only', 'dgptm-suite'); ?></option>
+            <option value=""><?php _e('Alle Module', 'dgptm-suite'); ?></option>
+            <option value="active"><?php _e('Nur aktive', 'dgptm-suite'); ?></option>
+            <option value="inactive"><?php _e('Nur inaktive', 'dgptm-suite'); ?></option>
         </select>
+    </div>
+
+    <!-- Alle auf-/zuklappen -->
+    <div class="dgptm-collapse-controls">
+        <button type="button" id="dgptm-expand-all" class="button button-secondary">
+            <span class="dashicons dashicons-arrow-down-alt2"></span>
+            <?php _e('Alle aufklappen', 'dgptm-suite'); ?>
+        </button>
+        <button type="button" id="dgptm-collapse-all" class="button button-secondary">
+            <span class="dashicons dashicons-arrow-up-alt2"></span>
+            <?php _e('Alle einklappen', 'dgptm-suite'); ?>
+        </button>
     </div>
 
     <!-- Bulk Actions -->
@@ -186,12 +198,12 @@ foreach ($active_checkouts as $checkout_info) {
         <div class="tablenav top">
             <div class="alignleft actions bulkactions">
                 <select name="dgptm_bulk_action">
-                    <option value=""><?php _e('Bulk Actions', 'dgptm-suite'); ?></option>
-                    <option value="activate"><?php _e('Activate', 'dgptm-suite'); ?></option>
-                    <option value="deactivate"><?php _e('Deactivate', 'dgptm-suite'); ?></option>
-                    <option value="export"><?php _e('Export', 'dgptm-suite'); ?></option>
+                    <option value=""><?php _e('Massenaktion', 'dgptm-suite'); ?></option>
+                    <option value="activate"><?php _e('Aktivieren', 'dgptm-suite'); ?></option>
+                    <option value="deactivate"><?php _e('Deaktivieren', 'dgptm-suite'); ?></option>
+                    <option value="export"><?php _e('Exportieren', 'dgptm-suite'); ?></option>
                 </select>
-                <input type="submit" class="button action" value="<?php esc_attr_e('Apply', 'dgptm-suite'); ?>" />
+                <input type="submit" class="button action" value="<?php esc_attr_e('Anwenden', 'dgptm-suite'); ?>" />
             </div>
         </div>
 
@@ -214,12 +226,12 @@ foreach ($active_checkouts as $checkout_info) {
                                 <td class="check-column">
                                     <input type="checkbox" class="dgptm-select-all" />
                                 </td>
-                                <th><?php _e('Module', 'dgptm-suite'); ?></th>
-                                <th><?php _e('Description', 'dgptm-suite'); ?></th>
+                                <th><?php _e('Modul', 'dgptm-suite'); ?></th>
+                                <th><?php _e('Beschreibung', 'dgptm-suite'); ?></th>
                                 <th><?php _e('Version', 'dgptm-suite'); ?></th>
-                                <th><?php _e('Dependencies', 'dgptm-suite'); ?></th>
+                                <th><?php _e('Abhaengigkeiten', 'dgptm-suite'); ?></th>
                                 <th><?php _e('Status', 'dgptm-suite'); ?></th>
-                                <th><?php _e('Actions', 'dgptm-suite'); ?></th>
+                                <th><?php _e('Aktionen', 'dgptm-suite'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -260,6 +272,16 @@ foreach ($active_checkouts as $checkout_info) {
                                 $has_test_version = $test_manager->has_test_version($config);
                                 $main_version_id = $test_manager->get_main_version_id($config);
                                 $test_version_id = $test_manager->get_test_version_id($config);
+
+                                // Letzte Aenderung der Hauptdatei ermitteln
+                                $module_main_file = '';
+                                $last_modified = '';
+                                if (!empty($module_info['path']) && !empty($config['main_file'])) {
+                                    $module_main_file = $module_info['path'] . $config['main_file'];
+                                    if (file_exists($module_main_file)) {
+                                        $last_modified = date('d.m.Y', filemtime($module_main_file));
+                                    }
+                                }
 
                                 // CSS-Klassen für Gruppierung
                                 $row_classes = ['dgptm-module-row'];
@@ -323,11 +345,16 @@ foreach ($active_checkouts as $checkout_info) {
                                         </div>
                                     </td>
                                     <td><?php echo esc_html($config['description'] ?? ''); ?></td>
-                                    <td><?php echo esc_html($version); ?></td>
+                                    <td>
+                                        <?php echo esc_html($version); ?>
+                                        <?php if (!empty($last_modified)): ?>
+                                            <span class="dgptm-last-modified"><?php printf(__('Geaendert: %s', 'dgptm-suite'), esc_html($last_modified)); ?></span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td>
                                         <?php if (!empty($config['dependencies'])): ?>
                                             <details>
-                                                <summary><?php echo count($config['dependencies']); ?> <?php _e('dependencies', 'dgptm-suite'); ?></summary>
+                                                <summary><?php echo count($config['dependencies']); ?> <?php _e('Abhaengigkeiten', 'dgptm-suite'); ?></summary>
                                                 <ul>
                                                     <?php foreach ($config['dependencies'] as $dep): ?>
                                                         <li><?php echo esc_html($dep); ?></li>
@@ -335,12 +362,12 @@ foreach ($active_checkouts as $checkout_info) {
                                                 </ul>
                                             </details>
                                         <?php else: ?>
-                                            <span class="dgptm-no-deps"><?php _e('None', 'dgptm-suite'); ?></span>
+                                            <span class="dgptm-no-deps"><?php _e('Keine', 'dgptm-suite'); ?></span>
                                         <?php endif; ?>
 
                                         <?php if (!empty($config['wp_dependencies']['plugins'])): ?>
                                             <details>
-                                                <summary><?php echo count($config['wp_dependencies']['plugins']); ?> WP <?php _e('plugins', 'dgptm-suite'); ?></summary>
+                                                <summary><?php echo count($config['wp_dependencies']['plugins']); ?> WP-<?php _e('Plugins', 'dgptm-suite'); ?></summary>
                                                 <ul>
                                                     <?php foreach ($config['wp_dependencies']['plugins'] as $plugin): ?>
                                                         <li><?php echo esc_html($plugin); ?></li>
@@ -351,82 +378,106 @@ foreach ($active_checkouts as $checkout_info) {
                                     </td>
                                     <td>
                                         <?php if ($is_critical): ?>
-                                            <span class="dgptm-status-badge dgptm-status-critical" style="background: #d63638; color: white; font-weight: bold;" title="<?php _e('Critical module - cannot be deactivated (Flag or Config)', 'dgptm-suite'); ?>">
+                                            <span class="dgptm-status-badge dgptm-status-critical" style="background: #d63638; color: white; font-weight: bold;" title="<?php _e('Kritisches Modul - kann nicht deaktiviert werden (Flag oder Config)', 'dgptm-suite'); ?>">
                                                 <span class="dashicons dashicons-shield" style="font-size: 12px; width: 12px; height: 12px;"></span>
-                                                <?php _e('CRITICAL', 'dgptm-suite'); ?>
+                                                <?php _e('KRITISCH', 'dgptm-suite'); ?>
                                             </span>
                                         <?php endif; ?>
 
                                         <?php if ($is_active): ?>
-                                            <span class="dgptm-status-badge dgptm-status-active"><?php _e('Active', 'dgptm-suite'); ?></span>
+                                            <span class="dgptm-status-badge dgptm-status-active"><?php _e('Aktiv', 'dgptm-suite'); ?></span>
                                         <?php else: ?>
-                                            <span class="dgptm-status-badge dgptm-status-inactive"><?php _e('Inactive', 'dgptm-suite'); ?></span>
+                                            <span class="dgptm-status-badge dgptm-status-inactive"><?php _e('Inaktiv', 'dgptm-suite'); ?></span>
                                         <?php endif; ?>
 
                                         <?php if ($is_loaded): ?>
-                                            <span class="dgptm-status-badge dgptm-status-loaded"><?php _e('Loaded', 'dgptm-suite'); ?></span>
+                                            <span class="dgptm-status-badge dgptm-status-loaded"><?php _e('Geladen', 'dgptm-suite'); ?></span>
                                         <?php endif; ?>
 
                                         <?php if ($is_checked_out): ?>
                                             <span class="dgptm-status-badge dgptm-status-checkout" style="background: #d63638; color: white;">
                                                 <span class="dashicons dashicons-lock" style="font-size: 12px; width: 12px; height: 12px;"></span>
-                                                <?php _e('Checked Out', 'dgptm-suite'); ?>
+                                                <?php _e('Ausgecheckt', 'dgptm-suite'); ?>
                                             </span>
                                         <?php endif; ?>
 
                                         <?php if (!$dep_check['status']): ?>
-                                            <span class="dgptm-status-badge dgptm-status-error" title="<?php echo esc_attr(implode(', ', $dep_check['messages'])); ?>">
-                                                <?php _e('Missing Deps', 'dgptm-suite'); ?>
+                                            <span class="dgptm-status-badge dgptm-status-error">
+                                                <?php _e('Fehlende Abh.', 'dgptm-suite'); ?>
                                             </span>
+                                            <div class="dgptm-error-inline">
+                                                <strong><?php _e('Fehlende Abhaengigkeiten:', 'dgptm-suite'); ?></strong>
+                                                <?php echo esc_html(implode(', ', $dep_check['messages'])); ?>
+                                            </div>
                                         <?php endif; ?>
 
                                         <?php if ($has_error): ?>
                                             <?php
                                             $error_message = $error_info['error']['message'] ?? $error_info['error'] ?? 'Unbekannter Fehler';
                                             $error_time_ago = human_time_diff($error_info['timestamp'], time());
-                                            $error_tooltip = sprintf(
-                                                __('FEHLER vor %s: %s', 'dgptm-suite'),
-                                                $error_time_ago,
-                                                $error_message
-                                            );
                                             ?>
-                                            <span class="dgptm-status-badge dgptm-status-error" style="background: #d63638; color: white; font-weight: bold;" title="<?php echo esc_attr($error_tooltip); ?>">
+                                            <span class="dgptm-status-badge dgptm-status-error" style="background: #d63638; color: white; font-weight: bold;">
                                                 <span class="dashicons dashicons-warning" style="font-size: 12px; width: 12px; height: 12px;"></span>
                                                 <?php echo $error_is_recent ? __('FEHLER (blockiert)', 'dgptm-suite') : __('FEHLER (alt)', 'dgptm-suite'); ?>
                                             </span>
+                                            <div class="dgptm-error-inline">
+                                                <strong><?php _e('Fehlerdetails:', 'dgptm-suite'); ?></strong>
+                                                <?php echo esc_html($error_message); ?>
+                                                <span class="dgptm-error-time"><?php printf(__('Vor %s aufgetreten', 'dgptm-suite'), esc_html($error_time_ago)); ?></span>
+                                            </div>
                                         <?php endif; ?>
                                     </td>
                                     <td>
                                         <button type="button"
                                                 class="button button-small dgptm-module-info-btn"
                                                 data-module-id="<?php echo esc_attr($module_id); ?>"
-                                                title="<?php esc_attr_e('Module Information', 'dgptm-suite'); ?>">
+                                                title="<?php esc_attr_e('Modul-Info', 'dgptm-suite'); ?>">
                                             <span class="dashicons dashicons-info"></span>
                                         </button>
-                                        <button type="button"
-                                                class="button dgptm-toggle-module"
-                                                data-module-id="<?php echo esc_attr($module_id); ?>"
-                                                data-active="<?php echo $is_active ? '1' : '0'; ?>"
-                                                <?php echo $is_critical ? 'disabled title="' . esc_attr__('Critical module cannot be deactivated', 'dgptm-suite') . '"' : ''; ?>
-                                                <?php echo (!$is_active && !$dep_check['status']) ? 'disabled title="' . esc_attr(implode(', ', $dep_check['messages'])) . '"' : ''; ?>
-                                                <?php echo ($is_active && !$is_critical && !$can_deactivate['can_deactivate']) ? 'disabled title="' . esc_attr($can_deactivate['message']) . '"' : ''; ?>
-                                                <?php echo (!$is_active && $error_is_recent) ? 'disabled title="' . esc_attr__('Module hat kürzlich einen Fehler verursacht. Bitte Fehler beheben oder 1 Stunde warten.', 'dgptm-suite') . '"' : ''; ?>>
-                                            <?php echo $is_active ? __('Deactivate', 'dgptm-suite') : __('Activate', 'dgptm-suite'); ?>
-                                        </button>
+
+                                        <?php
+                                        // Toggle-Switch: disabled wenn kritisch, fehlende Deps, oder blockiert
+                                        $switch_disabled = false;
+                                        $switch_title = '';
+                                        if ($is_critical) {
+                                            $switch_disabled = true;
+                                            $switch_title = __('Kritisches Modul kann nicht deaktiviert werden', 'dgptm-suite');
+                                        } elseif (!$is_active && !$dep_check['status']) {
+                                            $switch_disabled = true;
+                                            $switch_title = implode(', ', $dep_check['messages']);
+                                        } elseif ($is_active && !$is_critical && !$can_deactivate['can_deactivate']) {
+                                            $switch_disabled = true;
+                                            $switch_title = $can_deactivate['message'];
+                                        } elseif (!$is_active && $error_is_recent) {
+                                            $switch_disabled = true;
+                                            $switch_title = __('Modul hat kuerzlich einen Fehler verursacht. Bitte Fehler beheben oder 1 Stunde warten.', 'dgptm-suite');
+                                        }
+                                        ?>
+                                        <div class="dgptm-toggle-switch-wrapper" <?php if (!empty($switch_title)): ?>title="<?php echo esc_attr($switch_title); ?>"<?php endif; ?>>
+                                            <label class="dgptm-toggle-switch">
+                                                <input type="checkbox"
+                                                       class="dgptm-toggle-checkbox"
+                                                       data-module-id="<?php echo esc_attr($module_id); ?>"
+                                                       <?php checked($is_active); ?>
+                                                       <?php disabled($switch_disabled); ?> />
+                                                <span class="dgptm-toggle-slider"></span>
+                                            </label>
+                                            <span class="dgptm-toggle-label"><?php echo $is_active ? __('Aktiv', 'dgptm-suite') : __('Inaktiv', 'dgptm-suite'); ?></span>
+                                        </div>
 
                                         <?php if ($is_checked_out): ?>
                                             <button type="button" class="button button-primary dgptm-checkin-show" data-checkout-id="<?php echo esc_attr(array_search($module_id, $checked_out_modules)); ?>" data-module-id="<?php echo esc_attr($module_id); ?>">
                                                 <span class="dashicons dashicons-upload"></span>
-                                                <?php _e('Upload Update', 'dgptm-suite'); ?>
+                                                <?php _e('Update hochladen', 'dgptm-suite'); ?>
                                             </button>
                                             <button type="button" class="button dgptm-cancel-checkout" data-checkout-id="<?php echo esc_attr(array_search($module_id, $checked_out_modules)); ?>" data-module-id="<?php echo esc_attr($module_id); ?>">
                                                 <span class="dashicons dashicons-no"></span>
-                                                <?php _e('Cancel Checkout', 'dgptm-suite'); ?>
+                                                <?php _e('Checkout abbrechen', 'dgptm-suite'); ?>
                                             </button>
                                         <?php else: ?>
                                             <button type="button" class="button dgptm-checkout-module" data-module-id="<?php echo esc_attr($module_id); ?>">
                                                 <span class="dashicons dashicons-download"></span>
-                                                <?php _e('Checkout', 'dgptm-suite'); ?>
+                                                <?php _e('Auschecken', 'dgptm-suite'); ?>
                                             </button>
                                         <?php endif; ?>
 
@@ -448,7 +499,7 @@ foreach ($active_checkouts as $checkout_info) {
                                             <span class="dashicons dashicons-info"></span>
                                         </button>
 
-                                        <button type="button" class="button dgptm-delete-module" data-module-id="<?php echo esc_attr($module_id); ?>" data-category="<?php echo esc_attr($cat_id); ?>" <?php echo $is_active ? 'disabled' : ''; ?> title="<?php esc_attr_e('Delete Module', 'dgptm-suite'); ?>">
+                                        <button type="button" class="button dgptm-delete-module" data-module-id="<?php echo esc_attr($module_id); ?>" data-category="<?php echo esc_attr($cat_id); ?>" <?php echo $is_active ? 'disabled' : ''; ?> title="<?php esc_attr_e('Modul loeschen', 'dgptm-suite'); ?>">
                                             <span class="dashicons dashicons-trash"></span>
                                         </button>
 
@@ -503,9 +554,9 @@ foreach ($active_checkouts as $checkout_info) {
 <div id="dgptm-checkin-modal" style="display: none;">
     <div class="dgptm-modal-overlay"></div>
     <div class="dgptm-modal-content-large">
-        <h2><?php _e('Upload Updated Module', 'dgptm-suite'); ?></h2>
+        <h2><?php _e('Aktualisiertes Modul hochladen', 'dgptm-suite'); ?></h2>
         <p class="description">
-            <?php _e('Upload the updated ZIP file for this module. The system will automatically test it before installation and rollback if any errors occur.', 'dgptm-suite'); ?>
+            <?php _e('Laden Sie die aktualisierte ZIP-Datei fuer dieses Modul hoch. Das System testet automatisch vor der Installation und macht bei Fehlern ein Rollback.', 'dgptm-suite'); ?>
         </p>
 
         <form id="dgptm-checkin-form" enctype="multipart/form-data">
@@ -513,34 +564,34 @@ foreach ($active_checkouts as $checkout_info) {
 
             <table class="form-table">
                 <tr>
-                    <th><?php _e('Module ID', 'dgptm-suite'); ?></th>
+                    <th><?php _e('Modul-ID', 'dgptm-suite'); ?></th>
                     <td><code id="dgptm-checkin-module-id"></code></td>
                 </tr>
                 <tr>
-                    <th><?php _e('Checkout ID', 'dgptm-suite'); ?></th>
+                    <th><?php _e('Checkout-ID', 'dgptm-suite'); ?></th>
                     <td><code id="dgptm-checkin-checkout-id-display"></code></td>
                 </tr>
                 <tr>
-                    <th><label for="dgptm-module-zip-file"><?php _e('Updated Module ZIP', 'dgptm-suite'); ?></label></th>
+                    <th><label for="dgptm-module-zip-file"><?php _e('Aktualisiertes Modul-ZIP', 'dgptm-suite'); ?></label></th>
                     <td>
                         <input type="file" id="dgptm-module-zip-file" name="module_zip" accept=".zip" required>
-                        <p class="description"><?php _e('Select the updated module ZIP file', 'dgptm-suite'); ?></p>
+                        <p class="description"><?php _e('Waehlen Sie die aktualisierte Modul-ZIP-Datei', 'dgptm-suite'); ?></p>
                     </td>
                 </tr>
             </table>
 
             <p class="submit">
                 <button type="submit" class="button button-primary">
-                    <?php _e('Upload and Test', 'dgptm-suite'); ?>
+                    <?php _e('Hochladen und testen', 'dgptm-suite'); ?>
                 </button>
                 <button type="button" class="button dgptm-modal-close-checkin">
-                    <?php _e('Cancel', 'dgptm-suite'); ?>
+                    <?php _e('Abbrechen', 'dgptm-suite'); ?>
                 </button>
             </p>
         </form>
 
         <div id="dgptm-checkin-progress" style="display: none;">
-            <p><strong><?php _e('Processing update...', 'dgptm-suite'); ?></strong></p>
+            <p><strong><?php _e('Update wird verarbeitet...', 'dgptm-suite'); ?></strong></p>
             <div class="dgptm-progress-bar">
                 <div class="dgptm-progress-fill"></div>
             </div>
@@ -549,7 +600,7 @@ foreach ($active_checkouts as $checkout_info) {
 
         <div id="dgptm-checkin-result" style="display: none;">
             <div class="dgptm-result-message"></div>
-            <button class="button dgptm-modal-close-checkin"><?php _e('Close', 'dgptm-suite'); ?></button>
+            <button class="button dgptm-modal-close-checkin"><?php _e('Schliessen', 'dgptm-suite'); ?></button>
         </div>
     </div>
 </div>
@@ -628,11 +679,11 @@ jQuery(document).ready(function($) {
         const moduleId = $(this).data('module-id');
         const $button = $(this);
 
-        if (!confirm('<?php _e('Export this module for editing? A backup will be created automatically.', 'dgptm-suite'); ?>')) {
+        if (!confirm('<?php _e('Dieses Modul zur Bearbeitung exportieren? Ein Backup wird automatisch erstellt.', 'dgptm-suite'); ?>')) {
             return;
         }
 
-        $button.prop('disabled', true).text('<?php _e('Exporting...', 'dgptm-suite'); ?>');
+        $button.prop('disabled', true).text('<?php _e('Exportiere...', 'dgptm-suite'); ?>');
 
         $.ajax({
             url: dgptmSuite.ajaxUrl,
@@ -646,7 +697,7 @@ jQuery(document).ready(function($) {
                 console.log('DGPTM Checkout Response:', response);
 
                 if (response.success) {
-                    alert('<?php _e('Module checked out successfully! Download will start now.', 'dgptm-suite'); ?>');
+                    alert('<?php _e('Modul erfolgreich ausgecheckt! Download startet jetzt.', 'dgptm-suite'); ?>');
 
                     // Trigger download
                     if (response.data.download_url) {
@@ -659,8 +710,8 @@ jQuery(document).ready(function($) {
                     }, 1000);
                 } else {
                     console.error('DGPTM Checkout Error:', response);
-                    alert('<?php _e('Error:', 'dgptm-suite'); ?> ' + (response.data && response.data.message ? response.data.message : '<?php _e('Unknown error', 'dgptm-suite'); ?>'));
-                    $button.prop('disabled', false).html('<span class="dashicons dashicons-download"></span> <?php _e('Checkout', 'dgptm-suite'); ?>');
+                    alert('<?php _e('Fehler:', 'dgptm-suite'); ?> ' + (response.data && response.data.message ? response.data.message : '<?php _e('Unbekannter Fehler', 'dgptm-suite'); ?>'));
+                    $button.prop('disabled', false).html('<span class="dashicons dashicons-download"></span> <?php _e('Auschecken', 'dgptm-suite'); ?>');
                 }
             },
             error: function(jqXHR, textStatus, errorThrown) {
@@ -672,14 +723,14 @@ jQuery(document).ready(function($) {
                     responseText: jqXHR.responseText
                 });
 
-                let errorMsg = '<?php _e('AJAX error occurred', 'dgptm-suite'); ?>\n\n';
+                let errorMsg = '<?php _e('AJAX-Fehler aufgetreten', 'dgptm-suite'); ?>\n\n';
 
                 if (jqXHR.status === 0) {
-                    errorMsg += '<?php _e('Network error: No response from server.', 'dgptm-suite'); ?>';
+                    errorMsg += '<?php _e('Netzwerkfehler: Keine Antwort vom Server.', 'dgptm-suite'); ?>';
                 } else if (jqXHR.status === 500) {
-                    errorMsg += '<?php _e('Server error (500). Check server error logs.', 'dgptm-suite'); ?>';
+                    errorMsg += '<?php _e('Serverfehler (500). Bitte Server-Fehlerprotokolle pruefen.', 'dgptm-suite'); ?>';
                 } else if (jqXHR.status === 403) {
-                    errorMsg += '<?php _e('Permission denied (403).', 'dgptm-suite'); ?>';
+                    errorMsg += '<?php _e('Zugriff verweigert (403).', 'dgptm-suite'); ?>';
                 } else {
                     errorMsg += 'HTTP ' + jqXHR.status + ': ' + errorThrown;
                 }
@@ -697,7 +748,7 @@ jQuery(document).ready(function($) {
                 }
 
                 alert(errorMsg);
-                $button.prop('disabled', false).html('<span class="dashicons dashicons-download"></span> <?php _e('Checkout', 'dgptm-suite'); ?>');
+                $button.prop('disabled', false).html('<span class="dashicons dashicons-download"></span> <?php _e('Auschecken', 'dgptm-suite'); ?>');
             }
         });
     });
@@ -740,7 +791,7 @@ jQuery(document).ready(function($) {
         $('#dgptm-checkin-form').hide();
         $('#dgptm-checkin-progress').show();
         $('.dgptm-progress-fill').css('width', '10%');
-        $('.dgptm-progress-status').text('<?php _e('Uploading module...', 'dgptm-suite'); ?>');
+        $('.dgptm-progress-status').text('<?php _e('Modul wird hochgeladen...', 'dgptm-suite'); ?>');
 
         $.ajax({
             url: dgptmSuite.ajaxUrl,
@@ -762,7 +813,7 @@ jQuery(document).ready(function($) {
                 console.log('DGPTM Checkin Response:', response);
 
                 $('.dgptm-progress-fill').css('width', '60%');
-                $('.dgptm-progress-status').text('<?php _e('Testing module...', 'dgptm-suite'); ?>');
+                $('.dgptm-progress-status').text('<?php _e('Modul wird getestet...', 'dgptm-suite'); ?>');
 
                 setTimeout(function() {
                     $('.dgptm-progress-fill').css('width', '100%');
@@ -772,10 +823,10 @@ jQuery(document).ready(function($) {
                     if (response.success) {
                         $('.dgptm-result-message')
                             .addClass('success')
-                            .html('<strong><?php _e('Success!', 'dgptm-suite'); ?></strong><br>' +
-                                  '<?php _e('Module updated successfully:', 'dgptm-suite'); ?><br>' +
-                                  '<?php _e('Old Version:', 'dgptm-suite'); ?> ' + response.data.old_version + '<br>' +
-                                  '<?php _e('New Version:', 'dgptm-suite'); ?> ' + response.data.new_version);
+                            .html('<strong><?php _e('Erfolgreich!', 'dgptm-suite'); ?></strong><br>' +
+                                  '<?php _e('Modul erfolgreich aktualisiert:', 'dgptm-suite'); ?><br>' +
+                                  '<?php _e('Alte Version:', 'dgptm-suite'); ?> ' + response.data.old_version + '<br>' +
+                                  '<?php _e('Neue Version:', 'dgptm-suite'); ?> ' + response.data.new_version);
 
                         setTimeout(function() {
                             location.reload();
@@ -784,9 +835,9 @@ jQuery(document).ready(function($) {
                         console.error('DGPTM Checkin Error:', response);
                         $('.dgptm-result-message')
                             .addClass('error')
-                            .html('<strong><?php _e('Error!', 'dgptm-suite'); ?></strong><br>' +
-                                  (response.data && response.data.message ? response.data.message : '<?php _e('Unknown error', 'dgptm-suite'); ?>') + '<br>' +
-                                  '<small><?php _e('The original module has been preserved.', 'dgptm-suite'); ?></small>');
+                            .html('<strong><?php _e('Fehler!', 'dgptm-suite'); ?></strong><br>' +
+                                  (response.data && response.data.message ? response.data.message : '<?php _e('Unbekannter Fehler', 'dgptm-suite'); ?>') + '<br>' +
+                                  '<small><?php _e('Das urspruengliche Modul wurde beibehalten.', 'dgptm-suite'); ?></small>');
                     }
                 }, 1000);
             },
@@ -802,17 +853,17 @@ jQuery(document).ready(function($) {
                 $('#dgptm-checkin-progress').hide();
                 $('#dgptm-checkin-result').show();
 
-                let errorMsg = '<?php _e('AJAX error occurred', 'dgptm-suite'); ?>';
+                let errorMsg = '<?php _e('AJAX-Fehler aufgetreten', 'dgptm-suite'); ?>';
 
                 // Detaillierte Fehlermeldung
                 if (jqXHR.status === 0) {
-                    errorMsg += '<br><small><?php _e('Network error: No response from server. Check if the file is too large or the server connection timed out.', 'dgptm-suite'); ?></small>';
+                    errorMsg += '<br><small><?php _e('Netzwerkfehler: Keine Antwort vom Server. Pruefen Sie, ob die Datei zu gross ist oder die Serververbindung abgelaufen ist.', 'dgptm-suite'); ?></small>';
                 } else if (jqXHR.status === 413) {
-                    errorMsg += '<br><small><?php _e('File too large: The uploaded file exceeds the server limit. Check PHP upload_max_filesize and post_max_size settings.', 'dgptm-suite'); ?></small>';
+                    errorMsg += '<br><small><?php _e('Datei zu gross: Die hochgeladene Datei ueberschreitet das Serverlimit. Pruefen Sie die PHP-Einstellungen upload_max_filesize und post_max_size.', 'dgptm-suite'); ?></small>';
                 } else if (jqXHR.status === 500) {
-                    errorMsg += '<br><small><?php _e('Server error: Check server error logs for details.', 'dgptm-suite'); ?></small>';
+                    errorMsg += '<br><small><?php _e('Serverfehler: Pruefen Sie die Server-Fehlerprotokolle fuer Details.', 'dgptm-suite'); ?></small>';
                 } else if (jqXHR.status === 403) {
-                    errorMsg += '<br><small><?php _e('Permission denied: Check file permissions and nonce validation.', 'dgptm-suite'); ?></small>';
+                    errorMsg += '<br><small><?php _e('Zugriff verweigert: Pruefen Sie Dateiberechtigungen und Nonce-Validierung.', 'dgptm-suite'); ?></small>';
                 } else {
                     errorMsg += '<br><small>HTTP ' + jqXHR.status + ': ' + errorThrown + '</small>';
                 }
@@ -828,7 +879,7 @@ jQuery(document).ready(function($) {
                         // Zeige ersten Teil der Antwort
                         if (jqXHR.responseText.length > 0) {
                             const preview = jqXHR.responseText.substring(0, 200);
-                            errorMsg += '<br><br><details><summary><?php _e('Server Response Preview', 'dgptm-suite'); ?></summary><pre style="max-height:200px;overflow:auto;font-size:11px;">' + preview + (jqXHR.responseText.length > 200 ? '...' : '') + '</pre></details>';
+                            errorMsg += '<br><br><details><summary><?php _e('Server-Antwort Vorschau', 'dgptm-suite'); ?></summary><pre style="max-height:200px;overflow:auto;font-size:11px;">' + preview + (jqXHR.responseText.length > 200 ? '...' : '') + '</pre></details>';
                         }
                     }
                 }
@@ -856,15 +907,15 @@ jQuery(document).ready(function($) {
         const actualCheckoutId = checkoutMapping[moduleId];
 
         if (!actualCheckoutId) {
-            alert('<?php _e('Checkout ID not found', 'dgptm-suite'); ?>');
+            alert('<?php _e('Checkout-ID nicht gefunden', 'dgptm-suite'); ?>');
             return;
         }
 
-        if (!confirm('<?php _e('Möchten Sie diesen Checkout wirklich abbrechen? Das Modul wird nicht verändert.', 'dgptm-suite'); ?>')) {
+        if (!confirm('<?php _e('Moechten Sie diesen Checkout wirklich abbrechen? Das Modul wird nicht veraendert.', 'dgptm-suite'); ?>')) {
             return;
         }
 
-        $button.prop('disabled', true).text('<?php _e('Cancelling...', 'dgptm-suite'); ?>');
+        $button.prop('disabled', true).text('<?php _e('Abbrechen...', 'dgptm-suite'); ?>');
 
         $.ajax({
             url: dgptmSuite.ajaxUrl,
@@ -879,14 +930,14 @@ jQuery(document).ready(function($) {
                     alert('<?php _e('Checkout erfolgreich abgebrochen!', 'dgptm-suite'); ?>');
                     location.reload();
                 } else {
-                    alert('<?php _e('Fehler:', 'dgptm-suite'); ?> ' + (response.data.message || 'Unknown error'));
-                    $button.prop('disabled', false).html('<span class="dashicons dashicons-no"></span> <?php _e('Cancel Checkout', 'dgptm-suite'); ?>');
+                    alert('<?php _e('Fehler:', 'dgptm-suite'); ?> ' + (response.data.message || '<?php _e('Unbekannter Fehler', 'dgptm-suite'); ?>'));
+                    $button.prop('disabled', false).html('<span class="dashicons dashicons-no"></span> <?php _e('Checkout abbrechen', 'dgptm-suite'); ?>');
                 }
             },
             error: function(xhr, status, error) {
                 console.error('AJAX Error:', xhr.responseText);
                 alert('<?php _e('AJAX-Fehler aufgetreten:', 'dgptm-suite'); ?> ' + error);
-                $button.prop('disabled', false).html('<span class="dashicons dashicons-no"></span> <?php _e('Cancel Checkout', 'dgptm-suite'); ?>');
+                $button.prop('disabled', false).html('<span class="dashicons dashicons-no"></span> <?php _e('Checkout abbrechen', 'dgptm-suite'); ?>');
             }
         });
     });
@@ -898,11 +949,11 @@ jQuery(document).ready(function($) {
         const $button = $(this);
         const $row = $button.closest('tr');
 
-        if (!confirm('<?php _e('Are you sure you want to delete this module? This action cannot be undone!', 'dgptm-suite'); ?>')) {
+        if (!confirm('<?php _e('Moechten Sie dieses Modul wirklich loeschen? Diese Aktion kann nicht rueckgaengig gemacht werden!', 'dgptm-suite'); ?>')) {
             return;
         }
 
-        $button.prop('disabled', true).text('<?php _e('Deleting...', 'dgptm-suite'); ?>');
+        $button.prop('disabled', true).text('<?php _e('Loesche...', 'dgptm-suite'); ?>');
 
         $.ajax({
             url: dgptmSuite.ajaxUrl,
@@ -915,18 +966,18 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success) {
-                    alert('<?php _e('Module deleted successfully!', 'dgptm-suite'); ?>');
+                    alert('<?php _e('Modul erfolgreich geloescht!', 'dgptm-suite'); ?>');
                     $row.fadeOut(300, function() {
                         $(this).remove();
                         location.reload();
                     });
                 } else {
-                    alert('<?php _e('Error:', 'dgptm-suite'); ?> ' + response.data.message);
+                    alert('<?php _e('Fehler:', 'dgptm-suite'); ?> ' + response.data.message);
                     $button.prop('disabled', false).html('<span class="dashicons dashicons-trash"></span>');
                 }
             },
             error: function() {
-                alert('<?php _e('AJAX error occurred', 'dgptm-suite'); ?>');
+                alert('<?php _e('AJAX-Fehler aufgetreten', 'dgptm-suite'); ?>');
                 $button.prop('disabled', false).html('<span class="dashicons dashicons-trash"></span>');
             }
         });

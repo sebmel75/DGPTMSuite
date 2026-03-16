@@ -132,7 +132,9 @@ class Wissens_Bot_PubMed_Connector {
                 }
             }
         } catch (Exception $e) {
-            error_log('PubMed XML Parse Error: ' . $e->getMessage());
+            if (function_exists('dgptm_log_error')) {
+                dgptm_log_error('PubMed XML Parse Error: ' . $e->getMessage(), 'wissens-bot');
+            }
         }
         
         return $articles;

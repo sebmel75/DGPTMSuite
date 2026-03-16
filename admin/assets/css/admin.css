@@ -249,6 +249,121 @@ details ul li {
     color: #646970;
 }
 
+/* Alle auf-/zuklappen Buttons */
+.dgptm-collapse-controls {
+    display: flex;
+    gap: 8px;
+    margin: 15px 0;
+}
+
+.dgptm-collapse-controls .button .dashicons {
+    vertical-align: middle;
+    margin-right: 2px;
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+}
+
+/* Toggle-Switch (iOS-Style) */
+.dgptm-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    vertical-align: middle;
+}
+
+.dgptm-toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+.dgptm-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.3s;
+    border-radius: 24px;
+}
+
+.dgptm-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.dgptm-toggle-switch input:checked + .dgptm-toggle-slider {
+    background-color: #00a32a;
+}
+
+.dgptm-toggle-switch input:checked + .dgptm-toggle-slider:before {
+    transform: translateX(20px);
+}
+
+.dgptm-toggle-switch input:disabled + .dgptm-toggle-slider {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.dgptm-toggle-switch.dgptm-loading .dgptm-toggle-slider {
+    opacity: 0.5;
+}
+
+.dgptm-toggle-label {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 12px;
+    color: #646970;
+    vertical-align: middle;
+    min-width: 70px;
+}
+
+/* Letzte Aenderung */
+.dgptm-last-modified {
+    display: block;
+    font-size: 11px;
+    color: #9ca2a7;
+    margin-top: 3px;
+}
+
+/* Inline-Fehlerbox */
+.dgptm-error-inline {
+    background: #fef2f2;
+    border: 1px solid #d63638;
+    border-left: 4px solid #d63638;
+    border-radius: 3px;
+    padding: 8px 10px;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #8b1a1c;
+    line-height: 1.4;
+}
+
+.dgptm-error-inline strong {
+    color: #d63638;
+}
+
+.dgptm-error-inline .dgptm-error-time {
+    color: #9ca2a7;
+    font-size: 11px;
+    display: block;
+    margin-top: 3px;
+}
+
 /* Responsive */
 @media (max-width: 782px) {
     .dgptm-stats {
@@ -262,6 +377,71 @@ details ul li {
     .dgptm-search-box input[type="text"],
     .dgptm-search-box select {
         width: 100%;
+    }
+}
+
+/* Mobile Responsive - verbessert */
+@media (max-width: 768px) {
+    /* Beschreibung und Abhaengigkeiten ausblenden */
+    .dgptm-modules-table th:nth-child(3),
+    .dgptm-modules-table td:nth-child(3),
+    .dgptm-modules-table th:nth-child(5),
+    .dgptm-modules-table td:nth-child(5) {
+        display: none;
+    }
+
+    /* Aktionen vertikal stapeln */
+    .dgptm-modules-table td:last-child {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        align-items: flex-start;
+    }
+
+    .dgptm-modules-table td:last-child .button,
+    .dgptm-modules-table td:last-child .dgptm-toggle-switch-wrapper {
+        width: 100%;
+    }
+
+    .dgptm-modules-table td:last-child .button {
+        text-align: center;
+        box-sizing: border-box;
+    }
+
+    /* Padding/Margins reduzieren */
+    .dgptm-category-title {
+        padding: 8px 10px;
+        font-size: 13px;
+    }
+
+    .dgptm-stat-box {
+        padding: 12px 10px;
+    }
+
+    .dgptm-stat-number {
+        font-size: 28px;
+    }
+
+    .dgptm-stat-label {
+        font-size: 11px;
+    }
+
+    .dgptm-search-box {
+        padding: 10px;
+    }
+
+    .dgptm-maintenance-tools {
+        padding: 10px !important;
+    }
+
+    .dgptm-collapse-controls {
+        flex-wrap: wrap;
+    }
+
+    /* Test-Link auf Mobile anpassen */
+    .dgptm-test-link {
+        display: block;
+        margin: 4px 0 0 0 !important;
     }
 }
 

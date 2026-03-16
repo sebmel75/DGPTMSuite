@@ -27,6 +27,7 @@ define('DGPTM_SUITE_BASENAME', plugin_basename(__FILE__));
 // Core-Klassen laden
 require_once DGPTM_SUITE_PATH . 'core/class-logger-installer.php';
 require_once DGPTM_SUITE_PATH . 'core/class-logger.php';
+require_once DGPTM_SUITE_PATH . 'core/class-asset-registry.php';
 require_once DGPTM_SUITE_PATH . 'core/class-dgptm-colors.php';
 require_once DGPTM_SUITE_PATH . 'core/class-module-base.php';
 require_once DGPTM_SUITE_PATH . 'core/class-dependency-manager.php';

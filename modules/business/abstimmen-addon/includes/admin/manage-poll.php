@@ -11,6 +11,9 @@ if (!defined('ABSPATH')) exit;
  */
 if (!function_exists('dgptm_manage_poll')) {
     function dgptm_manage_poll() {
+        wp_enqueue_style( 'dgptm-abstimmen-frontend' );
+        wp_enqueue_script( 'dgptm-abstimmen-frontend' );
+
         if (!function_exists('dgptm_is_manager') || !dgptm_is_manager()) {
             return '<p>Keine Berechtigung.</p>';
         }

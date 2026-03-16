@@ -81,8 +81,8 @@ class DGPTM_Safe_Loader {
             // WordPress-spezifische Fehler abfangen
             $this->setup_shutdown_handler($module_id);
 
-            // KRITISCH: Mit @ operator um ALLE Fehler zu unterdrücken, dann manuell prüfen
-            @require_once $file_path;
+            // Error-Handler fängt Fehler ab, daher kein @ nötig
+            require_once $file_path;
 
             // Prüfe ob kritische Fehler aufgetreten sind
             if (!empty($this->error_log[$module_id])) {
@@ -515,20 +515,19 @@ class DGPTM_Safe_Loader {
      * Kritischen Fehler loggen
      */
     private function log_critical_error($module_id, $error_info) {
-        $log_entry = sprintf(
-            "[%s] DGPTM Suite - Critical Error in module '%s': %s in %s:%s",
-            date('Y-m-d H:i:s'),
+        $message = sprintf(
+            "Critical Error in module '%s': %s in %s:%s",
             $module_id,
             $error_info['message'] ?? 'Unknown error',
             $error_info['file'] ?? 'Unknown file',
             $error_info['line'] ?? '?'
         );
 
-        error_log($log_entry);
-
-        // Zusätzlich in WordPress-Debug-Log
-        if (defined('WP_DEBUG') && WP_DEBUG && defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
-            error_log($log_entry);
+        if (function_exists('dgptm_log_critical')) {
+            dgptm_log_critical($message, 'safe-loader', $error_info);
+        } else {
+            // Fallback falls Logger noch nicht geladen
+            error_log('[DGPTM Safe Loader] ' . $message);
         }
     }
 

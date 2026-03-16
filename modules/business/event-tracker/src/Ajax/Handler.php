@@ -45,9 +45,19 @@ class Handler {
 
 	/**
 	 * Fetch Event List (AJAX)
+	 *
+	 * Transient-Caching: 5 Minuten TTL, invalidiert bei save_post für et_event.
 	 */
 	public function fetch_event_list() {
 		check_ajax_referer( 'et_panels', 'nonce' );
+
+		// Transient-Cache prüfen
+		$cache_key = 'dgptm_events_list';
+		$cached    = get_transient( $cache_key );
+
+		if ( false !== $cached ) {
+			wp_send_json_success( [ 'html' => $cached ] );
+		}
 
 		$query = new \WP_Query(
 			[
@@ -60,9 +70,11 @@ class Handler {
 		);
 
 		if ( ! $query->have_posts() ) {
+			$empty_html = '<p>' . esc_html__( 'Keine Veranstaltungen vorhanden.', 'event-tracker' ) . '</p>';
+			set_transient( $cache_key, $empty_html, 5 * MINUTE_IN_SECONDS );
 			wp_send_json_success(
 				[
-					'html' => '<p>' . esc_html__( 'Keine Veranstaltungen vorhanden.', 'event-tracker' ) . '</p>',
+					'html' => $empty_html,
 				]
 			);
 		}
@@ -70,6 +82,9 @@ class Handler {
 		ob_start();
 		$this->render_event_list( $query );
 		$html = ob_get_clean();
+
+		// Ergebnis cachen (5 Minuten TTL)
+		set_transient( $cache_key, $html, 5 * MINUTE_IN_SECONDS );
 
 		wp_send_json_success( [ 'html' => $html ] );
 	}

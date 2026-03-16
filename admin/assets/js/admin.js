@@ -10,14 +10,17 @@
             this.bindEvents();
             this.initSearch();
             this.initCategoryToggle();
+            this.restoreCategoryStates();
+            this.initCollapseControls();
             this.initTestVersions();
+            this.initToggleSwitches();
         },
 
         bindEvents: function() {
             // Quick Debug-Level
             $(document).on('change', '#dgptm-quick-debug-level', this.setGlobalDebugLevel);
 
-            // Toggle Module
+            // Toggle Module (legacy button fallback)
             $(document).on('click', '.dgptm-toggle-module', this.toggleModule);
 
             // Export Module
@@ -105,7 +108,135 @@
 
         initCategoryToggle: function() {
             $(document).on('click', '.dgptm-category-title', function() {
-                $(this).closest('.dgptm-category-section').toggleClass('collapsed');
+                const $section = $(this).closest('.dgptm-category-section');
+                $section.toggleClass('collapsed');
+
+                // Zustand in localStorage speichern
+                const categoryId = $section.data('category');
+                if (categoryId) {
+                    const key = 'dgptm_category_' + categoryId + '_collapsed';
+                    if ($section.hasClass('collapsed')) {
+                        localStorage.setItem(key, '1');
+                    } else {
+                        localStorage.removeItem(key);
+                    }
+                }
+            });
+        },
+
+        restoreCategoryStates: function() {
+            $('.dgptm-category-section').each(function() {
+                const $section = $(this);
+                const categoryId = $section.data('category');
+                if (categoryId) {
+                    const key = 'dgptm_category_' + categoryId + '_collapsed';
+                    if (localStorage.getItem(key) === '1') {
+                        $section.addClass('collapsed');
+                    }
+                }
+            });
+        },
+
+        initCollapseControls: function() {
+            $(document).on('click', '#dgptm-expand-all', function(e) {
+                e.preventDefault();
+                $('.dgptm-category-section').each(function() {
+                    const $section = $(this);
+                    $section.removeClass('collapsed');
+                    const categoryId = $section.data('category');
+                    if (categoryId) {
+                        localStorage.removeItem('dgptm_category_' + categoryId + '_collapsed');
+                    }
+                });
+            });
+
+            $(document).on('click', '#dgptm-collapse-all', function(e) {
+                e.preventDefault();
+                $('.dgptm-category-section').each(function() {
+                    const $section = $(this);
+                    $section.addClass('collapsed');
+                    const categoryId = $section.data('category');
+                    if (categoryId) {
+                        localStorage.setItem('dgptm_category_' + categoryId + '_collapsed', '1');
+                    }
+                });
+            });
+        },
+
+        /* =================================================================
+           Toggle-Switch Handling
+           ================================================================= */
+
+        initToggleSwitches: function() {
+            $(document).on('change', '.dgptm-toggle-checkbox', function(e) {
+                e.stopPropagation();
+
+                const $checkbox = $(this);
+                const $wrapper = $checkbox.closest('.dgptm-toggle-switch');
+                const moduleId = $checkbox.data('module-id');
+                const action = $checkbox.is(':checked');
+                const $label = $wrapper.siblings('.dgptm-toggle-label');
+
+                // Bei Deaktivierung Bestaetigung fragen
+                if (!action && !confirm(dgptmSuite.strings.confirm_deactivate)) {
+                    // Zuruecksetzen
+                    $checkbox.prop('checked', true);
+                    return;
+                }
+
+                $wrapper.addClass('dgptm-loading');
+                $checkbox.prop('disabled', true);
+
+                console.log('DGPTM: Toggle module (switch)', moduleId, 'activate:', action);
+
+                $.ajax({
+                    url: dgptmSuite.ajaxUrl,
+                    type: 'POST',
+                    data: {
+                        action: 'dgptm_toggle_module',
+                        nonce: dgptmSuite.nonce,
+                        module_id: moduleId,
+                        activate: action
+                    },
+                    success: function(response) {
+                        console.log('DGPTM: AJAX Response:', response);
+
+                        if (response.success) {
+                            console.log('DGPTM: Module toggle erfolgreich!', response.data);
+
+                            // Status-Badge aktualisieren
+                            const $row = $checkbox.closest('tr');
+                            if (action) {
+                                $row.data('status', 'active');
+                                $label.text(dgptmSuite.strings.active_label || 'Aktiv');
+                            } else {
+                                $row.data('status', 'inactive');
+                                $label.text(dgptmSuite.strings.inactive_label || 'Inaktiv');
+                            }
+
+                            // Seite neu laden fuer vollstaendige Aktualisierung
+                            console.log('DGPTM: Lade Seite neu in 500ms...');
+                            setTimeout(function() {
+                                location.reload();
+                            }, 500);
+                        } else {
+                            console.error('DGPTM: Fehler beim Toggle:', response.data);
+                            alert(response.data.message || 'Fehler');
+                            // Zuruecksetzen
+                            $checkbox.prop('checked', !action);
+                        }
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.error('DGPTM: AJAX error', textStatus, errorThrown);
+                        alert('AJAX-Fehler: ' + textStatus);
+                        // Zuruecksetzen
+                        $checkbox.prop('checked', !action);
+                    },
+                    complete: function() {
+                        $wrapper.removeClass('dgptm-loading');
+                        $checkbox.prop('disabled', false);
+                    }
+                });
             });
         },
 
@@ -117,7 +248,7 @@
             const isActive = $button.data('active') === 1;
             const action = !isActive;
 
-            // Nur bei Deaktivierung Bestätigung fragen
+            // Nur bei Deaktivierung Bestaetigung fragen
             if (isActive && !confirm(dgptmSuite.strings.confirm_deactivate)) {
                 return;
             }
@@ -151,27 +282,27 @@
                         const $statusBadge = $statusCell.find('.dgptm-status-badge').first();
 
                         if (action) {
-                            $statusBadge.removeClass('dgptm-status-inactive').addClass('dgptm-status-active').text('Active');
+                            $statusBadge.removeClass('dgptm-status-inactive').addClass('dgptm-status-active').text('Aktiv');
                             $row.data('status', 'active');
                         } else {
-                            $statusBadge.removeClass('dgptm-status-active').addClass('dgptm-status-inactive').text('Inactive');
+                            $statusBadge.removeClass('dgptm-status-active').addClass('dgptm-status-inactive').text('Inaktiv');
                             $row.data('status', 'inactive');
                         }
 
-                        // Seite neu laden für vollständige Aktualisierung
+                        // Seite neu laden fuer vollstaendige Aktualisierung
                         console.log('DGPTM: Lade Seite neu in 500ms...');
                         setTimeout(function() {
                             location.reload();
                         }, 500);
                     } else {
                         console.error('DGPTM: Fehler beim Toggle:', response.data);
-                        alert(response.data.message || 'Error');
+                        alert(response.data.message || 'Fehler');
                     }
                 },
                 error: function(jqXHR, textStatus, errorThrown) {
                     console.error('DGPTM: AJAX error', textStatus, errorThrown);
                     console.error('DGPTM: Response:', jqXHR.responseText);
-                    alert('AJAX error: ' + textStatus);
+                    alert('AJAX-Fehler: ' + textStatus);
                 },
                 complete: function() {
                     $button.removeClass('dgptm-loading').prop('disabled', false);
@@ -203,13 +334,13 @@
                     if (response.success) {
                         // Download starten
                         window.location.href = response.data.download_url;
-                        alert('Export successful! Download started.');
+                        alert('Export erfolgreich! Download gestartet.');
                     } else {
-                        alert(response.data.message || 'Export failed');
+                        alert(response.data.message || 'Export fehlgeschlagen');
                     }
                 },
                 error: function() {
-                    alert('AJAX error');
+                    alert('AJAX-Fehler');
                 },
                 complete: function() {
                     $button.removeClass('dgptm-loading').prop('disabled', false);
@@ -237,11 +368,11 @@
                     if (response.success) {
                         dgptmSuiteAdmin.displayModuleInfo(response.data);
                     } else {
-                        alert(response.data.message || 'Error');
+                        alert(response.data.message || 'Fehler');
                     }
                 },
                 error: function() {
-                    alert('AJAX error');
+                    alert('AJAX-Fehler');
                 },
                 complete: function() {
                     $button.removeClass('dgptm-loading').prop('disabled', false);
@@ -255,8 +386,8 @@
             const $button = $(this);
             const moduleId = $button.data('module-id');
 
-            // Bestätigung vom Benutzer einholen
-            if (!confirm('Modul "' + moduleId + '" neu initialisieren?\n\nDies führt folgende Aktionen aus:\n- Aktivierungs-Hooks werden ausgeführt\n- Permalinks werden aktualisiert\n- Custom Post Types und Taxonomien werden neu registriert\n\nFortfahren?')) {
+            // Bestaetigung vom Benutzer einholen
+            if (!confirm('Modul "' + moduleId + '" neu initialisieren?\n\nDies fuehrt folgende Aktionen aus:\n- Aktivierungs-Hooks werden ausgefuehrt\n- Permalinks werden aktualisiert\n- Custom Post Types und Taxonomien werden neu registriert\n\nFortfahren?')) {
                 return;
             }
 
@@ -279,7 +410,7 @@
                     if (response.success) {
                         // Erfolgsmeldung anzeigen
                         const message = response.data.message || 'Modul wurde erfolgreich neu initialisiert!';
-                        alert('✅ ' + message + '\n\n' +
+                        alert(message + '\n\n' +
                               'Details:\n' +
                               '- Aktivierungs-Hook: ' + (response.data.activation_hook_executed ? 'Ja' : 'Nein') + '\n' +
                               '- Permalinks aktualisiert: ' + (response.data.permalinks_flushed ? 'Ja' : 'Nein')
@@ -292,7 +423,7 @@
                         }, 500);
                     } else {
                         console.error('DGPTM: Fehler beim Reinit:', response.data);
-                        alert('❌ Fehler beim Neu-Initialisieren:\n\n' + (response.data.message || 'Unbekannter Fehler'));
+                        alert('Fehler beim Neu-Initialisieren:\n\n' + (response.data.message || 'Unbekannter Fehler'));
                         $button.removeClass('dgptm-loading').prop('disabled', false);
                         $button.find('.dashicons').removeClass('spin');
                     }
@@ -300,7 +431,7 @@
                 error: function(jqXHR, textStatus, errorThrown) {
                     console.error('DGPTM: AJAX error', textStatus, errorThrown);
                     console.error('DGPTM: Response:', jqXHR.responseText);
-                    alert('❌ AJAX-Fehler beim Neu-Initialisieren:\n\n' + textStatus);
+                    alert('AJAX-Fehler beim Neu-Initialisieren:\n\n' + textStatus);
                     $button.removeClass('dgptm-loading').prop('disabled', false);
                     $button.find('.dashicons').removeClass('spin');
                 }
@@ -316,11 +447,11 @@
             html += '<table class="widefat">';
             html += '<tr><th>ID:</th><td>' + config.id + '</td></tr>';
             html += '<tr><th>Version:</th><td>' + config.version + '</td></tr>';
-            html += '<tr><th>Author:</th><td>' + config.author + '</td></tr>';
-            html += '<tr><th>Category:</th><td>' + config.category + '</td></tr>';
+            html += '<tr><th>Autor:</th><td>' + config.author + '</td></tr>';
+            html += '<tr><th>Kategorie:</th><td>' + config.category + '</td></tr>';
 
             if (config.dependencies && config.dependencies.length > 0) {
-                html += '<tr><th>Dependencies:</th><td>' + config.dependencies.join(', ') + '</td></tr>';
+                html += '<tr><th>Abhaengigkeiten:</th><td>' + config.dependencies.join(', ') + '</td></tr>';
             }
 
             if (config.wp_dependencies && config.wp_dependencies.plugins && config.wp_dependencies.plugins.length > 0) {
@@ -348,7 +479,7 @@
             const $button = $(this);
             const $result = $('#dgptm-repair-result');
 
-            if (!confirm('Module-Flags reparieren?\n\nDies normalisiert alle Flag-Daten in den module.json Dateien und behebt Fehler aus älteren Versionen.')) {
+            if (!confirm('Module-Flags reparieren?\n\nDies normalisiert alle Flag-Daten in den module.json Dateien und behebt Fehler aus aelteren Versionen.')) {
                 return;
             }
 
@@ -401,11 +532,11 @@
             const $button = $(this);
             const moduleId = $button.data('module-id');
 
-            if (!confirm('Fehler-Eintrag für Modul "' + moduleId + '" löschen?\n\nDanach können Sie das Modul erneut aktivieren.')) {
+            if (!confirm('Fehler-Eintrag fuer Modul "' + moduleId + '" loeschen?\n\nDanach koennen Sie das Modul erneut aktivieren.')) {
                 return;
             }
 
-            $button.prop('disabled', true).text('Lösche...');
+            $button.prop('disabled', true).text('Loesche...');
 
             $.ajax({
                 url: dgptmSuite.ajaxUrl,
@@ -420,13 +551,13 @@
                         alert(response.data.message);
                         location.reload();
                     } else {
-                        alert(response.data.message || 'Fehler beim Löschen');
-                        $button.prop('disabled', false).html('<span class="dashicons dashicons-dismiss"></span> Fehler löschen');
+                        alert(response.data.message || 'Fehler beim Loeschen');
+                        $button.prop('disabled', false).html('<span class="dashicons dashicons-dismiss"></span> Fehler loeschen');
                     }
                 },
                 error: function() {
-                    alert('AJAX-Fehler beim Löschen des Fehler-Eintrags');
-                    $button.prop('disabled', false).html('<span class="dashicons dashicons-dismiss"></span> Fehler löschen');
+                    alert('AJAX-Fehler beim Loeschen des Fehler-Eintrags');
+                    $button.prop('disabled', false).html('<span class="dashicons dashicons-dismiss"></span> Fehler loeschen');
                 }
             });
         },
@@ -478,7 +609,7 @@
            ================================================================= */
 
         initTestVersions: function() {
-            // Event-Handler für Test-Versionen
+            // Event-Handler fuer Test-Versionen
             $(document).on('click', '.dgptm-create-test', this.createTestVersion);
             $(document).on('click', '.dgptm-merge-test', this.mergeTestVersion);
             $(document).on('click', '.dgptm-delete-test', this.deleteTestVersion);
@@ -489,7 +620,7 @@
             const $button = $(this);
             const moduleId = $button.data('module-id');
 
-            if (!confirm('Testversion für "' + moduleId + '" erstellen?\n\nEs wird eine vollständige Kopie des Moduls erstellt und automatisch verknüpft.')) {
+            if (!confirm('Testversion fuer "' + moduleId + '" erstellen?\n\nEs wird eine vollstaendige Kopie des Moduls erstellt und automatisch verknuepft.')) {
                 return;
             }
 
@@ -528,7 +659,7 @@
             const testId = $button.data('test-id');
             const mainId = $button.data('main-id');
 
-            if (!confirm('Testversion in Hauptversion mergen?\n\n⚠️ WARNUNG:\n- Die Hauptversion "' + mainId + '" wird überschrieben\n- Die Testversion "' + testId + '" wird gelöscht\n- Ein Backup der Hauptversion wird erstellt\n\nFortfahren?')) {
+            if (!confirm('Testversion in Hauptversion mergen?\n\nWARNUNG:\n- Die Hauptversion "' + mainId + '" wird ueberschrieben\n- Die Testversion "' + testId + '" wird geloescht\n- Ein Backup der Hauptversion wird erstellt\n\nFortfahren?')) {
                 return;
             }
 
@@ -567,7 +698,7 @@
             const testId = $button.data('test-id');
             const mainId = $button.data('main-id');
 
-            if (!confirm('Testversion "' + testId + '" wirklich löschen?\n\nDie Hauptversion "' + mainId + '" bleibt unverändert.')) {
+            if (!confirm('Testversion "' + testId + '" wirklich loeschen?\n\nDie Hauptversion "' + mainId + '" bleibt unveraendert.')) {
                 return;
             }
 
@@ -594,7 +725,7 @@
                     }
                 },
                 error: function() {
-                    dgptmSuiteAdmin.showTestFeedback('error', 'AJAX-Fehler beim Löschen.');
+                    dgptmSuiteAdmin.showTestFeedback('error', 'AJAX-Fehler beim Loeschen.');
                     $button.prop('disabled', false).removeClass('dgptm-test-loading');
                 }
             });

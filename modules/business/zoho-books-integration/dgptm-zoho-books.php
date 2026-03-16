@@ -53,12 +53,12 @@ if (!class_exists('DGPTM_Zoho_Books')) {
          * Logging helper
          */
         private function log($message, $data = null) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                $log_message = 'Zoho Books Integration - ' . $message;
-                if ($data !== null) {
-                    $log_message .= ': ' . print_r($data, true);
-                }
-                error_log($log_message);
+            $log_message = $message;
+            if ($data !== null) {
+                $log_message .= ': ' . print_r($data, true);
+            }
+            if (function_exists('dgptm_log_verbose')) {
+                dgptm_log_verbose($log_message, 'zoho-books');
             }
         }
 

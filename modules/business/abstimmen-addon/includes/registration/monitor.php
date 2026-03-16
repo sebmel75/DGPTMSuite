@@ -9,6 +9,9 @@ if (!defined('ABSPATH')) exit;
  */
 if (!function_exists('dgptm_registration_monitor_fn')) {
     function dgptm_registration_monitor_fn() {
+        wp_enqueue_style( 'dgptm-abstimmen-frontend' );
+        wp_enqueue_script( 'dgptm-abstimmen-frontend' );
+
         $enabled   = (int) get_option('dgptm_registration_enabled', 0);
         $targetPid = (int) get_option('dgptm_registration_poll_id', 0);
 

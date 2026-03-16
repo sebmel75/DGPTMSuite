@@ -10,6 +10,10 @@ if (!defined('ABSPATH')) exit;
  */
 if (!function_exists('dgptm_beamer_view')) {
     function dgptm_beamer_view() {
+        wp_enqueue_style( 'dgptm-abstimmen-frontend' );
+        wp_enqueue_script( 'dgptm-abstimmen-frontend' );
+        wp_enqueue_script( 'chartjs' );
+
         if (!function_exists('dgptm_is_manager') || !dgptm_is_manager()) return '<p>Keine Berechtigung.</p>';
 
         $no_poll_text = get_option('dgptm_no_poll_text','Bitte warten …');

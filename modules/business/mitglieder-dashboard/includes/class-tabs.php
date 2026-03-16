@@ -9,6 +9,11 @@
  *   "acf:field_name"          - ACF True/False field on user profile
  *   "role:role1,role2"        - WordPress user roles (OR)
  *   "sc:shortcode_name"       - Shortcode that returns "1" = visible
+ *
+ * Hinweis: Webhook-URLs (z.B. Zoho Flow, Bescheinigungs-Trigger) sind im
+ * content_html der jeweiligen Tabs gespeichert und ueber das Admin-Dashboard
+ * unter "Mitglieder-Dashboard → Tabs verwalten" editierbar. Keine hartkodierten
+ * URLs im PHP-Code.
  */
 if (!defined('ABSPATH')) exit;
 

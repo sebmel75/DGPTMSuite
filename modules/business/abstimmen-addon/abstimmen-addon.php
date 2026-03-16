@@ -81,9 +81,11 @@ final class DGPTM_Abstimmen_Addon {
 		require_once DGPTM_ABSTIMMEN_PATH . 'includes/common/install.php';
 		require_once DGPTM_ABSTIMMEN_PATH . 'includes/common/enqueue.php';
 
-		// Admin functionality
+		// Manager-Shortcode [manage_poll] muss auch auf dem Frontend verfuegbar sein
+		require_once DGPTM_ABSTIMMEN_PATH . 'includes/admin/manage-poll.php';
+
+		// Admin AJAX-Handler (laufen ueber wp_ajax_, brauchen Admin-Kontext)
 		if ( is_admin() ) {
-			require_once DGPTM_ABSTIMMEN_PATH . 'includes/admin/manage-poll.php';
 			require_once DGPTM_ABSTIMMEN_PATH . 'includes/admin/admin-ajax.php';
 		}
 

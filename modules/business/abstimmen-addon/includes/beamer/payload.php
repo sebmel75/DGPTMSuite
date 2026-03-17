@@ -127,6 +127,11 @@ if (!function_exists('dgptm_get_beamer_payload_fn')) {
             }
 
             if ($aq && $aq->status === 'active') {
+                $aq_images = null;
+                if (!empty($aq->choice_images)) {
+                    $decoded = json_decode($aq->choice_images, true);
+                    if (is_array($decoded)) $aq_images = $decoded;
+                }
                 $payload['active_question'] = array(
                     'id'            => $aq->id,
                     'question'      => $aq->question,
@@ -135,6 +140,7 @@ if (!function_exists('dgptm_get_beamer_payload_fn')) {
                     'majority_type' => $aq->majority_type ?? 'simple',
                     'quorum'        => (int) ($aq->quorum ?? 0),
                     'choices'       => $aq->choices,
+                    'choice_images' => $aq_images,
                 );
                 $res = dgptm_build_results_payload($aq->id, true, (int) $poll->id);
                 $payload['active_results'] = $res;

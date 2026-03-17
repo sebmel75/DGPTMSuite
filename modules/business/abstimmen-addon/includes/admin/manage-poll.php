@@ -270,18 +270,16 @@ if (!function_exists('dgptm_manage_poll')) {
 
             function enc(s){try{return encodeURIComponent(s)}catch(e){return s}}
 
-            // QR zeichnen
+            // QR zeichnen — immer via qrserver.com API (zuverlaessig schwarz auf weiss)
             window.dgptmDrawQR=function(pid){
-              var el=document.getElementById('qrCanvas_'+pid);if(!el)return;
+              var container=document.getElementById('qrCanvas_'+pid);if(!container)return;
               var urlNode=document.getElementById('qrUrlText_'+pid);if(!urlNode)return;
               var url=urlNode.getAttribute('data-qr')||urlNode.textContent||'';
-              if(typeof QRCode!=='undefined'&&QRCode.toCanvas){
-                QRCode.toCanvas(el,url,{width:180,margin:1,errorCorrectionLevel:'M',color:{dark:'#000000',light:'#ffffff'}});
-              }else{
-                var img=new Image();img.alt='QR';img.width=180;img.height=180;
-                img.src='https://api.qrserver.com/v1/create-qr-code/?size=180x180&data='+enc(url);
-                el.replaceWith(img);
-              }
+              var imgSrc='https://api.qrserver.com/v1/create-qr-code/?size=360x360&color=000000&bgcolor=ffffff&data='+enc(url);
+              var img=new Image();img.alt='QR';img.id='qrCanvas_'+pid;
+              img.style.cssText='width:180px;height:180px;display:block;border-radius:4px;';
+              img.src=imgSrc;
+              container.replaceWith(img);
             };
             window.dgptmDownloadQR=function(pid){
               var c=document.getElementById('qrCanvas_'+pid);

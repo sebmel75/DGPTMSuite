@@ -47,7 +47,10 @@ if (!function_exists('dgptm_beamer_view')) {
           .b-idle-text{font-size:22px;color:#94a3b8;}
           /* Voting active */
           .b-vote-label{font-size:12px;text-transform:uppercase;letter-spacing:3px;color:#94a3b8;margin-bottom:10px;}
-          .b-vote-question{font-size:clamp(26px,4vw,42px);font-weight:700;line-height:1.25;margin-bottom:28px;color:#0f172a;}
+          .b-vote-question{font-size:clamp(26px,4vw,42px);font-weight:700;line-height:1.25;margin-bottom:20px;color:#0f172a;}
+          .b-vote-options{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:24px;}
+          .b-vote-opt{display:flex;align-items:center;gap:8px;padding:8px 16px;border:2px solid #e2e8f0;border-radius:12px;background:#fafbfd;font-size:clamp(14px,2vw,18px);font-weight:600;color:#334155;}
+          .b-vote-opt img{width:48px;height:48px;border-radius:8px;object-fit:cover;}
           .b-vote-progress{width:55%;margin:0 auto;}
           .b-vote-stats{display:flex;justify-content:space-between;font-size:13px;color:#94a3b8;margin-bottom:6px;}
           .b-progress-bar{height:10px;background:#f1f5f9;border-radius:5px;overflow:hidden;}
@@ -162,12 +165,13 @@ if (!function_exists('dgptm_beamer_view')) {
           }
           startClock();
 
-          // QR
+          // QR — uses <img> via qrserver.com API (reliable, always black on white)
           function showQR(pid){
             var el=document.getElementById('bQR');if(!el)return;
             if(!qrDone){
-              el.innerHTML='';var c=document.createElement('canvas');el.appendChild(c);
-              if(typeof QRCode!=='undefined'&&QRCode.toCanvas)QRCode.toCanvas(c,HOME+'?dgptm_member=1&poll_id='+pid,{width:150,margin:1,errorCorrectionLevel:'M',color:{dark:'#000000',light:'#ffffff'}});
+              var url=HOME+'?dgptm_member=1&poll_id='+pid;
+              var imgSrc='https://api.qrserver.com/v1/create-qr-code/?size=300x300&color=000000&bgcolor=ffffff&data='+encodeURIComponent(url);
+              el.innerHTML='<img src="'+imgSrc+'" alt="QR" style="width:150px;height:150px;display:block;">';
               qrDone=true;
             }
             el.style.display='block';
@@ -199,6 +203,19 @@ if (!function_exists('dgptm_beamer_view')) {
             }else localR=null;
             var h='<div class="b-vote-label">Abstimmung</div>';
             h+='<div class="b-vote-question">'+esc(q.question)+'</div>';
+            // Show choices with images if available
+            var choices=q.choices;if(typeof choices==='string'){try{choices=JSON.parse(choices)}catch(e){choices=[]}}
+            if(Array.isArray(choices)&&choices.length>0){
+              var images=q.choice_images;if(typeof images==='string'){try{images=JSON.parse(images)}catch(e){images=null}}
+              if(!Array.isArray(images))images=null;
+              h+='<div class="b-vote-options">';
+              for(var i=0;i<choices.length;i++){
+                h+='<div class="b-vote-opt" style="border-color:'+COLORS[i%COLORS.length]+'">';
+                if(images&&images[i])h+='<img src="'+esc(images[i])+'" alt="">';
+                h+=esc(choices[i])+'</div>';
+              }
+              h+='</div>';
+            }
             h+='<div class="b-vote-progress"><div class="b-vote-stats"><span>'+total+' von '+att+' Stimmen</span><span>'+pct+'%</span></div>';
             h+='<div class="b-progress-bar"><div class="b-progress-fill" style="width:'+pct+'%"></div></div></div>';
             document.getElementById('bContent').innerHTML=h;

@@ -187,5 +187,6 @@ if (!function_exists('dgptm_maybe_upgrade_db')) {
         }
 
         update_option('dgptm_db_version', '4.2.0');
+        update_option('dgptm_abstimmen_version', DGPTMVOTE_VERSION, false);
     }
 }

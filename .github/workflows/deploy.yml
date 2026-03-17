@@ -208,14 +208,37 @@ jobs:
                echo '✓ Deployment verified successfully' || \
                echo '✗ Deployment verification failed'"
 
-      - name: Clear WordPress Cache (optional)
+      - name: Clear WordPress & WP Rocket Cache
         env:
           SSHPASS: ${{ secrets.SSH_PASSWORD }}
         run: |
           sshpass -e ssh -o StrictHostKeyChecking=no \
-              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-              "cd ${{ secrets.WP_PATH }} && \
-               wp cache flush 2>/dev/null || echo 'WP-CLI not available, skipping cache flush'"
+              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} bash -c '
+                cd ${{ secrets.WP_PATH }} 2>/dev/null || exit 0
+
+                # WordPress Object Cache
+                wp cache flush 2>/dev/null && echo "✓ WP Object Cache cleared" || echo "⚠ WP-CLI not available"
+
+                # WP Rocket: clear all cached pages + minified CSS/JS
+                wp rocket clean --confirm 2>/dev/null && echo "✓ WP Rocket page cache cleared" || true
+
+                # WP Rocket: regenerate critical CSS
+                wp rocket regenerate --type=critical-css 2>/dev/null && echo "✓ WP Rocket critical CSS regenerated" || true
+
+                # Fallback: delete WP Rocket cache files directly
+                if [ -d "wp-content/cache/wp-rocket" ]; then
+                  rm -rf wp-content/cache/wp-rocket/*
+                  echo "✓ WP Rocket cache directory purged"
+                fi
+
+                # Delete minified CSS/JS cache
+                if [ -d "wp-content/cache/min" ]; then
+                  rm -rf wp-content/cache/min/*
+                  echo "✓ WP Rocket minified assets purged"
+                fi
+
+                echo "✓ Cache flush complete"
+              '
         continue-on-error: true
 
   # Job 3: Benachrichtigung

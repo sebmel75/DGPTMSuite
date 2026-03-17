@@ -1,7 +1,80 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-// ====== SETTINGS MODAL ======
+// ====== HELPER: Parse options from form (opt_text[] + opt_img[] or legacy comma-separated) ======
+if (!function_exists('dgptm_parse_options_from_post')) {
+    function dgptm_parse_options_from_post() {
+        $choices = array();
+        $images = array();
+
+        // New format: opt_text[] / opt_img[]
+        if (!empty($_POST['opt_text']) && is_array($_POST['opt_text'])) {
+            $texts = $_POST['opt_text'];
+            $imgs  = isset($_POST['opt_img']) && is_array($_POST['opt_img']) ? $_POST['opt_img'] : array();
+            foreach ($texts as $i => $t) {
+                $t = trim(sanitize_text_field($t));
+                if ($t === '') continue;
+                $choices[] = $t;
+                $img = isset($imgs[$i]) ? trim($imgs[$i]) : '';
+                $images[] = !empty($img) ? esc_url_raw($img) : '';
+            }
+        }
+        // Legacy fallback: question_choices (comma-separated)
+        elseif (!empty($_POST['question_choices'])) {
+            $choices = array_map('trim', explode(',', sanitize_text_field($_POST['question_choices'])));
+            $choices = array_filter($choices, function($c) { return $c !== ''; });
+            $choices = array_values($choices);
+            // Legacy choice_images
+            if (!empty($_POST['choice_images'])) {
+                $images = array_map('trim', explode(',', $_POST['choice_images']));
+                $images = array_map('esc_url_raw', $images);
+            }
+        }
+
+        // Build images JSON (null if all empty)
+        $has_images = false;
+        foreach ($images as $img) { if (!empty($img)) { $has_images = true; break; } }
+        $choice_images_json = $has_images ? wp_json_encode(array_values($images)) : null;
+
+        return array('choices' => $choices, 'choice_images_json' => $choice_images_json);
+    }
+}
+
+// ====== CLEAR VOTES ======
+add_action('wp_ajax_dgptm_clear_question_votes', 'dgptm_clear_question_votes_fn');
+function dgptm_clear_question_votes_fn() {
+    if (!dgptm_is_manager()) wp_send_json_error('Keine Rechte.');
+    if (empty($_POST['question_id'])) wp_send_json_error('question_id fehlt.');
+    global $wpdb;
+    $qid = intval($_POST['question_id']);
+    $deleted = $wpdb->delete($wpdb->prefix . 'dgptm_abstimmung_votes', array('question_id' => $qid));
+    if ($deleted !== false) {
+        // Reset voted_questions in participants
+        $q = $wpdb->get_row($wpdb->prepare("SELECT poll_id FROM {$wpdb->prefix}dgptm_abstimmung_poll_questions WHERE id=%d", $qid));
+        if ($q) {
+            $participants = $wpdb->get_results($wpdb->prepare(
+                "SELECT id, voted_questions FROM {$wpdb->prefix}dgptm_abstimmung_participants WHERE poll_id=%d", $q->poll_id
+            ));
+            foreach ($participants as $p) {
+                if (!empty($p->voted_questions)) {
+                    $vq = json_decode($p->voted_questions, true);
+                    if (is_array($vq)) {
+                        $vq = array_values(array_diff($vq, array($qid)));
+                        $wpdb->update(
+                            $wpdb->prefix . 'dgptm_abstimmung_participants',
+                            array('voted_questions' => wp_json_encode($vq)),
+                            array('id' => $p->id)
+                        );
+                    }
+                }
+            }
+        }
+        wp_send_json_success('Alle Stimmen geloescht (' . (int)$deleted . ').');
+    }
+    wp_send_json_error('Fehler beim Loeschen.');
+}
+
+// ====== SETTINGS ======
 add_action('wp_ajax_dgptm_get_manager_settings','dgptm_get_manager_settings_fn');
 function dgptm_get_manager_settings_fn(){
     if(!dgptm_is_manager()) wp_send_json_error('Keine Rechte.');
@@ -124,18 +197,27 @@ function dgptm_get_poll_details_fn(){
         <div style="margin-top:4px;"><button class="mp-btn mp-btn-xs" onclick="dgptmDownloadQR(<?php echo (int)$poll->id; ?>)">PNG herunterladen</button></div>
       </div>
 
-      <!-- Beamer-Inhalt -->
+      <!-- Beamer-Inhalt (WYSIWYG) -->
       <div class="mp-panel" style="margin:6px 0;">
         <div class="mp-panel-head" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open');">
-          <span class="arrow">▶</span> Beamer Pause-Inhalt (HTML)
+          <span class="arrow">▶</span> Beamer Pause-Inhalt
         </div>
         <div class="mp-panel-body">
-          <textarea id="beamerContent_<?php echo (int)$poll->id; ?>" rows="2" style="width:100%;font-size:12px;"><?php echo esc_textarea(isset($poll->beamer_content) ? $poll->beamer_content : ''); ?></textarea>
+          <div class="mp-wysiwyg-toolbar" style="display:flex;gap:2px;flex-wrap:wrap;padding:3px;background:var(--mp-bg,#f8fafc);border:1px solid var(--mp-border,#e2e8f0);border-bottom:none;border-radius:4px 4px 0 0;">
+            <button type="button" class="mp-btn mp-btn-xs mp-wysiwyg-cmd" data-cmd="bold" title="Fett"><b>B</b></button>
+            <button type="button" class="mp-btn mp-btn-xs mp-wysiwyg-cmd" data-cmd="italic" title="Kursiv"><i>I</i></button>
+            <button type="button" class="mp-btn mp-btn-xs mp-wysiwyg-cmd" data-cmd="underline" title="Unterstrichen"><u>U</u></button>
+            <button type="button" class="mp-btn mp-btn-xs mp-wysiwyg-cmd" data-cmd="justifyCenter" title="Zentrieren">⎍</button>
+            <button type="button" class="mp-btn mp-btn-xs mp-wysiwyg-cmd" data-cmd="fontSize" data-val="5" title="Gross">A+</button>
+            <button type="button" class="mp-btn mp-btn-xs mp-wysiwyg-img" data-pid="<?php echo (int)$poll->id; ?>" title="Bild einfuegen">🖼</button>
+            <button type="button" class="mp-btn mp-btn-xs mp-wysiwyg-src" data-pid="<?php echo (int)$poll->id; ?>" title="HTML anzeigen">&lt;/&gt;</button>
+          </div>
+          <div id="beamerWysiwyg_<?php echo (int)$poll->id; ?>" class="mp-wysiwyg-editor" contenteditable="true" data-pid="<?php echo (int)$poll->id; ?>" style="min-height:60px;max-height:200px;overflow:auto;padding:8px;border:1px solid var(--mp-border,#e2e8f0);border-radius:0 0 4px 4px;font-size:13px;background:#fff;outline:none;"><?php echo isset($poll->beamer_content) ? $poll->beamer_content : ''; ?></div>
+          <textarea id="beamerContent_<?php echo (int)$poll->id; ?>" style="display:none;"><?php echo esc_textarea(isset($poll->beamer_content) ? $poll->beamer_content : ''); ?></textarea>
           <div style="margin-top:4px;display:flex;gap:6px;align-items:center;font-size:12px;">
             <label class="mp-sw"><input type="checkbox" class="beamerContentToggle" data-pid="<?php echo (int)$poll->id; ?>" <?php checked(!empty($poll->beamer_content_active)); ?>><span></span></label>
             <span>Anzeigen</span>
             <button class="mp-btn mp-btn-xs saveBeamerContentBtn" data-pid="<?php echo (int)$poll->id; ?>">Speichern</button>
-            <span style="color:var(--mp-gray,#64748b);font-size:10px;">HTML erlaubt: &lt;b&gt;, &lt;img&gt;, &lt;br&gt;, etc.</span>
           </div>
         </div>
       </div>
@@ -147,32 +229,33 @@ function dgptm_get_poll_details_fn(){
         if ($questions):
           foreach ($questions as $q):
             $choices = json_decode($q->choices, true); if (!is_array($choices)) $choices = array();
-            $choicesStr = implode(', ', $choices);
             $current_display = isset($q->display_type) ? $q->display_type : 'cards';
-            $current_images = isset($q->choice_images) ? $q->choice_images : '';
+            $images_arr = array();
+            if (!empty($q->choice_images)) { $images_arr = json_decode($q->choice_images, true); if (!is_array($images_arr)) $images_arr = array(); }
             $statusBadge = 'mp-badge-' . $q->status;
+            $vote_count = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->prefix}dgptm_abstimmung_votes WHERE question_id=%d", $q->id));
       ?>
-        <div class="mp-qcard">
+        <div class="mp-qcard" id="qcard_<?php echo (int)$q->id; ?>">
           <div class="mp-qcard-head">
             <div>
               <div class="mp-qcard-q"><?php echo esc_html($q->question); ?></div>
               <div class="mp-qcard-meta">
                 <span class="mp-badge <?php echo $statusBadge; ?>"><?php echo esc_html($q->status); ?></span>
-                · <?php echo (int)$q->max_votes; ?> Stimmen
+                · <?php echo (int)$q->max_votes; ?>x
                 <?php if ($q->is_anonymous): ?> · Anonym<?php endif; ?>
                 <?php if ((int)$q->time_limit > 0): ?> · <?php echo (int)$q->time_limit; ?>s<?php if ($q->auto_close): ?> (auto)<?php endif; ?><?php endif; ?>
-                <?php
-                  $majLabels = array('simple'=>'>50%','two_thirds'=>'⅔','absolute'=>'absolut');
-                  if (isset($q->majority_type) && $q->majority_type !== 'simple'):
-                ?> · <?php echo $majLabels[$q->majority_type] ?? $q->majority_type; ?><?php endif; ?>
-                <?php if ((int)($q->quorum ?? 0) > 0): ?> · Quorum <?php echo (int)$q->quorum; ?><?php endif; ?>
+                <?php $majLabels = array('simple'=>'>50%','two_thirds'=>'2/3','absolute'=>'absolut'); ?>
+                <?php if (isset($q->majority_type) && $q->majority_type !== 'simple'): ?> · <?php echo $majLabels[$q->majority_type] ?? $q->majority_type; ?><?php endif; ?>
+                <?php if ((int)($q->quorum ?? 0) > 0): ?> · Q:<?php echo (int)$q->quorum; ?><?php endif; ?>
+                · <strong><?php echo $vote_count; ?> Stimmen</strong>
+                · Optionen: <?php echo implode(', ', array_map(function($c, $i) use ($images_arr) { $img = (!empty($images_arr[$i])) ? '🖼' : ''; return $img . $c; }, $choices, array_keys($choices))); ?>
               </div>
             </div>
             <div style="display:flex;gap:4px;align-items:center;flex-shrink:0;">
               <label class="mp-sw" title="Ergebnis freigeben"><input type="checkbox" class="resultReleaseSwitch" data-qid="<?php echo (int)$q->id; ?>" <?php checked($q->results_released); ?>><span></span></label>
               <span style="font-size:10px;color:var(--mp-gray,#64748b);">Frei</span>
               <label class="mp-sw" title="In Gesamtstatistik"><input type="checkbox" class="overallSwitch" data-qid="<?php echo (int)$q->id; ?>" <?php checked(!empty($q->in_overall)); ?>><span></span></label>
-              <span style="font-size:10px;color:var(--mp-gray,#64748b);">Gesamt</span>
+              <span style="font-size:10px;color:var(--mp-gray,#64748b);">Ges.</span>
             </div>
           </div>
           <div class="mp-qcard-actions">
@@ -185,21 +268,56 @@ function dgptm_get_poll_details_fn(){
             <?php endif; ?>
             <label class="mp-sw" title="Im Beamer zeigen"><input type="checkbox" class="beamerDisplaySwitch" data-qid="<?php echo (int)$q->id; ?>" data-pid="<?php echo (int)$poll->id; ?>"><span></span></label>
             <span style="font-size:10px;color:var(--mp-gray,#64748b);">Beamer</span>
-            <form class="updateQuestionForm" data-qid="<?php echo (int)$q->id; ?>" style="display:inline-flex;gap:4px;align-items:center;margin:0;">
-              <input type="hidden" name="question_text" value="<?php echo esc_attr($q->question); ?>">
-              <input type="hidden" name="question_choices" value="<?php echo esc_attr($choicesStr); ?>">
-              <input type="hidden" name="max_votes" value="<?php echo (int)$q->max_votes; ?>">
-              <input type="hidden" name="is_anonymous" value="<?php echo $q->is_anonymous ? 1 : 0; ?>">
-              <select name="display_type" style="font-size:11px;padding:2px 4px;">
-                <option value="cards" <?php selected($current_display,'cards'); ?>>Karten</option>
-                <option value="horizontal_bars" <?php selected($current_display,'horizontal_bars'); ?>>Balken</option>
-                <option value="vertical_bars" <?php selected($current_display,'vertical_bars'); ?>>Säulen</option>
-                <option value="pie" <?php selected($current_display,'pie'); ?>>Kuchen</option>
-              </select>
-              <button type="submit" class="mp-btn mp-btn-xs">OK</button>
-            </form>
+            <button class="mp-btn mp-btn-xs editQuestionToggle" data-qid="<?php echo (int)$q->id; ?>">✎ Bearbeiten</button>
             <button class="showVotesBtn mp-btn mp-btn-xs" data-qid="<?php echo (int)$q->id; ?>">Stimmen</button>
+            <?php if ($vote_count > 0): ?>
+              <button class="clearVotesBtn mp-btn mp-btn-d" data-qid="<?php echo (int)$q->id; ?>" data-count="<?php echo $vote_count; ?>">Stimmen löschen</button>
+            <?php endif; ?>
             <button class="deleteQuestionBtn mp-btn mp-btn-d" data-qid="<?php echo (int)$q->id; ?>">×</button>
+          </div>
+          <!-- Edit Panel (hidden by default) -->
+          <div class="mp-edit-panel" id="editPanel_<?php echo (int)$q->id; ?>" style="display:none;border-top:1px solid var(--mp-border,#e2e8f0);padding:8px 0;margin-top:6px;">
+            <form class="updateQuestionForm" data-qid="<?php echo (int)$q->id; ?>">
+              <div class="mp-row"><label>Frage:</label><input type="text" name="question_text" value="<?php echo esc_attr($q->question); ?>" style="flex:1;min-width:200px;"></div>
+              <div style="margin:6px 0;">
+                <label style="font-size:12px;font-weight:600;">Antwortoptionen:</label>
+                <div class="mp-options-list" data-qid="<?php echo (int)$q->id; ?>">
+                  <?php foreach ($choices as $ci => $ctxt): ?>
+                    <div class="mp-option-row" style="display:flex;gap:4px;align-items:center;margin:3px 0;">
+                      <span style="font-size:10px;color:var(--mp-gray,#64748b);width:14px;text-align:right;"><?php echo ($ci+1); ?>.</span>
+                      <input type="text" name="opt_text[]" value="<?php echo esc_attr($ctxt); ?>" placeholder="Antwort" style="flex:2;font-size:12px;padding:3px 6px;border:1px solid var(--mp-border,#e2e8f0);border-radius:4px;">
+                      <input type="text" name="opt_img[]" value="<?php echo esc_attr($images_arr[$ci] ?? ''); ?>" placeholder="Bild-URL (optional)" style="flex:2;font-size:12px;padding:3px 6px;border:1px solid var(--mp-border,#e2e8f0);border-radius:4px;">
+                      <?php if (!empty($images_arr[$ci])): ?><img src="<?php echo esc_url($images_arr[$ci]); ?>" style="width:24px;height:24px;border-radius:4px;object-fit:cover;"><?php endif; ?>
+                      <button type="button" class="mp-btn mp-btn-d mp-remove-option" style="padding:1px 5px;">−</button>
+                    </div>
+                  <?php endforeach; ?>
+                </div>
+                <button type="button" class="mp-btn mp-btn-xs mp-add-option" data-qid="<?php echo (int)$q->id; ?>" style="margin-top:3px;">+ Option</button>
+              </div>
+              <div class="mp-row">
+                <label>Max:</label><input type="number" name="max_votes" value="<?php echo (int)$q->max_votes; ?>" style="width:50px;">
+                <label class="mp-sw"><input type="checkbox" name="is_anonymous" <?php checked($q->is_anonymous); ?>><span></span></label><label>Anonym</label>
+                <label>Darstellung:</label>
+                <select name="display_type" style="font-size:12px;">
+                  <option value="cards" <?php selected($current_display,'cards'); ?>>Karten</option>
+                  <option value="horizontal_bars" <?php selected($current_display,'horizontal_bars'); ?>>Balken</option>
+                  <option value="vertical_bars" <?php selected($current_display,'vertical_bars'); ?>>Säulen</option>
+                  <option value="pie" <?php selected($current_display,'pie'); ?>>Kuchen</option>
+                </select>
+              </div>
+              <div class="mp-row">
+                <label>Timer (s):</label><input type="number" name="time_limit" value="<?php echo (int)$q->time_limit; ?>" min="0" style="width:60px;">
+                <label class="mp-sw"><input type="checkbox" name="auto_close" <?php checked(!empty($q->auto_close)); ?>><span></span></label><label>Auto-Close</label>
+                <label>Mehrheit:</label>
+                <select name="majority_type" style="font-size:12px;">
+                  <option value="simple" <?php selected($q->majority_type ?? 'simple','simple'); ?>>&gt;50%</option>
+                  <option value="two_thirds" <?php selected($q->majority_type ?? '','two_thirds'); ?>>2/3</option>
+                  <option value="absolute" <?php selected($q->majority_type ?? '','absolute'); ?>>Absolut</option>
+                </select>
+                <label>Quorum:</label><input type="number" name="quorum" value="<?php echo (int)($q->quorum ?? 0); ?>" min="0" style="width:50px;">
+              </div>
+              <div class="mp-row"><button type="submit" class="mp-btn mp-btn-p mp-btn-xs">Speichern</button></div>
+            </form>
           </div>
           <div id="votesArea_<?php echo (int)$q->id; ?>" style="display:none;"></div>
         </div>
@@ -216,7 +334,24 @@ function dgptm_get_poll_details_fn(){
           <form class="addQuestionForm">
             <input type="hidden" name="poll_id" value="<?php echo (int)$poll->id; ?>">
             <div class="mp-row"><label>Frage:</label><input type="text" name="question_text" required style="flex:1;min-width:200px;"></div>
-            <div class="mp-row"><label>Antworten (kommagetrennt):</label><input type="text" name="question_choices" style="flex:1;min-width:200px;"></div>
+            <div style="margin:6px 0;">
+              <label style="font-size:12px;font-weight:600;">Antwortoptionen:</label>
+              <div class="mp-options-list" data-qid="new_<?php echo (int)$poll->id; ?>">
+                <div class="mp-option-row" style="display:flex;gap:4px;align-items:center;margin:3px 0;">
+                  <span style="font-size:10px;color:var(--mp-gray,#64748b);width:14px;text-align:right;">1.</span>
+                  <input type="text" name="opt_text[]" placeholder="Antwort" style="flex:2;font-size:12px;padding:3px 6px;border:1px solid var(--mp-border,#e2e8f0);border-radius:4px;">
+                  <input type="text" name="opt_img[]" placeholder="Bild-URL (optional)" style="flex:2;font-size:12px;padding:3px 6px;border:1px solid var(--mp-border,#e2e8f0);border-radius:4px;">
+                  <button type="button" class="mp-btn mp-btn-d mp-remove-option" style="padding:1px 5px;">−</button>
+                </div>
+                <div class="mp-option-row" style="display:flex;gap:4px;align-items:center;margin:3px 0;">
+                  <span style="font-size:10px;color:var(--mp-gray,#64748b);width:14px;text-align:right;">2.</span>
+                  <input type="text" name="opt_text[]" placeholder="Antwort" style="flex:2;font-size:12px;padding:3px 6px;border:1px solid var(--mp-border,#e2e8f0);border-radius:4px;">
+                  <input type="text" name="opt_img[]" placeholder="Bild-URL (optional)" style="flex:2;font-size:12px;padding:3px 6px;border:1px solid var(--mp-border,#e2e8f0);border-radius:4px;">
+                  <button type="button" class="mp-btn mp-btn-d mp-remove-option" style="padding:1px 5px;">−</button>
+                </div>
+              </div>
+              <button type="button" class="mp-btn mp-btn-xs mp-add-option" data-qid="new_<?php echo (int)$poll->id; ?>" style="margin-top:3px;">+ Option</button>
+            </div>
             <div class="mp-row">
               <label>Max:</label><input type="number" name="max_votes" value="1" style="width:50px;">
               <label class="mp-sw"><input type="checkbox" name="is_anonymous"><span></span></label><label>Anonym</label>
@@ -234,12 +369,11 @@ function dgptm_get_poll_details_fn(){
               <label>Mehrheit:</label>
               <select name="majority_type" style="font-size:12px;">
                 <option value="simple">&gt;50%</option>
-                <option value="two_thirds">⅔</option>
+                <option value="two_thirds">2/3</option>
                 <option value="absolute">Absolut</option>
               </select>
               <label>Quorum:</label><input type="number" name="quorum" value="0" min="0" style="width:50px;">
             </div>
-            <div class="mp-row"><label>Bilder-URLs (optional):</label><input type="text" name="choice_images" placeholder="url1, url2, ..." style="flex:1;"></div>
             <div class="mp-row"><button type="submit" class="mp-btn mp-btn-p">Anlegen</button></div>
           </form>
         </div>
@@ -327,32 +461,24 @@ function dgptm_add_poll_question_fn(){
     if(empty($_POST['poll_id']) || empty($_POST['question_text'])) wp_send_json_error('poll_id oder Fragetext fehlt.');
     global $wpdb;
     $pid=intval($_POST['poll_id']);
-    $choices = isset($_POST['question_choices']) ? array_map('trim', explode(',', $_POST['question_choices'])) : array();
+
+    // Parse choices: new format (opt_text[] / opt_img[]) or legacy (comma-separated)
+    $parsed = dgptm_parse_options_from_post();
+    $choices = $parsed['choices'];
+    $choice_images_json = $parsed['choice_images_json'];
+
     $display_type = isset($_POST['display_type']) ? sanitize_text_field($_POST['display_type']) : 'cards';
     if (!in_array($display_type, array('cards', 'horizontal_bars', 'vertical_bars', 'pie'), true)) {
         $display_type = 'cards';
     }
-    // Backwards compatibility: map display_type to chart_type
     $chart_type = 'bar';
     if ($display_type === 'horizontal_bars') $chart_type = 'bar';
     elseif ($display_type === 'vertical_bars') $chart_type = 'pie';
-
-    // Parse choice_images
-    $choice_images_raw = isset($_POST['choice_images']) ? sanitize_text_field($_POST['choice_images']) : '';
-    $choice_images_arr = array();
-    if (!empty($choice_images_raw)) {
-        $choice_images_arr = array_map('trim', explode(',', $choice_images_raw));
-        $choice_images_arr = array_map('esc_url_raw', $choice_images_arr);
-        $choice_images_arr = array_filter($choice_images_arr);
-    }
-    $choice_images_json = !empty($choice_images_arr) ? wp_json_encode(array_values($choice_images_arr)) : null;
 
     $time_limit    = isset($_POST['time_limit']) ? absint($_POST['time_limit']) : 0;
     $auto_close    = !empty($_POST['auto_close']) ? 1 : 0;
     $majority_type = isset($_POST['majority_type']) ? sanitize_text_field($_POST['majority_type']) : 'simple';
     $quorum        = isset($_POST['quorum']) ? absint($_POST['quorum']) : 0;
-
-    // Validate majority_type
     if (!in_array($majority_type, array('simple', 'two_thirds', 'absolute'), true)) {
         $majority_type = 'simple';
     }
@@ -394,33 +520,24 @@ function dgptm_update_poll_question_fn(){
     if(!dgptm_is_manager()) wp_send_json_error('Keine Rechte.');
     if(empty($_POST['question_id']) || empty($_POST['question_text'])) wp_send_json_error('Frage-ID oder Fragetext fehlt.');
     global $wpdb; $qid=intval($_POST['question_id']);
-    $choices = isset($_POST['question_choices']) ? array_map('trim', explode(',', $_POST['question_choices'])) : array();
+
+    // Parse choices: new format (opt_text[] / opt_img[]) or legacy (comma-separated)
+    $parsed = dgptm_parse_options_from_post();
+    $choices = $parsed['choices'];
+    $choice_images_json = $parsed['choice_images_json'];
 
     $display_type = isset($_POST['display_type']) ? sanitize_text_field($_POST['display_type']) : 'cards';
     if (!in_array($display_type, array('cards', 'horizontal_bars', 'vertical_bars', 'pie'), true)) {
         $display_type = 'cards';
     }
-    // Backwards compatibility: map display_type to chart_type
     $chart_type = 'bar';
     if ($display_type === 'horizontal_bars') $chart_type = 'bar';
     elseif ($display_type === 'vertical_bars') $chart_type = 'pie';
-
-    // Parse choice_images
-    $choice_images_raw = isset($_POST['choice_images']) ? sanitize_text_field($_POST['choice_images']) : '';
-    $choice_images_arr = array();
-    if (!empty($choice_images_raw)) {
-        $choice_images_arr = array_map('trim', explode(',', $choice_images_raw));
-        $choice_images_arr = array_map('esc_url_raw', $choice_images_arr);
-        $choice_images_arr = array_filter($choice_images_arr);
-    }
-    $choice_images_json = !empty($choice_images_arr) ? wp_json_encode(array_values($choice_images_arr)) : null;
 
     $time_limit    = isset($_POST['time_limit']) ? absint($_POST['time_limit']) : 0;
     $auto_close    = !empty($_POST['auto_close']) ? 1 : 0;
     $majority_type = isset($_POST['majority_type']) ? sanitize_text_field($_POST['majority_type']) : 'simple';
     $quorum        = isset($_POST['quorum']) ? absint($_POST['quorum']) : 0;
-
-    // Validate majority_type
     if (!in_array($majority_type, array('simple', 'two_thirds', 'absolute'), true)) {
         $majority_type = 'simple';
     }

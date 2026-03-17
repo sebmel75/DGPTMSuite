@@ -503,20 +503,78 @@ if (!function_exists('dgptm_manage_poll')) {
                 }else alert('Fehler');
               },'json');
             });
-            // Beamer-Inhalt speichern/toggle
-            $(document).on('click','.saveBeamerContentBtn',function(e){
-              e.preventDefault();
-              var pid=$(this).data('pid'),content=$('#beamerContent_'+pid).val();
-              $.post(dgptm_ajax.ajax_url,{action:'dgptm_save_beamer_content',poll_id:pid,beamer_content:content},function(r){
-                if(r&&r.success)alert('Gespeichert.');
-                else alert('Fehler');
-              },'json');
-            });
             $(document).on('change','.beamerContentToggle',function(){
               var pid=$(this).data('pid'),chk=$(this).is(':checked');
               $.post(dgptm_ajax.ajax_url,{action:'dgptm_toggle_beamer_content',poll_id:pid,active:chk?1:0},function(r){
                 if(r&&r.success){updateBeamerBadge(chk?'Pause-Text':'Live');$('#beamerContentGlobal').prop('checked',chk);}
                 else{alert('Fehler');$('.beamerContentToggle[data-pid="'+pid+'"]').prop('checked',!chk);}
+              },'json');
+            });
+
+            // WYSIWYG editor commands
+            $(document).on('click','.mp-wysiwyg-cmd',function(e){
+              e.preventDefault();
+              var cmd=$(this).data('cmd'),val=$(this).data('val')||null;
+              document.execCommand(cmd,false,val);
+            });
+            $(document).on('click','.mp-wysiwyg-img',function(e){
+              e.preventDefault();
+              var url=prompt('Bild-URL:');
+              if(url)document.execCommand('insertImage',false,url);
+            });
+            $(document).on('click','.mp-wysiwyg-src',function(e){
+              e.preventDefault();
+              var pid=$(this).data('pid');
+              var $editor=$('#beamerWysiwyg_'+pid),$ta=$('#beamerContent_'+pid);
+              if($ta.is(':visible')){
+                $editor.html($ta.val()).show();$ta.hide();$(this).text('</>')
+              }else{
+                $ta.val($editor.html()).show();$editor.hide();$(this).text('Vorschau');
+              }
+            });
+            // Sync WYSIWYG to textarea before save
+            $(document).on('click','.saveBeamerContentBtn',function(e){
+              e.preventDefault();
+              var pid=$(this).data('pid');
+              var $editor=$('#beamerWysiwyg_'+pid),$ta=$('#beamerContent_'+pid);
+              if($editor.is(':visible'))$ta.val($editor.html());
+              var content=$ta.val();
+              $.post(dgptm_ajax.ajax_url,{action:'dgptm_save_beamer_content',poll_id:pid,beamer_content:content},function(r){
+                if(r&&r.success)alert('Gespeichert.');
+                else alert('Fehler');
+              },'json');
+            });
+
+            // Edit question toggle
+            $(document).on('click','.editQuestionToggle',function(e){
+              e.preventDefault();
+              var qid=$(this).data('qid');
+              $('#editPanel_'+qid).slideToggle(150);
+            });
+            // Add option row
+            $(document).on('click','.mp-add-option',function(e){
+              e.preventDefault();
+              var $list=$(this).prev('.mp-options-list');
+              if(!$list.length) $list=$(this).siblings('.mp-options-list');
+              var num=$list.find('.mp-option-row').length+1;
+              $list.append('<div class="mp-option-row" style="display:flex;gap:4px;align-items:center;margin:3px 0;"><span style="font-size:10px;color:var(--mp-gray,#64748b);width:14px;text-align:right;">'+num+'.</span><input type="text" name="opt_text[]" placeholder="Antwort" style="flex:2;font-size:12px;padding:3px 6px;border:1px solid var(--mp-border,#e2e8f0);border-radius:4px;"><input type="text" name="opt_img[]" placeholder="Bild-URL (optional)" style="flex:2;font-size:12px;padding:3px 6px;border:1px solid var(--mp-border,#e2e8f0);border-radius:4px;"><button type="button" class="mp-btn mp-btn-d mp-remove-option" style="padding:1px 5px;">\u2212</button></div>');
+            });
+            // Remove option row
+            $(document).on('click','.mp-remove-option',function(e){
+              e.preventDefault();
+              var $list=$(this).closest('.mp-options-list');
+              if($list.find('.mp-option-row').length>1)$(this).closest('.mp-option-row').remove();
+              // Renumber
+              $list.find('.mp-option-row').each(function(i){$(this).find('span:first').text((i+1)+'.');});
+            });
+            // Clear all votes for a question
+            $(document).on('click','.clearVotesBtn',function(e){
+              e.preventDefault();
+              var qid=$(this).data('qid'),cnt=$(this).data('count');
+              if(!confirm('Wirklich alle '+cnt+' Stimmen fuer diese Frage loeschen? Dies kann nicht rueckgaengig gemacht werden!'))return;
+              $.post(dgptm_ajax.ajax_url,{action:'dgptm_clear_question_votes',question_id:qid},function(r){
+                if(r&&r.success){alert(r.data);location.reload();}
+                else alert('Fehler: '+(r?r.data:''));
               },'json');
             });
 

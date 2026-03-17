@@ -66,6 +66,11 @@ if (!function_exists('dgptm_get_member_view_fn')) {
         }
 
         $choices = json_decode($q->choices,true); if(!is_array($choices)) $choices=array();
+        $choice_images = null;
+        if (!empty($q->choice_images)) {
+            $choice_images = json_decode($q->choice_images, true);
+            if (!is_array($choice_images)) $choice_images = null;
+        }
         $type = ($q->max_votes==1)?'radio':'checkbox';
 
         // Timer
@@ -111,7 +116,11 @@ if (!function_exists('dgptm_get_member_view_fn')) {
         $html .= '<input type="hidden" name="action" value="dgptm_cast_vote">';
         $html .= '<input type="hidden" name="question_id" value="'.(int)$q->id.'">';
         foreach($choices as $ix=>$txt){
-            $html .= '<label class="choice"><input type="'.$type.'" name="choices[]" value="'.(int)$ix.'"> '.esc_html($txt).'</label>';
+            $img_html = '';
+            if ($choice_images && !empty($choice_images[$ix])) {
+                $img_html = '<img src="'.esc_url($choice_images[$ix]).'" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:8px;">';
+            }
+            $html .= '<label class="choice" style="display:flex;align-items:center;gap:8px;"><input type="'.$type.'" name="choices[]" value="'.(int)$ix.'"> '.$img_html.esc_html($txt).'</label>';
         }
         $html .= '<div style="margin-top:10px;"><button type="submit" class="btn">' . esc_html($submit_label) . '</button></div></form><div id="dgptm_memberVoteFeedback" style="margin-top:8px;"></div></div>';
         $html .= '</div>';

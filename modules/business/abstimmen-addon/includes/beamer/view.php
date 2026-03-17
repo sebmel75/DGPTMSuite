@@ -74,6 +74,14 @@ if (!function_exists('dgptm_beamer_view')) {
           .b-vbar-col{width:100%;border-radius:8px 8px 0 0;transition:height .6s ease;min-height:4px;}
           .b-vbar-label{font-size:12px;font-weight:600;color:#64748b;text-align:center;}
           .b-vbar-img{width:40px;height:40px;border-radius:50%;object-fit:cover;}
+          /* Pie chart */
+          .b-pie-wrap{display:flex;align-items:center;justify-content:center;gap:40px;flex-wrap:wrap;}
+          .b-pie-canvas{width:280px;height:280px;}
+          .b-pie-legend{display:flex;flex-direction:column;gap:10px;text-align:left;}
+          .b-pie-legend-item{display:flex;align-items:center;gap:8px;font-size:15px;}
+          .b-pie-legend-dot{width:16px;height:16px;border-radius:4px;flex-shrink:0;}
+          .b-pie-legend-label{font-weight:600;color:#334155;}
+          .b-pie-legend-val{color:#64748b;font-size:13px;}
           /* Result text */
           .b-result-text{margin-top:20px;font-size:17px;font-weight:600;}
           .b-result-passed{color:#16a34a;}
@@ -193,6 +201,8 @@ if (!function_exists('dgptm_beamer_view')) {
               h+=buildHBars(choices,votes,total,images);
             }else if(dt==='vertical_bars'){
               h+=buildVBars(choices,votes,total,images);
+            }else if(dt==='pie'){
+              h+=buildPie(choices,votes,total,images);
             }else{
               h+=buildCards(choices,votes,total,images);
             }
@@ -245,6 +255,44 @@ if (!function_exists('dgptm_beamer_view')) {
               h+='<div class="b-vbar-label">'+esc(choices[i])+'</div></div>';
             }
             return h+'</div>';
+          }
+
+          function buildPie(choices,votes,total,images){
+            var uid='pie_'+Math.random().toString(36).substr(2,6);
+            var h='<div class="b-pie-wrap">';
+            h+='<canvas id="'+uid+'" class="b-pie-canvas" width="280" height="280"></canvas>';
+            h+='<div class="b-pie-legend">';
+            for(var i=0;i<choices.length;i++){
+              var cnt=votes[i]||0,pct=total>0?Math.round(cnt/total*100):0,c=COLORS[i%COLORS.length];
+              h+='<div class="b-pie-legend-item">';
+              h+='<span class="b-pie-legend-dot" style="background:'+c+'"></span>';
+              if(images&&images[i])h+='<img src="'+esc(images[i])+'" style="width:24px;height:24px;border-radius:50%;object-fit:cover;" alt="">';
+              h+='<span class="b-pie-legend-label">'+esc(choices[i])+'</span>';
+              h+='<span class="b-pie-legend-val">'+cnt+' ('+pct+'%)</span>';
+              h+='</div>';
+            }
+            h+='</div></div>';
+            // Draw pie after DOM update
+            setTimeout(function(){
+              var cv=document.getElementById(uid);if(!cv||!cv.getContext)return;
+              var ctx=cv.getContext('2d'),cx=140,cy=140,r=120;
+              var startAngle=-Math.PI/2;
+              for(var i=0;i<choices.length;i++){
+                var cnt=votes[i]||0,slice=total>0?(cnt/total)*Math.PI*2:0;
+                if(slice<0.001&&total>0)slice=0.005; // minimal slice visibility
+                ctx.beginPath();ctx.moveTo(cx,cy);
+                ctx.arc(cx,cy,r,startAngle,startAngle+slice);
+                ctx.closePath();ctx.fillStyle=COLORS[i%COLORS.length];ctx.fill();
+                startAngle+=slice;
+              }
+              // Center hole (donut)
+              ctx.beginPath();ctx.arc(cx,cy,r*0.55,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
+              // Center text
+              ctx.fillStyle='#1e293b';ctx.font='bold 32px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';
+              ctx.fillText(total,cx,cy-8);
+              ctx.font='12px system-ui';ctx.fillStyle='#94a3b8';ctx.fillText('Stimmen',cx,cy+14);
+            },50);
+            return h;
           }
 
           // === Main ===

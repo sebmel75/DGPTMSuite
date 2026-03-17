@@ -194,6 +194,7 @@ function dgptm_get_poll_details_fn(){
                 <option value="cards" <?php selected($current_display,'cards'); ?>>Karten</option>
                 <option value="horizontal_bars" <?php selected($current_display,'horizontal_bars'); ?>>Balken</option>
                 <option value="vertical_bars" <?php selected($current_display,'vertical_bars'); ?>>Säulen</option>
+                <option value="pie" <?php selected($current_display,'pie'); ?>>Kuchen</option>
               </select>
               <button type="submit" class="mp-btn mp-btn-xs">OK</button>
             </form>
@@ -224,6 +225,7 @@ function dgptm_get_poll_details_fn(){
                 <option value="cards">Karten</option>
                 <option value="horizontal_bars">Balken</option>
                 <option value="vertical_bars">Säulen</option>
+                <option value="pie">Kuchen</option>
               </select>
             </div>
             <div class="mp-row">
@@ -327,7 +329,7 @@ function dgptm_add_poll_question_fn(){
     $pid=intval($_POST['poll_id']);
     $choices = isset($_POST['question_choices']) ? array_map('trim', explode(',', $_POST['question_choices'])) : array();
     $display_type = isset($_POST['display_type']) ? sanitize_text_field($_POST['display_type']) : 'cards';
-    if (!in_array($display_type, array('cards', 'horizontal_bars', 'vertical_bars'), true)) {
+    if (!in_array($display_type, array('cards', 'horizontal_bars', 'vertical_bars', 'pie'), true)) {
         $display_type = 'cards';
     }
     // Backwards compatibility: map display_type to chart_type
@@ -395,7 +397,7 @@ function dgptm_update_poll_question_fn(){
     $choices = isset($_POST['question_choices']) ? array_map('trim', explode(',', $_POST['question_choices'])) : array();
 
     $display_type = isset($_POST['display_type']) ? sanitize_text_field($_POST['display_type']) : 'cards';
-    if (!in_array($display_type, array('cards', 'horizontal_bars', 'vertical_bars'), true)) {
+    if (!in_array($display_type, array('cards', 'horizontal_bars', 'vertical_bars', 'pie'), true)) {
         $display_type = 'cards';
     }
     // Backwards compatibility: map display_type to chart_type

@@ -143,6 +143,7 @@ if (!function_exists('dgptm_get_beamer_payload_fn')) {
                     'quorum'        => (int) ($aq->quorum ?? 0),
                     'choices'       => $aq->choices,
                     'choice_images' => $aq_images,
+                    'topic_image'   => $aq->topic_image ?? '',
                 );
                 $res = dgptm_build_results_payload($aq->id, true, (int) $poll->id);
                 $payload['active_results'] = $res;

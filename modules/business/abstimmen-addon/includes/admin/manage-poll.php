@@ -170,6 +170,10 @@ if (!function_exists('dgptm_manage_poll')) {
                   </div>
                   <div id="settingsWysiwyg" class="mp-wysiwyg-editor" contenteditable="true" style="min-height:50px;max-height:180px;overflow:auto;padding:8px;border:1px solid var(--mp-border);border-radius:0 0 4px 4px;font-size:13px;background:#fff;outline:none;"><?php echo $no_poll_text; ?></div>
                   <textarea name="dgptm_no_poll_text" id="settingsNoPollText" style="display:none;"><?php echo esc_textarea($no_poll_text); ?></textarea>
+                  <div class="mp-row" style="margin-top:6px;">
+                    <label>Beamer-Logo (unten links):</label>
+                    <input type="text" name="dgptm_beamer_logo" value="<?php echo esc_attr(get_option('dgptm_beamer_logo', 'https://perfusiologie.de/wp-content/uploads/2024/08/DGPTM_Logo_rgb_240911.svg')); ?>" placeholder="URL zum Logo" style="flex:1;min-width:200px;">
+                  </div>
                   <div class="mp-row">
                     <button type="submit" class="mp-btn mp-btn-p">Speichern</button>
                   </div>

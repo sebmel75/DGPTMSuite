@@ -39,6 +39,9 @@ if (!function_exists('dgptm_beamer_view')) {
           .dgptm-b-pollname{position:absolute;top:16px;right:20px;font-size:14px;color:#94a3b8;z-index:10;}
           /* Content */
           .dgptm-b-content{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:1200px;text-align:center;}
+          /* Logo bottom-left */
+          .dgptm-b-logo{position:absolute;bottom:16px;left:20px;z-index:10;opacity:.5;}
+          .dgptm-b-logo img{max-height:50px;max-width:160px;object-fit:contain;}
           /* QR */
           .dgptm-b-qr{position:absolute;bottom:20px;right:20px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;box-shadow:0 2px 8px rgba(0,0,0,.08);display:none;z-index:10;}
           .dgptm-b-qr canvas{width:150px!important;height:150px!important;}
@@ -49,8 +52,10 @@ if (!function_exists('dgptm_beamer_view')) {
           .b-vote-label{font-size:12px;text-transform:uppercase;letter-spacing:3px;color:#94a3b8;margin-bottom:10px;}
           .b-vote-question{font-size:clamp(26px,4vw,42px);font-weight:700;line-height:1.25;margin-bottom:20px;color:#0f172a;}
           .b-vote-options{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:24px;}
-          .b-vote-opt{display:flex;align-items:center;gap:8px;padding:8px 16px;border:2px solid #e2e8f0;border-radius:12px;background:#fafbfd;font-size:clamp(14px,2vw,18px);font-weight:600;color:#334155;}
+          .b-vote-opt{display:flex;align-items:center;gap:8px;padding:8px 16px;border:2px solid #005791;border-radius:12px;background:#fafbfd;font-size:clamp(14px,2vw,18px);font-weight:600;color:#334155;}
           .b-vote-opt img{width:48px;height:48px;border-radius:8px;object-fit:cover;}
+          /* Topic image above question */
+          .b-topic-img{max-width:40%;max-height:25vh;object-fit:contain;margin-bottom:16px;border-radius:12px;}
           .b-vote-progress{width:55%;margin:0 auto;}
           .b-vote-stats{display:flex;justify-content:space-between;font-size:13px;color:#94a3b8;margin-bottom:6px;}
           .b-progress-bar{height:10px;background:#f1f5f9;border-radius:5px;overflow:hidden;}
@@ -107,12 +112,16 @@ if (!function_exists('dgptm_beamer_view')) {
           .b-custom img{max-width:100%;height:auto;border-radius:12px;}
         </style>
 
+        <?php $beamer_logo = get_option('dgptm_beamer_logo', 'https://perfusiologie.de/wp-content/uploads/2024/08/DGPTM_Logo_rgb_240911.svg'); ?>
         <div id="dgptm_beamer">
           <div class="dgptm-b-accent"></div>
           <div id="bClock" class="dgptm-b-clock">--:--</div>
           <div id="bPollName" class="dgptm-b-pollname"></div>
           <div id="bContent" class="dgptm-b-content"></div>
           <div id="bQR" class="dgptm-b-qr"></div>
+          <?php if (!empty($beamer_logo)): ?>
+            <div class="dgptm-b-logo"><img src="<?php echo esc_url($beamer_logo); ?>" alt=""></div>
+          <?php endif; ?>
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
@@ -203,6 +212,8 @@ if (!function_exists('dgptm_beamer_view')) {
               if(lastR!==d.timer.remaining_seconds){localR=Math.max(0,d.timer.remaining_seconds);lastR=d.timer.remaining_seconds;}
             }else localR=null;
             var h='<div class="b-vote-label">Abstimmung</div>';
+            // Topic image above question
+            if(q.topic_image)h+='<img src="'+esc(q.topic_image)+'" class="b-topic-img" alt="">';
             h+='<div class="b-vote-question">'+esc(q.question)+'</div>';
             // Show choices with images if available
             var choices=q.choices;if(typeof choices==='string'){try{choices=JSON.parse(choices)}catch(e){choices=[]}}
@@ -211,7 +222,7 @@ if (!function_exists('dgptm_beamer_view')) {
               if(!Array.isArray(images))images=null;
               h+='<div class="b-vote-options">';
               for(var i=0;i<choices.length;i++){
-                h+='<div class="b-vote-opt" style="border-color:'+COLORS[i%COLORS.length]+'">';
+                h+='<div class="b-vote-opt">';
                 if(images&&images[i])h+='<img src="'+esc(images[i])+'" alt="">';
                 h+=esc(choices[i])+'</div>';
               }
@@ -238,7 +249,9 @@ if (!function_exists('dgptm_beamer_view')) {
             if(!Array.isArray(images))images=null;
             var dt=q.display_type||q.chart_type||'cards';
 
-            var h='<div class="b-q-title">'+esc(q.question)+'</div>';
+            var h='';
+            if(q.topic_image)h+='<img src="'+esc(q.topic_image)+'" class="b-topic-img" alt="">';
+            h+='<div class="b-q-title">'+esc(q.question)+'</div>';
 
             var winners=(q.majority&&q.majority.winners)?q.majority.winners:[];
 

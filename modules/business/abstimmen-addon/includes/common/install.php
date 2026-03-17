@@ -186,12 +186,15 @@ if (!function_exists('dgptm_maybe_upgrade_db')) {
             $wpdb->query("ALTER TABLE $p ADD COLUMN beamer_content_active TINYINT(1) NOT NULL DEFAULT 0");
         }
 
-        // === v4.3.0: Personenwahl (vote_type + seats) ===
+        // === v4.3.0: Personenwahl (vote_type + seats) + topic_image ===
         if (!$has($q, 'vote_type')) {
             $wpdb->query("ALTER TABLE $q ADD COLUMN vote_type VARCHAR(20) NOT NULL DEFAULT 'subject'");
         }
         if (!$has($q, 'seats')) {
             $wpdb->query("ALTER TABLE $q ADD COLUMN seats INT NOT NULL DEFAULT 0");
+        }
+        if (!$has($q, 'topic_image')) {
+            $wpdb->query("ALTER TABLE $q ADD COLUMN topic_image VARCHAR(500) DEFAULT ''");
         }
 
         update_option('dgptm_db_version', '4.3.0');

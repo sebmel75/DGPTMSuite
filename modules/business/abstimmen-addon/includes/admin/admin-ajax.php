@@ -95,6 +95,9 @@ add_action('wp_ajax_dgptm_save_beamer_settings','dgptm_save_beamer_settings_fn')
 function dgptm_save_beamer_settings_fn(){
     if(!dgptm_is_manager()) wp_send_json_error('Keine Rechte.');
     update_option('dgptm_no_poll_text', isset($_POST['dgptm_no_poll_text'])?wp_kses_post($_POST['dgptm_no_poll_text']):'');
+    if (isset($_POST['dgptm_beamer_logo'])) {
+        update_option('dgptm_beamer_logo', esc_url_raw($_POST['dgptm_beamer_logo']));
+    }
     wp_send_json_success();
 }
 
@@ -296,6 +299,7 @@ function dgptm_get_poll_details_fn(){
                 </div>
                 <button type="button" class="mp-btn mp-btn-xs mp-add-option" data-qid="<?php echo (int)$q->id; ?>" style="margin-top:3px;">+ Option</button>
               </div>
+              <div class="mp-row"><label>Themenbild (URL, wird ueber der Frage angezeigt):</label><input type="text" name="topic_image" value="<?php echo esc_attr($q->topic_image ?? ''); ?>" placeholder="https://..." style="flex:1;min-width:200px;"></div>
               <div class="mp-row">
                 <label>Max:</label><input type="number" name="max_votes" value="<?php echo (int)$q->max_votes; ?>" style="width:50px;">
                 <label class="mp-sw"><input type="checkbox" name="is_anonymous" <?php checked($q->is_anonymous); ?>><span></span></label><label>Anonym</label>
@@ -362,6 +366,7 @@ function dgptm_get_poll_details_fn(){
               </div>
               <button type="button" class="mp-btn mp-btn-xs mp-add-option" data-qid="new_<?php echo (int)$poll->id; ?>" style="margin-top:3px;">+ Option</button>
             </div>
+            <div class="mp-row"><label>Themenbild (URL, optional):</label><input type="text" name="topic_image" placeholder="https://..." style="flex:1;min-width:200px;"></div>
             <div class="mp-row">
               <label>Max:</label><input type="number" name="max_votes" value="1" style="width:50px;">
               <label class="mp-sw"><input type="checkbox" name="is_anonymous"><span></span></label><label>Anonym</label>
@@ -530,7 +535,8 @@ function dgptm_add_poll_question_fn(){
         'majority_type'=>$majority_type,
         'quorum'=>$quorum,
         'vote_type'=>isset($_POST['vote_type']) && $_POST['vote_type'] === 'person' ? 'person' : 'subject',
-        'seats'=>isset($_POST['seats']) ? absint($_POST['seats']) : 0
+        'seats'=>isset($_POST['seats']) ? absint($_POST['seats']) : 0,
+        'topic_image'=>isset($_POST['topic_image']) ? esc_url_raw($_POST['topic_image']) : ''
     ));
     $wpdb->insert_id ? wp_send_json_success('Frage angelegt.') : wp_send_json_error('Fehler beim Anlegen der Frage.');
 }
@@ -585,7 +591,8 @@ function dgptm_update_poll_question_fn(){
         'majority_type'=>$majority_type,
         'quorum'=>$quorum,
         'vote_type'=>isset($_POST['vote_type']) && $_POST['vote_type'] === 'person' ? 'person' : 'subject',
-        'seats'=>isset($_POST['seats']) ? absint($_POST['seats']) : 0
+        'seats'=>isset($_POST['seats']) ? absint($_POST['seats']) : 0,
+        'topic_image'=>isset($_POST['topic_image']) ? esc_url_raw($_POST['topic_image']) : ''
     ),array('id'=>$qid));
     ($res!==false)?wp_send_json_success('Frage aktualisiert.'):wp_send_json_error('Fehler beim Aktualisieren.');
 }

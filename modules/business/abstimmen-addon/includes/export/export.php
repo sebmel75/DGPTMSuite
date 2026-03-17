@@ -144,8 +144,13 @@ function dgptm_export_wahlprotokoll_fn() {
     if (!class_exists('DGPTM_Protokoll_PDF')) {
         class DGPTM_Protokoll_PDF extends FPDF {
             public $protokoll_title = '';
+            public $logo_path = '';
 
             function Header() {
+                // Logo oben rechts
+                if ($this->logo_path && file_exists($this->logo_path)) {
+                    $this->Image($this->logo_path, 160, 8, 35);
+                }
                 $this->SetFont('Arial', 'B', 16);
                 $this->Cell(0, 10, $this->enc('WAHLPROTOKOLL'), 0, 1, 'C');
                 if ($this->protokoll_title) {
@@ -224,6 +229,23 @@ function dgptm_export_wahlprotokoll_fn() {
 
     $pdf = new DGPTM_Protokoll_PDF();
     $pdf->protokoll_title = $poll->name;
+
+    // Logo for PDF header (download to temp if URL, skip SVG as FPDF can't handle it)
+    $logo_url = get_option('dgptm_beamer_logo', '');
+    if (!empty($logo_url) && !preg_match('/\.svg$/i', $logo_url)) {
+        $tmp = download_url($logo_url, 10);
+        if (!is_wp_error($tmp)) {
+            $pdf->logo_path = $tmp;
+        }
+    }
+    // Fallback: use poll logo if set and not SVG
+    if (empty($pdf->logo_path) && !empty($poll->logo_url) && !preg_match('/\.svg$/i', $poll->logo_url)) {
+        $tmp = download_url($poll->logo_url, 10);
+        if (!is_wp_error($tmp)) {
+            $pdf->logo_path = $tmp;
+        }
+    }
+
     $pdf->AliasNbPages();
     $pdf->AddPage();
 
@@ -358,5 +380,10 @@ function dgptm_export_wahlprotokoll_fn() {
     $pdf->SignatureField('Vorstand', $vorstand);
 
     $pdf->Output('I', 'Wahlprotokoll_' . $pid . '_' . date('Y-m-d') . '.pdf');
+
+    // Cleanup temp logo file
+    if (!empty($pdf->logo_path) && file_exists($pdf->logo_path)) {
+        @unlink($pdf->logo_path);
+    }
     exit;
 }

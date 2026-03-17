@@ -1,8 +1,8 @@
 {
   "id": "event-tracker",
-  "name": "Event Tracker v2.0",
-  "description": "Moderne Event-Management-Suite mit Webhook-Integration, Mail-System, mehrtägigen Events und PSR-4 Architektur",
-  "version": "2.0.0",
+  "name": "Event Tracker v2.1",
+  "description": "Event-Management mit Webhook, Mail-System, Zoho Meeting Integration und PSR-4 Architektur",
+  "version": "2.1.0",
   "author": "Sebastian Melzer",
   "main_file": "event-tracker.php",
   "dependencies": [

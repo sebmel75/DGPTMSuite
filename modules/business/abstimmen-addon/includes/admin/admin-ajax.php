@@ -398,10 +398,20 @@ function dgptm_get_poll_details_fn(){
       </div>
 
       <!-- Teilnehmer & Export -->
-      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px;">
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px;align-items:center;">
         <button class="showParticipantsBtn mp-btn mp-btn-xs" data-pid="<?php echo (int)$poll->id; ?>">Teilnehmer</button>
         <a class="mp-btn mp-btn-xs" href="<?php echo esc_url(admin_url('admin-ajax.php?action=dgptm_export_poll_complete&poll_id='.(int)$poll->id.'&format=csv')); ?>" target="_blank">CSV</a>
         <a class="mp-btn mp-btn-xs" href="<?php echo esc_url(admin_url('admin-ajax.php?action=dgptm_export_poll_complete&poll_id='.(int)$poll->id.'&format=pdf')); ?>" target="_blank">PDF</a>
+        <button class="mp-btn mp-btn-xs mp-btn-p wahlprotokollBtn" data-pid="<?php echo (int)$poll->id; ?>">Wahlprotokoll</button>
+      </div>
+      <!-- Wahlprotokoll Dialog -->
+      <div id="protokollDialog_<?php echo (int)$poll->id; ?>" style="display:none;margin-top:6px;padding:8px;border:1px solid var(--mp-border,#e2e8f0);border-radius:6px;background:var(--mp-bg,#f8fafc);">
+        <div style="font-size:12px;font-weight:600;margin-bottom:6px;">Wahlprotokoll erstellen</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12px;">
+          <label>Wahlleiter:</label><input type="text" id="protokollWahlleiter_<?php echo (int)$poll->id; ?>" placeholder="Name" style="font-size:12px;padding:3px 6px;border:1px solid var(--mp-border,#e2e8f0);border-radius:4px;width:150px;">
+          <label>Vorstand:</label><input type="text" id="protokollVorstand_<?php echo (int)$poll->id; ?>" placeholder="Name" style="font-size:12px;padding:3px 6px;border:1px solid var(--mp-border,#e2e8f0);border-radius:4px;width:150px;">
+          <button class="mp-btn mp-btn-p mp-btn-xs protokollGenBtn" data-pid="<?php echo (int)$poll->id; ?>">PDF erzeugen</button>
+        </div>
       </div>
       <div id="participantsArea_<?php echo (int)$poll->id; ?>" style="display:none;"></div>
     </div>

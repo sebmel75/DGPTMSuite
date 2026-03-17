@@ -610,6 +610,21 @@ if (!function_exists('dgptm_manage_poll')) {
               },'json');
             });
 
+            // Wahlprotokoll
+            $(document).on('click','.wahlprotokollBtn',function(e){
+              e.preventDefault();
+              var pid=$(this).data('pid');
+              $('#protokollDialog_'+pid).slideToggle(150);
+            });
+            $(document).on('click','.protokollGenBtn',function(e){
+              e.preventDefault();
+              var pid=$(this).data('pid');
+              var wl=$('#protokollWahlleiter_'+pid).val()||'';
+              var vs=$('#protokollVorstand_'+pid).val()||'';
+              var url=dgptm_ajax.ajax_url+'?action=dgptm_export_wahlprotokoll&poll_id='+pid+'&wahlleiter='+encodeURIComponent(wl)+'&vorstand='+encodeURIComponent(vs);
+              window.open(url,'_blank');
+            });
+
             // Auto-open active poll
             (function(){
               var $ar=$('.poll-header[data-active="1"]').first();

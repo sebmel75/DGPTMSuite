@@ -100,8 +100,9 @@ if (!function_exists('dgptm_get_remaining_seconds')) {
             return (int)$question->time_limit;
         }
         $started = strtotime($question->started_at);
+        $now = strtotime(current_time('mysql'));
         $expires = $started + (int)$question->time_limit;
-        return $expires - time();
+        return $expires - $now;
     }
 }
 

@@ -364,8 +364,8 @@ function dgptm_get_poll_details_fn(){
               </select>
             </div>
             <div class="mp-row">
-              <label>Timer (s):</label><input type="number" name="time_limit" value="0" min="0" style="width:60px;">
-              <label class="mp-sw"><input type="checkbox" name="auto_close"><span></span></label><label>Auto-Close</label>
+              <label>Timer (s):</label><input type="number" name="time_limit" value="60" min="0" style="width:60px;">
+              <label class="mp-sw"><input type="checkbox" name="auto_close" checked><span></span></label><label>Auto-Close</label>
               <label>Mehrheit:</label>
               <select name="majority_type" style="font-size:12px;">
                 <option value="simple">&gt;50%</option>

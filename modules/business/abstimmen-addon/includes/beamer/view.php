@@ -267,14 +267,19 @@ if (!function_exists('dgptm_beamer_view')) {
 
           function buildCards(choices,votes,total,images,winners){
             winners=winners||[];
+            // Find index with most votes
+            var maxIdx=0;for(var j=1;j<votes.length;j++){if((votes[j]||0)>(votes[maxIdx]||0))maxIdx=j;}
+            var hasResult=winners.length>0||total>0;
             var h='<div class="b-cards">';
             for(var i=0;i<choices.length;i++){
-              var cnt=votes[i]||0,pct=total>0?Math.round(cnt/total*100):0,c=COLORS[i%COLORS.length];
+              var cnt=votes[i]||0,pct=total>0?Math.round(cnt/total*100):0;
               var delay=(i*.1).toFixed(1);
-              var isWinner=winners.indexOf(i)>-1;
-              var winStyle=isWinner?' box-shadow:0 0 0 3px '+c+',0 4px 12px rgba(0,0,0,.15);':'';
+              var isWinner=winners.length>0?winners.indexOf(i)>-1:(i===maxIdx&&total>0);
+              // Green for winner(s), red for losers
+              var c=hasResult?(isWinner?'#16a34a':'#dc2626'):COLORS[i%COLORS.length];
+              var winStyle=isWinner?' box-shadow:0 0 0 3px #16a34a,0 4px 12px rgba(0,0,0,.15);':'';
               h+='<div class="b-card" style="border-color:'+c+';animation-delay:'+delay+'s;'+winStyle+'">';
-              if(isWinner)h+='<div style="font-size:11px;font-weight:700;color:'+c+';margin-bottom:4px;">\u2713 GEWAEHLT</div>';
+              if(isWinner&&winners.length>0)h+='<div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:4px;">\u2713 GEWAEHLT</div>';
               if(images&&images[i])h+='<img src="'+esc(images[i])+'" class="b-card-img" alt="" style="border-color:'+c+'">';
               h+='<div class="b-card-pct" style="color:'+c+'">'+pct+'%</div>';
               h+='<div class="b-card-label">'+esc(choices[i])+'</div>';
@@ -285,12 +290,16 @@ if (!function_exists('dgptm_beamer_view')) {
 
           function buildHBars(choices,votes,total,images,winners){
             winners=winners||[];
+            var maxIdx=0;for(var j=1;j<votes.length;j++){if((votes[j]||0)>(votes[maxIdx]||0))maxIdx=j;}
+            var hasResult=winners.length>0||total>0;
             var h='<div class="b-hbars">';
             for(var i=0;i<choices.length;i++){
-              var cnt=votes[i]||0,pct=total>0?Math.round(cnt/total*100):0,c=COLORS[i%COLORS.length];
+              var cnt=votes[i]||0,pct=total>0?Math.round(cnt/total*100):0;
+              var isWinner=winners.length>0?winners.indexOf(i)>-1:(i===maxIdx&&total>0);
+              var c=hasResult?(isWinner?'#16a34a':'#dc2626'):COLORS[i%COLORS.length];
               h+='<div class="b-hbar-row"><div class="b-hbar-head"><span class="b-hbar-name">';
               if(images&&images[i])h+='<img src="'+esc(images[i])+'" alt="">';
-              h+=esc(choices[i])+'</span><span class="b-hbar-val" style="color:'+c+'">'+cnt+' ('+pct+'%)</span></div>';
+              h+=(isWinner&&winners.length>0?'\u2713 ':'')+esc(choices[i])+'</span><span class="b-hbar-val" style="color:'+c+'">'+cnt+' ('+pct+'%)</span></div>';
               h+='<div class="b-hbar-track"><div class="b-hbar-fill" style="width:'+pct+'%;background:'+c+'">'+( pct>8?pct+'%':'')+'</div></div></div>';
             }
             return h+'</div>';
@@ -298,10 +307,14 @@ if (!function_exists('dgptm_beamer_view')) {
 
           function buildVBars(choices,votes,total,images,winners){
             winners=winners||[];
+            var maxIdx=0;for(var j=1;j<votes.length;j++){if((votes[j]||0)>(votes[maxIdx]||0))maxIdx=j;}
+            var hasResult=winners.length>0||total>0;
             var maxV=Math.max.apply(null,votes.concat([1]));
             var h='<div class="b-vbars">';
             for(var i=0;i<choices.length;i++){
-              var cnt=votes[i]||0,pct=total>0?Math.round(cnt/total*100):0,c=COLORS[i%COLORS.length];
+              var cnt=votes[i]||0,pct=total>0?Math.round(cnt/total*100):0;
+              var isWinner=winners.length>0?winners.indexOf(i)>-1:(i===maxIdx&&total>0);
+              var c=hasResult?(isWinner?'#16a34a':'#dc2626'):COLORS[i%COLORS.length];
               var barH=Math.round((cnt/maxV)*200);
               h+='<div class="b-vbar">';
               h+='<div class="b-vbar-pct" style="color:'+c+'">'+pct+'%</div>';

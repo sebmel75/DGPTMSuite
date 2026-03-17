@@ -14,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use EventTracker\Core\Constants;
 use EventTracker\Core\Helpers;
+use EventTracker\ZohoMeeting\Client as ZohoMeetingClient;
 
 /**
  * AJAX Handler Class
@@ -41,6 +42,16 @@ class Handler {
 		add_action( 'wp_ajax_et_test_mail', [ $this, 'test_mail' ] );
 		add_action( 'wp_ajax_et_delete_mail_log', [ $this, 'delete_mail_log' ] );
 		add_action( 'wp_ajax_et_stop_mail_job', [ $this, 'stop_mail_job' ] );
+
+		// Zoho Meeting
+		add_action( 'wp_ajax_et_zm_create_webinar', [ $this, 'zm_create_webinar' ] );
+		add_action( 'wp_ajax_et_zm_get_links', [ $this, 'zm_get_links' ] );
+		add_action( 'wp_ajax_et_zm_add_cohosts', [ $this, 'zm_add_cohosts' ] );
+		add_action( 'wp_ajax_et_zm_get_recording', [ $this, 'zm_get_recording' ] );
+		add_action( 'wp_ajax_et_zm_test_connection', [ $this, 'zm_test_connection' ] );
+		add_action( 'wp_ajax_et_zm_start_webinar', [ $this, 'zm_start_webinar' ] );
+		add_action( 'wp_ajax_et_zm_search_users', [ $this, 'zm_search_users' ] );
+		add_action( 'wp_ajax_et_zm_delete_webinar', [ $this, 'zm_delete_webinar' ] );
 	}
 
 	/**
@@ -97,7 +108,7 @@ class Handler {
 	private function render_event_list( $query ) {
 		$tz  = wp_timezone();
 		$now = time();
-		$can_edit = is_user_logged_in();
+		$can_edit = Helpers::user_has_access();
 		$show_action_link = true;
 		$df = get_option( 'date_format' ) . ' ' . get_option( 'time_format' );
 		?>
@@ -196,15 +207,24 @@ class Handler {
 	public function fetch_event_form() {
 		check_ajax_referer( 'et_panels', 'nonce' );
 
-		if ( ! is_user_logged_in() ) {
+		if ( ! Helpers::user_has_access() ) {
 			wp_send_json_error(
 				[
-					'message' => __( 'Sie müssen eingeloggt sein.', 'event-tracker' ),
+					'message' => __( 'Keine Berechtigung.', 'event-tracker' ),
 				]
 			);
 		}
 
 		$event_id = isset( $_POST['event_id'] ) ? absint( $_POST['event_id'] ) : 0;
+
+		// Validate event exists if ID is provided
+		if ( $event_id && get_post_type( $event_id ) !== Constants::CPT ) {
+			wp_send_json_error(
+				[
+					'message' => __( 'Veranstaltung nicht gefunden.', 'event-tracker' ),
+				]
+			);
+		}
 
 		ob_start();
 		$this->render_event_form( $event_id );
@@ -319,6 +339,11 @@ class Handler {
 			</div>
 			<p><button type="submit" class="button button-primary"><?php echo $is_edit ? esc_html__( 'Änderungen speichern', 'event-tracker' ) : esc_html__( 'Veranstaltung erstellen', 'event-tracker' ); ?></button></p>
 		</form>
+
+		<?php if ( $is_edit ) : ?>
+			<?php $this->render_zoho_meeting_panel( $event_id ); ?>
+		<?php endif; ?>
+
 		<script>
 		(function() {
 			var form = document.querySelector('.et-form');
@@ -486,7 +511,7 @@ class Handler {
 	public function delete_event() {
 		check_ajax_referer( 'et_panels', 'nonce' );
 
-		if ( ! current_user_can( 'delete_posts' ) ) {
+		if ( ! Helpers::user_has_access() ) {
 			wp_send_json_error( [ 'message' => __( 'Keine Berechtigung.', 'event-tracker' ) ] );
 		}
 
@@ -614,5 +639,521 @@ class Handler {
 		} else {
 			wp_send_json_error( [ 'message' => __( 'Löschen fehlgeschlagen.', 'event-tracker' ) ] );
 		}
+	}
+
+	/* =========================================================================
+	 * Zoho Meeting Panel Rendering
+	 * ======================================================================= */
+
+	/**
+	 * Render Zoho Meeting Panel (collapsible, below event form)
+	 *
+	 * @param int $event_id Event ID.
+	 */
+	private function render_zoho_meeting_panel( $event_id ) {
+		$zm_key       = get_post_meta( $event_id, Constants::META_ZM_KEY, true );
+		$zm_start_url = get_post_meta( $event_id, Constants::META_ZM_START_URL, true );
+		$zm_join_url  = get_post_meta( $event_id, Constants::META_ZM_JOIN_URL, true );
+		$zm_rec_url   = get_post_meta( $event_id, Constants::META_ZM_RECORDING_URL, true );
+		$zm_cohosts   = get_post_meta( $event_id, Constants::META_ZM_COHOSTS, true );
+		$zm_status    = get_post_meta( $event_id, Constants::META_ZM_STATUS, true );
+
+		$cohosts_arr = $zm_cohosts ? json_decode( $zm_cohosts, true ) : [];
+		if ( ! is_array( $cohosts_arr ) ) {
+			$cohosts_arr = [];
+		}
+
+		$status_labels = [
+			''        => __( 'Nicht verknuepft', 'event-tracker' ),
+			'created' => __( 'Erstellt', 'event-tracker' ),
+			'started' => __( 'Gestartet', 'event-tracker' ),
+			'ended'   => __( 'Beendet', 'event-tracker' ),
+		];
+		$status_label = isset( $status_labels[ $zm_status ] ) ? $status_labels[ $zm_status ] : $zm_status;
+
+		$status_colors = [
+			''        => '#6b7280',
+			'created' => '#2563eb',
+			'started' => '#059669',
+			'ended'   => '#dc2626',
+		];
+		$status_color = isset( $status_colors[ $zm_status ] ) ? $status_colors[ $zm_status ] : '#6b7280';
+		?>
+		<style>
+			.et-zm-panel{margin-top:16px;border:1px solid #e5e7eb;border-radius:12px;max-width:820px;overflow:hidden}
+			.et-zm-toggle{display:flex;align-items:center;gap:8px;padding:12px 16px;background:#f9fafb;cursor:pointer;font-weight:600;border:none;width:100%;text-align:left;font-size:1rem}
+			.et-zm-toggle:hover{background:#f3f4f6}
+			.et-zm-arrow{transition:transform .2s;font-size:.8rem}
+			.et-zm-body{padding:16px;display:none}
+			.et-zm-panel.open .et-zm-body{display:block}
+			.et-zm-panel.open .et-zm-arrow{transform:rotate(90deg)}
+			.et-zm-status{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.85rem;font-weight:500;color:#fff}
+			.et-zm-section{margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #f3f4f6}
+			.et-zm-section:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+			.et-zm-section h4{margin:0 0 8px 0;font-size:.95rem}
+			.et-zm-link-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+			.et-zm-link-row input[type="text"]{flex:1;min-width:200px;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:.85rem;background:#f9fafb}
+			.et-zm-btn{padding:6px 12px;border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer;font-size:.85rem;white-space:nowrap}
+			.et-zm-btn:hover{background:#f3f4f6}
+			.et-zm-btn.primary{background:#2563eb;color:#fff;border-color:#2563eb}
+			.et-zm-btn.primary:hover{background:#1d4ed8}
+			.et-zm-btn.danger{color:#dc2626;border-color:#dc2626}
+			.et-zm-btn.danger:hover{background:#fef2f2}
+			.et-zm-cohost-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+			.et-zm-tag{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:#e0e7ff;border-radius:12px;font-size:.85rem}
+			.et-zm-tag-remove{cursor:pointer;font-weight:bold;color:#4338ca}
+			.et-zm-user-search{position:relative}
+			.et-zm-user-results{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #d1d5db;border-radius:6px;max-height:200px;overflow-y:auto;z-index:10;display:none}
+			.et-zm-user-results.visible{display:block}
+			.et-zm-user-item{padding:8px 12px;cursor:pointer;font-size:.85rem}
+			.et-zm-user-item:hover{background:#f3f4f6}
+			.et-zm-msg{margin-top:8px;padding:8px;border-radius:6px;font-size:.85rem;display:none}
+			.et-zm-msg.success{background:#d1fae5;color:#065f46;display:block}
+			.et-zm-msg.error{background:#fee2e2;color:#991b1b;display:block}
+			.et-zm-actions{display:flex;gap:8px;flex-wrap:wrap}
+		</style>
+		<div class="et-zm-panel" data-event-id="<?php echo esc_attr( $event_id ); ?>">
+			<button type="button" class="et-zm-toggle">
+				<span class="et-zm-arrow">&#9654;</span>
+				<?php esc_html_e( 'Zoho Meeting', 'event-tracker' ); ?>
+				<span class="et-zm-status" style="background:<?php echo esc_attr( $status_color ); ?>;margin-left:auto;"><?php echo esc_html( $status_label ); ?></span>
+			</button>
+			<div class="et-zm-body">
+				<div class="et-zm-msg" id="et-zm-msg"></div>
+
+				<?php if ( ! $zm_key ) : ?>
+					<!-- No webinar linked yet -->
+					<div class="et-zm-section">
+						<p><?php esc_html_e( 'Noch kein Webinar verknuepft.', 'event-tracker' ); ?></p>
+						<button type="button" class="et-zm-btn primary" data-zm-action="create"><?php esc_html_e( 'Webinar anlegen', 'event-tracker' ); ?></button>
+					</div>
+				<?php else : ?>
+					<!-- Links Section -->
+					<div class="et-zm-section">
+						<h4><?php esc_html_e( 'Links', 'event-tracker' ); ?></h4>
+						<div class="et-zm-link-row">
+							<strong style="min-width:90px"><?php esc_html_e( 'Start-Link:', 'event-tracker' ); ?></strong>
+							<input type="text" id="et-zm-start-url" value="<?php echo esc_attr( $zm_start_url ); ?>" readonly />
+							<button type="button" class="et-zm-btn" data-zm-action="copy" data-zm-target="et-zm-start-url"><?php esc_html_e( 'Kopieren', 'event-tracker' ); ?></button>
+						</div>
+						<div class="et-zm-link-row">
+							<strong style="min-width:90px"><?php esc_html_e( 'Zugangs-Link:', 'event-tracker' ); ?></strong>
+							<input type="text" id="et-zm-join-url" value="<?php echo esc_attr( $zm_join_url ); ?>" readonly />
+							<button type="button" class="et-zm-btn" data-zm-action="copy" data-zm-target="et-zm-join-url"><?php esc_html_e( 'Kopieren', 'event-tracker' ); ?></button>
+							<button type="button" class="et-zm-btn" data-zm-action="adopt-redirect" title="<?php esc_attr_e( 'Join-URL als Redirect-URL uebernehmen', 'event-tracker' ); ?>"><?php esc_html_e( 'In Redirect-URL', 'event-tracker' ); ?></button>
+						</div>
+						<button type="button" class="et-zm-btn" data-zm-action="refresh-links" style="margin-top:4px"><?php esc_html_e( 'Links aktualisieren', 'event-tracker' ); ?></button>
+					</div>
+
+					<!-- Co-Hosts Section -->
+					<div class="et-zm-section">
+						<h4><?php esc_html_e( 'Co-Hosts', 'event-tracker' ); ?></h4>
+						<div class="et-zm-user-search">
+							<input type="text" id="et-zm-user-search" placeholder="<?php esc_attr_e( 'WP-Benutzer suchen...', 'event-tracker' ); ?>" style="width:100%;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;" autocomplete="off" />
+							<div class="et-zm-user-results" id="et-zm-user-results"></div>
+						</div>
+						<div class="et-zm-cohost-tags" id="et-zm-cohost-tags">
+							<?php foreach ( $cohosts_arr as $email ) : ?>
+								<span class="et-zm-tag" data-email="<?php echo esc_attr( $email ); ?>">
+									<?php echo esc_html( $email ); ?>
+									<span class="et-zm-tag-remove">&times;</span>
+								</span>
+							<?php endforeach; ?>
+						</div>
+						<button type="button" class="et-zm-btn primary" data-zm-action="save-cohosts" style="margin-top:8px"><?php esc_html_e( 'Co-Hosts speichern', 'event-tracker' ); ?></button>
+					</div>
+
+					<!-- Recording Section -->
+					<div class="et-zm-section">
+						<h4><?php esc_html_e( 'Aufzeichnung', 'event-tracker' ); ?></h4>
+						<div class="et-zm-link-row">
+							<input type="text" id="et-zm-recording-url" value="<?php echo esc_attr( $zm_rec_url ); ?>" readonly />
+							<?php if ( $zm_rec_url ) : ?>
+								<button type="button" class="et-zm-btn" data-zm-action="copy" data-zm-target="et-zm-recording-url"><?php esc_html_e( 'Kopieren', 'event-tracker' ); ?></button>
+								<button type="button" class="et-zm-btn" data-zm-action="adopt-recording"><?php esc_html_e( 'In Recording-URL', 'event-tracker' ); ?></button>
+							<?php endif; ?>
+						</div>
+						<button type="button" class="et-zm-btn" data-zm-action="fetch-recording"><?php esc_html_e( 'Recording abrufen', 'event-tracker' ); ?></button>
+					</div>
+
+					<!-- Actions Section -->
+					<div class="et-zm-section">
+						<h4><?php esc_html_e( 'Aktionen', 'event-tracker' ); ?></h4>
+						<div class="et-zm-actions">
+							<button type="button" class="et-zm-btn" data-zm-action="test-connection"><?php esc_html_e( 'Verbindung testen', 'event-tracker' ); ?></button>
+							<button type="button" class="et-zm-btn primary" data-zm-action="start-webinar"><?php esc_html_e( 'Webinar starten', 'event-tracker' ); ?></button>
+							<button type="button" class="et-zm-btn danger" data-zm-action="delete-webinar"><?php esc_html_e( 'Webinar loeschen', 'event-tracker' ); ?></button>
+						</div>
+					</div>
+				<?php endif; ?>
+			</div>
+		</div>
+		<?php
+	}
+
+	/* =========================================================================
+	 * Zoho Meeting AJAX Handlers
+	 * ======================================================================= */
+
+	/**
+	 * Get Zoho Meeting Client (lazy-loaded)
+	 *
+	 * @return ZohoMeetingClient
+	 */
+	private function get_zm_client() {
+		static $client = null;
+		if ( null === $client ) {
+			$client = new ZohoMeetingClient();
+		}
+		return $client;
+	}
+
+	/**
+	 * Validate event for Zoho Meeting operations
+	 *
+	 * @return int Event ID or 0 on failure (sends JSON error).
+	 */
+	private function zm_validate_event() {
+		check_ajax_referer( 'et_panels', 'nonce' );
+
+		if ( ! Helpers::user_has_access() ) {
+			wp_send_json_error( [ 'message' => __( 'Keine Berechtigung.', 'event-tracker' ) ] );
+		}
+
+		$event_id = isset( $_POST['event_id'] ) ? absint( $_POST['event_id'] ) : 0;
+
+		if ( ! $event_id || get_post_type( $event_id ) !== Constants::CPT ) {
+			wp_send_json_error( [ 'message' => __( 'Ungueltige Veranstaltung.', 'event-tracker' ) ] );
+		}
+
+		return $event_id;
+	}
+
+	/**
+	 * Create Webinar (AJAX: et_zm_create_webinar)
+	 */
+	public function zm_create_webinar() {
+		$event_id = $this->zm_validate_event();
+
+		$title    = get_the_title( $event_id );
+		$start_ts = (int) get_post_meta( $event_id, Constants::META_START_TS, true );
+		$end_ts   = (int) get_post_meta( $event_id, Constants::META_END_TS, true );
+
+		if ( ! $start_ts || ! $end_ts ) {
+			wp_send_json_error( [ 'message' => __( 'Event hat kein Start-/Enddatum.', 'event-tracker' ) ] );
+		}
+
+		$duration = max( 1, (int) round( ( $end_ts - $start_ts ) / 60 ) );
+
+		$tz = wp_timezone();
+		$start_dt = new \DateTimeImmutable( '@' . $start_ts );
+		$start_dt = $start_dt->setTimezone( $tz );
+
+		$client = $this->get_zm_client();
+		$result = $client->create_webinar( [
+			'topic'      => $title,
+			'start_time' => $start_dt->format( 'M d, Y h:i A' ),
+			'duration'   => $duration,
+			'timezone'   => $tz->getName(),
+		] );
+
+		if ( ! $result['ok'] ) {
+			wp_send_json_error( [ 'message' => $result['message'] ] );
+		}
+
+		// Extract session key and URLs from response
+		$data        = $result['data'];
+		$session     = isset( $data['session'] ) ? $data['session'] : $data;
+		$session_key = isset( $session['session_key'] ) ? $session['session_key'] : '';
+		$start_url   = isset( $session['start_url'] ) ? $session['start_url'] : '';
+		$join_url    = isset( $session['join_url'] ) ? $session['join_url'] : '';
+
+		if ( $session_key ) {
+			Helpers::begin_cap_override();
+			update_post_meta( $event_id, Constants::META_ZM_KEY, $session_key );
+			update_post_meta( $event_id, Constants::META_ZM_START_URL, $start_url );
+			update_post_meta( $event_id, Constants::META_ZM_JOIN_URL, $join_url );
+			update_post_meta( $event_id, Constants::META_ZM_STATUS, 'created' );
+			Helpers::end_cap_override();
+		}
+
+		Helpers::log( sprintf( 'Zoho Meeting erstellt fuer Event %d: %s', $event_id, $session_key ), 'info' );
+
+		wp_send_json_success( [
+			'message'     => __( 'Webinar erfolgreich erstellt.', 'event-tracker' ),
+			'session_key' => $session_key,
+			'start_url'   => $start_url,
+			'join_url'    => $join_url,
+			'status'      => 'created',
+		] );
+	}
+
+	/**
+	 * Get Links (AJAX: et_zm_get_links)
+	 */
+	public function zm_get_links() {
+		$event_id = $this->zm_validate_event();
+
+		$session_key = get_post_meta( $event_id, Constants::META_ZM_KEY, true );
+
+		if ( ! $session_key ) {
+			wp_send_json_error( [ 'message' => __( 'Kein Webinar verknuepft.', 'event-tracker' ) ] );
+		}
+
+		$client = $this->get_zm_client();
+		$result = $client->get_webinar( $session_key );
+
+		if ( ! $result['ok'] ) {
+			wp_send_json_error( [ 'message' => $result['message'] ] );
+		}
+
+		$data      = $result['data'];
+		$session   = isset( $data['session'] ) ? $data['session'] : $data;
+		$start_url = isset( $session['start_url'] ) ? $session['start_url'] : '';
+		$join_url  = isset( $session['join_url'] ) ? $session['join_url'] : '';
+		$status    = isset( $session['status'] ) ? strtolower( $session['status'] ) : 'created';
+
+		Helpers::begin_cap_override();
+		update_post_meta( $event_id, Constants::META_ZM_START_URL, $start_url );
+		update_post_meta( $event_id, Constants::META_ZM_JOIN_URL, $join_url );
+		update_post_meta( $event_id, Constants::META_ZM_STATUS, $status );
+		Helpers::end_cap_override();
+
+		wp_send_json_success( [
+			'start_url' => $start_url,
+			'join_url'  => $join_url,
+			'status'    => $status,
+		] );
+	}
+
+	/**
+	 * Add Co-Hosts (AJAX: et_zm_add_cohosts)
+	 */
+	public function zm_add_cohosts() {
+		$event_id = $this->zm_validate_event();
+
+		$session_key = get_post_meta( $event_id, Constants::META_ZM_KEY, true );
+
+		if ( ! $session_key ) {
+			wp_send_json_error( [ 'message' => __( 'Kein Webinar verknuepft.', 'event-tracker' ) ] );
+		}
+
+		$emails_raw = isset( $_POST['emails'] ) ? wp_unslash( $_POST['emails'] ) : '';
+		$emails     = is_array( $emails_raw ) ? array_map( 'sanitize_email', $emails_raw ) : [];
+		$emails     = array_filter( $emails );
+
+		if ( empty( $emails ) ) {
+			wp_send_json_error( [ 'message' => __( 'Keine E-Mail-Adressen angegeben.', 'event-tracker' ) ] );
+		}
+
+		$client  = $this->get_zm_client();
+		$success = [];
+		$errors  = [];
+
+		foreach ( $emails as $email ) {
+			$result = $client->add_cohost( $session_key, $email );
+			if ( $result['ok'] ) {
+				$success[] = $email;
+			} else {
+				$errors[] = $email . ': ' . $result['message'];
+			}
+		}
+
+		// Save co-hosts to meta
+		Helpers::begin_cap_override();
+		update_post_meta( $event_id, Constants::META_ZM_COHOSTS, wp_json_encode( $success ) );
+		Helpers::end_cap_override();
+
+		$message = sprintf(
+			__( '%d Co-Host(s) hinzugefuegt.', 'event-tracker' ),
+			count( $success )
+		);
+
+		if ( ! empty( $errors ) ) {
+			$message .= ' ' . sprintf( __( 'Fehler: %s', 'event-tracker' ), implode( ', ', $errors ) );
+		}
+
+		wp_send_json_success( [
+			'message'  => $message,
+			'cohosts'  => $success,
+			'errors'   => $errors,
+		] );
+	}
+
+	/**
+	 * Get Recording (AJAX: et_zm_get_recording)
+	 */
+	public function zm_get_recording() {
+		$event_id = $this->zm_validate_event();
+
+		$session_key = get_post_meta( $event_id, Constants::META_ZM_KEY, true );
+
+		if ( ! $session_key ) {
+			wp_send_json_error( [ 'message' => __( 'Kein Webinar verknuepft.', 'event-tracker' ) ] );
+		}
+
+		$client = $this->get_zm_client();
+		$result = $client->get_recordings( $session_key );
+
+		if ( ! $result['ok'] ) {
+			wp_send_json_error( [ 'message' => $result['message'] ] );
+		}
+
+		$recordings = isset( $result['data']['recordings'] ) ? $result['data']['recordings'] : [];
+
+		$recording_url = '';
+		if ( ! empty( $recordings ) ) {
+			// Take first recording's play URL
+			$first = $recordings[0];
+			$recording_url = isset( $first['play_url'] ) ? $first['play_url'] : '';
+			if ( ! $recording_url && isset( $first['download_url'] ) ) {
+				$recording_url = $first['download_url'];
+			}
+		}
+
+		if ( $recording_url ) {
+			Helpers::begin_cap_override();
+			update_post_meta( $event_id, Constants::META_ZM_RECORDING_URL, $recording_url );
+			Helpers::end_cap_override();
+		}
+
+		wp_send_json_success( [
+			'recording_url' => $recording_url,
+			'recordings'    => $recordings,
+			'message'       => $recording_url
+				? __( 'Aufzeichnung gefunden.', 'event-tracker' )
+				: __( 'Keine Aufzeichnung verfuegbar.', 'event-tracker' ),
+		] );
+	}
+
+	/**
+	 * Test Connection (AJAX: et_zm_test_connection)
+	 */
+	public function zm_test_connection() {
+		check_ajax_referer( 'et_panels', 'nonce' );
+
+		if ( ! Helpers::user_has_access() ) {
+			wp_send_json_error( [ 'message' => __( 'Keine Berechtigung.', 'event-tracker' ) ] );
+		}
+
+		$client = $this->get_zm_client();
+		$result = $client->test_connection();
+
+		if ( $result['ok'] ) {
+			wp_send_json_success( $result );
+		} else {
+			wp_send_json_error( $result );
+		}
+	}
+
+	/**
+	 * Start Webinar (AJAX: et_zm_start_webinar)
+	 *
+	 * Returns the start URL so the frontend can open it in a new tab.
+	 */
+	public function zm_start_webinar() {
+		$event_id = $this->zm_validate_event();
+
+		$start_url = get_post_meta( $event_id, Constants::META_ZM_START_URL, true );
+
+		if ( ! $start_url ) {
+			// Try refreshing from API
+			$session_key = get_post_meta( $event_id, Constants::META_ZM_KEY, true );
+			if ( $session_key ) {
+				$client = $this->get_zm_client();
+				$result = $client->get_webinar( $session_key );
+				if ( $result['ok'] ) {
+					$session   = isset( $result['data']['session'] ) ? $result['data']['session'] : $result['data'];
+					$start_url = isset( $session['start_url'] ) ? $session['start_url'] : '';
+					if ( $start_url ) {
+						Helpers::begin_cap_override();
+						update_post_meta( $event_id, Constants::META_ZM_START_URL, $start_url );
+						Helpers::end_cap_override();
+					}
+				}
+			}
+		}
+
+		if ( ! $start_url ) {
+			wp_send_json_error( [ 'message' => __( 'Kein Start-Link verfuegbar.', 'event-tracker' ) ] );
+		}
+
+		Helpers::begin_cap_override();
+		update_post_meta( $event_id, Constants::META_ZM_STATUS, 'started' );
+		Helpers::end_cap_override();
+
+		wp_send_json_success( [
+			'start_url' => $start_url,
+			'message'   => __( 'Webinar wird gestartet...', 'event-tracker' ),
+		] );
+	}
+
+	/**
+	 * Delete Webinar (AJAX: et_zm_delete_webinar)
+	 */
+	public function zm_delete_webinar() {
+		$event_id = $this->zm_validate_event();
+
+		$session_key = get_post_meta( $event_id, Constants::META_ZM_KEY, true );
+
+		if ( ! $session_key ) {
+			wp_send_json_error( [ 'message' => __( 'Kein Webinar verknuepft.', 'event-tracker' ) ] );
+		}
+
+		$client = $this->get_zm_client();
+		$result = $client->delete_webinar( $session_key );
+
+		if ( ! $result['ok'] ) {
+			wp_send_json_error( [ 'message' => $result['message'] ] );
+		}
+
+		// Clear all Zoho Meeting meta
+		Helpers::begin_cap_override();
+		delete_post_meta( $event_id, Constants::META_ZM_KEY );
+		delete_post_meta( $event_id, Constants::META_ZM_START_URL );
+		delete_post_meta( $event_id, Constants::META_ZM_JOIN_URL );
+		delete_post_meta( $event_id, Constants::META_ZM_RECORDING_URL );
+		delete_post_meta( $event_id, Constants::META_ZM_COHOSTS );
+		delete_post_meta( $event_id, Constants::META_ZM_STATUS );
+		Helpers::end_cap_override();
+
+		Helpers::log( sprintf( 'Zoho Meeting geloescht fuer Event %d', $event_id ), 'info' );
+
+		wp_send_json_success( [ 'message' => __( 'Webinar geloescht.', 'event-tracker' ) ] );
+	}
+
+	/**
+	 * Search WP Users for Co-Host selection (AJAX: et_zm_search_users)
+	 */
+	public function zm_search_users() {
+		check_ajax_referer( 'et_panels', 'nonce' );
+
+		if ( ! Helpers::user_has_access() ) {
+			wp_send_json_error( [ 'message' => __( 'Keine Berechtigung.', 'event-tracker' ) ] );
+		}
+
+		$search = isset( $_POST['search'] ) ? sanitize_text_field( wp_unslash( $_POST['search'] ) ) : '';
+
+		if ( strlen( $search ) < 2 ) {
+			wp_send_json_success( [ 'users' => [] ] );
+		}
+
+		$users = get_users( [
+			'search'         => '*' . $search . '*',
+			'search_columns' => [ 'user_login', 'user_email', 'display_name' ],
+			'number'         => 10,
+			'fields'         => [ 'ID', 'display_name', 'user_email' ],
+		] );
+
+		$results = [];
+		foreach ( $users as $user ) {
+			$results[] = [
+				'id'    => (int) $user->ID,
+				'name'  => $user->display_name,
+				'email' => $user->user_email,
+			];
+		}
+
+		wp_send_json_success( [ 'users' => $results ] );
 	}
 }

@@ -81,7 +81,7 @@ class Shortcodes {
 		<div class="et-panels">
 			<div class="et-panel-controls">
 				<button type="button" class="et-btn" data-panel="list"><?php esc_html_e( 'Veranstaltungen anzeigen', 'event-tracker' ); ?></button>
-				<?php if ( is_user_logged_in() ) : ?>
+				<?php if ( Helpers::user_has_access() ) : ?>
 					<button type="button" class="et-btn" data-panel="form" data-form-mode="new"><?php esc_html_e( 'Veranstaltung hinzufügen', 'event-tracker' ); ?></button>
 				<?php endif; ?>
 			</div>

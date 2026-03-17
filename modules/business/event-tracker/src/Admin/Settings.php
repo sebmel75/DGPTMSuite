@@ -95,6 +95,32 @@ class Settings {
 			'event-tracker-settings',
 			'et_section_mail'
 		);
+
+		// Zoho Meeting Section
+		add_settings_section(
+			'et_section_zoho_meeting',
+			__( 'Zoho Meeting', 'event-tracker' ),
+			function () {
+				echo '<p>' . esc_html__( 'Nutzt die CRM-Zugangsdaten (Client-ID, Secret, Refresh-Token). Die Scopes ZohoMeeting.meeting.* muessen in der Zoho Console aktiviert sein.', 'event-tracker' ) . '</p>';
+			},
+			'event-tracker-settings'
+		);
+
+		add_settings_field(
+			'zoho_meeting_zsoid',
+			__( 'Zoho Meeting ZSOID', 'event-tracker' ),
+			[ $this, 'field_zoho_meeting_zsoid' ],
+			'event-tracker-settings',
+			'et_section_zoho_meeting'
+		);
+
+		add_settings_field(
+			'zoho_meeting_api_base',
+			__( 'Zoho Meeting API Base-URL', 'event-tracker' ),
+			[ $this, 'field_zoho_meeting_api_base' ],
+			'event-tracker-settings',
+			'et_section_zoho_meeting'
+		);
 	}
 
 	/**
@@ -128,6 +154,19 @@ class Settings {
 			$url2 = esc_url_raw( $input['mail_webhook_url'], [ 'http', 'https' ] );
 			if ( $url2 ) {
 				$out['mail_webhook_url'] = $url2;
+			}
+		}
+
+		// Zoho Meeting
+		$out['zoho_meeting_zsoid'] = isset( $input['zoho_meeting_zsoid'] )
+			? sanitize_text_field( $input['zoho_meeting_zsoid'] )
+			: '';
+
+		$out['zoho_meeting_api_base'] = 'https://meeting.zoho.eu';
+		if ( ! empty( $input['zoho_meeting_api_base'] ) ) {
+			$api_url = esc_url_raw( $input['zoho_meeting_api_base'], [ 'https' ] );
+			if ( $api_url ) {
+				$out['zoho_meeting_api_base'] = $api_url;
 			}
 		}
 
@@ -172,6 +211,26 @@ class Settings {
 		$val  = isset( $opts['mail_webhook_url'] ) ? $opts['mail_webhook_url'] : '';
 		echo '<input type="url" class="regular-text" name="' . esc_attr( Constants::OPT_KEY ) . '[mail_webhook_url]" value="' . esc_attr( $val ) . '" placeholder="https://example.com/send-mail" />';
 		echo '<p class="description">' . esc_html__( 'Diese URL erhält per POST (JSON) die Mail-Daten: event_id, zoho_id, subject, html, timestamp.', 'event-tracker' ) . '</p>';
+	}
+
+	/**
+	 * Zoho Meeting ZSOID field
+	 */
+	public function field_zoho_meeting_zsoid() {
+		$opts = get_option( Constants::OPT_KEY, [] );
+		$val  = isset( $opts['zoho_meeting_zsoid'] ) ? $opts['zoho_meeting_zsoid'] : '';
+		echo '<input type="text" class="regular-text" name="' . esc_attr( Constants::OPT_KEY ) . '[zoho_meeting_zsoid]" value="' . esc_attr( $val ) . '" placeholder="123456789" />';
+		echo '<p class="description">' . esc_html__( 'Die Zoho-Organisations-ID (ZSOID) finden Sie in Ihren Zoho Meeting Einstellungen.', 'event-tracker' ) . '</p>';
+	}
+
+	/**
+	 * Zoho Meeting API Base URL field
+	 */
+	public function field_zoho_meeting_api_base() {
+		$opts = get_option( Constants::OPT_KEY, [] );
+		$val  = isset( $opts['zoho_meeting_api_base'] ) ? $opts['zoho_meeting_api_base'] : 'https://meeting.zoho.eu';
+		echo '<input type="url" class="regular-text" name="' . esc_attr( Constants::OPT_KEY ) . '[zoho_meeting_api_base]" value="' . esc_attr( $val ) . '" />';
+		echo '<p class="description">' . esc_html__( 'EU: https://meeting.zoho.eu | US: https://meeting.zoho.com', 'event-tracker' ) . '</p>';
 	}
 
 	/**

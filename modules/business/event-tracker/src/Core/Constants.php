@@ -35,6 +35,14 @@ class Constants {
 	const META_IFRAME_ENABLE    = '_et_iframe_enable';
 	const META_IFRAME_URL       = '_et_iframe_url';
 
+	// Zoho Meeting Meta
+	const META_ZM_KEY           = '_et_zoho_meeting_key';
+	const META_ZM_START_URL     = '_et_zoho_meeting_start_url';
+	const META_ZM_JOIN_URL      = '_et_zoho_meeting_join_url';
+	const META_ZM_RECORDING_URL = '_et_zoho_meeting_recording_url';
+	const META_ZM_COHOSTS       = '_et_zoho_meeting_cohosts';
+	const META_ZM_STATUS        = '_et_zoho_meeting_status';
+
 	// Mail Meta
 	const META_MAIL_EVENT_ID      = '_et_mail_event_id';
 	const META_MAIL_ZOHO_ID       = '_et_mail_zoho_id';

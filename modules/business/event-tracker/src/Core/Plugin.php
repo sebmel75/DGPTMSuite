@@ -102,6 +102,21 @@ class Plugin {
 		// Cache invalidation for event list transients
 		add_action( 'save_post_' . Constants::CPT, [ $this, 'flush_event_list_cache' ] );
 		add_action( 'deleted_post', [ $this, 'flush_event_list_cache_on_delete' ] );
+
+		// WP Rocket: exclude our CSS/JS from combine/minify to prevent stale bundles
+		add_filter( 'rocket_exclude_css', [ $this, 'rocket_exclude_assets' ] );
+		add_filter( 'rocket_exclude_js', [ $this, 'rocket_exclude_assets' ] );
+	}
+
+	/**
+	 * Exclude Event Tracker assets from WP Rocket combine/minify.
+	 *
+	 * @param array $excluded Excluded file paths.
+	 * @return array
+	 */
+	public function rocket_exclude_assets( $excluded ) {
+		$excluded[] = '/modules/business/event-tracker/assets/(.*)';
+		return $excluded;
 	}
 
 	/**

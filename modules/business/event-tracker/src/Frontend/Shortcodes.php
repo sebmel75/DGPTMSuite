@@ -233,7 +233,8 @@ class Shortcodes {
 
 		$plugin     = \EventTracker\Core\Plugin::instance();
 		$plugin_url = $plugin->plugin_url();
-		$version    = \EventTracker\Core\Plugin::VERSION;
+		// Timestamp-based cache buster: defeats WP Rocket CSS combine/minify cache
+		$version    = \EventTracker\Core\Plugin::VERSION . '.' . gmdate( 'ymd' );
 		$is_ajax    = defined( 'DOING_AJAX' ) && DOING_AJAX;
 
 		$css_url = $plugin_url . 'assets/css/frontend.css?ver=' . $version;
@@ -241,8 +242,6 @@ class Shortcodes {
 
 		if ( $is_ajax ) {
 			// AJAX context (e.g. Dashboard tab load): output assets directly.
-			// CSS is loaded via JS to avoid FOUC issues with link tags in body.
-			// Check if assets are already present to prevent double-loading.
 			self::$inline_assets = compact( 'css_url', 'js_url' );
 		} else {
 			// Normal page render: use WordPress enqueue system

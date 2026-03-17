@@ -46,7 +46,7 @@ if (!function_exists('dgptm_member_vote')) {
           if(typeof jQuery==='undefined' || !window.dgptm_ajax || !window.dgptm_ajax.ajax_url){ return setTimeout(waitForDeps,50); }
           jQuery(function($){
             var loopTimer=null, questionActive=false, memberSeconds=0;
-            var currentQuestionId=null, joined=false, booted=false;
+            var currentQuestionId=null, joined=true, booted=false, autoJoined=false;
 
             function lsKey(qid){ return "dgptm_sel_"+qid; }
             function saveSelection(qid){
@@ -68,11 +68,10 @@ if (!function_exists('dgptm_member_vote')) {
                 if(vals.indexOf($(this).val())>-1){ $(this).prop('checked',true); }
               });
             }
-            function disableForm(dis){
-              var $f=$("#dgptm_memberVoteForm");
-              if(!$f.length) return;
-              $f.find('input,button[type=submit]').prop('disabled', !!dis);
-              $("#dgptm_joinWrap").toggle(!!dis);
+            function autoJoinPoll(){
+              if(autoJoined)return;autoJoined=true;
+              var pid=$("#dgptm_memberVoteContainer").data("poll-id")||'';
+              if(pid)$.post(dgptm_ajax.ajax_url,{action:"dgptm_join_poll",poll_id:pid},function(){},"json");
             }
 
             function renderHTML(html, qid){
@@ -98,7 +97,7 @@ if (!function_exists('dgptm_member_vote')) {
                   currentQuestionId = qid;
                   renderHTML(resp.data.html || "<div class='box'><em>Keine aktive Frage.</em></div>", qid);
                   questionActive=true;
-                  if(!booted){ disableForm(true); booted=true; }
+                  if(!booted){ autoJoinPoll(); booted=true; }
                 } else {
                   if(resp && resp.data && resp.data.html){
                     $("#dgptm_memberVoteArea").html(resp.data.html);
@@ -130,20 +129,6 @@ if (!function_exists('dgptm_member_vote')) {
               var qid=parseInt($f.data("qid"),10)||0;
               var maxv=parseInt($f.data("max-votes"),10)||1;
 
-              // "Jetzt teilnehmen" Button
-              $(document).off("click","#dgptm_joinBtn").on("click","#dgptm_joinBtn", function(e){
-                e.preventDefault();
-                var pid = $("#dgptm_memberVoteContainer").data("poll-id") || '';
-                $.post(dgptm_ajax.ajax_url,{action:"dgptm_join_poll", poll_id:pid}, function(r){
-                  if(r && r.success){
-                    joined=true; disableForm(false);
-                    $("#dgptm_memberVoteFeedback").html('<p style="color:#1b7f2a;font-weight:700;">Teilnahme freigeschaltet.</p>');
-                  } else {
-                    $("#dgptm_memberVoteFeedback").html('<p style="color:#a00;font-weight:700;">'+(r?r.data:'Fehler beim Freischalten')+'</p>');
-                  }
-                },"json");
-              });
-
               // Auswahl-Speicher
               $f.find('input[name="choices[]"]').on("change input", function(){
                 saveSelection(qid);
@@ -163,7 +148,7 @@ if (!function_exists('dgptm_member_vote')) {
               // Submit
               $f.off("submit").on("submit", function(e){
                 e.preventDefault();
-                if(!joined){ alert("Bitte zuerst 'Jetzt an der Abstimmung teilnehmen' drücken."); return; }
+                autoJoinPoll();
                 var data=$f.serialize();
                 $.post(dgptm_ajax.ajax_url, data, function(r){
                   if(r && r.success){

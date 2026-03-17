@@ -108,7 +108,6 @@ if (!function_exists('dgptm_get_member_view_fn')) {
 
         $html  = '<div class="row">';
         $html .= '<div class="col">';
-        $html .= '<div id="dgptm_joinWrap" style="text-align:center;margin:6px 0;"><button class="btn" id="dgptm_joinBtn">Jetzt teilnehmen</button></div>';
         $html .= $timer_html;
         $html .= '<h3 style="text-align:center;margin:8px 0;">Aktive Frage</h3><strong style="display:block;text-align:center;margin-bottom:10px;">'.esc_html($q->question).'</strong>';
         $html .= $anon_html . $majority_html;

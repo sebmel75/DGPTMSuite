@@ -11,6 +11,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// Legacy-Datei: Nicht laden wenn die neue v2.x aktiv ist
+if ( defined( 'EVENT_TRACKER_VERSION' ) || class_exists( 'EventTracker\\Core\\Plugin' ) ) {
+	return;
+}
+
 /**
  * WordPress-Standard Plugin-Struktur
  *

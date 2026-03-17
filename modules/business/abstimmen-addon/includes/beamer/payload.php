@@ -99,9 +99,11 @@ if (!function_exists('dgptm_get_beamer_payload_fn')) {
 
         if ($poll) {
             $payload['active_poll'] = array(
-                'id'       => $poll->id,
-                'name'     => $poll->name,
-                'logo_url' => $poll->logo_url,
+                'id'                    => $poll->id,
+                'name'                  => $poll->name,
+                'logo_url'              => $poll->logo_url,
+                'beamer_content'        => $poll->beamer_content ?? '',
+                'beamer_content_active' => (int) ($poll->beamer_content_active ?? 0),
             );
 
             $attendees = (int) $wpdb->get_var($wpdb->prepare(
@@ -146,8 +148,8 @@ if (!function_exists('dgptm_get_beamer_payload_fn')) {
                     'auto_closed'       => false,
                 );
             } elseif ($aq && $aq->status === 'stopped') {
-                // Frage wurde gerade auto-closed — zeige als gestoppt
-                $payload['active_question'] = array(
+                // Frage wurde gerade auto-closed oder manuell gestoppt
+                $stopped_q = array(
                     'id'               => $aq->id,
                     'question'         => $aq->question,
                     'status'           => 'stopped',
@@ -157,6 +159,11 @@ if (!function_exists('dgptm_get_beamer_payload_fn')) {
                     'quorum'           => (int) ($aq->quorum ?? 0),
                     'choices'          => $aq->choices,
                 );
+                // Include full results data so beamer can render charts/images
+                if ((int) $aq->results_released === 1) {
+                    $stopped_q = $stopped_q + dgptm_build_results_payload($aq->id, false, (int) $poll->id);
+                }
+                $payload['active_question'] = $stopped_q;
                 $payload['timer'] = array(
                     'remaining_seconds' => 0,
                     'time_limit'        => (int) ($aq->time_limit ?? 0),

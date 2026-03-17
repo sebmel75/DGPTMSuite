@@ -158,15 +158,18 @@ if (!function_exists('dgptm_manage_poll')) {
               </div>
               <div class="mp-panel-body open">
                 <form id="dgptm_beamerSettingsForm">
-                  <div class="mp-row">
-                    <label>Pause-Text (HTML erlaubt):</label>
+                  <div class="mp-row"><label>Pause-Text (wird angezeigt wenn keine Frage aktiv und kein Umfrage-Pauseninhalt gesetzt ist):</label></div>
+                  <div class="mp-wysiwyg-toolbar" style="display:flex;gap:2px;flex-wrap:wrap;padding:3px;background:var(--mp-bg);border:1px solid var(--mp-border);border-bottom:none;border-radius:4px 4px 0 0;">
+                    <button type="button" class="mp-btn mp-btn-xs mp-wysiwyg-cmd" data-cmd="bold"><b>B</b></button>
+                    <button type="button" class="mp-btn mp-btn-xs mp-wysiwyg-cmd" data-cmd="italic"><i>I</i></button>
+                    <button type="button" class="mp-btn mp-btn-xs mp-wysiwyg-cmd" data-cmd="underline"><u>U</u></button>
+                    <button type="button" class="mp-btn mp-btn-xs mp-wysiwyg-cmd" data-cmd="justifyCenter">⎍</button>
+                    <button type="button" class="mp-btn mp-btn-xs mp-wysiwyg-cmd" data-cmd="fontSize" data-val="5">A+</button>
+                    <button type="button" class="mp-btn mp-btn-xs mp-wysiwyg-img-global" title="Bild">🖼</button>
+                    <button type="button" class="mp-btn mp-btn-xs mp-wysiwyg-src-global" title="HTML">&lt;/&gt;</button>
                   </div>
-                  <div class="mp-row">
-                    <textarea name="dgptm_no_poll_text" rows="2" style="width:100%;"><?php echo esc_textarea($no_poll_text); ?></textarea>
-                  </div>
-                  <div class="mp-row" style="margin-top:4px;font-size:11px;color:var(--mp-gray);">
-                    Wird im Beamer angezeigt wenn keine Frage aktiv ist. HTML-Tags wie &lt;b&gt;, &lt;img&gt;, &lt;br&gt; erlaubt.
-                  </div>
+                  <div id="settingsWysiwyg" class="mp-wysiwyg-editor" contenteditable="true" style="min-height:50px;max-height:180px;overflow:auto;padding:8px;border:1px solid var(--mp-border);border-radius:0 0 4px 4px;font-size:13px;background:#fff;outline:none;"><?php echo $no_poll_text; ?></div>
+                  <textarea name="dgptm_no_poll_text" id="settingsNoPollText" style="display:none;"><?php echo esc_textarea($no_poll_text); ?></textarea>
                   <div class="mp-row">
                     <button type="submit" class="mp-btn mp-btn-p">Speichern</button>
                   </div>
@@ -379,10 +382,23 @@ if (!function_exists('dgptm_manage_poll')) {
               },'json');
             });
 
+            // Settings WYSIWYG handlers
+            $(document).on('click','.mp-wysiwyg-img-global',function(e){
+              e.preventDefault();var url=prompt('Bild-URL:');if(url)document.execCommand('insertImage',false,url);
+            });
+            $(document).on('click','.mp-wysiwyg-src-global',function(e){
+              e.preventDefault();
+              var $ed=$('#settingsWysiwyg'),$ta=$('#settingsNoPollText');
+              if($ta.is(':visible')){$ed.html($ta.val()).show();$ta.hide();$(this).text('</>')}
+              else{$ta.val($ed.html()).show();$ed.hide();$(this).text('Vorschau');}
+            });
             // Settings forms
             $(document).on('submit','#dgptm_beamerSettingsForm',function(e){
               e.preventDefault();
-              $.post(dgptm_ajax.ajax_url,$(this).serialize()+'&action=dgptm_save_beamer_settings',function(r){
+              // Sync WYSIWYG to textarea
+              var $ed=$('#settingsWysiwyg'),$ta=$('#settingsNoPollText');
+              if($ed.is(':visible'))$ta.val($ed.html());
+              $.post(dgptm_ajax.ajax_url,{action:'dgptm_save_beamer_settings',dgptm_no_poll_text:$ta.val()},function(r){
                 alert(r&&r.success?'Gespeichert.':'Fehler: '+(r?r.data:''));
               },'json');
             });

@@ -97,6 +97,9 @@ class Shortcodes {
 			$output .= MailerUI::render();
 		}
 
+		// In AJAX context: append inline asset loader (for Dashboard tab loading)
+		$output .= $this->get_inline_asset_tags();
+
 		return $output;
 	}
 
@@ -216,6 +219,11 @@ class Shortcodes {
 
 	/**
 	 * Enqueue frontend assets
+	 *
+	 * Supports both normal page rendering and AJAX-loaded contexts
+	 * (e.g. Mitglieder Dashboard tab loading via dgptm_dash_load_tab).
+	 * In AJAX context, wp_enqueue_* is ineffective because the page head
+	 * is already sent, so assets are output as direct HTML tags instead.
 	 */
 	private function enqueue_panels_script() {
 		if ( self::$script_added ) {
@@ -226,32 +234,102 @@ class Shortcodes {
 		$plugin     = \EventTracker\Core\Plugin::instance();
 		$plugin_url = $plugin->plugin_url();
 		$version    = \EventTracker\Core\Plugin::VERSION;
+		$is_ajax    = defined( 'DOING_AJAX' ) && DOING_AJAX;
 
-		// Enqueue CSS
-		wp_enqueue_style(
-			'event-tracker-frontend',
-			$plugin_url . 'assets/css/frontend.css',
-			[],
-			$version
-		);
+		$css_url = $plugin_url . 'assets/css/frontend.css?ver=' . $version;
+		$js_url  = $plugin_url . 'assets/js/frontend.js?ver=' . $version;
 
-		// Enqueue JavaScript
-		wp_enqueue_script(
-			'event-tracker-frontend',
-			$plugin_url . 'assets/js/frontend.js',
-			[ 'jquery' ],
-			$version,
-			true
-		);
+		if ( $is_ajax ) {
+			// AJAX context (e.g. Dashboard tab load): output assets directly.
+			// CSS is loaded via JS to avoid FOUC issues with link tags in body.
+			// Check if assets are already present to prevent double-loading.
+			self::$inline_assets = compact( 'css_url', 'js_url' );
+		} else {
+			// Normal page render: use WordPress enqueue system
+			wp_enqueue_style(
+				'event-tracker-frontend',
+				$plugin_url . 'assets/css/frontend.css',
+				[],
+				$version
+			);
 
-		// Localize script data
-		wp_localize_script(
-			'event-tracker-frontend',
-			'eventTrackerData',
-			[
-				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-				'nonce'   => wp_create_nonce( 'et_panels' ),
-			]
-		);
+			wp_enqueue_script(
+				'event-tracker-frontend',
+				$plugin_url . 'assets/js/frontend.js',
+				[ 'jquery' ],
+				$version,
+				true
+			);
+
+			wp_localize_script(
+				'event-tracker-frontend',
+				'eventTrackerData',
+				[
+					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+					'nonce'   => wp_create_nonce( 'et_panels' ),
+				]
+			);
+		}
+	}
+
+	/**
+	 * Inline assets for AJAX context
+	 *
+	 * @var array|null
+	 */
+	private static $inline_assets = null;
+
+	/**
+	 * Get inline asset tags for AJAX-loaded contexts.
+	 *
+	 * Called from event_tracker_shortcode() to inject CSS/JS when
+	 * loaded inside a Dashboard tab via AJAX.
+	 *
+	 * @return string HTML
+	 */
+	private function get_inline_asset_tags() {
+		if ( null === self::$inline_assets ) {
+			return '';
+		}
+
+		$css_url = esc_url( self::$inline_assets['css_url'] );
+		$js_url  = esc_url( self::$inline_assets['js_url'] );
+		$ajax_url = esc_url( admin_url( 'admin-ajax.php' ) );
+		$nonce    = wp_create_nonce( 'et_panels' );
+
+		// Load CSS via JS (avoids issues with <link> in body),
+		// load JS after CSS, and provide localized data.
+		return <<<HTML
+<script>
+(function() {
+	// Prevent double-loading
+	if (window.eventTrackerLoaded) return;
+	window.eventTrackerLoaded = true;
+
+	// Localized data
+	if (typeof window.eventTrackerData === 'undefined') {
+		window.eventTrackerData = {
+			ajaxUrl: '{$ajax_url}',
+			nonce: '{$nonce}'
+		};
+	}
+
+	// Load CSS if not already present
+	if (!document.querySelector('link[href*="event-tracker"][href*="frontend.css"]')) {
+		var link = document.createElement('link');
+		link.rel = 'stylesheet';
+		link.href = '{$css_url}';
+		document.head.appendChild(link);
+	}
+
+	// Load JS if not already present
+	if (!document.querySelector('script[src*="event-tracker"][src*="frontend.js"]')) {
+		var script = document.createElement('script');
+		script.src = '{$js_url}';
+		document.body.appendChild(script);
+	}
+})();
+</script>
+HTML;
 	}
 }

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Event Tracker – Weiterleitung & Webhook
  * Description: Moderne WordPress-Plugin-Suite für Event-Management mit Webhook-Integration, Mail-System und mehrtägigen Veranstaltungen
- * Version: 2.0.0
+ * Version: 2.1.0
  * Author: Sebastian Melzer / DGPTM
  * Author URI: https://dgptm.de
  * Text Domain: event-tracker

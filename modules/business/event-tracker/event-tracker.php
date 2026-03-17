@@ -93,8 +93,6 @@ register_deactivation_hook( __FILE__, [ '\\EventTracker\\Core\\Plugin', 'deactiv
  *    $plugin = event_tracker_init();
  *    $cpt = $plugin->get_component( 'cpt' );
  *
- * 5. MIGRATION VON ALTER VERSION:
- *    - Alte Datei: eventtracker-backup.php
- *    - Migration Guide: MIGRATION.md
- *    - Alle Metadaten bleiben kompatibel
+ * 5. ZOHO MEETING:
+ *    ZohoMeeting\Client - OAuth2 API Client (nutzt CRM-Credentials)
  */

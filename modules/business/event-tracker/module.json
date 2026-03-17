@@ -29,10 +29,11 @@
     "Enhanced Logging",
     "Webhook Integration",
     "Iframe Support",
-    "Cron Jobs"
+    "Cron Jobs",
+    "Zoho Meeting Integration"
   ],
   "changelog": {
-    "2.0.0": "Komplette Neuschreibung mit moderner Architektur",
-    "1.16.2": "Letzte Legacy-Version (siehe eventtracker-backup.php)"
+    "2.1.0": "Zoho Meeting Integration, AJAX-Bugfixes, modernes CSS",
+    "2.0.0": "Komplette Neuschreibung mit moderner Architektur"
   }
 }

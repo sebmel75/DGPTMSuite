@@ -94,6 +94,7 @@ if (!function_exists('dgptm_beamer_view')) {
           .b-result-text{margin-top:20px;font-size:17px;font-weight:600;}
           .b-result-passed{color:#16a34a;}
           .b-result-failed{color:#dc2626;}
+          .b-result-runoff{color:#d97706;}
           /* All results grid */
           .b-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:28px;text-align:center;}
           .b-grid .b-q-title{font-size:16px;margin-bottom:14px;}
@@ -239,18 +240,24 @@ if (!function_exists('dgptm_beamer_view')) {
 
             var h='<div class="b-q-title">'+esc(q.question)+'</div>';
 
+            var winners=(q.majority&&q.majority.winners)?q.majority.winners:[];
+
             if(dt==='horizontal_bars'){
-              h+=buildHBars(choices,votes,total,images);
+              h+=buildHBars(choices,votes,total,images,winners);
             }else if(dt==='vertical_bars'){
-              h+=buildVBars(choices,votes,total,images);
+              h+=buildVBars(choices,votes,total,images,winners);
             }else if(dt==='pie'){
               h+=buildPie(choices,votes,total,images);
             }else{
-              h+=buildCards(choices,votes,total,images);
+              h+=buildCards(choices,votes,total,images,winners);
             }
 
             if(q.majority){
-              var m=q.majority,icon=m.passed?'\u2713':'\u2717',cls=m.passed?'b-result-passed':'b-result-failed';
+              var m=q.majority;
+              var icon,cls;
+              if(m.runoff){icon='\u26A0';cls='b-result-runoff';}
+              else if(m.passed){icon='\u2713';cls='b-result-passed';}
+              else{icon='\u2717';cls='b-result-failed';}
               h+='<div class="b-result-text '+cls+'">'+icon+' '+esc(m.label)+' \u00b7 '+total+' Stimmen';
               if(m.quorum>0)h+=' \u00b7 Quorum '+(m.quorum_met?'erreicht':'nicht erreicht');
               h+='</div>';
@@ -258,12 +265,16 @@ if (!function_exists('dgptm_beamer_view')) {
             return h;
           }
 
-          function buildCards(choices,votes,total,images){
+          function buildCards(choices,votes,total,images,winners){
+            winners=winners||[];
             var h='<div class="b-cards">';
             for(var i=0;i<choices.length;i++){
               var cnt=votes[i]||0,pct=total>0?Math.round(cnt/total*100):0,c=COLORS[i%COLORS.length];
               var delay=(i*.1).toFixed(1);
-              h+='<div class="b-card" style="border-color:'+c+';animation-delay:'+delay+'s">';
+              var isWinner=winners.indexOf(i)>-1;
+              var winStyle=isWinner?' box-shadow:0 0 0 3px '+c+',0 4px 12px rgba(0,0,0,.15);':'';
+              h+='<div class="b-card" style="border-color:'+c+';animation-delay:'+delay+'s;'+winStyle+'">';
+              if(isWinner)h+='<div style="font-size:11px;font-weight:700;color:'+c+';margin-bottom:4px;">\u2713 GEWAEHLT</div>';
               if(images&&images[i])h+='<img src="'+esc(images[i])+'" class="b-card-img" alt="" style="border-color:'+c+'">';
               h+='<div class="b-card-pct" style="color:'+c+'">'+pct+'%</div>';
               h+='<div class="b-card-label">'+esc(choices[i])+'</div>';
@@ -272,7 +283,8 @@ if (!function_exists('dgptm_beamer_view')) {
             return h+'</div>';
           }
 
-          function buildHBars(choices,votes,total,images){
+          function buildHBars(choices,votes,total,images,winners){
+            winners=winners||[];
             var h='<div class="b-hbars">';
             for(var i=0;i<choices.length;i++){
               var cnt=votes[i]||0,pct=total>0?Math.round(cnt/total*100):0,c=COLORS[i%COLORS.length];
@@ -284,7 +296,8 @@ if (!function_exists('dgptm_beamer_view')) {
             return h+'</div>';
           }
 
-          function buildVBars(choices,votes,total,images){
+          function buildVBars(choices,votes,total,images,winners){
+            winners=winners||[];
             var maxV=Math.max.apply(null,votes.concat([1]));
             var h='<div class="b-vbars">';
             for(var i=0;i<choices.length;i++){

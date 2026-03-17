@@ -22,7 +22,7 @@ class DGPTM_Abstimmen_Migration {
 	 *
 	 * @var string
 	 */
-	const TARGET_VERSION = '4.2.0';
+	const TARGET_VERSION = '4.3.0';
 
 	/**
 	 * Migration log

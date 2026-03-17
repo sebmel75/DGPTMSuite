@@ -67,7 +67,9 @@ if (!function_exists('dgptm_build_results_payload')) {
             $majority = dgptm_evaluate_majority(
                 $vote_map, $total, $attendees,
                 $q->majority_type ?? 'simple',
-                (int) ($q->quorum ?? 0)
+                (int) ($q->quorum ?? 0),
+                $q->vote_type ?? 'subject',
+                (int) ($q->seats ?? 0)
             );
             $result['majority'] = $majority;
         }

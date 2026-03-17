@@ -241,6 +241,8 @@ function dgptm_get_poll_details_fn(){
               <div class="mp-qcard-q"><?php echo esc_html($q->question); ?></div>
               <div class="mp-qcard-meta">
                 <span class="mp-badge <?php echo $statusBadge; ?>"><?php echo esc_html($q->status); ?></span>
+                <?php $vt = $q->vote_type ?? 'subject'; $seats_n = (int)($q->seats ?? 0); ?>
+                <?php if ($vt === 'person'): ?>· <strong>Personenwahl<?php if ($seats_n > 1): ?> (<?php echo $seats_n; ?> Sitze)<?php endif; ?></strong><?php endif; ?>
                 · <?php echo (int)$q->max_votes; ?>x
                 <?php if ($q->is_anonymous): ?> · Anonym<?php endif; ?>
                 <?php if ((int)$q->time_limit > 0): ?> · <?php echo (int)$q->time_limit; ?>s<?php if ($q->auto_close): ?> (auto)<?php endif; ?><?php endif; ?>
@@ -306,6 +308,14 @@ function dgptm_get_poll_details_fn(){
                 </select>
               </div>
               <div class="mp-row">
+                <label>Typ:</label>
+                <select name="vote_type" style="font-size:12px;">
+                  <option value="subject" <?php selected($q->vote_type ?? 'subject','subject'); ?>>Sachthema</option>
+                  <option value="person" <?php selected($q->vote_type ?? '','person'); ?>>Personenwahl</option>
+                </select>
+                <label>Sitze:</label><input type="number" name="seats" value="<?php echo (int)($q->seats ?? 0); ?>" min="0" style="width:50px;" title="Nur bei Personenwahl: Anzahl zu waehlender Kandidaten (0=auto)">
+              </div>
+              <div class="mp-row">
                 <label>Timer (s):</label><input type="number" name="time_limit" value="<?php echo (int)$q->time_limit; ?>" min="0" style="width:60px;">
                 <label class="mp-sw"><input type="checkbox" name="auto_close" <?php checked(!empty($q->auto_close)); ?>><span></span></label><label>Auto-Close</label>
                 <label>Mehrheit:</label>
@@ -362,6 +372,14 @@ function dgptm_get_poll_details_fn(){
                 <option value="vertical_bars">Säulen</option>
                 <option value="pie">Kuchen</option>
               </select>
+            </div>
+            <div class="mp-row">
+              <label>Typ:</label>
+              <select name="vote_type" style="font-size:12px;">
+                <option value="subject">Sachthema</option>
+                <option value="person">Personenwahl</option>
+              </select>
+              <label>Sitze:</label><input type="number" name="seats" value="0" min="0" style="width:50px;" title="Personenwahl: Anzahl zu waehlender Kandidaten (0=auto)">
             </div>
             <div class="mp-row">
               <label>Timer (s):</label><input type="number" name="time_limit" value="60" min="0" style="width:60px;">
@@ -500,7 +518,9 @@ function dgptm_add_poll_question_fn(){
         'in_overall'=>0,
         'auto_close'=>$auto_close,
         'majority_type'=>$majority_type,
-        'quorum'=>$quorum
+        'quorum'=>$quorum,
+        'vote_type'=>isset($_POST['vote_type']) && $_POST['vote_type'] === 'person' ? 'person' : 'subject',
+        'seats'=>isset($_POST['seats']) ? absint($_POST['seats']) : 0
     ));
     $wpdb->insert_id ? wp_send_json_success('Frage angelegt.') : wp_send_json_error('Fehler beim Anlegen der Frage.');
 }
@@ -553,7 +573,9 @@ function dgptm_update_poll_question_fn(){
         'time_limit'=>$time_limit,
         'auto_close'=>$auto_close,
         'majority_type'=>$majority_type,
-        'quorum'=>$quorum
+        'quorum'=>$quorum,
+        'vote_type'=>isset($_POST['vote_type']) && $_POST['vote_type'] === 'person' ? 'person' : 'subject',
+        'seats'=>isset($_POST['seats']) ? absint($_POST['seats']) : 0
     ),array('id'=>$qid));
     ($res!==false)?wp_send_json_success('Frage aktualisiert.'):wp_send_json_error('Fehler beim Aktualisieren.');
 }

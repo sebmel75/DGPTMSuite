@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM Abstimmen-Addon (Consolidated v4.0)
  * Description: Umfassendes Voting-System mit Zoom-Integration, Anwesenheitserfassung, Präsenz-Scanner und Beamer-Ansicht
- * Version: 4.2.0
+ * Version: 4.3.0
  * Author: Sebastian Melzer
  * Text Domain: dgptm-abstimmen
  *
@@ -27,7 +27,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Plugin Constants
 if ( ! defined( 'DGPTM_ABSTIMMEN_VERSION' ) ) {
-	define( 'DGPTM_ABSTIMMEN_VERSION', '4.2.0' );
+	define( 'DGPTM_ABSTIMMEN_VERSION', '4.3.0' );
 }
 if ( ! defined( 'DGPTM_ABSTIMMEN_PATH' ) ) {
 	define( 'DGPTM_ABSTIMMEN_PATH', plugin_dir_path( __FILE__ ) );
@@ -38,7 +38,7 @@ if ( ! defined( 'DGPTM_ABSTIMMEN_URL' ) ) {
 
 // Legacy constants for backwards compatibility
 if ( ! defined( 'DGPTMVOTE_VERSION' ) ) {
-	define( 'DGPTMVOTE_VERSION', '4.2.0' );
+	define( 'DGPTMVOTE_VERSION', '4.3.0' );
 }
 if ( ! defined( 'DGPTMVOTE_COOKIE' ) ) {
 	define( 'DGPTMVOTE_COOKIE', 'DGPTMVOTE_voteid' );

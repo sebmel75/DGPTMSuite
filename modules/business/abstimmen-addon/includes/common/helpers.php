@@ -31,15 +31,28 @@ if (!function_exists('dgptm_get_beamer_state')) {
  * @return array ['passed' => bool, 'winner_index' => int|null, 'label' => string, 'quorum_met' => bool]
  */
 if (!function_exists('dgptm_evaluate_majority')) {
-    function dgptm_evaluate_majority($vote_counts, $total_votes, $attendees, $majority_type = 'simple', $quorum = 0) {
+    /**
+     * @param array  $vote_counts   [index => count]
+     * @param int    $total_votes   Total valid votes
+     * @param int    $attendees     Number of attendees
+     * @param string $majority_type 'simple', 'two_thirds', 'absolute'
+     * @param int    $quorum        Minimum votes required
+     * @param string $vote_type     'subject' or 'person'
+     * @param int    $seats         Number of seats to fill (person elections)
+     */
+    function dgptm_evaluate_majority($vote_counts, $total_votes, $attendees, $majority_type = 'simple', $quorum = 0, $vote_type = 'subject', $seats = 0) {
         $result = [
             'passed'       => false,
             'winner_index' => null,
+            'winners'      => [],
+            'runoff'       => false,
             'label'        => '',
             'quorum_met'   => ($quorum <= 0 || $total_votes >= $quorum),
             'quorum'       => $quorum,
             'total_votes'  => $total_votes,
             'attendees'    => $attendees,
+            'vote_type'    => $vote_type,
+            'seats'        => $seats,
         ];
 
         if (!$result['quorum_met']) {
@@ -52,19 +65,73 @@ if (!function_exists('dgptm_evaluate_majority')) {
             return $result;
         }
 
-        // Find the winner (highest votes)
+        // Sort by votes descending
         arsort($vote_counts);
-        $winner_index = array_key_first($vote_counts);
+        $sorted_indices = array_keys($vote_counts);
+        $winner_index = $sorted_indices[0];
         $winner_votes = $vote_counts[$winner_index];
         $result['winner_index'] = $winner_index;
+        $num_choices = count($vote_counts);
 
+        // === PERSONENWAHL ===
+        if ($vote_type === 'person') {
+            $seats = max(1, $seats);
+
+            if ($num_choices === 1) {
+                // 1 Kandidat: braucht >50% der Stimmen
+                $threshold = $total_votes / 2;
+                $result['passed'] = ($winner_votes > $threshold);
+                $pct = $total_votes > 0 ? round($winner_votes / $total_votes * 100) : 0;
+                if ($result['passed']) {
+                    $result['winners'] = [$winner_index];
+                    $result['label'] = 'Gewaehlt (' . $pct . '%)';
+                } else {
+                    $result['label'] = 'Nicht gewaehlt (' . $pct . '%)';
+                }
+            } elseif ($num_choices === 2 && $seats === 1) {
+                // 2 Kandidaten, 1 Sitz: hoechste Stimmenzahl gewinnt
+                $result['passed'] = true;
+                $result['winners'] = [$winner_index];
+                $pct = $total_votes > 0 ? round($winner_votes / $total_votes * 100) : 0;
+                $result['label'] = 'Gewaehlt (' . $pct . '%)';
+            } elseif ($seats >= $num_choices) {
+                // Alle Sitze >= Kandidaten: alle gewaehlt
+                $result['passed'] = true;
+                $result['winners'] = $sorted_indices;
+                $result['label'] = 'Alle gewaehlt';
+            } elseif ($seats === 1 && $num_choices > 2) {
+                // 1 aus 3+: braucht >50%, sonst Stichwahl
+                $threshold = $total_votes / 2;
+                if ($winner_votes > $threshold) {
+                    $result['passed'] = true;
+                    $result['winners'] = [$winner_index];
+                    $pct = $total_votes > 0 ? round($winner_votes / $total_votes * 100) : 0;
+                    $result['label'] = 'Gewaehlt (' . $pct . '%)';
+                } else {
+                    $result['runoff'] = true;
+                    // Top 2 fuer Stichwahl
+                    $top2 = array_slice($sorted_indices, 0, 2);
+                    $result['winners'] = $top2;
+                    $result['label'] = 'Stichwahl erforderlich';
+                }
+            } else {
+                // N aus M (N>1): Top N gewinnen
+                $result['passed'] = true;
+                $result['winners'] = array_slice($sorted_indices, 0, $seats);
+                $result['label'] = $seats . ' von ' . $num_choices . ' gewaehlt';
+            }
+
+            return $result;
+        }
+
+        // === SACHTHEMA ===
         $threshold = 0;
         $rule_label = '';
 
         switch ($majority_type) {
             case 'two_thirds':
-                $threshold = $total_votes * (2 / 3);
-                $rule_label = '2/3-Mehrheit';
+                $threshold = $attendees * (2 / 3);
+                $rule_label = '2/3-Mehrheit der Anwesenden';
                 break;
             case 'absolute':
                 $threshold = $attendees / 2;
@@ -72,12 +139,13 @@ if (!function_exists('dgptm_evaluate_majority')) {
                 break;
             case 'simple':
             default:
-                $threshold = $total_votes / 2;
-                $rule_label = 'Einfache Mehrheit';
+                $threshold = $attendees / 2;
+                $rule_label = 'Einfache Mehrheit der Anwesenden';
                 break;
         }
 
         $result['passed'] = ($winner_votes > $threshold);
+        $result['winners'] = $result['passed'] ? [$winner_index] : [];
         $status = $result['passed'] ? 'Angenommen' : 'Abgelehnt';
         $result['label'] = $status . ' (' . $rule_label . ')';
 

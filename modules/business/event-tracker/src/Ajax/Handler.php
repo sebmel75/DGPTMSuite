@@ -112,24 +112,6 @@ class Handler {
 		$show_action_link = true;
 		$df = get_option( 'date_format' ) . ' ' . get_option( 'time_format' );
 		?>
-		<style>
-			.et-event-list{width:100%;border-collapse:collapse;margin-top:12px}
-			.et-event-list th,.et-event-list td{padding:10px;text-align:left;border-bottom:1px solid #e5e7eb}
-			.et-event-list th{background:#f9fafb;font-weight:600}
-			.et-badge{display:inline-block;padding:4px 8px;border-radius:6px;font-size:.85rem;font-weight:500}
-			.et-badge.active{background:#d1fae5;color:#065f46}
-			.et-badge.upcoming{background:#fef3c7;color:#92400e}
-			.et-badge.expired{background:#fee2e2;color:#991b1b}
-			.et-actions{display:flex;gap:8px;flex-wrap:wrap}
-			.et-actions a,.et-actions button{padding:6px 12px;border-radius:6px;border:1px solid #e5e7eb;background:#fff;cursor:pointer;text-decoration:none;color:#374151;font-size:.9rem}
-			.et-actions button:hover{background:#f3f4f6}
-			@media (max-width:768px){
-				.et-event-list thead{display:none}
-				.et-event-list tr{display:block;margin-bottom:16px;border:1px solid #e5e7eb;border-radius:8px;padding:12px}
-				.et-event-list td{display:block;text-align:left;padding:6px 0;border:none}
-				.et-event-list td:before{content:attr(data-label);font-weight:600;display:inline-block;width:100px}
-			}
-		</style>
 		<table class="et-event-list">
 			<thead>
 				<tr>
@@ -265,17 +247,6 @@ class Handler {
 		$end_val   = Helpers::format_datetime_local( $end_ts );
 		$action    = esc_url( add_query_arg( [] ) );
 		?>
-		<style>
-			.et-form{margin-top:12px;border:1px solid #e5e7eb;padding:16px;border-radius:12px;max-width:820px}
-			.et-form h3{margin:0 0 12px 0}
-			.et-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-			.et-grid .full{grid-column:1/-1}
-			.et-form input[type="text"],.et-form input[type="url"],.et-form input[type="datetime-local"]{width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px}
-			.et-form label{display:block;margin-bottom:6px}
-			.et-hint{font-size:.9rem;color:#6b7280;margin-top:4px}
-			.et-inline{display:flex;align-items:center;gap:8px}
-			@media (max-width:640px){.et-grid{grid-template-columns:1fr}}
-		</style>
 		<form class="et-form" method="post" action="<?php echo $action; ?>">
 			<h3><?php echo $is_edit ? esc_html__( 'Veranstaltung bearbeiten', 'event-tracker' ) : esc_html__( 'Neue Veranstaltung anlegen', 'event-tracker' ); ?></h3>
 			<?php wp_nonce_field( 'et_front_save', 'et_front_nonce' ); ?>
@@ -327,14 +298,14 @@ class Handler {
 								$range_start = isset( $range['start'] ) ? Helpers::format_datetime_local( $range['start'] ) : '';
 								$range_end   = isset( $range['end'] ) ? Helpers::format_datetime_local( $range['end'] ) : '';
 								?>
-								<div class="et-date-range" style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:8px;">
+								<div class="et-date-range">
 									<input type="datetime-local" name="et_additional_start[]" value="<?php echo esc_attr( $range_start ); ?>" />
 									<input type="datetime-local" name="et_additional_end[]" value="<?php echo esc_attr( $range_end ); ?>" />
-									<button type="button" class="et-remove-date" style="padding:4px 8px;">×</button>
+									<button type="button" class="et-remove-date">×</button>
 								</div>
 							<?php endforeach; endif; ?>
 					</div>
-					<button type="button" class="et-add-date" style="margin-top:8px;padding:6px 12px;border:1px solid #d1d5db;background:#f9fafb;border-radius:6px;cursor:pointer;"><?php esc_html_e( '+ Weiteren Termin hinzufügen', 'event-tracker' ); ?></button>
+					<button type="button" class="et-add-date"><?php esc_html_e( '+ Weiteren Termin hinzufuegen', 'event-tracker' ); ?></button>
 				</div>
 			</div>
 			<p><button type="submit" class="button button-primary"><?php echo $is_edit ? esc_html__( 'Änderungen speichern', 'event-tracker' ) : esc_html__( 'Veranstaltung erstellen', 'event-tracker' ); ?></button></p>
@@ -355,8 +326,7 @@ class Handler {
 					var container = form.querySelector('.et-additional-dates');
 					var div = document.createElement('div');
 					div.className = 'et-date-range';
-					div.style.cssText = 'display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:8px;';
-					div.innerHTML = '<input type="datetime-local" name="et_additional_start[]" /><input type="datetime-local" name="et_additional_end[]" /><button type="button" class="et-remove-date" style="padding:4px 8px;">×</button>';
+					div.innerHTML = '<input type="datetime-local" name="et_additional_start[]" /><input type="datetime-local" name="et_additional_end[]" /><button type="button" class="et-remove-date">×</button>';
 					container.appendChild(div);
 				}
 
@@ -670,53 +640,12 @@ class Handler {
 			'ended'   => __( 'Beendet', 'event-tracker' ),
 		];
 		$status_label = isset( $status_labels[ $zm_status ] ) ? $status_labels[ $zm_status ] : $zm_status;
-
-		$status_colors = [
-			''        => '#6b7280',
-			'created' => '#2563eb',
-			'started' => '#059669',
-			'ended'   => '#dc2626',
-		];
-		$status_color = isset( $status_colors[ $zm_status ] ) ? $status_colors[ $zm_status ] : '#6b7280';
 		?>
-		<style>
-			.et-zm-panel{margin-top:16px;border:1px solid #e5e7eb;border-radius:12px;max-width:820px;overflow:hidden}
-			.et-zm-toggle{display:flex;align-items:center;gap:8px;padding:12px 16px;background:#f9fafb;cursor:pointer;font-weight:600;border:none;width:100%;text-align:left;font-size:1rem}
-			.et-zm-toggle:hover{background:#f3f4f6}
-			.et-zm-arrow{transition:transform .2s;font-size:.8rem}
-			.et-zm-body{padding:16px;display:none}
-			.et-zm-panel.open .et-zm-body{display:block}
-			.et-zm-panel.open .et-zm-arrow{transform:rotate(90deg)}
-			.et-zm-status{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.85rem;font-weight:500;color:#fff}
-			.et-zm-section{margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #f3f4f6}
-			.et-zm-section:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
-			.et-zm-section h4{margin:0 0 8px 0;font-size:.95rem}
-			.et-zm-link-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
-			.et-zm-link-row input[type="text"]{flex:1;min-width:200px;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:.85rem;background:#f9fafb}
-			.et-zm-btn{padding:6px 12px;border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer;font-size:.85rem;white-space:nowrap}
-			.et-zm-btn:hover{background:#f3f4f6}
-			.et-zm-btn.primary{background:#2563eb;color:#fff;border-color:#2563eb}
-			.et-zm-btn.primary:hover{background:#1d4ed8}
-			.et-zm-btn.danger{color:#dc2626;border-color:#dc2626}
-			.et-zm-btn.danger:hover{background:#fef2f2}
-			.et-zm-cohost-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-			.et-zm-tag{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:#e0e7ff;border-radius:12px;font-size:.85rem}
-			.et-zm-tag-remove{cursor:pointer;font-weight:bold;color:#4338ca}
-			.et-zm-user-search{position:relative}
-			.et-zm-user-results{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #d1d5db;border-radius:6px;max-height:200px;overflow-y:auto;z-index:10;display:none}
-			.et-zm-user-results.visible{display:block}
-			.et-zm-user-item{padding:8px 12px;cursor:pointer;font-size:.85rem}
-			.et-zm-user-item:hover{background:#f3f4f6}
-			.et-zm-msg{margin-top:8px;padding:8px;border-radius:6px;font-size:.85rem;display:none}
-			.et-zm-msg.success{background:#d1fae5;color:#065f46;display:block}
-			.et-zm-msg.error{background:#fee2e2;color:#991b1b;display:block}
-			.et-zm-actions{display:flex;gap:8px;flex-wrap:wrap}
-		</style>
 		<div class="et-zm-panel" data-event-id="<?php echo esc_attr( $event_id ); ?>">
 			<button type="button" class="et-zm-toggle">
 				<span class="et-zm-arrow">&#9654;</span>
 				<?php esc_html_e( 'Zoho Meeting', 'event-tracker' ); ?>
-				<span class="et-zm-status" style="background:<?php echo esc_attr( $status_color ); ?>;margin-left:auto;"><?php echo esc_html( $status_label ); ?></span>
+				<span class="et-zm-status et-zm-status--<?php echo esc_attr( $zm_status ?: 'none' ); ?>"><?php echo esc_html( $status_label ); ?></span>
 			</button>
 			<div class="et-zm-body">
 				<div class="et-zm-msg" id="et-zm-msg"></div>
@@ -732,24 +661,24 @@ class Handler {
 					<div class="et-zm-section">
 						<h4><?php esc_html_e( 'Links', 'event-tracker' ); ?></h4>
 						<div class="et-zm-link-row">
-							<strong style="min-width:90px"><?php esc_html_e( 'Start-Link:', 'event-tracker' ); ?></strong>
+							<strong class="et-zm-label"><?php esc_html_e( 'Start-Link:', 'event-tracker' ); ?></strong>
 							<input type="text" id="et-zm-start-url" value="<?php echo esc_attr( $zm_start_url ); ?>" readonly />
 							<button type="button" class="et-zm-btn" data-zm-action="copy" data-zm-target="et-zm-start-url"><?php esc_html_e( 'Kopieren', 'event-tracker' ); ?></button>
 						</div>
 						<div class="et-zm-link-row">
-							<strong style="min-width:90px"><?php esc_html_e( 'Zugangs-Link:', 'event-tracker' ); ?></strong>
+							<strong class="et-zm-label"><?php esc_html_e( 'Zugangs-Link:', 'event-tracker' ); ?></strong>
 							<input type="text" id="et-zm-join-url" value="<?php echo esc_attr( $zm_join_url ); ?>" readonly />
 							<button type="button" class="et-zm-btn" data-zm-action="copy" data-zm-target="et-zm-join-url"><?php esc_html_e( 'Kopieren', 'event-tracker' ); ?></button>
 							<button type="button" class="et-zm-btn" data-zm-action="adopt-redirect" title="<?php esc_attr_e( 'Join-URL als Redirect-URL uebernehmen', 'event-tracker' ); ?>"><?php esc_html_e( 'In Redirect-URL', 'event-tracker' ); ?></button>
 						</div>
-						<button type="button" class="et-zm-btn" data-zm-action="refresh-links" style="margin-top:4px"><?php esc_html_e( 'Links aktualisieren', 'event-tracker' ); ?></button>
+						<button type="button" class="et-zm-btn" data-zm-action="refresh-links"><?php esc_html_e( 'Links aktualisieren', 'event-tracker' ); ?></button>
 					</div>
 
 					<!-- Co-Hosts Section -->
 					<div class="et-zm-section">
 						<h4><?php esc_html_e( 'Co-Hosts', 'event-tracker' ); ?></h4>
 						<div class="et-zm-user-search">
-							<input type="text" id="et-zm-user-search" placeholder="<?php esc_attr_e( 'WP-Benutzer suchen...', 'event-tracker' ); ?>" style="width:100%;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;" autocomplete="off" />
+							<input type="text" id="et-zm-user-search" class="et-zm-search-input" placeholder="<?php esc_attr_e( 'WP-Benutzer suchen...', 'event-tracker' ); ?>" autocomplete="off" />
 							<div class="et-zm-user-results" id="et-zm-user-results"></div>
 						</div>
 						<div class="et-zm-cohost-tags" id="et-zm-cohost-tags">
@@ -760,7 +689,7 @@ class Handler {
 								</span>
 							<?php endforeach; ?>
 						</div>
-						<button type="button" class="et-zm-btn primary" data-zm-action="save-cohosts" style="margin-top:8px"><?php esc_html_e( 'Co-Hosts speichern', 'event-tracker' ); ?></button>
+						<button type="button" class="et-zm-btn primary" data-zm-action="save-cohosts"><?php esc_html_e( 'Co-Hosts speichern', 'event-tracker' ); ?></button>
 					</div>
 
 					<!-- Recording Section -->

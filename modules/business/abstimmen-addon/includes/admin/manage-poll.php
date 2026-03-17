@@ -276,7 +276,7 @@ if (!function_exists('dgptm_manage_poll')) {
               var urlNode=document.getElementById('qrUrlText_'+pid);if(!urlNode)return;
               var url=urlNode.getAttribute('data-qr')||urlNode.textContent||'';
               if(typeof QRCode!=='undefined'&&QRCode.toCanvas){
-                QRCode.toCanvas(el,url,{width:180,margin:1,errorCorrectionLevel:'M'});
+                QRCode.toCanvas(el,url,{width:180,margin:1,errorCorrectionLevel:'M',color:{dark:'#000000',light:'#ffffff'}});
               }else{
                 var img=new Image();img.alt='QR';img.width=180;img.height=180;
                 img.src='https://api.qrserver.com/v1/create-qr-code/?size=180x180&data='+enc(url);

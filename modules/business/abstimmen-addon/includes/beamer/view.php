@@ -40,8 +40,8 @@ if (!function_exists('dgptm_beamer_view')) {
           /* Content */
           .dgptm-b-content{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:1200px;text-align:center;}
           /* QR */
-          .dgptm-b-qr{position:absolute;bottom:20px;right:20px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px;box-shadow:0 2px 8px rgba(0,0,0,.08);display:none;z-index:10;}
-          .dgptm-b-qr canvas{width:72px!important;height:72px!important;}
+          .dgptm-b-qr{position:absolute;bottom:20px;right:20px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;box-shadow:0 2px 8px rgba(0,0,0,.08);display:none;z-index:10;}
+          .dgptm-b-qr canvas{width:150px!important;height:150px!important;}
           /* Idle */
           .b-idle-logo{max-width:30%;max-height:30vh;opacity:.6;margin-bottom:16px;}
           .b-idle-text{font-size:22px;color:#94a3b8;}
@@ -167,7 +167,7 @@ if (!function_exists('dgptm_beamer_view')) {
             var el=document.getElementById('bQR');if(!el)return;
             if(!qrDone){
               el.innerHTML='';var c=document.createElement('canvas');el.appendChild(c);
-              if(typeof QRCode!=='undefined'&&QRCode.toCanvas)QRCode.toCanvas(c,HOME+'?dgptm_member=1&poll_id='+pid,{width:72,margin:1,errorCorrectionLevel:'M'});
+              if(typeof QRCode!=='undefined'&&QRCode.toCanvas)QRCode.toCanvas(c,HOME+'?dgptm_member=1&poll_id='+pid,{width:150,margin:1,errorCorrectionLevel:'M',color:{dark:'#000000',light:'#ffffff'}});
               qrDone=true;
             }
             el.style.display='block';

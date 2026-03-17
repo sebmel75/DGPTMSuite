@@ -46,7 +46,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 
 // Plugin Constants
-define( 'EVENT_TRACKER_VERSION', '2.0.0' );
+define( 'EVENT_TRACKER_VERSION', '2.1.0' );
 define( 'EVENT_TRACKER_FILE', __FILE__ );
 define( 'EVENT_TRACKER_PATH', plugin_dir_path( __FILE__ ) );
 define( 'EVENT_TRACKER_URL', plugin_dir_url( __FILE__ ) );

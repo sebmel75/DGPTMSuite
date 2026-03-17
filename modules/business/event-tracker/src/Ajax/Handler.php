@@ -25,11 +25,9 @@ class Handler {
 	 * Constructor
 	 */
 	public function __construct() {
-		// Event List & Form AJAX
+		// Event List & Form AJAX (nur eingeloggte User)
 		add_action( 'wp_ajax_et_fetch_event_list', [ $this, 'fetch_event_list' ] );
-		add_action( 'wp_ajax_nopriv_et_fetch_event_list', [ $this, 'fetch_event_list' ] );
 		add_action( 'wp_ajax_et_fetch_event_form', [ $this, 'fetch_event_form' ] );
-		add_action( 'wp_ajax_nopriv_et_fetch_event_form', [ $this, 'fetch_event_form' ] );
 		add_action( 'wp_ajax_et_delete_event', [ $this, 'delete_event' ] );
 
 		// Template Management
@@ -888,9 +886,16 @@ class Handler {
 			}
 		}
 
-		// Save co-hosts to meta
+		// Merge new co-hosts with existing ones
+		$existing_json = get_post_meta( $event_id, Constants::META_ZM_COHOSTS, true );
+		$existing      = $existing_json ? json_decode( $existing_json, true ) : [];
+		if ( ! is_array( $existing ) ) {
+			$existing = [];
+		}
+		$merged = array_values( array_unique( array_merge( $existing, $success ) ) );
+
 		Helpers::begin_cap_override();
-		update_post_meta( $event_id, Constants::META_ZM_COHOSTS, wp_json_encode( $success ) );
+		update_post_meta( $event_id, Constants::META_ZM_COHOSTS, wp_json_encode( $merged ) );
 		Helpers::end_cap_override();
 
 		$message = sprintf(

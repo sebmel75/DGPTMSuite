@@ -1,28 +1,21 @@
 /**
  * Event Tracker Frontend JavaScript
- * Version: 2.0.0
+ * Version: 2.1.0
  */
 
 (function($) {
 	'use strict';
 
-	console.log('Event Tracker: frontend.js loaded');
-
 	$(document).ready(function() {
-		console.log('Event Tracker: DOM ready');
 
 		var panelsContainer = $('.et-panels');
-		console.log('Event Tracker: Panels container found:', panelsContainer.length);
 
 		if (!panelsContainer.length) {
-			console.error('Event Tracker: .et-panels container not found!');
 			return;
 		}
 
 		var ajaxUrl = eventTrackerData.ajaxUrl;
 		var nonce = eventTrackerData.nonce;
-		console.log('Event Tracker: AJAX URL:', ajaxUrl);
-		console.log('Event Tracker: Nonce:', nonce ? 'Set' : 'Missing');
 
 		var currentPanel = null;
 
@@ -41,7 +34,6 @@
 		 * Show panel
 		 */
 		function showPanel(name, data) {
-			console.log('Event Tracker: Showing panel:', name);
 			panelsContainer.find('.et-panel').addClass('et-hidden').attr('aria-hidden', 'true');
 			var panel = panelsContainer.find('.et-panel[data-name="' + name + '"]');
 			panel.removeClass('et-hidden').attr('aria-hidden', 'false');
@@ -62,25 +54,20 @@
 			if (extraData) {
 				$.extend(data, extraData);
 			}
-			console.log('Event Tracker: Sending AJAX request:', data);
 
 			$.ajax({
 				url: ajaxUrl,
 				type: 'POST',
 				data: data,
 				success: function(res) {
-					console.log('Event Tracker: AJAX response:', res);
 					if (res.success) {
 						showPanel(currentPanel, res.data);
 					} else {
 						var msg = res.data && res.data.message ? res.data.message : 'Fehler';
-						console.error('Event Tracker: AJAX error:', msg);
 						showMsg(msg, 'error');
 					}
 				},
 				error: function(xhr, status, error) {
-					console.error('Event Tracker: Network error:', status, error);
-					console.error('Event Tracker: Response:', xhr.responseText);
 					showMsg('Netzwerkfehler: ' + error, 'error');
 				}
 			});
@@ -90,19 +77,15 @@
 		 * Button click handler
 		 */
 		panelsContainer.on('click', '.et-btn[data-panel]', function(e) {
-			console.log('Event Tracker: Button clicked');
 			e.preventDefault();
 
 			var btn = $(this);
 			var panelName = btn.data('panel');
-			console.log('Event Tracker: Panel name:', panelName);
 			currentPanel = panelName;
 
 			if (panelName === 'list') {
-				console.log('Event Tracker: Fetching event list...');
 				fetchPanel('et_fetch_event_list');
 			} else if (panelName === 'form') {
-				console.log('Event Tracker: Fetching event form...');
 				fetchPanel('et_fetch_event_form', { event_id: 0 });
 			}
 		});
@@ -113,7 +96,6 @@
 		panelsContainer.on('click', '.et-btn[data-action="edit"]', function(e) {
 			e.preventDefault();
 			var eventId = $(this).data('event-id');
-			console.log('Event Tracker: Edit button clicked, event ID:', eventId);
 			currentPanel = 'form';
 			fetchPanel('et_fetch_event_form', { event_id: eventId });
 		});
@@ -124,10 +106,9 @@
 		panelsContainer.on('click', '.et-btn[data-action="delete"]', function(e) {
 			e.preventDefault();
 			var eventId = $(this).data('event-id');
-			if (!confirm('Veranstaltung wirklich löschen?')) {
+			if (!confirm('Veranstaltung wirklich loeschen?')) {
 				return;
 			}
-			console.log('Event Tracker: Delete button clicked, event ID:', eventId);
 
 			$.ajax({
 				url: ajaxUrl,
@@ -139,12 +120,11 @@
 				},
 				success: function(res) {
 					if (res.success) {
-						showMsg('Event gelöscht', 'success');
-						// Reload list
+						showMsg('Event geloescht', 'success');
 						currentPanel = 'list';
 						fetchPanel('et_fetch_event_list');
 					} else {
-						showMsg(res.data.message || 'Fehler beim Löschen', 'error');
+						showMsg(res.data.message || 'Fehler beim Loeschen', 'error');
 					}
 				},
 				error: function() {
@@ -154,24 +134,22 @@
 		});
 
 		/**
-		 * Copy link button
+		 * Copy link button (event list)
 		 */
 		panelsContainer.on('click', '.et-btn[data-action="copy"]', function(e) {
 			e.preventDefault();
 			var link = $(this).data('link');
-			console.log('Event Tracker: Copy link:', link);
-
-			// Create temporary input
-			var tempInput = $('<input>');
-			$('body').append(tempInput);
-			tempInput.val(link).select();
-			document.execCommand('copy');
-			tempInput.remove();
-
+			if (navigator.clipboard) {
+				navigator.clipboard.writeText(link);
+			} else {
+				var tempInput = $('<input>');
+				$('body').append(tempInput);
+				tempInput.val(link).select();
+				document.execCommand('copy');
+				tempInput.remove();
+			}
 			showMsg('Link kopiert!', 'success');
 		});
-
-		console.log('Event Tracker: Event handlers registered');
 
 		/* =================================================================
 		 * Zoho Meeting Panel Handlers
@@ -232,7 +210,6 @@
 			zmAjax('et_zm_create_webinar', {}, function(res) {
 				if (res.success) {
 					zmShowMsg(res.data.message, 'success');
-					// Reload the form panel to show full Zoho Meeting panel
 					currentPanel = 'form';
 					fetchPanel('et_fetch_event_form', { event_id: zmEventId() });
 				} else {
@@ -301,7 +278,6 @@
 				if (res.success) {
 					$('#et-zm-recording-url').val(res.data.recording_url || '');
 					zmShowMsg(res.data.message, res.data.recording_url ? 'success' : 'error');
-					// Show copy/adopt buttons if recording found
 					if (res.data.recording_url) {
 						currentPanel = 'form';
 						fetchPanel('et_fetch_event_form', { event_id: zmEventId() });
@@ -340,34 +316,18 @@
 
 		// Delete Webinar
 		$(document).on('click', '[data-zm-action="delete-webinar"]', function() {
-			if (!confirm('Webinar wirklich loeschen? Dies kann nicht rueckgaengig gemacht werden.')) {
+			if (!confirm('Webinar wirklich loeschen?')) {
 				return;
 			}
 			var btn = $(this);
 			btn.prop('disabled', true);
-			// We reuse create endpoint logic — but we need a delete endpoint
-			// For now: call zm_create_webinar with delete flag won't work;
-			// we need to add a delete handler. Let's use the existing API pattern.
-			$.ajax({
-				url: ajaxUrl,
-				type: 'POST',
-				data: {
-					action: 'et_zm_delete_webinar',
-					nonce: nonce,
-					event_id: zmEventId()
-				},
-				success: function(res) {
-					if (res.success) {
-						zmShowMsg('Webinar geloescht', 'success');
-						currentPanel = 'form';
-						fetchPanel('et_fetch_event_form', { event_id: zmEventId() });
-					} else {
-						zmShowMsg(res.data.message || 'Fehler', 'error');
-						btn.prop('disabled', false);
-					}
-				},
-				error: function() {
-					zmShowMsg('Netzwerkfehler', 'error');
+			zmAjax('et_zm_delete_webinar', {}, function(res) {
+				if (res.success) {
+					zmShowMsg('Webinar geloescht', 'success');
+					currentPanel = 'form';
+					fetchPanel('et_fetch_event_form', { event_id: zmEventId() });
+				} else {
+					zmShowMsg(res.data.message || 'Fehler', 'error');
 					btn.prop('disabled', false);
 				}
 			});
@@ -376,8 +336,7 @@
 		// Co-Host: User Search with debounce
 		var zmSearchTimer = null;
 		$(document).on('input', '#et-zm-user-search', function() {
-			var input = $(this);
-			var query = input.val().trim();
+			var query = $(this).val().trim();
 			var results = $('#et-zm-user-results');
 
 			clearTimeout(zmSearchTimer);
@@ -419,7 +378,6 @@
 			var email = $(this).data('email');
 			var tags = $('#et-zm-cohost-tags');
 
-			// Check if already added
 			if (tags.find('[data-email="' + email + '"]').length) {
 				return;
 			}

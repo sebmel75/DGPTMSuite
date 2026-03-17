@@ -184,10 +184,9 @@ class Helpers {
 	 * @return string HTML
 	 */
 	public static function notice( $message, $type = 'success' ) {
-		$color = ( $type === 'success' ) ? '#d1fae5' : '#fee2e2';
 		return sprintf(
-			'<div style="margin:16px 0;padding:10px;border-radius:8px;background:%s;">%s</div>',
-			esc_attr( $color ),
+			'<div class="et-msg %s">%s</div>',
+			esc_attr( $type ),
 			esc_html( $message )
 		);
 	}

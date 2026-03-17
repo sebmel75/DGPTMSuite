@@ -126,6 +126,7 @@ if (!function_exists('dgptm_manage_poll')) {
             <span class="mp-beamer-status <?php echo $statusClass; ?>" id="beamerStatusBadge"><?php echo $statusLabel; ?></span>
             <button class="mp-btn" id="beamerAuto" type="button">Live</button>
             <button class="mp-btn" id="beamerOverall" type="button">Gesamt</button>
+            <button class="mp-btn" id="beamerPause" type="button" style="background:#8b5cf6;color:#fff;border-color:#8b5cf6;">⏸ Pause</button>
             <span class="mp-sep" style="background:#475569;"></span>
             <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
               <label class="mp-sw"><input type="checkbox" id="beamerQrSwitch" <?php checked(!empty($beamer_state['qr_visible'])); ?>><span></span></label>
@@ -334,6 +335,23 @@ if (!function_exists('dgptm_manage_poll')) {
               $.post(dgptm_ajax.ajax_url,{action:'dgptm_set_beamer_state',mode:'auto'},function(r){
                 if(r&&r.success)updateBeamerBadge('Live');
                 else alert('Fehler: '+(r?r.data:''));
+              },'json');
+            });
+            // Beamer: Pause (reset to auto + activate beamer_content)
+            $('#beamerPause').on('click',function(){
+              // First reset to auto mode
+              $.post(dgptm_ajax.ajax_url,{action:'dgptm_set_beamer_state',mode:'auto'},function(r){
+                if(r&&r.success){
+                  // Then activate beamer_content on active poll
+                  var $activeRow=$('.poll-header[data-active="1"]').first();
+                  if($activeRow.length){
+                    var pid=$activeRow.data('poll-id');
+                    $.post(dgptm_ajax.ajax_url,{action:'dgptm_toggle_beamer_content',poll_id:pid,active:1},function(r2){
+                      updateBeamerBadge('Pause-Text');
+                      $('#beamerContentGlobal').prop('checked',true);
+                    },'json');
+                  }else{updateBeamerBadge('Live');}
+                }else alert('Fehler: '+(r?r.data:''));
               },'json');
             });
             $('#beamerOverall').on('click',function(){

@@ -16,11 +16,16 @@ if (!function_exists('dgptm_beamer_view')) {
         ob_start(); ?>
 
         <style>
-          html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#fff;}
+          /* Hide WP admin bar, header, footer for true fullscreen */
+          #wpadminbar,header,.site-header,.elementor-location-header,
+          footer,.site-footer,.elementor-location-footer,
+          nav.navbar,.wp-site-blocks>header{display:none!important;}
+          html{margin-top:0!important;}
+          html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#fff;cursor:none;}
           *{box-sizing:border-box;}
           #dgptm_beamer{
-            width:100%;height:100vh;position:relative;overflow:hidden;
-            background:#fff;color:#1e293b;
+            position:fixed;top:0;left:0;width:100vw;height:100vh;overflow:hidden;
+            background:#fff;color:#1e293b;z-index:99999;
             font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
           }
           /* Accent bar */
@@ -113,10 +118,30 @@ if (!function_exists('dgptm_beamer_view')) {
           var HOME='<?php echo esc_js(home_url("/")); ?>';
           var IDLE_TEXT=<?php echo wp_json_encode($no_poll_text); ?>;
           var COLORS=['#22c55e','#ef4444','#f59e0b','#3b82f6','#8b5cf6','#f97316','#ec4899','#14b8a6'];
-          var poll=3000, clockTick=null, localR=null, lastR=null, qrDone=false;
+          var poll=1500, clockTick=null, localR=null, lastR=null, qrDone=false;
 
           function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
           function hexRgba(h,a){var r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return'rgba('+r+','+g+','+b+','+a+')';}
+
+          // Auto-fullscreen on first interaction (browsers require user gesture)
+          var fsRequested=false;
+          document.addEventListener('click',function(){
+            if(fsRequested)return;fsRequested=true;
+            var el=document.documentElement;
+            if(el.requestFullscreen)el.requestFullscreen();
+            else if(el.webkitRequestFullscreen)el.webkitRequestFullscreen();
+            else if(el.msRequestFullscreen)el.msRequestFullscreen();
+          },{once:true});
+          // Also try on first load (may work in kiosk/app mode)
+          try{var el=document.documentElement;if(el.requestFullscreen)el.requestFullscreen();}catch(e){}
+
+          // Prevent screen sleep via Wake Lock API
+          if('wakeLock' in navigator){
+            navigator.wakeLock.request('screen').catch(function(){});
+            document.addEventListener('visibilitychange',function(){
+              if(document.visibilityState==='visible')navigator.wakeLock.request('screen').catch(function(){});
+            });
+          }
 
           // Clock
           function startClock(){
@@ -302,25 +327,25 @@ if (!function_exists('dgptm_beamer_view')) {
 
             // Custom content mode
             if(d.active_poll&&d.active_poll.beamer_content_active&&d.active_poll.beamer_content){
-              renderCustomContent(d);poll=3000;return;
+              renderCustomContent(d);poll=1500;return;
             }
             if(st.mode==='results_all'&&d.state_questions){
               localR=null;
               var h='<div class="b-grid">';
               for(var i=0;i<d.state_questions.length;i++)h+='<div>'+buildResults(d.state_questions[i])+'</div>';
               h+='</div>';
-              document.getElementById('bContent').innerHTML=h;hideQR();poll=3000;
+              document.getElementById('bContent').innerHTML=h;hideQR();poll=1500;
             }else if(st.mode==='results_one'&&d.state_question){
               localR=null;
               if(!d.state_question.released){renderIdle(d);return;}
-              document.getElementById('bContent').innerHTML=buildResults(d.state_question);hideQR();poll=3000;
+              document.getElementById('bContent').innerHTML=buildResults(d.state_question);hideQR();poll=1500;
             }else if(d.active_question&&d.active_question.status==='active'){
               renderVoting(d);poll=1000;
             }else if(d.active_question&&d.active_question.status==='stopped'){
               if(d.active_question.results_released){
-                localR=null;document.getElementById('bContent').innerHTML=buildResults(d.active_question);hideQR();poll=3000;
-              }else{renderWaiting(d);poll=2000;}
-            }else{renderIdle(d);poll=3000;}
+                localR=null;document.getElementById('bContent').innerHTML=buildResults(d.active_question);hideQR();poll=1500;
+              }else{renderWaiting(d);poll=1500;}
+            }else{renderIdle(d);poll=1500;}
 
             if(st.qr_visible&&d.active_poll)showQR(d.active_poll.id);
           }
@@ -333,7 +358,7 @@ if (!function_exists('dgptm_beamer_view')) {
             x.onreadystatechange=function(){
               if(x.readyState!==4)return;
               if(x.status===200){try{var r=JSON.parse(x.responseText);if(r&&r.success&&r.data)render(r.data);}catch(e){}}
-              else poll=5000;
+              else poll=1500;
               setTimeout(fetch,poll);
             };
             x.send('action=dgptm_get_beamer_payload');

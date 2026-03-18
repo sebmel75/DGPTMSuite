@@ -795,8 +795,15 @@ class Handler {
 		$result = $client->create_webinar( $payload );
 
 		if ( ! $result['ok'] ) {
-			Helpers::log( sprintf( 'zm_create_webinar: Zoho Fehler: %s', $result['message'] ?? 'unbekannt' ), 'error' );
-			wp_send_json_error( [ 'message' => $result['message'] ] );
+			$msg = $result['message'] ?? 'Unbekannter Fehler';
+			Helpers::log( sprintf( 'zm_create_webinar: Zoho Fehler: %s', $msg ), 'error' );
+
+			// Hilfreiche Fehlermeldungen fuer bekannte Zoho-Fehler
+			if ( strpos( $msg, 'Presenter' ) !== false || strpos( $msg, 'ZUID' ) !== false ) {
+				$msg .= ' — Der OAuth-Benutzer muss ein aktives Zoho Meeting Konto in der Organisation haben.';
+			}
+
+			wp_send_json_error( [ 'message' => $msg ] );
 		}
 
 		// Extract session key and URLs from response

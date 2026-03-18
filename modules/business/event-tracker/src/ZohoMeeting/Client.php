@@ -200,15 +200,23 @@ class Client {
 
 		Helpers::log( sprintf( 'API Response: HTTP %d, Body: %s', $status_code, substr( $raw_body, 0, 500 ) ), 'info' );
 
-		// 401 retry: refresh token and try once more
+		// 401 handling: distinguish token-expired from content errors
 		if ( $status_code === 401 && ! $is_retry ) {
-			Helpers::log( 'HTTP 401 — Token erneuern und erneut versuchen', 'warning' );
-			delete_transient( self::TOKEN_TRANSIENT );
-			$this->access_token = $this->refresh_access_token();
-			if ( $this->access_token ) {
-				return $this->make_request( $endpoint, $method, $body, true );
+			// Check if error is a content error (not a token issue) — don't retry these
+			$error_key = isset( $response_body['error']['key'] ) ? $response_body['error']['key'] : '';
+			$no_retry_keys = [ 'INVALID_PRESENTER_ID', 'INVALID_SCOPE', 'INVALID_REQUEST' ];
+
+			if ( in_array( $error_key, $no_retry_keys, true ) ) {
+				Helpers::log( sprintf( 'HTTP 401 mit Fehler-Key %s — kein Token-Retry (inhaltlicher Fehler)', $error_key ), 'error' );
+			} else {
+				Helpers::log( 'HTTP 401 — Token erneuern und erneut versuchen', 'warning' );
+				delete_transient( self::TOKEN_TRANSIENT );
+				$this->access_token = $this->refresh_access_token();
+				if ( $this->access_token ) {
+					return $this->make_request( $endpoint, $method, $body, true );
+				}
+				Helpers::log( 'Token-Refresh nach 401 fehlgeschlagen', 'error' );
 			}
-			Helpers::log( 'Token-Refresh nach 401 fehlgeschlagen', 'error' );
 		}
 
 		if ( $status_code >= 400 ) {
@@ -244,7 +252,7 @@ class Client {
 			];
 		}
 
-		$error = isset( $result['body']['message'] ) ? $result['body']['message'] : 'HTTP ' . $result['code'];
+		$error = $this->extract_error( $result['body'], $result['code'] );
 		return [
 			'ok'      => false,
 			'message' => sprintf( __( 'API-Fehler: %s', 'event-tracker' ), $error ),
@@ -280,7 +288,7 @@ class Client {
 			];
 		}
 
-		$error = isset( $result['body']['message'] ) ? $result['body']['message'] : 'HTTP ' . $result['code'];
+		$error = $this->extract_error( $result['body'], $result['code'] );
 		return [ 'ok' => false, 'message' => $error ];
 	}
 
@@ -304,7 +312,7 @@ class Client {
 			];
 		}
 
-		$error = isset( $result['body']['message'] ) ? $result['body']['message'] : 'HTTP ' . $result['code'];
+		$error = $this->extract_error( $result['body'], $result['code'] );
 		return [ 'ok' => false, 'message' => $error ];
 	}
 
@@ -330,7 +338,7 @@ class Client {
 			return [ 'ok' => true, 'data' => $this->normalize_session( $result['body'] ) ];
 		}
 
-		$error = isset( $result['body']['message'] ) ? $result['body']['message'] : 'HTTP ' . $result['code'];
+		$error = $this->extract_error( $result['body'], $result['code'] );
 		return [ 'ok' => false, 'message' => $error ];
 	}
 
@@ -351,7 +359,7 @@ class Client {
 			return [ 'ok' => true, 'message' => __( 'Webinar geloescht.', 'event-tracker' ) ];
 		}
 
-		$error = isset( $result['body']['message'] ) ? $result['body']['message'] : 'HTTP ' . $result['code'];
+		$error = $this->extract_error( $result['body'], $result['code'] );
 		return [ 'ok' => false, 'message' => $error ];
 	}
 
@@ -383,7 +391,7 @@ class Client {
 			return [ 'ok' => true, 'data' => [ 'recordings' => $normalized ] ];
 		}
 
-		$error = isset( $result['body']['message'] ) ? $result['body']['message'] : 'HTTP ' . $result['code'];
+		$error = $this->extract_error( $result['body'], $result['code'] );
 		return [ 'ok' => false, 'message' => $error ];
 	}
 
@@ -411,7 +419,7 @@ class Client {
 			return [ 'ok' => true, 'data' => $result['body'] ];
 		}
 
-		$error = isset( $result['body']['message'] ) ? $result['body']['message'] : 'HTTP ' . $result['code'];
+		$error = $this->extract_error( $result['body'], $result['code'] );
 		return [ 'ok' => false, 'message' => $error ];
 	}
 
@@ -463,5 +471,33 @@ class Client {
 		}
 
 		return [ 'session' => $normalized ];
+	}
+
+	/**
+	 * Extract error message from Zoho API response body.
+	 *
+	 * Zoho returns errors in different formats:
+	 *   {"error":{"message":"...","errorCode":3000}} or
+	 *   {"message":"..."} or
+	 *   {"error":"invalid_token"}
+	 *
+	 * @param array $body   Response body.
+	 * @param int   $code   HTTP status code.
+	 * @return string Human-readable error message.
+	 */
+	private function extract_error( $body, $code ) {
+		// Nested: {"error":{"message":"..."}}
+		if ( isset( $body['error'] ) && is_array( $body['error'] ) && isset( $body['error']['message'] ) ) {
+			return $body['error']['message'];
+		}
+		// Flat: {"message":"..."}
+		if ( isset( $body['message'] ) ) {
+			return $body['message'];
+		}
+		// String error: {"error":"invalid_token"}
+		if ( isset( $body['error'] ) && is_string( $body['error'] ) ) {
+			return $body['error'];
+		}
+		return 'HTTP ' . $code;
 	}
 }

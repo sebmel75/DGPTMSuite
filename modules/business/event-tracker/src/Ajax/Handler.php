@@ -639,7 +639,7 @@ class Handler {
 		];
 		$status_label = isset( $status_labels[ $zm_status ] ) ? $status_labels[ $zm_status ] : $zm_status;
 		?>
-		<div class="et-zm-panel" data-event-id="<?php echo esc_attr( $event_id ); ?>">
+		<div class="et-zm-panel open" data-event-id="<?php echo esc_attr( $event_id ); ?>">
 			<button type="button" class="et-zm-toggle">
 				<span class="et-zm-arrow">&#9654;</span>
 				<?php esc_html_e( 'Zoho Meeting', 'event-tracker' ); ?>
@@ -770,18 +770,20 @@ class Handler {
 			wp_send_json_error( [ 'message' => __( 'Event hat kein Start-/Enddatum.', 'event-tracker' ) ] );
 		}
 
-		$duration = max( 1, (int) round( ( $end_ts - $start_ts ) / 60 ) );
+		// Zoho Meeting API erwartet Duration in Millisekunden
+		$duration_ms = max( 60000, (int) ( ( $end_ts - $start_ts ) * 1000 ) );
 
 		$tz = wp_timezone();
 		$start_dt = new \DateTimeImmutable( '@' . $start_ts );
 		$start_dt = $start_dt->setTimezone( $tz );
 
 		$client = $this->get_zm_client();
+		// Zoho Meeting Startzeit-Format: "Mar 18, 2026 04:00 PM"
 		$result = $client->create_webinar( [
-			'topic'      => $title,
-			'start_time' => $start_dt->format( 'M d, Y h:i A' ),
-			'duration'   => $duration,
-			'timezone'   => $tz->getName(),
+			'topic'     => $title,
+			'startTime' => $start_dt->format( 'M d, Y h:i A' ),
+			'duration'  => $duration_ms,
+			'timezone'  => $tz->getName(),
 		] );
 
 		if ( ! $result['ok'] ) {

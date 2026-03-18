@@ -203,7 +203,7 @@ class Client {
 	 * @return array
 	 */
 	public function test_connection() {
-		$result = $this->make_request( 'sessions.json?limit=1' );
+		$result = $this->make_request( 'webinar.json?limit=1' );
 
 		if ( is_wp_error( $result ) ) {
 			return [
@@ -229,21 +229,20 @@ class Client {
 	/**
 	 * Create webinar
 	 *
-	 * @param array $data Webinar data (topic, start_time, duration, timezone, type).
+	 * @param array $data Webinar data (topic, startTime, duration, timezone).
 	 * @return array
 	 */
 	public function create_webinar( $data ) {
 		$payload = [
 			'session' => array_merge(
 				[
-					'type'     => 'webinar',
 					'timezone' => wp_timezone_string(),
 				],
 				$data
 			),
 		];
 
-		$result = $this->make_request( 'sessions.json', 'POST', $payload );
+		$result = $this->make_request( 'webinar.json', 'POST', $payload );
 
 		if ( is_wp_error( $result ) ) {
 			return [ 'ok' => false, 'message' => $result->get_error_message() ];
@@ -252,7 +251,7 @@ class Client {
 		if ( $result['code'] >= 200 && $result['code'] < 300 ) {
 			return [
 				'ok'   => true,
-				'data' => $result['body'],
+				'data' => $this->normalize_session( $result['body'] ),
 			];
 		}
 
@@ -263,11 +262,11 @@ class Client {
 	/**
 	 * Get webinar details
 	 *
-	 * @param string $session_key Session key.
+	 * @param string $session_key Session/meeting key.
 	 * @return array
 	 */
 	public function get_webinar( $session_key ) {
-		$result = $this->make_request( 'sessions/' . urlencode( $session_key ) . '.json' );
+		$result = $this->make_request( 'webinar/' . urlencode( $session_key ) . '.json' );
 
 		if ( is_wp_error( $result ) ) {
 			return [ 'ok' => false, 'message' => $result->get_error_message() ];
@@ -276,7 +275,7 @@ class Client {
 		if ( $result['code'] >= 200 && $result['code'] < 300 ) {
 			return [
 				'ok'   => true,
-				'data' => $result['body'],
+				'data' => $this->normalize_session( $result['body'] ),
 			];
 		}
 
@@ -287,7 +286,7 @@ class Client {
 	/**
 	 * Update webinar
 	 *
-	 * @param string $session_key Session key.
+	 * @param string $session_key Session/meeting key.
 	 * @param array  $data        Data to update.
 	 * @return array
 	 */
@@ -296,14 +295,14 @@ class Client {
 			'session' => $data,
 		];
 
-		$result = $this->make_request( 'sessions/' . urlencode( $session_key ) . '.json', 'PUT', $payload );
+		$result = $this->make_request( 'webinar/' . urlencode( $session_key ) . '.json', 'PUT', $payload );
 
 		if ( is_wp_error( $result ) ) {
 			return [ 'ok' => false, 'message' => $result->get_error_message() ];
 		}
 
 		if ( $result['code'] >= 200 && $result['code'] < 300 ) {
-			return [ 'ok' => true, 'data' => $result['body'] ];
+			return [ 'ok' => true, 'data' => $this->normalize_session( $result['body'] ) ];
 		}
 
 		$error = isset( $result['body']['message'] ) ? $result['body']['message'] : 'HTTP ' . $result['code'];
@@ -313,11 +312,11 @@ class Client {
 	/**
 	 * Delete webinar
 	 *
-	 * @param string $session_key Session key.
+	 * @param string $session_key Session/meeting key.
 	 * @return array
 	 */
 	public function delete_webinar( $session_key ) {
-		$result = $this->make_request( 'sessions/' . urlencode( $session_key ) . '.json', 'DELETE' );
+		$result = $this->make_request( 'webinar/' . urlencode( $session_key ) . '.json', 'DELETE' );
 
 		if ( is_wp_error( $result ) ) {
 			return [ 'ok' => false, 'message' => $result->get_error_message() ];
@@ -334,11 +333,50 @@ class Client {
 	/**
 	 * Get recordings for a session
 	 *
-	 * @param string $session_key Session key.
+	 * @param string $session_key Session/meeting key.
 	 * @return array
 	 */
 	public function get_recordings( $session_key ) {
-		$result = $this->make_request( 'sessions/' . urlencode( $session_key ) . '/recordings.json' );
+		// Zoho Meeting recordings endpoint uses meetingKey as query param
+		$result = $this->make_request( 'recordings.json?meetingKey=' . urlencode( $session_key ) );
+
+		if ( is_wp_error( $result ) ) {
+			return [ 'ok' => false, 'message' => $result->get_error_message() ];
+		}
+
+		if ( $result['code'] >= 200 && $result['code'] < 300 ) {
+			// Normalize recording field names (camelCase → snake_case)
+			$recordings = isset( $result['body']['recordings'] ) ? $result['body']['recordings'] : [];
+			$normalized = [];
+			foreach ( $recordings as $rec ) {
+				$normalized[] = [
+					'play_url'     => isset( $rec['playUrl'] ) ? $rec['playUrl'] : ( isset( $rec['play_url'] ) ? $rec['play_url'] : '' ),
+					'download_url' => isset( $rec['downloadUrl'] ) ? $rec['downloadUrl'] : ( isset( $rec['download_url'] ) ? $rec['download_url'] : '' ),
+					'share_url'    => isset( $rec['shareUrl'] ) ? $rec['shareUrl'] : ( isset( $rec['share_url'] ) ? $rec['share_url'] : '' ),
+				];
+			}
+			return [ 'ok' => true, 'data' => [ 'recordings' => $normalized ] ];
+		}
+
+		$error = isset( $result['body']['message'] ) ? $result['body']['message'] : 'HTTP ' . $result['code'];
+		return [ 'ok' => false, 'message' => $error ];
+	}
+
+	/**
+	 * Add co-host to session
+	 *
+	 * @param string $session_key Session/meeting key.
+	 * @param string $email       Co-host email.
+	 * @return array
+	 */
+	public function add_cohost( $session_key, $email ) {
+		$payload = [
+			'cohosts' => [
+				[ 'email' => $email ],
+			],
+		];
+
+		$result = $this->make_request( 'webinar/' . urlencode( $session_key ) . '/cohosts.json', 'PUT', $payload );
 
 		if ( is_wp_error( $result ) ) {
 			return [ 'ok' => false, 'message' => $result->get_error_message() ];
@@ -353,30 +391,52 @@ class Client {
 	}
 
 	/**
-	 * Add co-host to session
+	 * Normalize Zoho API response field names.
 	 *
-	 * @param string $session_key Session key.
-	 * @param string $email       Co-host email.
-	 * @return array
+	 * Zoho Meeting API returns camelCase field names (meetingKey, startLink, joinLink).
+	 * This method normalizes them to our internal snake_case convention.
+	 *
+	 * @param array $body Raw API response body.
+	 * @return array Normalized response with 'session' key.
 	 */
-	public function add_cohost( $session_key, $email ) {
-		$payload = [
-			'cohosts' => [
-				[ 'email' => $email ],
-			],
+	private function normalize_session( $body ) {
+		$session = isset( $body['session'] ) ? $body['session'] : $body;
+
+		// Map Zoho camelCase → our snake_case (check both variants for robustness)
+		$key_map = [
+			'session_key' => [ 'meetingKey', 'session_key', 'key' ],
+			'start_url'   => [ 'startLink', 'start_url', 'startUrl' ],
+			'join_url'    => [ 'joinLink', 'join_url', 'joinUrl', 'registrationLink' ],
+			'status'      => [ 'status' ],
+			'topic'       => [ 'topic' ],
 		];
 
-		$result = $this->make_request( 'sessions/' . urlencode( $session_key ) . '/cohosts.json', 'PUT', $payload );
-
-		if ( is_wp_error( $result ) ) {
-			return [ 'ok' => false, 'message' => $result->get_error_message() ];
+		$normalized = [];
+		foreach ( $key_map as $target => $sources ) {
+			$normalized[ $target ] = '';
+			foreach ( $sources as $source ) {
+				if ( ! empty( $session[ $source ] ) ) {
+					$normalized[ $target ] = $session[ $source ];
+					break;
+				}
+			}
 		}
 
-		if ( $result['code'] >= 200 && $result['code'] < 300 ) {
-			return [ 'ok' => true, 'data' => $result['body'] ];
+		// Collect consumed source keys to avoid duplication
+		$consumed = [];
+		foreach ( $key_map as $sources ) {
+			foreach ( $sources as $source ) {
+				$consumed[] = $source;
+			}
 		}
 
-		$error = isset( $result['body']['message'] ) ? $result['body']['message'] : 'HTTP ' . $result['code'];
-		return [ 'ok' => false, 'message' => $error ];
+		// Pass through unconsumed fields only
+		foreach ( $session as $k => $v ) {
+			if ( ! isset( $normalized[ $k ] ) && ! in_array( $k, $consumed, true ) ) {
+				$normalized[ $k ] = $v;
+			}
+		}
+
+		return [ 'session' => $normalized ];
 	}
 }

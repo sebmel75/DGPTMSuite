@@ -1,6 +1,6 @@
 /**
  * Event Tracker Frontend Styles
- * Version: 2.1.0
+ * Version: 2.2.0
  */
 
 /* =========================================================================
@@ -8,31 +8,34 @@
  * ======================================================================= */
 :root {
 	--et-radius-sm: 6px;
-	--et-radius-md: 10px;
-	--et-radius-lg: 14px;
+	--et-radius-md: 8px;
+	--et-radius-lg: 12px;
 	--et-radius-pill: 100px;
-	--et-shadow-sm: 0 1px 2px rgba(0,0,0,.04);
-	--et-shadow-md: 0 2px 8px rgba(0,0,0,.06);
-	--et-shadow-lg: 0 4px 16px rgba(0,0,0,.08);
-	--et-border: #e8eaed;
-	--et-border-focus: #a4b3c7;
+	--et-shadow-sm: 0 1px 2px rgba(0,0,0,.03);
+	--et-shadow-md: 0 2px 6px rgba(0,0,0,.05);
+	--et-shadow-lg: 0 4px 12px rgba(0,0,0,.07);
+	--et-border: #e5e7eb;
+	--et-border-focus: #94a3b8;
 	--et-bg: #fff;
-	--et-bg-subtle: #f8f9fb;
-	--et-bg-hover: #f1f3f5;
-	--et-text: #1a1d21;
-	--et-text-secondary: #5f6b7a;
-	--et-text-muted: #8b95a2;
-	--et-primary: #3b6de6;
-	--et-primary-hover: #2c5cd4;
-	--et-primary-light: #eef3ff;
-	--et-success: #0d9a5e;
-	--et-success-bg: #e8f8f0;
-	--et-warning-bg: #fef7e6;
-	--et-warning-text: #8a6d25;
-	--et-danger: #d14343;
-	--et-danger-bg: #fef0f0;
-	--et-danger-hover-bg: #fde4e4;
-	--et-transition: 180ms ease;
+	--et-bg-subtle: #f9fafb;
+	--et-bg-hover: #f3f4f6;
+	--et-text: #1e293b;
+	--et-text-secondary: #64748b;
+	--et-text-muted: #94a3b8;
+	--et-primary: #4f7df5;
+	--et-primary-hover: #3b6de6;
+	--et-primary-light: #eff4ff;
+	--et-success: #10b981;
+	--et-success-bg: #ecfdf5;
+	--et-warning-bg: #fffbeb;
+	--et-warning-text: #92400e;
+	--et-danger: #ef4444;
+	--et-danger-bg: #fef2f2;
+	--et-danger-hover-bg: #fee2e2;
+	--et-transition: 150ms ease;
+	--et-zm-accent: #6366f1;
+	--et-zm-accent-light: #eef2ff;
+	--et-zm-accent-hover: #4f46e5;
 }
 
 /* =========================================================================
@@ -59,24 +62,24 @@
 .et-btn {
 	display: inline-flex;
 	align-items: center;
-	gap: 6px;
+	gap: 5px;
 	border: 1px solid var(--et-border);
 	border-radius: var(--et-radius-md);
-	padding: 8px 14px;
+	padding: 7px 13px;
 	background: var(--et-bg);
 	cursor: pointer;
-	font-size: 0.875rem;
+	font-size: 0.8125rem;
 	font-weight: 500;
 	color: var(--et-text);
 	transition: all var(--et-transition);
-	box-shadow: var(--et-shadow-sm);
+	box-shadow: none;
 	letter-spacing: -0.01em;
+	line-height: 1.4;
 }
 
 .et-btn:hover {
 	background: var(--et-bg-hover);
 	border-color: var(--et-border-focus);
-	box-shadow: var(--et-shadow-md);
 }
 
 .et-btn:active {
@@ -109,7 +112,6 @@
 	border-radius: var(--et-radius-lg);
 	padding: 16px;
 	background: var(--et-bg);
-	box-shadow: var(--et-shadow-sm);
 }
 
 .et-hidden {
@@ -234,11 +236,10 @@
 .et-form {
 	margin-top: 12px;
 	border: 1px solid var(--et-border);
-	padding: 20px;
+	padding: 18px;
 	border-radius: var(--et-radius-lg);
 	max-width: 820px;
 	background: var(--et-bg);
-	box-shadow: var(--et-shadow-sm);
 }
 
 .et-form h3 {
@@ -312,18 +313,16 @@
 	background: var(--et-primary);
 	border-color: transparent;
 	color: #fff;
-	padding: 9px 20px;
+	padding: 8px 18px;
 	border-radius: var(--et-radius-md);
-	font-size: 0.875rem;
+	font-size: 0.8125rem;
 	font-weight: 500;
 	cursor: pointer;
 	transition: all var(--et-transition);
-	box-shadow: var(--et-shadow-sm);
 }
 
 .et-form .button.button-primary:hover {
 	background: var(--et-primary-hover);
-	box-shadow: var(--et-shadow-md);
 }
 
 /* Additional Dates */
@@ -383,45 +382,47 @@
  * Zoho Meeting Panel
  * ======================================================================= */
 .et-zm-panel {
-	margin-top: 16px;
-	border: 1px solid var(--et-border);
+	margin-top: 20px;
+	border: 1px solid var(--et-zm-accent);
 	border-radius: var(--et-radius-lg);
 	max-width: 820px;
 	overflow: hidden;
 	background: var(--et-bg);
-	box-shadow: var(--et-shadow-sm);
+	box-shadow: 0 0 0 1px var(--et-zm-accent-light);
 }
 
 .et-zm-toggle {
 	display: flex;
 	align-items: center;
 	gap: 10px;
-	padding: 14px 18px;
-	background: var(--et-bg-subtle);
+	padding: 12px 16px;
+	background: var(--et-zm-accent-light);
 	cursor: pointer;
 	font-weight: 600;
-	font-size: 0.9375rem;
+	font-size: 0.875rem;
 	border: none;
 	width: 100%;
 	text-align: left;
-	color: var(--et-text);
+	color: var(--et-zm-accent);
 	transition: background var(--et-transition);
+	letter-spacing: -0.01em;
 }
 
 .et-zm-toggle:hover {
-	background: var(--et-bg-hover);
+	background: #e0e7ff;
 }
 
 .et-zm-arrow {
-	transition: transform 250ms ease;
-	font-size: 0.7rem;
-	color: var(--et-text-muted);
+	transition: transform 200ms ease;
+	font-size: 0.65rem;
+	color: var(--et-zm-accent);
+	opacity: 0.6;
 }
 
 .et-zm-body {
-	padding: 20px;
+	padding: 18px;
 	display: none;
-	border-top: 1px solid var(--et-border);
+	border-top: 1px solid #e0e7ff;
 }
 
 .et-zm-panel.open .et-zm-body {
@@ -435,22 +436,23 @@
 /* Status Badges */
 .et-zm-status {
 	display: inline-block;
-	padding: 3px 12px;
+	padding: 2px 10px;
 	border-radius: var(--et-radius-pill);
-	font-size: 0.75rem;
+	font-size: 0.6875rem;
 	font-weight: 600;
 	margin-left: auto;
-	letter-spacing: 0.02em;
+	letter-spacing: 0.03em;
+	text-transform: uppercase;
 }
 
 .et-zm-status--none {
-	background: #e8eaed;
+	background: #f1f5f9;
 	color: var(--et-text-muted);
 }
 
 .et-zm-status--created {
-	background: var(--et-primary-light);
-	color: var(--et-primary);
+	background: var(--et-zm-accent-light);
+	color: var(--et-zm-accent);
 }
 
 .et-zm-status--started {
@@ -521,17 +523,18 @@
 
 /* Buttons */
 .et-zm-btn {
-	padding: 6px 12px;
+	padding: 5px 11px;
 	border: 1px solid var(--et-border);
 	border-radius: var(--et-radius-sm);
 	background: var(--et-bg);
 	cursor: pointer;
-	font-size: 0.8125rem;
+	font-size: 0.75rem;
 	font-weight: 500;
 	white-space: nowrap;
 	color: var(--et-text-secondary);
 	transition: all var(--et-transition);
-	box-shadow: var(--et-shadow-sm);
+	box-shadow: none;
+	line-height: 1.4;
 }
 
 .et-zm-btn:hover {
@@ -542,17 +545,16 @@
 
 .et-zm-btn:active {
 	transform: translateY(1px);
-	box-shadow: none;
 }
 
 .et-zm-btn.primary {
-	background: var(--et-primary);
+	background: var(--et-zm-accent);
 	color: #fff;
 	border-color: transparent;
 }
 
 .et-zm-btn.primary:hover {
-	background: var(--et-primary-hover);
+	background: var(--et-zm-accent-hover);
 }
 
 .et-zm-btn.danger {
@@ -702,12 +704,11 @@
  * Mailer Section
  * ======================================================================= */
 .et-mailer {
-	margin-top: 28px;
-	padding: 20px;
+	margin-top: 24px;
+	padding: 18px;
 	border: 1px solid var(--et-border);
 	border-radius: var(--et-radius-lg);
 	background: var(--et-bg);
-	box-shadow: var(--et-shadow-sm);
 }
 
 .et-mailer h3 {
@@ -898,8 +899,4 @@
 	}
 }
 
-@media (max-width: 640px) {
-	.et-grid {
-		grid-template-columns: 1fr;
-	}
-}
+/* 640px breakpoint removed — .et-grid already set to 1fr at 768px */

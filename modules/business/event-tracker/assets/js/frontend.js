@@ -1,6 +1,6 @@
 /**
  * Event Tracker Frontend JavaScript
- * Version: 2.1.0
+ * Version: 2.2.0
  */
 
 (function($) {
@@ -18,6 +18,16 @@
 		var nonce = eventTrackerData.nonce;
 
 		var currentPanel = null;
+
+		/**
+		 * Extract error message safely from AJAX response
+		 */
+		function getMsg(res, fallback) {
+			if (res && res.data && res.data.message) {
+				return res.data.message;
+			}
+			return fallback || 'Ein Fehler ist aufgetreten.';
+		}
 
 		/**
 		 * Show message
@@ -58,17 +68,17 @@
 			$.ajax({
 				url: ajaxUrl,
 				type: 'POST',
+				dataType: 'json',
 				data: data,
 				success: function(res) {
-					if (res.success) {
+					if (res && res.success) {
 						showPanel(currentPanel, res.data);
 					} else {
-						var msg = res.data && res.data.message ? res.data.message : 'Fehler';
-						showMsg(msg, 'error');
+						showMsg(getMsg(res, 'Fehler beim Laden'), 'error');
 					}
 				},
 				error: function(xhr, status, error) {
-					showMsg('Netzwerkfehler: ' + error, 'error');
+					showMsg('Netzwerkfehler: ' + (error || status || 'Verbindung fehlgeschlagen'), 'error');
 				}
 			});
 		}
@@ -113,18 +123,19 @@
 			$.ajax({
 				url: ajaxUrl,
 				type: 'POST',
+				dataType: 'json',
 				data: {
 					action: 'et_delete_event',
 					nonce: nonce,
 					event_id: eventId
 				},
 				success: function(res) {
-					if (res.success) {
+					if (res && res.success) {
 						showMsg('Event geloescht', 'success');
 						currentPanel = 'list';
 						fetchPanel('et_fetch_event_list');
 					} else {
-						showMsg(res.data.message || 'Fehler beim Loeschen', 'error');
+						showMsg(getMsg(res, 'Fehler beim Loeschen'), 'error');
 					}
 				},
 				error: function() {
@@ -174,7 +185,7 @@
 		}
 
 		/**
-		 * Zoho Meeting AJAX helper
+		 * Zoho Meeting AJAX helper with robust error handling
 		 */
 		function zmAjax(action, extraData, callback) {
 			var data = {
@@ -188,12 +199,13 @@
 			$.ajax({
 				url: ajaxUrl,
 				type: 'POST',
+				dataType: 'json',
 				data: data,
 				success: function(res) {
 					if (callback) callback(res);
 				},
-				error: function() {
-					zmShowMsg('Netzwerkfehler', 'error');
+				error: function(xhr, status, error) {
+					zmShowMsg('Netzwerkfehler: ' + (error || status || 'Verbindung fehlgeschlagen'), 'error');
 				}
 			});
 		}
@@ -208,12 +220,12 @@
 			var btn = $(this);
 			btn.prop('disabled', true).text('Erstelle...');
 			zmAjax('et_zm_create_webinar', {}, function(res) {
-				if (res.success) {
-					zmShowMsg(res.data.message, 'success');
+				if (res && res.success) {
+					zmShowMsg(getMsg(res, 'Webinar erstellt'), 'success');
 					currentPanel = 'form';
 					fetchPanel('et_fetch_event_form', { event_id: zmEventId() });
 				} else {
-					zmShowMsg(res.data.message || 'Fehler', 'error');
+					zmShowMsg(getMsg(res, 'Webinar konnte nicht erstellt werden'), 'error');
 					btn.prop('disabled', false).text('Webinar anlegen');
 				}
 			});
@@ -225,12 +237,12 @@
 			btn.prop('disabled', true);
 			zmAjax('et_zm_get_links', {}, function(res) {
 				btn.prop('disabled', false);
-				if (res.success) {
-					$('#et-zm-start-url').val(res.data.start_url || '');
-					$('#et-zm-join-url').val(res.data.join_url || '');
+				if (res && res.success) {
+					$('#et-zm-start-url').val((res.data && res.data.start_url) || '');
+					$('#et-zm-join-url').val((res.data && res.data.join_url) || '');
 					zmShowMsg('Links aktualisiert', 'success');
 				} else {
-					zmShowMsg(res.data.message || 'Fehler', 'error');
+					zmShowMsg(getMsg(res, 'Links konnten nicht abgerufen werden'), 'error');
 				}
 			});
 		});
@@ -275,15 +287,15 @@
 			btn.prop('disabled', true);
 			zmAjax('et_zm_get_recording', {}, function(res) {
 				btn.prop('disabled', false);
-				if (res.success) {
+				if (res && res.success && res.data) {
 					$('#et-zm-recording-url').val(res.data.recording_url || '');
-					zmShowMsg(res.data.message, res.data.recording_url ? 'success' : 'error');
+					zmShowMsg(getMsg(res, 'Recording abgefragt'), res.data.recording_url ? 'success' : 'error');
 					if (res.data.recording_url) {
 						currentPanel = 'form';
 						fetchPanel('et_fetch_event_form', { event_id: zmEventId() });
 					}
 				} else {
-					zmShowMsg(res.data.message || 'Fehler', 'error');
+					zmShowMsg(getMsg(res, 'Recording konnte nicht abgerufen werden'), 'error');
 				}
 			});
 		});
@@ -294,10 +306,10 @@
 			btn.prop('disabled', true).text('Teste...');
 			zmAjax('et_zm_test_connection', {}, function(res) {
 				btn.prop('disabled', false).text('Verbindung testen');
-				if (res.success) {
-					zmShowMsg(res.data.message, 'success');
+				if (res && res.success) {
+					zmShowMsg(getMsg(res, 'Verbindung erfolgreich'), 'success');
 				} else {
-					zmShowMsg(res.data.message || 'Verbindung fehlgeschlagen', 'error');
+					zmShowMsg(getMsg(res, 'Verbindung fehlgeschlagen'), 'error');
 				}
 			});
 		});
@@ -305,11 +317,11 @@
 		// Start Webinar
 		$(document).on('click', '[data-zm-action="start-webinar"]', function() {
 			zmAjax('et_zm_start_webinar', {}, function(res) {
-				if (res.success && res.data.start_url) {
+				if (res && res.success && res.data && res.data.start_url) {
 					window.open(res.data.start_url, '_blank');
 					zmShowMsg('Webinar wird gestartet...', 'success');
 				} else {
-					zmShowMsg(res.data.message || 'Fehler', 'error');
+					zmShowMsg(getMsg(res, 'Webinar konnte nicht gestartet werden'), 'error');
 				}
 			});
 		});
@@ -322,12 +334,12 @@
 			var btn = $(this);
 			btn.prop('disabled', true);
 			zmAjax('et_zm_delete_webinar', {}, function(res) {
-				if (res.success) {
+				if (res && res.success) {
 					zmShowMsg('Webinar geloescht', 'success');
 					currentPanel = 'form';
 					fetchPanel('et_fetch_event_form', { event_id: zmEventId() });
 				} else {
-					zmShowMsg(res.data.message || 'Fehler', 'error');
+					zmShowMsg(getMsg(res, 'Webinar konnte nicht geloescht werden'), 'error');
 					btn.prop('disabled', false);
 				}
 			});
@@ -350,6 +362,7 @@
 				$.ajax({
 					url: ajaxUrl,
 					type: 'POST',
+					dataType: 'json',
 					data: {
 						action: 'et_zm_search_users',
 						nonce: nonce,
@@ -357,11 +370,11 @@
 					},
 					success: function(res) {
 						results.empty();
-						if (res.success && res.data.users && res.data.users.length) {
+						if (res && res.success && res.data && res.data.users && res.data.users.length) {
 							$.each(res.data.users, function(i, user) {
 								results.append(
-									'<div class="et-zm-user-item" data-email="' + user.email + '">' +
-									user.name + ' &lt;' + user.email + '&gt;</div>'
+									'<div class="et-zm-user-item" data-email="' + $('<span>').text(user.email).html() + '">' +
+									$('<span>').text(user.name).html() + ' &lt;' + $('<span>').text(user.email).html() + '&gt;</div>'
 								);
 							});
 							results.addClass('visible');
@@ -378,13 +391,17 @@
 			var email = $(this).data('email');
 			var tags = $('#et-zm-cohost-tags');
 
-			if (tags.find('[data-email="' + email + '"]').length) {
+			// Duplicate check using .filter() to avoid selector injection
+			if (tags.find('.et-zm-tag').filter(function() {
+				return $(this).data('email') === email;
+			}).length) {
 				return;
 			}
 
+			var escapedEmail = $('<span>').text(email).html();
 			tags.append(
-				'<span class="et-zm-tag" data-email="' + email + '">' +
-				email + ' <span class="et-zm-tag-remove">&times;</span></span>'
+				'<span class="et-zm-tag" data-email="' + escapedEmail + '">' +
+				escapedEmail + ' <span class="et-zm-tag-remove">&times;</span></span>'
 			);
 
 			$('#et-zm-user-search').val('');
@@ -403,7 +420,7 @@
 			}
 		});
 
-		// Co-Host: Save
+		// Co-Host: Save — use 'emails' key so PHP receives $_POST['emails'] as array
 		$(document).on('click', '[data-zm-action="save-cohosts"]', function() {
 			var btn = $(this);
 			var emails = [];
@@ -420,18 +437,19 @@
 			$.ajax({
 				url: ajaxUrl,
 				type: 'POST',
+				dataType: 'json',
 				data: {
 					action: 'et_zm_add_cohosts',
 					nonce: nonce,
 					event_id: zmEventId(),
-					'emails[]': emails
+					emails: emails
 				},
 				success: function(res) {
 					btn.prop('disabled', false).text('Co-Hosts speichern');
-					if (res.success) {
-						zmShowMsg(res.data.message, 'success');
+					if (res && res.success) {
+						zmShowMsg(getMsg(res, 'Co-Hosts gespeichert'), 'success');
 					} else {
-						zmShowMsg(res.data.message || 'Fehler', 'error');
+						zmShowMsg(getMsg(res, 'Co-Hosts konnten nicht gespeichert werden'), 'error');
 					}
 				},
 				error: function() {

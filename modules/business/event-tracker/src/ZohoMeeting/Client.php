@@ -2,8 +2,10 @@
 /**
  * Zoho Meeting API Client
  *
- * OAuth2-basierter Client fuer die Zoho Meeting API.
+ * OAuth2-basierter Client fuer die Zoho Webinar API.
  * Nutzt die bestehenden CRM-Zugangsdaten (Client-ID, Secret, Refresh-Token).
+ *
+ * Basiert auf funktionierendem Muster (ZohoWebinar Referenz-Klasse).
  *
  * @package EventTracker\ZohoMeeting
  * @since 2.1.0
@@ -45,41 +47,52 @@ class Client {
 	private $zsoid;
 
 	/**
-	 * Transient key for access token
-	 *
-	 * @var string
-	 */
-	const TOKEN_TRANSIENT = 'et_zoho_meeting_access_token';
-
-	/**
-	 * Constructor
-	 */
-	/**
 	 * Zoho User ID (ZUID) of the presenter
 	 *
 	 * @var string
 	 */
 	private $presenter_zuid;
 
+	/**
+	 * Transient key for access token
+	 */
+	const TOKEN_TRANSIENT = 'et_zoho_meeting_access_token';
+
+	/**
+	 * Default configuration (matching working reference)
+	 */
+	const DEFAULT_ZSOID     = '20086233025';
+	const DEFAULT_PRESENTER = '20086597172';
+	const DEFAULT_API_BASE  = 'https://meeting.zoho.eu';
+	const AUTH_URL          = 'https://accounts.zoho.eu/oauth/v2/token';
+
+	/**
+	 * Constructor
+	 */
 	public function __construct() {
-		$settings       = get_option( Constants::OPT_KEY, [] );
-		$this->api_base = ! empty( $settings['zoho_meeting_api_base'] )
+		$settings = get_option( Constants::OPT_KEY, [] );
+
+		$this->api_base       = ! empty( $settings['zoho_meeting_api_base'] )
 			? rtrim( $settings['zoho_meeting_api_base'], '/' )
-			: 'https://meeting.zoho.eu';
-		$this->zsoid    = ! empty( $settings['zoho_meeting_zsoid'] )
+			: self::DEFAULT_API_BASE;
+		$this->zsoid          = ! empty( $settings['zoho_meeting_zsoid'] )
 			? $settings['zoho_meeting_zsoid']
-			: '';
+			: self::DEFAULT_ZSOID;
 		$this->presenter_zuid = ! empty( $settings['zoho_meeting_presenter'] )
 			? $settings['zoho_meeting_presenter']
-			: '';
+			: self::DEFAULT_PRESENTER;
 
 		Helpers::log( sprintf(
 			'ZohoMeeting Client init: api_base=%s, zsoid=%s, presenter=%s',
 			$this->api_base,
-			$this->zsoid ?: '(NICHT GESETZT)',
-			$this->presenter_zuid ?: '(NICHT GESETZT)'
+			$this->zsoid,
+			$this->presenter_zuid
 		), 'info' );
 	}
+
+	/* =========================================================================
+	 * Token Management
+	 * ======================================================================= */
 
 	/**
 	 * Get access token (cached in transient)
@@ -122,7 +135,7 @@ class Client {
 		}
 
 		$response = wp_remote_post(
-			'https://accounts.zoho.eu/oauth/v2/token',
+			self::AUTH_URL,
 			[
 				'timeout' => 15,
 				'body'    => [
@@ -135,93 +148,102 @@ class Client {
 		);
 
 		if ( is_wp_error( $response ) ) {
-			Helpers::log( 'Zoho Meeting: Token-Refresh fehlgeschlagen: ' . $response->get_error_message(), 'error' );
+			Helpers::log( 'Token-Refresh fehlgeschlagen: ' . $response->get_error_message(), 'error' );
 			return false;
 		}
 
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( empty( $body['access_token'] ) ) {
-			$error = isset( $body['error'] ) ? $body['error'] : 'unknown';
-			Helpers::log( 'Zoho Meeting: Token-Refresh Fehler: ' . $error, 'error' );
+			Helpers::log( 'Token-Refresh Fehler: ' . wp_json_encode( $body ), 'error' );
 			return false;
 		}
 
 		$token      = $body['access_token'];
 		$expires_in = isset( $body['expires_in'] ) ? (int) $body['expires_in'] : 3600;
 
-		// Cache with 5-minute buffer
-		set_transient( self::TOKEN_TRANSIENT, $token, max( $expires_in - 300, 60 ) );
+		// Cache: 55 Minuten (wie in Referenz-Implementierung)
+		set_transient( self::TOKEN_TRANSIENT, $token, 55 * MINUTE_IN_SECONDS );
 
-		Helpers::log( 'Zoho Meeting: Access-Token erfolgreich erneuert', 'info' );
+		Helpers::log( 'Access-Token erfolgreich erneuert', 'info' );
 
 		return $token;
 	}
 
+	/* =========================================================================
+	 * API Request
+	 * ======================================================================= */
+
 	/**
 	 * Make API request with automatic 401 retry
+	 *
+	 * Verwendet wp_remote_post fuer POST-Requests (wie Referenz-Implementierung).
 	 *
 	 * @param string $endpoint API endpoint (relative to base + zsoid).
 	 * @param string $method   HTTP method.
 	 * @param array  $body     Request body (will be JSON-encoded for POST/PUT).
 	 * @param bool   $is_retry Whether this is a retry after 401.
-	 * @return array|WP_Error Response array with 'code' and 'body' keys.
+	 * @return array|WP_Error
 	 */
 	private function make_request( $endpoint, $method = 'GET', $body = [], $is_retry = false ) {
 		$token = $this->get_access_token();
 
 		if ( ! $token ) {
 			Helpers::log( 'make_request abgebrochen: Kein Access-Token verfuegbar', 'error' );
-			return new \WP_Error( 'no_token', __( 'Kein Zoho Access-Token verfuegbar.', 'event-tracker' ) );
-		}
-
-		if ( ! $this->zsoid ) {
-			Helpers::log( 'make_request abgebrochen: ZSOID nicht konfiguriert (et_settings > zoho_meeting_zsoid)', 'error' );
-			return new \WP_Error( 'no_zsoid', __( 'Zoho Meeting ZSOID nicht konfiguriert.', 'event-tracker' ) );
+			return new \WP_Error( 'no_token', 'Kein Zoho Access-Token verfuegbar.' );
 		}
 
 		$url = $this->api_base . '/api/v2/' . $this->zsoid . '/' . ltrim( $endpoint, '/' );
 
 		Helpers::log( sprintf( 'API Request: %s %s', $method, $url ), 'info' );
 
-		$args = [
-			'method'  => $method,
-			'timeout' => 30,
-			'headers' => [
-				'Authorization' => 'Zoho-oauthtoken ' . $token,
-				'Content-Type'  => 'application/json',
-			],
+		$headers = [
+			'Content-Type'  => 'application/json;charset=UTF-8',
+			'Authorization' => 'Zoho-oauthtoken ' . $token,
 		];
 
-		if ( ! empty( $body ) && in_array( $method, [ 'POST', 'PUT' ], true ) ) {
-			$args['body'] = wp_json_encode( $body );
-			Helpers::log( sprintf( 'Request Body: %s', $args['body'] ), 'info' );
-		}
+		// POST/PUT: wp_remote_post mit JSON body (wie Referenz)
+		if ( in_array( $method, [ 'POST', 'PUT' ], true ) && ! empty( $body ) ) {
+			$json_body = wp_json_encode( $body );
+			Helpers::log( sprintf( 'Request Body: %s', $json_body ), 'info' );
 
-		$response = wp_remote_request( $url, $args );
+			$response = wp_remote_post( $url, [
+				'headers' => $headers,
+				'body'    => $json_body,
+				'timeout' => 30,
+				'method'  => $method,
+			] );
+		} else {
+			// GET/DELETE
+			$response = wp_remote_request( $url, [
+				'method'  => $method,
+				'headers' => $headers,
+				'timeout' => 30,
+			] );
+		}
 
 		if ( is_wp_error( $response ) ) {
 			Helpers::log( 'API WP_Error: ' . $response->get_error_message(), 'error' );
 			return $response;
 		}
 
-		$status_code   = wp_remote_retrieve_response_code( $response );
-		$raw_body      = wp_remote_retrieve_body( $response );
-		$response_body = json_decode( $raw_body, true );
+		$status_code = wp_remote_retrieve_response_code( $response );
+		$raw_body    = wp_remote_retrieve_body( $response );
+		$parsed_body = json_decode( $raw_body, true );
 
 		Helpers::log( sprintf( 'API Response: HTTP %d, Body: %s', $status_code, substr( $raw_body, 0, 500 ) ), 'info' );
 
-		// 401 handling: distinguish token-expired from content errors
+		// 401 handling
 		if ( $status_code === 401 && ! $is_retry ) {
-			// Check if error is a content error (not a token issue) — don't retry these
-			$error_key = isset( $response_body['error']['key'] ) ? $response_body['error']['key'] : '';
+			$error_key = isset( $parsed_body['error']['key'] ) ? $parsed_body['error']['key'] : '';
 			$no_retry_keys = [ 'INVALID_PRESENTER_ID', 'INVALID_SCOPE', 'INVALID_REQUEST' ];
 
 			if ( in_array( $error_key, $no_retry_keys, true ) ) {
-				Helpers::log( sprintf( 'HTTP 401 mit Fehler-Key %s — kein Token-Retry (inhaltlicher Fehler)', $error_key ), 'error' );
+				Helpers::log( sprintf( 'HTTP 401 Fehler-Key %s — kein Token-Retry', $error_key ), 'error' );
 			} else {
 				Helpers::log( 'HTTP 401 — Token erneuern und erneut versuchen', 'warning' );
 				delete_transient( self::TOKEN_TRANSIENT );
+				$this->access_token = false;
 				$this->access_token = $this->refresh_access_token();
 				if ( $this->access_token ) {
 					return $this->make_request( $endpoint, $method, $body, true );
@@ -231,15 +253,19 @@ class Client {
 		}
 
 		if ( $status_code >= 400 ) {
-			$error_msg = isset( $response_body['message'] ) ? $response_body['message'] : $raw_body;
+			$error_msg = $this->extract_error( $parsed_body, $status_code );
 			Helpers::log( sprintf( 'API Fehler: HTTP %d — %s', $status_code, $error_msg ), 'error' );
 		}
 
 		return [
 			'code' => $status_code,
-			'body' => is_array( $response_body ) ? $response_body : [],
+			'body' => is_array( $parsed_body ) ? $parsed_body : [],
 		];
 	}
+
+	/* =========================================================================
+	 * Public API Methods
+	 * ======================================================================= */
 
 	/**
 	 * Test API connection
@@ -250,45 +276,34 @@ class Client {
 		$result = $this->make_request( 'webinar.json?limit=1' );
 
 		if ( is_wp_error( $result ) ) {
-			return [
-				'ok'      => false,
-				'message' => $result->get_error_message(),
-			];
+			return [ 'ok' => false, 'message' => $result->get_error_message() ];
 		}
 
 		if ( $result['code'] >= 200 && $result['code'] < 300 ) {
-			return [
-				'ok'      => true,
-				'message' => __( 'Verbindung erfolgreich.', 'event-tracker' ),
-			];
+			return [ 'ok' => true, 'message' => 'Verbindung erfolgreich.' ];
 		}
 
-		$error = $this->extract_error( $result['body'], $result['code'] );
-		return [
-			'ok'      => false,
-			'message' => sprintf( __( 'API-Fehler: %s', 'event-tracker' ), $error ),
-		];
+		return [ 'ok' => false, 'message' => 'API-Fehler: ' . $this->extract_error( $result['body'], $result['code'] ) ];
 	}
 
 	/**
-	 * Create webinar
+	 * Create webinar (ohne Registrierung)
 	 *
-	 * @param array $data Webinar data (topic, startTime, duration, timezone).
+	 * Payload-Struktur exakt wie Referenz-Implementierung.
+	 *
+	 * @param array $data Webinar data (topic, agenda, startTime, duration, timezone).
 	 * @return array
 	 */
 	public function create_webinar( $data ) {
-		$defaults = [
-			'timezone' => wp_timezone_string(),
-		];
+		$session = array_merge(
+			[
+				'presenter' => $this->presenter_zuid,
+				'timezone'  => wp_timezone_string(),
+			],
+			$data
+		);
 
-		// Presenter ZUID setzen falls konfiguriert
-		if ( $this->presenter_zuid ) {
-			$defaults['presenter'] = $this->presenter_zuid;
-		}
-
-		$payload = [
-			'session' => array_merge( $defaults, $data ),
-		];
+		$payload = [ 'session' => $session ];
 
 		$result = $this->make_request( 'webinar.json', 'POST', $payload );
 
@@ -296,6 +311,15 @@ class Client {
 			return [ 'ok' => false, 'message' => $result->get_error_message() ];
 		}
 
+		// Zoho gibt HTTP 201 bei Erfolg zurueck
+		if ( $result['code'] === 201 && ! empty( $result['body']['session'] ) ) {
+			return [
+				'ok'   => true,
+				'data' => $this->normalize_session( $result['body'] ),
+			];
+		}
+
+		// Auch 200 akzeptieren (fuer Robustheit)
 		if ( $result['code'] >= 200 && $result['code'] < 300 ) {
 			return [
 				'ok'   => true,
@@ -303,14 +327,13 @@ class Client {
 			];
 		}
 
-		$error = $this->extract_error( $result['body'], $result['code'] );
-		return [ 'ok' => false, 'message' => $error ];
+		return [ 'ok' => false, 'message' => $this->extract_error( $result['body'], $result['code'] ) ];
 	}
 
 	/**
 	 * Get webinar details
 	 *
-	 * @param string $session_key Session/meeting key.
+	 * @param string $session_key Meeting key.
 	 * @return array
 	 */
 	public function get_webinar( $session_key ) {
@@ -321,29 +344,21 @@ class Client {
 		}
 
 		if ( $result['code'] >= 200 && $result['code'] < 300 ) {
-			return [
-				'ok'   => true,
-				'data' => $this->normalize_session( $result['body'] ),
-			];
+			return [ 'ok' => true, 'data' => $this->normalize_session( $result['body'] ) ];
 		}
 
-		$error = $this->extract_error( $result['body'], $result['code'] );
-		return [ 'ok' => false, 'message' => $error ];
+		return [ 'ok' => false, 'message' => $this->extract_error( $result['body'], $result['code'] ) ];
 	}
 
 	/**
 	 * Update webinar
 	 *
-	 * @param string $session_key Session/meeting key.
+	 * @param string $session_key Meeting key.
 	 * @param array  $data        Data to update.
 	 * @return array
 	 */
 	public function update_webinar( $session_key, $data ) {
-		$payload = [
-			'session' => $data,
-		];
-
-		$result = $this->make_request( 'webinar/' . urlencode( $session_key ) . '.json', 'PUT', $payload );
+		$result = $this->make_request( 'webinar/' . urlencode( $session_key ) . '.json', 'PUT', [ 'session' => $data ] );
 
 		if ( is_wp_error( $result ) ) {
 			return [ 'ok' => false, 'message' => $result->get_error_message() ];
@@ -353,14 +368,13 @@ class Client {
 			return [ 'ok' => true, 'data' => $this->normalize_session( $result['body'] ) ];
 		}
 
-		$error = $this->extract_error( $result['body'], $result['code'] );
-		return [ 'ok' => false, 'message' => $error ];
+		return [ 'ok' => false, 'message' => $this->extract_error( $result['body'], $result['code'] ) ];
 	}
 
 	/**
 	 * Delete webinar
 	 *
-	 * @param string $session_key Session/meeting key.
+	 * @param string $session_key Meeting key.
 	 * @return array
 	 */
 	public function delete_webinar( $session_key ) {
@@ -371,21 +385,19 @@ class Client {
 		}
 
 		if ( $result['code'] >= 200 && $result['code'] < 300 ) {
-			return [ 'ok' => true, 'message' => __( 'Webinar geloescht.', 'event-tracker' ) ];
+			return [ 'ok' => true, 'message' => 'Webinar geloescht.' ];
 		}
 
-		$error = $this->extract_error( $result['body'], $result['code'] );
-		return [ 'ok' => false, 'message' => $error ];
+		return [ 'ok' => false, 'message' => $this->extract_error( $result['body'], $result['code'] ) ];
 	}
 
 	/**
 	 * Get recordings for a session
 	 *
-	 * @param string $session_key Session/meeting key.
+	 * @param string $session_key Meeting key.
 	 * @return array
 	 */
 	public function get_recordings( $session_key ) {
-		// Zoho Meeting recordings endpoint uses meetingKey as query param
 		$result = $this->make_request( 'recordings.json?meetingKey=' . urlencode( $session_key ) );
 
 		if ( is_wp_error( $result ) ) {
@@ -393,38 +405,31 @@ class Client {
 		}
 
 		if ( $result['code'] >= 200 && $result['code'] < 300 ) {
-			// Normalize recording field names (camelCase → snake_case)
 			$recordings = isset( $result['body']['recordings'] ) ? $result['body']['recordings'] : [];
 			$normalized = [];
 			foreach ( $recordings as $rec ) {
 				$normalized[] = [
-					'play_url'     => isset( $rec['playUrl'] ) ? $rec['playUrl'] : ( isset( $rec['play_url'] ) ? $rec['play_url'] : '' ),
-					'download_url' => isset( $rec['downloadUrl'] ) ? $rec['downloadUrl'] : ( isset( $rec['download_url'] ) ? $rec['download_url'] : '' ),
-					'share_url'    => isset( $rec['shareUrl'] ) ? $rec['shareUrl'] : ( isset( $rec['share_url'] ) ? $rec['share_url'] : '' ),
+					'play_url'     => $rec['playUrl'] ?? $rec['play_url'] ?? '',
+					'download_url' => $rec['downloadUrl'] ?? $rec['download_url'] ?? '',
+					'share_url'    => $rec['shareUrl'] ?? $rec['share_url'] ?? '',
 				];
 			}
 			return [ 'ok' => true, 'data' => [ 'recordings' => $normalized ] ];
 		}
 
-		$error = $this->extract_error( $result['body'], $result['code'] );
-		return [ 'ok' => false, 'message' => $error ];
+		return [ 'ok' => false, 'message' => $this->extract_error( $result['body'], $result['code'] ) ];
 	}
 
 	/**
 	 * Add co-host to session
 	 *
-	 * @param string $session_key Session/meeting key.
+	 * @param string $session_key Meeting key.
 	 * @param string $email       Co-host email.
 	 * @return array
 	 */
 	public function add_cohost( $session_key, $email ) {
-		$payload = [
-			'cohosts' => [
-				[ 'email' => $email ],
-			],
-		];
-
-		$result = $this->make_request( 'webinar/' . urlencode( $session_key ) . '/cohosts.json', 'PUT', $payload );
+		$payload = [ 'cohosts' => [ [ 'email' => $email ] ] ];
+		$result  = $this->make_request( 'webinar/' . urlencode( $session_key ) . '/cohosts.json', 'PUT', $payload );
 
 		if ( is_wp_error( $result ) ) {
 			return [ 'ok' => false, 'message' => $result->get_error_message() ];
@@ -434,51 +439,46 @@ class Client {
 			return [ 'ok' => true, 'data' => $result['body'] ];
 		}
 
-		$error = $this->extract_error( $result['body'], $result['code'] );
-		return [ 'ok' => false, 'message' => $error ];
+		return [ 'ok' => false, 'message' => $this->extract_error( $result['body'], $result['code'] ) ];
 	}
+
+	/* =========================================================================
+	 * Helpers
+	 * ======================================================================= */
 
 	/**
 	 * Normalize Zoho API response field names.
 	 *
-	 * Zoho Meeting API returns camelCase field names (meetingKey, startLink, joinLink).
-	 * This method normalizes them to our internal snake_case convention.
+	 * Zoho returns: meetingKey, startLink, joinLink, registrationLink
+	 * We normalize to: session_key, start_url, join_url
 	 *
 	 * @param array $body Raw API response body.
-	 * @return array Normalized response with 'session' key.
+	 * @return array Normalized with 'session' key.
 	 */
 	private function normalize_session( $body ) {
 		$session = isset( $body['session'] ) ? $body['session'] : $body;
 
-		// Map Zoho camelCase → our snake_case (check both variants for robustness)
-		$key_map = [
-			'session_key' => [ 'meetingKey', 'session_key', 'key' ],
-			'start_url'   => [ 'startLink', 'start_url', 'startUrl' ],
-			'join_url'    => [ 'joinLink', 'join_url', 'joinUrl', 'registrationLink' ],
-			'status'      => [ 'status' ],
-			'topic'       => [ 'topic' ],
+		$meeting_key = $session['meetingKey'] ?? $session['session_key'] ?? $session['key'] ?? '';
+
+		$normalized = [
+			'session_key' => $meeting_key,
+			'start_url'   => $session['startLink'] ?? $session['start_url'] ?? $session['startUrl'] ?? '',
+			'join_url'    => $session['joinLink']
+				?? $session['join_url']
+				?? $session['joinUrl']
+				?? $session['registrationLink']
+				// Fallback: Join-Link aus meetingKey generieren (wie Referenz)
+				?? ( $meeting_key ? $this->api_base . '/join?key=' . $meeting_key : '' ),
+			'status'      => $session['status'] ?? '',
+			'topic'       => $session['topic'] ?? '',
+			'startTime'   => $session['startTime'] ?? '',
+			'endTime'     => $session['endTime'] ?? '',
 		];
 
-		$normalized = [];
-		foreach ( $key_map as $target => $sources ) {
-			$normalized[ $target ] = '';
-			foreach ( $sources as $source ) {
-				if ( ! empty( $session[ $source ] ) ) {
-					$normalized[ $target ] = $session[ $source ];
-					break;
-				}
-			}
-		}
+		// Pass through all other fields
+		$consumed = [ 'meetingKey', 'session_key', 'key', 'startLink', 'start_url', 'startUrl',
+			'joinLink', 'join_url', 'joinUrl', 'registrationLink', 'status', 'topic', 'startTime', 'endTime' ];
 
-		// Collect consumed source keys to avoid duplication
-		$consumed = [];
-		foreach ( $key_map as $sources ) {
-			foreach ( $sources as $source ) {
-				$consumed[] = $source;
-			}
-		}
-
-		// Pass through unconsumed fields only
 		foreach ( $session as $k => $v ) {
 			if ( ! isset( $normalized[ $k ] ) && ! in_array( $k, $consumed, true ) ) {
 				$normalized[ $k ] = $v;
@@ -489,30 +489,27 @@ class Client {
 	}
 
 	/**
-	 * Extract error message from Zoho API response body.
+	 * Extract error message from Zoho API response.
 	 *
-	 * Zoho returns errors in different formats:
-	 *   {"error":{"message":"...","errorCode":3000}} or
-	 *   {"message":"..."} or
-	 *   {"error":"invalid_token"}
+	 * Handles: {"error":{"message":"..."}}, {"message":"..."}, {"error":"string"}
 	 *
-	 * @param array $body   Response body.
-	 * @param int   $code   HTTP status code.
-	 * @return string Human-readable error message.
+	 * @param array|null $body Response body.
+	 * @param int        $code HTTP status code.
+	 * @return string
 	 */
 	private function extract_error( $body, $code ) {
-		// Nested: {"error":{"message":"..."}}
+		if ( ! is_array( $body ) ) {
+			return 'HTTP ' . $code;
+		}
 		if ( isset( $body['error'] ) && is_array( $body['error'] ) && isset( $body['error']['message'] ) ) {
 			return $body['error']['message'];
 		}
-		// Flat: {"message":"..."}
 		if ( isset( $body['message'] ) ) {
 			return $body['message'];
 		}
-		// String error: {"error":"invalid_token"}
 		if ( isset( $body['error'] ) && is_string( $body['error'] ) ) {
 			return $body['error'];
 		}
-		return 'HTTP ' . $code;
+		return 'Unbekannter Fehler (HTTP ' . $code . ')';
 	}
 }

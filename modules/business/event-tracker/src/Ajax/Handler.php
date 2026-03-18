@@ -762,7 +762,7 @@ class Handler {
 	public function zm_create_webinar() {
 		$event_id = $this->zm_validate_event();
 
-		$title    = get_the_title( $event_id );
+		$title    = html_entity_decode( get_the_title( $event_id ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
 		$start_ts = (int) get_post_meta( $event_id, Constants::META_START_TS, true );
 		$end_ts   = (int) get_post_meta( $event_id, Constants::META_END_TS, true );
 

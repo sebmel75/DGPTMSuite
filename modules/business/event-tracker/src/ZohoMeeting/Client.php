@@ -421,15 +421,27 @@ class Client {
 	}
 
 	/**
-	 * Add co-host to session
+	 * Add co-host/participant to webinar
+	 *
+	 * Zoho Meeting hat keinen separaten Co-Host-Endpoint.
+	 * Teilnehmer werden ueber den Webinar-Update-Endpoint als participants hinzugefuegt.
 	 *
 	 * @param string $session_key Meeting key.
-	 * @param string $email       Co-host email.
+	 * @param string $email       Co-host/participant email.
 	 * @return array
 	 */
 	public function add_cohost( $session_key, $email ) {
-		$payload = [ 'cohosts' => [ [ 'email' => $email ] ] ];
-		$result  = $this->make_request( 'webinar/' . urlencode( $session_key ) . '/cohosts.json', 'PUT', $payload );
+		$payload = [
+			'session' => [
+				'participants' => [
+					[ 'email' => $email ],
+				],
+			],
+		];
+
+		Helpers::log( sprintf( 'Co-Host hinzufuegen: key=%s, email=%s', $session_key, $email ), 'info' );
+
+		$result = $this->make_request( 'webinar/' . urlencode( $session_key ) . '.json', 'PUT', $payload );
 
 		if ( is_wp_error( $result ) ) {
 			return [ 'ok' => false, 'message' => $result->get_error_message() ];

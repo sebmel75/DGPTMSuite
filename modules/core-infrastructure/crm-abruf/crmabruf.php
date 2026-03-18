@@ -44,17 +44,23 @@ if ( ! function_exists('dgptm_redact_array') ) {
     }
 }
 
-/** In debug.log schreiben (wenn aktiviert) */
-if ( ! function_exists('dgptm_log') ) {
-    function dgptm_log( string $message, array $context = [] ) : void {
-        if ( ! dgptm_is_debug_enabled() ) { return; }
-        $prefix = '[DGPTM] ';
-        if (!empty($context)) {
-            $safe = dgptm_redact_array($context);
-            $message .= ' ' . wp_json_encode($safe, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
-        }
-        dgptm_log_verbose($message, 'crm-abruf');
+/**
+ * CRM-Abruf Logging-Wrapper
+ * Leitet alle Log-Aufrufe mit module_id 'crm-abruf' an den zentralen DGPTM_Logger weiter.
+ *
+ * @param string $message Log-Nachricht
+ * @param array  $context Zusaetzliche Kontextdaten (optional)
+ * @param string $level   Log-Level: info, warning, error, verbose (optional)
+ */
+function dgptm_crm_log( $message, $context = [], $level = 'info' ) {
+    if ( ! class_exists( 'DGPTM_Logger' ) ) {
+        return;
     }
+    $ctx = null;
+    if ( ! empty( $context ) && is_array( $context ) ) {
+        $ctx = function_exists( 'dgptm_redact_array' ) ? dgptm_redact_array( $context ) : $context;
+    }
+    DGPTM_Logger::log( $message, $level, 'crm-abruf', $ctx );
 }
 
 /** Kryptostarkes Random-Token (Hex) – (nur intern genutzt) */
@@ -186,41 +192,41 @@ if ( ! function_exists('dgptm_host_resolves_to_public') ) {
 if ( ! function_exists('dgptm_is_allowed_url') ) {
     function dgptm_is_allowed_url( $url ) {
         if ( ! $url || ! wp_http_validate_url( $url ) ) {
-            dgptm_log('URL validation failed', ['url'=>$url]);
+            dgptm_crm_log('URL validation failed', ['url'=>$url]);
             return false;
         }
         $p = wp_parse_url( $url );
         if ( ! $p || empty( $p['host'] ) ) {
-            dgptm_log('URL parse failed', ['url'=>$url]);
+            dgptm_crm_log('URL parse failed', ['url'=>$url]);
             return false;
         }
         $scheme = isset($p['scheme']) ? strtolower($p['scheme']) : '';
         if ( $scheme !== 'https' ) {
-            dgptm_log('URL blocked: non-HTTPS', ['url'=>$url]);
+            dgptm_crm_log('URL blocked: non-HTTPS', ['url'=>$url]);
             return false;
         }
         $host = strtolower($p['host']);
 
         $blocked_hosts = ['localhost', 'localdomain', '127.0.0.1', '::1'];
         if ( in_array($host, $blocked_hosts, true) || (function_exists('str_ends_with') && str_ends_with($host, '.local')) ) {
-            dgptm_log('URL blocked: host blocked', ['url'=>$url,'host'=>$host]);
+            dgptm_crm_log('URL blocked: host blocked', ['url'=>$url,'host'=>$host]);
             return false;
         }
 
         if ( filter_var($host, FILTER_VALIDATE_IP) ) {
             if ( dgptm_is_private_ip($host) ) {
-                dgptm_log('URL blocked: private IP', ['url'=>$url,'ip'=>$host]);
+                dgptm_crm_log('URL blocked: private IP', ['url'=>$url,'ip'=>$host]);
                 return false;
             }
         } else {
             $public = dgptm_host_resolves_to_public( $host );
             $require_resolution = apply_filters('dgptm_require_dns_resolution', false);
             if ( $public === false ) {
-                dgptm_log('URL blocked: DNS resolves to private', ['url'=>$url,'host'=>$host]);
+                dgptm_crm_log('URL blocked: DNS resolves to private', ['url'=>$url,'host'=>$host]);
                 return false;
             }
             if ( $require_resolution && $public === null ) {
-                dgptm_log('URL blocked: DNS resolution required/unknown', ['url'=>$url,'host'=>$host]);
+                dgptm_crm_log('URL blocked: DNS resolution required/unknown', ['url'=>$url,'host'=>$host]);
                 return false;
             }
         }
@@ -229,7 +235,7 @@ if ( ! function_exists('dgptm_is_allowed_url') ) {
         if ( is_array($allowed) && ! empty($allowed) ) {
             $allowed_lower = array_map('strtolower', $allowed);
             $ok = in_array($host, $allowed_lower, true);
-            if ( ! $ok ) dgptm_log('URL blocked: not in allowlist', ['url'=>$url,'host'=>$host,'allowlist'=>$allowed_lower]);
+            if ( ! $ok ) dgptm_crm_log('URL blocked: not in allowlist', ['url'=>$url,'host'=>$host,'allowlist'=>$allowed_lower]);
             return $ok;
         }
         return true;
@@ -251,7 +257,7 @@ if ( ! function_exists('dgptm_safe_remote') ) {
         ]);
         $args = apply_filters('dgptm_safe_remote_args', $args, $method, $url);
 
-        dgptm_log('Forwarding HTTP request', [
+        dgptm_crm_log('Forwarding HTTP request', [
             'method'  => strtoupper($method),
             'url'     => $url,
             'headers' => array_map(function(){ return '[SET]'; }, (array)$args['headers']),
@@ -264,11 +270,11 @@ if ( ! function_exists('dgptm_safe_remote') ) {
         }
 
         if ( is_wp_error($res) ) {
-            dgptm_log('Forwarding failed', ['error'=>$res->get_error_message()]);
+            dgptm_crm_log('Forwarding failed', ['error'=>$res->get_error_message()]);
         } else {
             $code = wp_remote_retrieve_response_code($res);
             $len  = strlen( (string) wp_remote_retrieve_body($res) );
-            dgptm_log('Forwarding done', ['status'=>$code,'body_bytes'=>$len]);
+            dgptm_crm_log('Forwarding done', ['status'=>$code,'body_bytes'=>$len]);
         }
         return $res;
     }
@@ -303,17 +309,17 @@ if ( ! function_exists('dgptm_validate_internal_request') ) {
         $ts_hdr = (string) $req->get_header('x-dgptm-ts');
         $sig    = (string) $req->get_header('x-dgptm-internal');
         if ( $ts_hdr === '' || $sig === '' ) {
-            dgptm_log('Internal check failed: missing headers', ['slug'=>$slug]);
+            dgptm_crm_log('Internal check failed: missing headers', ['slug'=>$slug]);
             return false;
         }
         if ( ! ctype_digit($ts_hdr) ) {
-            dgptm_log('Internal check failed: invalid ts', ['slug'=>$slug,'ts'=>$ts_hdr]);
+            dgptm_crm_log('Internal check failed: invalid ts', ['slug'=>$slug,'ts'=>$ts_hdr]);
             return false;
         }
         $ts  = (int) $ts_hdr;
         $drift = (int) apply_filters('dgptm_internal_max_drift', 300); // 5 min
         if ( abs(time() - $ts) > $drift ) {
-            dgptm_log('Internal check failed: ts drift', ['slug'=>$slug,'ts'=>$ts,'drift'=>$drift]);
+            dgptm_crm_log('Internal check failed: ts drift', ['slug'=>$slug,'ts'=>$ts,'drift'=>$drift]);
             return false;
         }
         $secret  = wp_salt('auth');
@@ -321,7 +327,7 @@ if ( ! function_exists('dgptm_validate_internal_request') ) {
         $expected = hash_hmac('sha256', $payload, $secret);
         $ok = hash_equals($expected, $sig);
         if ( ! $ok ) {
-            dgptm_log('Internal check failed: signature mismatch', ['slug'=>$slug]);
+            dgptm_crm_log('Internal check failed: signature mismatch', ['slug'=>$slug]);
         }
         return $ok;
     }
@@ -380,7 +386,7 @@ register_activation_hook(__FILE__, function() {
     require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
     dbDelta( $sql );
     
-    dgptm_log('Plugin activated, role_changes table created/updated');
+    dgptm_crm_log('Plugin activated, role_changes table created/updated');
 });
 
 /* ========================================================
@@ -414,7 +420,7 @@ class DGPTM_Role_Manager {
             session_start();
         }
         unset($_SESSION[$this->session_key]);
-        dgptm_log('Role sync flag reset on login', ['user_id' => $user->ID]);
+        dgptm_crm_log('Role sync flag reset on login', ['user_id' => $user->ID]);
     }
     
     /**
@@ -449,7 +455,7 @@ class DGPTM_Role_Manager {
         
         // Prüfen ob bereits synchronisiert
         if ($this->is_synced()) {
-            dgptm_log('Role sync skipped: already done in this session');
+            dgptm_crm_log('Role sync skipped: already done in this session');
             return;
         }
         
@@ -491,7 +497,7 @@ class DGPTM_Role_Manager {
         $user = get_user_by('id', $user_id);
         
         if (!$user) {
-            dgptm_log('Role sync error: user not found', ['user_id' => $user_id]);
+            dgptm_crm_log('Role sync error: user not found', ['user_id' => $user_id]);
             return;
         }
         
@@ -508,7 +514,7 @@ class DGPTM_Role_Manager {
             // Rolle hinzufügen
             $user->add_role('mitglied');
             $action = 'added';
-            dgptm_log('Role added', ['user_id' => $user_id, 'role' => 'mitglied', 'zoho_value' => $zoho_value]);
+            dgptm_crm_log('Role added', ['user_id' => $user_id, 'role' => 'mitglied', 'zoho_value' => $zoho_value]);
             
         } elseif (!$is_active && $has_mitglied) {
             // Rolle entfernen
@@ -520,9 +526,9 @@ class DGPTM_Role_Manager {
             if (empty($updated_user->roles)) {
                 $user->add_role('subscriber');
                 $action = 'removed_with_fallback';
-                dgptm_log('Role removed with fallback', ['user_id' => $user_id, 'fallback' => 'subscriber', 'zoho_value' => $zoho_value]);
+                dgptm_crm_log('Role removed with fallback', ['user_id' => $user_id, 'fallback' => 'subscriber', 'zoho_value' => $zoho_value]);
             } else {
-                dgptm_log('Role removed', ['user_id' => $user_id, 'role' => 'mitglied', 'zoho_value' => $zoho_value]);
+                dgptm_crm_log('Role removed', ['user_id' => $user_id, 'role' => 'mitglied', 'zoho_value' => $zoho_value]);
             }
         }
         
@@ -532,7 +538,7 @@ class DGPTM_Role_Manager {
             $new_roles = $updated_user->roles;
             $this->log_role_change($user_id, $user->user_login, $action, 'mitglied', $zoho_value, $previous_roles, $new_roles);
         } else {
-            dgptm_log('Role sync: no change needed', ['user_id' => $user_id, 'zoho_value' => $zoho_value, 'has_mitglied' => $has_mitglied]);
+            dgptm_crm_log('Role sync: no change needed', ['user_id' => $user_id, 'zoho_value' => $zoho_value, 'has_mitglied' => $has_mitglied]);
         }
     }
     
@@ -587,9 +593,9 @@ class DGPTM_Role_Manager {
         );
         
         if ($wpdb->last_error) {
-            dgptm_log('Role change logging failed', ['error' => $wpdb->last_error]);
+            dgptm_crm_log('Role change logging failed', ['error' => $wpdb->last_error]);
         } else {
-            dgptm_log('Role change logged to database', ['log_id' => $wpdb->insert_id]);
+            dgptm_crm_log('Role change logged to database', ['log_id' => $wpdb->insert_id]);
         }
     }
     
@@ -701,7 +707,7 @@ class DGPTM_Zoho_Plugin {
         return self::$instance;
     }
 
-    public static function uninstall() { dgptm_log('Plugin uninstall'); }
+    public static function uninstall() { dgptm_crm_log('Plugin uninstall'); }
 
     // Profilfeld
     public function add_zoho_id_user_field($user) {
@@ -727,7 +733,7 @@ class DGPTM_Zoho_Plugin {
                 wp_die(__('Die eingegebene Zoho-ID wird bereits von einem anderen Benutzer verwendet. Bitte wählen Sie eine eindeutige Zoho-ID.', 'dgptm-zoho'), __('Fehler', 'dgptm-zoho'), ['back_link' => true]);
             }
             update_user_meta($user_id, 'zoho_id', $zoho_id);
-            dgptm_log('Saved user zoho_id', ['user_id'=>$user_id,'zoho_id_set'=> (bool)$zoho_id ]);
+            dgptm_crm_log('Saved user zoho_id', ['user_id'=>$user_id,'zoho_id_set'=> (bool)$zoho_id ]);
         }
     }
 
@@ -956,7 +962,7 @@ class DGPTM_Zoho_Plugin {
                 $expires_in   = isset($data['expires_in']) ? (int) $data['expires_in'] : 3600;
                 update_option('dgptm_zoho_access_token', $access_token);
                 update_option('dgptm_zoho_token_expires', time() + $expires_in - 60);
-                dgptm_log('Refreshed Zoho access token');
+                dgptm_crm_log('Refreshed Zoho access token');
             } else {
                 return new WP_Error('oauth_error', __('Kein Zugriffstoken gefunden.', 'dgptm-zoho'));
             }
@@ -992,7 +998,7 @@ class DGPTM_Zoho_Plugin {
             add_action('admin_notices', function() use ($response) {
                 echo '<div class="error"><p>' . esc_html(__('Fehler beim Abrufen des Zugriffstokens: ', 'dgptm-zoho') . $response->get_error_message()) . '</p></div>';
             });
-            dgptm_log('OAuth callback failed', ['error'=>$response->get_error_message()]);
+            dgptm_crm_log('OAuth callback failed', ['error'=>$response->get_error_message()]);
             return;
         }
         $body = wp_remote_retrieve_body($response);
@@ -1007,12 +1013,12 @@ class DGPTM_Zoho_Plugin {
             add_action('admin_notices', function() {
                 echo '<div class="updated"><p>' . esc_html(__('OAuth2-Verbindung hergestellt.', 'dgptm-zoho')) . '</p></div>';
             });
-            dgptm_log('OAuth callback success');
+            dgptm_crm_log('OAuth callback success');
         } else {
             add_action('admin_notices', function() use ($data) {
                 echo '<div class="error"><p>' . esc_html(__('Fehler beim Abrufen des Zugriffstokens. Antwort: ', 'dgptm-zoho') . print_r($data, true)) . '</p></div>';
             });
-            dgptm_log('OAuth callback response without token', ['data'=>$data]);
+            dgptm_crm_log('OAuth callback response without token', ['data'=>$data]);
         }
         wp_redirect(admin_url('options-general.php?page=dgptm-zoho-api-settings'));
         exit;
@@ -1677,7 +1683,7 @@ class Additional_Zoho_Endpoints {
             $out['wp_page']        = isset($ep['wp_page']) ? (int) $ep['wp_page'] : 0;
 
             if ( empty($out['target_url']) || ! dgptm_is_allowed_url($out['target_url']) ) {
-                dgptm_log('Endpoint target_url rejected by SSRF policy', ['slug'=>$out['slug'], 'target_url'=>$out['target_url']]);
+                dgptm_crm_log('Endpoint target_url rejected by SSRF policy', ['slug'=>$out['slug'], 'target_url'=>$out['target_url']]);
                 $out['target_url'] = '';
             }
             return $out;
@@ -1696,7 +1702,7 @@ class Additional_Zoho_Endpoints {
             if ( $norm['slug'] && $norm['target_url'] ) {
                 $result[] = $norm;
             } else {
-                dgptm_log('Endpoint skipped (missing slug or target_url)', ['slug'=>$norm['slug'] ?? null]);
+                dgptm_crm_log('Endpoint skipped (missing slug or target_url)', ['slug'=>$norm['slug'] ?? null]);
             }
         }
         return $result;
@@ -1723,7 +1729,7 @@ class Additional_Zoho_Endpoints {
                 // --- NEU: Berechtigungsprüfung hierher verschoben ---
                 if ( ! empty($ep['internal_only']) ) {
                     $is_internal_ok = dgptm_validate_internal_request($req, $ep['slug']);
-                    dgptm_log('Internal-only route: Permission check in callback', ['slug'=>$ep['slug'], 'ok'=>$is_internal_ok]);
+                    dgptm_crm_log('Internal-only route: Permission check in callback', ['slug'=>$ep['slug'], 'ok'=>$is_internal_ok]);
                     if ( ! $is_internal_ok ) {
                         return new WP_Error(
                             'rest_forbidden', 
@@ -1733,7 +1739,7 @@ class Additional_Zoho_Endpoints {
                     }
                 }
                 
-                dgptm_log('REST route hit (in callback)', [
+                dgptm_crm_log('REST route hit (in callback)', [
                     'route'         => method_exists($req,'get_route') ? $req->get_route() : '(n/a)',
                     'slug'          => $ep['slug'],
                     'method'        => $req->get_method(),
@@ -1744,10 +1750,10 @@ class Additional_Zoho_Endpoints {
                 if ( ! empty($ep['wp_page']) ) {
                     $page_url = get_permalink($ep['wp_page']);
                     if ( ! $page_url ) {
-                        dgptm_log('REST redirect failed: page not found', ['slug'=>$ep['slug'],'wp_page'=>$ep['wp_page']]);
+                        dgptm_crm_log('REST redirect failed: page not found', ['slug'=>$ep['slug'],'wp_page'=>$ep['wp_page']]);
                         return new WP_Error('invalid_page', __('Die verknüpfte WordPress-Seite existiert nicht oder ist nicht veröffentlicht.', 'dgptm-zoho'), ['status' => 404]);
                     }
-                    dgptm_log('REST redirect to page', ['slug'=>$ep['slug'],'location'=>$page_url]);
+                    dgptm_crm_log('REST redirect to page', ['slug'=>$ep['slug'],'location'=>$page_url]);
                     $response = new WP_REST_Response(null, 302);
                     $response->header('Location', $page_url);
                     return $response;
@@ -1755,9 +1761,9 @@ class Additional_Zoho_Endpoints {
                 
                 $resp = $this->forward_request($req, $ep, $req->get_method());
                 if ( is_wp_error($resp) ) {
-                    dgptm_log('Forward request returned WP_Error', ['slug'=>$ep['slug'], 'error'=>$resp->get_error_message()]);
+                    dgptm_crm_log('Forward request returned WP_Error', ['slug'=>$ep['slug'], 'error'=>$resp->get_error_message()]);
                 } else {
-                    dgptm_log('Forward request finished', ['slug'=>$ep['slug'], 'status'=>$resp->get_status()]);
+                    dgptm_crm_log('Forward request finished', ['slug'=>$ep['slug'], 'status'=>$resp->get_status()]);
                 }
                 return $resp;
             },
@@ -1765,7 +1771,7 @@ class Additional_Zoho_Endpoints {
             'permission_callback' => '__return_true'
         ]);
     }
-    dgptm_log('REST routes registered', ['count'=>count($endpoints)]);
+    dgptm_crm_log('REST routes registered', ['count'=>count($endpoints)]);
 }
 
 
@@ -1785,7 +1791,7 @@ class Additional_Zoho_Endpoints {
 
     $target_url = $ep['target_url'];
 
-    dgptm_log('Preparing forward', [
+    dgptm_crm_log('Preparing forward', [
         'slug'    => $ep['slug'],
         'method'  => $forward_method, // Verwendet jetzt die korrekte Methode
         'url'     => $target_url,
@@ -1797,7 +1803,7 @@ class Additional_Zoho_Endpoints {
         if ( ! empty($query_params) ) {
             $target_url = add_query_arg($query_params, $target_url);
         }
-        dgptm_log('GET forward', ['slug'=>$ep['slug'],'final_url'=>$target_url,'query'=>$query_params]);
+        dgptm_crm_log('GET forward', ['slug'=>$ep['slug'],'final_url'=>$target_url,'query'=>$query_params]);
         $response = dgptm_safe_remote('GET', $target_url, [
             'headers' => $headers,
             'timeout' => 10,
@@ -1814,7 +1820,7 @@ class Additional_Zoho_Endpoints {
             }
         }
         $body = apply_filters('dgptm_forward_body', $body, $ep, $request);
-        dgptm_log('POST forward', ['slug'=>$ep['slug'],'url'=>$target_url,'body_bytes'=>strlen((string)$body)]);
+        dgptm_crm_log('POST forward', ['slug'=>$ep['slug'],'url'=>$target_url,'body_bytes'=>strlen((string)$body)]);
         $response = dgptm_safe_remote('POST', $target_url, [
             'headers' => $headers,
             'body'    => $body,
@@ -1830,7 +1836,7 @@ class Additional_Zoho_Endpoints {
     $body = wp_remote_retrieve_body($response);
     $decoded = json_decode($body, true);
     if ( json_last_error() !== JSON_ERROR_NONE ) {
-        dgptm_log('Invalid JSON from target', ['slug'=>$ep['slug'],'status'=>$code,'body_bytes'=>strlen((string)$body)]);
+        dgptm_crm_log('Invalid JSON from target', ['slug'=>$ep['slug'],'status'=>$code,'body_bytes'=>strlen((string)$body)]);
         return new WP_Error('invalid_json', __('Die API-Antwort ist kein gültiges JSON.', 'dgptm-zoho'), ['status' => 500]);
     }
 
@@ -1873,7 +1879,7 @@ class Additional_Zoho_Endpoints {
 
         $endpoint = $this->get_endpoint_by_slug($slug);
         if ( ! $endpoint ) {
-            dgptm_log('get_api_data: endpoint not found', ['slug'=>$slug]);
+            dgptm_crm_log('get_api_data: endpoint not found', ['slug'=>$slug]);
             return null;
         }
 
@@ -1886,7 +1892,7 @@ class Additional_Zoho_Endpoints {
             if ( ! is_wp_error($token) && ! empty($token) ) $headers['Authorization'] = 'Zoho-oauthtoken ' . $token;
         }
 
-        dgptm_log('get_api_data start', ['slug'=>$slug,'method'=>$method,'url'=>$target_url]);
+        dgptm_crm_log('get_api_data start', ['slug'=>$slug,'method'=>$method,'url'=>$target_url]);
 
         if ( $method === 'GET' ) {
             if ( ! empty($query) ) $target_url = add_query_arg($query, $target_url);
@@ -1907,14 +1913,14 @@ class Additional_Zoho_Endpoints {
         }
 
         if ( is_wp_error($response) ) {
-            dgptm_log('get_api_data remote error', ['slug'=>$slug,'error'=>$response->get_error_message()]);
+            dgptm_crm_log('get_api_data remote error', ['slug'=>$slug,'error'=>$response->get_error_message()]);
             return null;
         }
 
         $body = wp_remote_retrieve_body($response);
         $decoded = json_decode($body, true);
         if ( json_last_error() !== JSON_ERROR_NONE ) {
-            dgptm_log('get_api_data invalid json', ['slug'=>$slug,'bytes'=>strlen((string)$body)]);
+            dgptm_crm_log('get_api_data invalid json', ['slug'=>$slug,'bytes'=>strlen((string)$body)]);
             return null;
         }
 
@@ -1939,7 +1945,7 @@ class Additional_Zoho_Endpoints {
         }
         self::$api_cache[$cache_key] = $decoded;
         set_transient( $transient_key, $decoded, 30 );
-        dgptm_log('get_api_data ok', ['slug'=>$slug]);
+        dgptm_crm_log('get_api_data ok', ['slug'=>$slug]);
         return $decoded;
     }
 
@@ -2038,7 +2044,7 @@ public function api_abfrage_shortcode($atts) {
     
     // Pflichtfelder prüfen
     if ( empty($atts['slug']) || empty($atts['field']) ) {
-        dgptm_log('api_abfrage_shortcode: missing slug or field', ['atts' => $atts]);
+        dgptm_crm_log('api_abfrage_shortcode: missing slug or field', ['atts' => $atts]);
         return '';
     }
 
@@ -2048,7 +2054,7 @@ public function api_abfrage_shortcode($atts) {
     // Endpunkt-Konfiguration laden
     $endpoint = $this->get_endpoint_by_slug($slug);
     if ( ! $endpoint ) {
-        dgptm_log('api_abfrage_shortcode: endpoint not found', ['slug' => $slug]);
+        dgptm_crm_log('api_abfrage_shortcode: endpoint not found', ['slug' => $slug]);
         return '';
     }
 
@@ -2067,7 +2073,7 @@ public function api_abfrage_shortcode($atts) {
 
     // In-Memory-Cache prüfen
     if ( isset(self::$api_cache[$cache_key]) ) {
-        dgptm_log('api_abfrage_shortcode: using cached response', [
+        dgptm_crm_log('api_abfrage_shortcode: using cached response', [
             'slug' => $slug,
             'cache_key' => $cache_key
         ]);
@@ -2076,7 +2082,7 @@ public function api_abfrage_shortcode($atts) {
         $value = $this->get_nested_value($cached_data, $field);
 
         if ( $value === null ) {
-            dgptm_log('api_abfrage_shortcode: field not found in cache', [
+            dgptm_crm_log('api_abfrage_shortcode: field not found in cache', [
                 'slug' => $slug,
                 'field' => $field
             ]);
@@ -2122,14 +2128,14 @@ public function api_abfrage_shortcode($atts) {
         $request->set_header('x-dgptm-ts', $hdrs['x-dgptm-ts']);
         $request->set_header('x-dgptm-internal', $hdrs['x-dgptm-internal']);
         
-        dgptm_log('api_abfrage_shortcode: internal signature set', [
+        dgptm_crm_log('api_abfrage_shortcode: internal signature set', [
             'slug' => $slug,
             'method' => $method
         ]);
     }
 
     // Request ausführen
-    dgptm_log('api_abfrage_shortcode: executing request (not cached)', [
+    dgptm_crm_log('api_abfrage_shortcode: executing request (not cached)', [
         'slug' => $slug,
         'method' => $method,
         'route' => $route,
@@ -2141,7 +2147,7 @@ public function api_abfrage_shortcode($atts) {
     
     // Fehlerbehandlung
     if ( is_wp_error($response) ) {
-        dgptm_log('api_abfrage_shortcode: WP_Error', [
+        dgptm_crm_log('api_abfrage_shortcode: WP_Error', [
             'slug' => $slug,
             'error' => $response->get_error_message(),
             'error_data' => $response->get_error_data()
@@ -2150,7 +2156,7 @@ public function api_abfrage_shortcode($atts) {
     }
     
     if ( method_exists($response, 'is_error') && $response->is_error() ) {
-        dgptm_log('api_abfrage_shortcode: REST error', [
+        dgptm_crm_log('api_abfrage_shortcode: REST error', [
             'slug' => $slug,
             'status' => $response->get_status(),
             'data' => $response->get_data()
@@ -2164,14 +2170,14 @@ public function api_abfrage_shortcode($atts) {
     // === DATEN CACHEN ===
     self::$api_cache[$cache_key] = $data;
     set_transient( $transient_key, $data, 30 );
-    dgptm_log('api_abfrage_shortcode: response cached', [
+    dgptm_crm_log('api_abfrage_shortcode: response cached', [
         'slug' => $slug,
         'cache_key' => $cache_key,
         'data_keys' => is_array($data) ? array_keys($data) : 'not_array'
     ]);
     // === ENDE CACHING ===
     
-    dgptm_log('api_abfrage_shortcode: response received', [
+    dgptm_crm_log('api_abfrage_shortcode: response received', [
         'slug' => $slug,
         'status' => method_exists($response, 'get_status') ? $response->get_status() : 'unknown',
         'data_keys' => is_array($data) ? array_keys($data) : 'not_array'
@@ -2181,7 +2187,7 @@ public function api_abfrage_shortcode($atts) {
     $value = $this->get_nested_value($data, $field);
     
     if ( $value === null ) {
-        dgptm_log('api_abfrage_shortcode: field not found', [
+        dgptm_crm_log('api_abfrage_shortcode: field not found', [
             'slug' => $slug,
             'field' => $field,
             'available_keys' => is_array($data) ? array_keys($data) : 'not_array'
@@ -2189,7 +2195,7 @@ public function api_abfrage_shortcode($atts) {
         return '';
     }
     
-    dgptm_log('api_abfrage_shortcode: success', [
+    dgptm_crm_log('api_abfrage_shortcode: success', [
         'slug' => $slug,
         'field' => $field,
         'value_type' => gettype($value)
@@ -2570,7 +2576,7 @@ function save_wf_endpoints(){
 
         $eps[] = $new_ep;
         update_option('wf_endpoints', $eps);
-        dgptm_log('Endpoint created', ['slug'=>$slug,'method'=>$new_ep['forward_method'],'internal_only'=>$new_ep['internal_only'],'wp_page'=>$wp_page]);
+        dgptm_crm_log('Endpoint created', ['slug'=>$slug,'method'=>$new_ep['forward_method'],'internal_only'=>$new_ep['internal_only'],'wp_page'=>$wp_page]);
     }
     wp_redirect(admin_url('options-general.php?page=dgptm-zoho-api-settings&updated=true'));
     exit;
@@ -2590,7 +2596,7 @@ function delete_wf_endpoint(){
         $new[] = $ep;
     }
     update_option('wf_endpoints', $new);
-    dgptm_log('Endpoint deleted', ['slug'=>$slug]);
+    dgptm_crm_log('Endpoint deleted', ['slug'=>$slug]);
     wp_redirect(admin_url('options-general.php?page=dgptm-zoho-api-settings&updated=true'));
     exit;
 }
@@ -2627,7 +2633,7 @@ function update_wf_endpoint(){
                 $ep['forward_method'] = in_array($method, ['GET','POST'], true) ? $method : 'GET';
                 $ep['send_zoho_auth'] = isset($raw['send_zoho_auth']);
                 $ep['wp_page']        = isset($raw['wp_page']) ? (int) $raw['wp_page'] : 0;
-                dgptm_log('Endpoint updated', ['old_slug'=>$original_slug,'new_slug'=>$new_slug,'method'=>$ep['forward_method'],'internal_only'=>$ep['internal_only'],'wp_page'=>$ep['wp_page']]);
+                dgptm_crm_log('Endpoint updated', ['old_slug'=>$original_slug,'new_slug'=>$new_slug,'method'=>$ep['forward_method'],'internal_only'=>$ep['internal_only'],'wp_page'=>$ep['wp_page']]);
                 break;
             }
         }

@@ -62,6 +62,12 @@ class Client {
 		$this->zsoid    = ! empty( $settings['zoho_meeting_zsoid'] )
 			? $settings['zoho_meeting_zsoid']
 			: '';
+
+		Helpers::log( sprintf(
+			'ZohoMeeting Client init: api_base=%s, zsoid=%s',
+			$this->api_base,
+			$this->zsoid ?: '(NICHT GESETZT)'
+		), 'info' );
 	}
 
 	/**
@@ -95,7 +101,12 @@ class Client {
 		$refresh_token = get_option( 'dgptm_zoho_refresh_token', '' );
 
 		if ( ! $client_id || ! $client_secret || ! $refresh_token ) {
-			Helpers::log( 'Zoho Meeting: CRM-Zugangsdaten fehlen (client_id, client_secret oder refresh_token)', 'error' );
+			Helpers::log( sprintf(
+				'Token-Refresh: Credentials fehlen — client_id=%s, client_secret=%s, refresh_token=%s',
+				$client_id ? 'gesetzt' : 'FEHLT',
+				$client_secret ? 'gesetzt' : 'FEHLT',
+				$refresh_token ? 'gesetzt' : 'FEHLT'
+			), 'error' );
 			return false;
 		}
 
@@ -149,14 +160,18 @@ class Client {
 		$token = $this->get_access_token();
 
 		if ( ! $token ) {
+			Helpers::log( 'make_request abgebrochen: Kein Access-Token verfuegbar', 'error' );
 			return new \WP_Error( 'no_token', __( 'Kein Zoho Access-Token verfuegbar.', 'event-tracker' ) );
 		}
 
 		if ( ! $this->zsoid ) {
+			Helpers::log( 'make_request abgebrochen: ZSOID nicht konfiguriert (et_settings > zoho_meeting_zsoid)', 'error' );
 			return new \WP_Error( 'no_zsoid', __( 'Zoho Meeting ZSOID nicht konfiguriert.', 'event-tracker' ) );
 		}
 
 		$url = $this->api_base . '/api/v2/' . $this->zsoid . '/' . ltrim( $endpoint, '/' );
+
+		Helpers::log( sprintf( 'API Request: %s %s', $method, $url ), 'info' );
 
 		$args = [
 			'method'  => $method,
@@ -169,27 +184,37 @@ class Client {
 
 		if ( ! empty( $body ) && in_array( $method, [ 'POST', 'PUT' ], true ) ) {
 			$args['body'] = wp_json_encode( $body );
+			Helpers::log( sprintf( 'Request Body: %s', $args['body'] ), 'info' );
 		}
 
 		$response = wp_remote_request( $url, $args );
 
 		if ( is_wp_error( $response ) ) {
-			Helpers::log( 'Zoho Meeting API Fehler: ' . $response->get_error_message(), 'error' );
+			Helpers::log( 'API WP_Error: ' . $response->get_error_message(), 'error' );
 			return $response;
 		}
 
-		$status_code = wp_remote_retrieve_response_code( $response );
+		$status_code   = wp_remote_retrieve_response_code( $response );
+		$raw_body      = wp_remote_retrieve_body( $response );
+		$response_body = json_decode( $raw_body, true );
+
+		Helpers::log( sprintf( 'API Response: HTTP %d, Body: %s', $status_code, substr( $raw_body, 0, 500 ) ), 'info' );
 
 		// 401 retry: refresh token and try once more
 		if ( $status_code === 401 && ! $is_retry ) {
+			Helpers::log( 'HTTP 401 — Token erneuern und erneut versuchen', 'warning' );
 			delete_transient( self::TOKEN_TRANSIENT );
 			$this->access_token = $this->refresh_access_token();
 			if ( $this->access_token ) {
 				return $this->make_request( $endpoint, $method, $body, true );
 			}
+			Helpers::log( 'Token-Refresh nach 401 fehlgeschlagen', 'error' );
 		}
 
-		$response_body = json_decode( wp_remote_retrieve_body( $response ), true );
+		if ( $status_code >= 400 ) {
+			$error_msg = isset( $response_body['message'] ) ? $response_body['message'] : $raw_body;
+			Helpers::log( sprintf( 'API Fehler: HTTP %d — %s', $status_code, $error_msg ), 'error' );
+		}
 
 		return [
 			'code' => $status_code,

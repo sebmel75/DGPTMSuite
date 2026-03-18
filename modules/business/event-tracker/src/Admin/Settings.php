@@ -115,6 +115,14 @@ class Settings {
 		);
 
 		add_settings_field(
+			'zoho_meeting_presenter',
+			__( 'Zoho Meeting Presenter (ZUID)', 'event-tracker' ),
+			[ $this, 'field_zoho_meeting_presenter' ],
+			'event-tracker-settings',
+			'et_section_zoho_meeting'
+		);
+
+		add_settings_field(
 			'zoho_meeting_api_base',
 			__( 'Zoho Meeting API Base-URL', 'event-tracker' ),
 			[ $this, 'field_zoho_meeting_api_base' ],
@@ -160,6 +168,10 @@ class Settings {
 		// Zoho Meeting
 		$out['zoho_meeting_zsoid'] = isset( $input['zoho_meeting_zsoid'] )
 			? sanitize_text_field( $input['zoho_meeting_zsoid'] )
+			: '';
+
+		$out['zoho_meeting_presenter'] = isset( $input['zoho_meeting_presenter'] )
+			? sanitize_text_field( $input['zoho_meeting_presenter'] )
 			: '';
 
 		$out['zoho_meeting_api_base'] = 'https://meeting.zoho.eu';
@@ -221,6 +233,16 @@ class Settings {
 		$val  = isset( $opts['zoho_meeting_zsoid'] ) ? $opts['zoho_meeting_zsoid'] : '';
 		echo '<input type="text" class="regular-text" name="' . esc_attr( Constants::OPT_KEY ) . '[zoho_meeting_zsoid]" value="' . esc_attr( $val ) . '" placeholder="123456789" />';
 		echo '<p class="description">' . esc_html__( 'Die Zoho-Organisations-ID (ZSOID) finden Sie in Ihren Zoho Meeting Einstellungen.', 'event-tracker' ) . '</p>';
+	}
+
+	/**
+	 * Zoho Meeting Presenter (ZUID) field
+	 */
+	public function field_zoho_meeting_presenter() {
+		$opts = get_option( Constants::OPT_KEY, [] );
+		$val  = isset( $opts['zoho_meeting_presenter'] ) ? $opts['zoho_meeting_presenter'] : '';
+		echo '<input type="text" class="regular-text" name="' . esc_attr( Constants::OPT_KEY ) . '[zoho_meeting_presenter]" value="' . esc_attr( $val ) . '" placeholder="20086597172" />';
+		echo '<p class="description">' . esc_html__( 'Zoho User ID (ZUID) des Presenters. Zu finden unter: Zoho Admin Console > Benutzer > Klick auf den Benutzer > ZUID in der URL.', 'event-tracker' ) . '</p>';
 	}
 
 	/**

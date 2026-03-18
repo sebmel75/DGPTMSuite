@@ -54,6 +54,13 @@ class Client {
 	/**
 	 * Constructor
 	 */
+	/**
+	 * Zoho User ID (ZUID) of the presenter
+	 *
+	 * @var string
+	 */
+	private $presenter_zuid;
+
 	public function __construct() {
 		$settings       = get_option( Constants::OPT_KEY, [] );
 		$this->api_base = ! empty( $settings['zoho_meeting_api_base'] )
@@ -62,11 +69,15 @@ class Client {
 		$this->zsoid    = ! empty( $settings['zoho_meeting_zsoid'] )
 			? $settings['zoho_meeting_zsoid']
 			: '';
+		$this->presenter_zuid = ! empty( $settings['zoho_meeting_presenter'] )
+			? $settings['zoho_meeting_presenter']
+			: '';
 
 		Helpers::log( sprintf(
-			'ZohoMeeting Client init: api_base=%s, zsoid=%s',
+			'ZohoMeeting Client init: api_base=%s, zsoid=%s, presenter=%s',
 			$this->api_base,
-			$this->zsoid ?: '(NICHT GESETZT)'
+			$this->zsoid ?: '(NICHT GESETZT)',
+			$this->presenter_zuid ?: '(NICHT GESETZT)'
 		), 'info' );
 	}
 
@@ -266,13 +277,17 @@ class Client {
 	 * @return array
 	 */
 	public function create_webinar( $data ) {
+		$defaults = [
+			'timezone' => wp_timezone_string(),
+		];
+
+		// Presenter ZUID setzen falls konfiguriert
+		if ( $this->presenter_zuid ) {
+			$defaults['presenter'] = $this->presenter_zuid;
+		}
+
 		$payload = [
-			'session' => array_merge(
-				[
-					'timezone' => wp_timezone_string(),
-				],
-				$data
-			),
+			'session' => array_merge( $defaults, $data ),
 		];
 
 		$result = $this->make_request( 'webinar.json', 'POST', $payload );

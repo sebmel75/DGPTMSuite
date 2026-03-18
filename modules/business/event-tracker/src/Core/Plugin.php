@@ -85,6 +85,18 @@ class Plugin {
 	 * Initialize Plugin
 	 */
 	private function init() {
+		// Zentrale Zoho-Auth: Meeting-Scopes registrieren
+		add_filter( 'dgptm_zoho_required_scopes', function( $scopes ) {
+			$scopes['Event Tracker'] = [
+				'ZohoMeeting.webinar.CREATE',
+				'ZohoMeeting.webinar.READ',
+				'ZohoMeeting.webinar.UPDATE',
+				'ZohoMeeting.webinar.DELETE',
+				'ZohoMeeting.recording.READ',
+			];
+			return $scopes;
+		} );
+
 		// Load Components
 		$this->load_components();
 

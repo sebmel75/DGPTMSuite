@@ -652,6 +652,24 @@ class DGPTM_Zoho_Plugin {
     private $counter = 0;
 
     private function __construct() {
+        // Zentrale Zoho-Auth: CRM-Scopes registrieren
+        add_filter('dgptm_zoho_required_scopes', function( $scopes ) {
+            $scopes['CRM-Abruf'] = [
+                'ZohoCRM.functions.execute.READ',
+                'ZohoCRM.functions.execute.CREATE',
+                'ZohoCRM.modules.READ',
+                'ZohoCRM.modules.ALL',
+                'ZohoCRM.modules.custom.READ',
+                'ZohoCRM.modules.custom.CREATE',
+                'ZohoCRM.modules.custom.UPDATE',
+                'ZohoCRM.modules.contacts.READ',
+                'ZohoCRM.coql.READ',
+                'ZohoCRM.files.READ',
+                'ZohoCRM.files.CREATE',
+            ];
+            return $scopes;
+        });
+
         add_action('show_user_profile',        [$this, 'add_zoho_id_user_field']);
         add_action('edit_user_profile',        [$this, 'add_zoho_id_user_field']);
         add_action('personal_options_update',  [$this, 'save_zoho_id_user_field']);

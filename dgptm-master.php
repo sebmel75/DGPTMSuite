@@ -43,6 +43,7 @@ require_once DGPTM_SUITE_PATH . 'core/class-guide-manager.php';
 require_once DGPTM_SUITE_PATH . 'core/class-version-extractor.php';
 require_once DGPTM_SUITE_PATH . 'core/class-module-settings-manager.php';
 require_once DGPTM_SUITE_PATH . 'core/class-central-settings-registry.php';
+require_once DGPTM_SUITE_PATH . 'core/class-zoho-auth.php';
 
 // Admin-Klassen laden
 if (is_admin()) {
@@ -82,6 +83,9 @@ final class DGPTM_Plugin_Suite {
     private function init() {
         // Logger initialisieren (für Cleanup-Cron)
         DGPTM_Logger::get_instance();
+
+        // Zentrale Zoho-Authentifizierung initialisieren (vor Modulen)
+        dgptm_zoho_auth();
 
         // Bei Bedarf Logger-DB erstellen/aktualisieren (nach Plugin-Updates)
         add_action('admin_init', [$this, 'maybe_upgrade_logger_db']);

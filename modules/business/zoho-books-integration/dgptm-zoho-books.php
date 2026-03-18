@@ -29,6 +29,15 @@ if (!class_exists('DGPTM_Zoho_Books')) {
             $this->plugin_path = plugin_dir_path(__FILE__);
             $this->plugin_url = plugin_dir_url(__FILE__);
 
+            // Zentrale Zoho-Auth: Books-Scopes registrieren
+            add_filter('dgptm_zoho_required_scopes', function( $scopes ) {
+                $scopes['Zoho Books'] = [
+                    'ZohoBooks.fullaccess.all',
+                    'ZohoCRM.modules.READ',
+                ];
+                return $scopes;
+            });
+
             // Hooks
             add_action('admin_menu', [$this, 'add_admin_menu']);
             add_action('admin_init', [$this, 'register_settings']);

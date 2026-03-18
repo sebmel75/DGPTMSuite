@@ -215,7 +215,7 @@ class Plugin {
 
 		// Log activation
 		if ( class_exists( 'DGPTM_Logger' ) ) {
-			\DGPTM_Logger::info( 'Event Tracker: Plugin aktiviert (v' . self::VERSION . ')' );
+			\DGPTM_Logger::info( 'Plugin aktiviert (v' . self::VERSION . ')', 'event-tracker' );
 		}
 	}
 
@@ -228,7 +228,7 @@ class Plugin {
 
 		// Log deactivation
 		if ( class_exists( 'DGPTM_Logger' ) ) {
-			\DGPTM_Logger::info( 'Event Tracker: Plugin deaktiviert' );
+			\DGPTM_Logger::info( 'Plugin deaktiviert', 'event-tracker' );
 		}
 	}
 

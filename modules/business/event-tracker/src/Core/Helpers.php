@@ -241,17 +241,17 @@ class Helpers {
 			return;
 		}
 
-		$prefix = 'Event Tracker: ';
+		$module_id = 'event-tracker';
 
 		switch ( $level ) {
 			case 'error':
-				\DGPTM_Logger::error( $prefix . $message );
+				\DGPTM_Logger::error( $message, $module_id );
 				break;
 			case 'warning':
-				\DGPTM_Logger::warning( $prefix . $message );
+				\DGPTM_Logger::warning( $message, $module_id );
 				break;
 			default:
-				\DGPTM_Logger::info( $prefix . $message );
+				\DGPTM_Logger::info( $message, $module_id );
 				break;
 		}
 	}

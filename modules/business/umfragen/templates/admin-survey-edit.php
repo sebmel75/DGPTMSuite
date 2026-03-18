@@ -273,6 +273,16 @@ $question_types = [
                                 </td>
                             </tr>
                             <tr class="dgptm-matrix-row" <?php if ($q->question_type !== 'matrix') echo 'style="display:none;"'; ?>>
+                                <th><label>Eingabetyp</label></th>
+                                <td>
+                                    <?php $matrix_input = isset($choices['matrix_input_type']) ? $choices['matrix_input_type'] : 'radio'; ?>
+                                    <select class="dgptm-matrix-input-type">
+                                        <option value="radio" <?php selected($matrix_input, 'radio'); ?>>Radio (eine Auswahl pro Zeile)</option>
+                                        <option value="number" <?php selected($matrix_input, 'number'); ?>>Zahleneingabe (Zahl pro Zelle)</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr class="dgptm-matrix-row" <?php if ($q->question_type !== 'matrix') echo 'style="display:none;"'; ?>>
                                 <th><label>Matrix-Zeilen</label></th>
                                 <td>
                                     <div class="dgptm-matrix-rows-list">
@@ -464,6 +474,15 @@ $question_types = [
                         <td>
                             <input type="text" class="dgptm-q-exclusive regular-text" value="" placeholder="z.B. Nein / Keine Antwort">
                             <p class="description">Wird als letzte Option angezeigt und schliesst alle anderen aus.</p>
+                        </td>
+                    </tr>
+                    <tr class="dgptm-matrix-row" style="display:none;">
+                        <th><label>Eingabetyp</label></th>
+                        <td>
+                            <select class="dgptm-matrix-input-type">
+                                <option value="radio">Radio (eine Auswahl pro Zeile)</option>
+                                <option value="number">Zahleneingabe (Zahl pro Zelle)</option>
+                            </select>
                         </td>
                     </tr>
                     <tr class="dgptm-matrix-row" style="display:none;">

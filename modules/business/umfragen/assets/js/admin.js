@@ -607,8 +607,9 @@
                         var val = $.trim($(this).val());
                         if (val) cols.push(val);
                     });
+                    var matrixInputType = $item.find('.dgptm-matrix-input-type').val() || 'radio';
                     if (rows.length > 0 || cols.length > 0) {
-                        q.choices = { rows: rows, columns: cols };
+                        q.choices = { rows: rows, columns: cols, matrix_input_type: matrixInputType };
                     }
                 }
 

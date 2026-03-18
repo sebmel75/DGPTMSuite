@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM Umfragen
  * Description: Generisches Umfrage-Framework mit erweiterten Fragetypen, Skip-Logic, Verschachtelung und Ergebnis-Dashboard
- * Version: 1.3.1
+ * Version: 1.4.0
  * Author: Sebastian Melzer
  */
 

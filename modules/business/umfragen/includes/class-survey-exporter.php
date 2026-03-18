@@ -102,10 +102,20 @@ class DGPTM_Survey_Exporter {
         foreach ($questions as $q) {
             if ($q->question_type === 'matrix') {
                 $choices = json_decode($q->choices, true);
-                if (isset($choices['rows'])) {
+                $matrix_type = isset($choices['matrix_input_type']) ? $choices['matrix_input_type'] : 'radio';
+                if ($matrix_type === 'number' && isset($choices['rows']) && isset($choices['columns'])) {
+                    // Number matrix: one column per row×col combination
+                    foreach ($choices['rows'] as $row) {
+                        foreach ($choices['columns'] as $col) {
+                            $headers[] = $q->question_text . ' - ' . $row . ' / ' . $col;
+                            $question_columns[] = ['question' => $q, 'matrix_row' => sanitize_title($row), 'matrix_col' => sanitize_title($col), 'matrix_type' => 'number'];
+                        }
+                    }
+                } elseif (isset($choices['rows'])) {
+                    // Radio matrix: one column per row
                     foreach ($choices['rows'] as $row) {
                         $headers[] = $q->question_text . ' - ' . $row;
-                        $question_columns[] = ['question' => $q, 'matrix_row' => sanitize_title($row)];
+                        $question_columns[] = ['question' => $q, 'matrix_row' => sanitize_title($row), 'matrix_col' => null, 'matrix_type' => 'radio'];
                     }
                 }
             } else {
@@ -144,9 +154,15 @@ class DGPTM_Survey_Exporter {
                     continue;
                 }
 
-                if ($q->question_type === 'matrix' && $col['matrix_row']) {
+                if ($q->question_type === 'matrix' && !empty($col['matrix_row'])) {
                     $vals = json_decode($answer->answer_value, true);
-                    $row[] = is_array($vals) && isset($vals[$col['matrix_row']]) ? $vals[$col['matrix_row']] : '';
+                    if (!empty($col['matrix_col']) && isset($col['matrix_type']) && $col['matrix_type'] === 'number') {
+                        // Number matrix: row→col→value
+                        $row[] = is_array($vals) && isset($vals[$col['matrix_row']][$col['matrix_col']]) ? $vals[$col['matrix_row']][$col['matrix_col']] : '';
+                    } else {
+                        // Radio matrix: row→value
+                        $row[] = is_array($vals) && isset($vals[$col['matrix_row']]) ? $vals[$col['matrix_row']] : '';
+                    }
                 } elseif ($q->question_type === 'checkbox') {
                     $vals = json_decode($answer->answer_value, true);
                     $row[] = is_array($vals) ? implode('; ', $vals) : ($answer->answer_value ?: '');

@@ -27,9 +27,8 @@
                 self.bindFileUploads($container);
                 self.bindSaveProgress($form, $container);
 
-                // Apply skip-logic and nesting on load (for pre-filled forms)
-                self.evaluateSkipLogic($container);
-                self.evaluateNesting($container);
+                // Apply unified visibility evaluation on load
+                self.evaluateVisibility($container);
 
                 // Skip initial section if empty
                 if (self.totalSections > 1 && !self.sectionHasVisibleQuestions($container, 0)) {
@@ -145,12 +144,19 @@
                         hasValue = $q.find('input[type="checkbox"]:checked').length > 0;
                         break;
                     case 'matrix':
-                        var totalRows = $q.find('.dgptm-matrix-table tbody tr').length;
-                        var answeredRows = 0;
-                        $q.find('.dgptm-matrix-table tbody tr').each(function() {
-                            if ($(this).find('input:checked').length > 0) answeredRows++;
-                        });
-                        hasValue = answeredRows > 0;
+                        var $mWrapper = $q.find('.dgptm-matrix-wrapper');
+                        var mType = $mWrapper.data('matrix-type') || 'radio';
+                        if (mType === 'number') {
+                            $q.find('.dgptm-matrix-table tbody tr').each(function() {
+                                $(this).find('input[type="number"]').each(function() {
+                                    if ($.trim($(this).val()) !== '') hasValue = true;
+                                });
+                            });
+                        } else {
+                            $q.find('.dgptm-matrix-table tbody tr').each(function() {
+                                if ($(this).find('input:checked').length > 0) hasValue = true;
+                            });
+                        }
                         break;
                     case 'file':
                         hasValue = $q.find('.dgptm-file-ids').val() !== '' || $q.find('.dgptm-file-input').val() !== '';
@@ -218,18 +224,65 @@
             });
         },
 
+        // --- Unified Visibility Evaluation ---
+        // Coordinates skip-logic and nesting so they don't conflict.
+        // Order: 1) Reset all → 2) Nesting → 3) Skip-Logic → 4) Cascade hidden parents to children
+
+        evaluateVisibility: function($container) {
+            // Step 1: Reset all visibility flags
+            $container.find('.dgptm-question').removeClass('dgptm-question-hidden dgptm-question-hidden-nested');
+
+            // Step 2: Evaluate nesting (parent→child visibility)
+            this.evaluateNesting($container);
+
+            // Step 3: Evaluate skip logic (answer→goto jumps)
+            this.evaluateSkipLogic($container);
+
+            // Step 4: Cascade — if a question is hidden (by skip or nesting),
+            // all its children must also be hidden
+            for (var pass = 0; pass < 10; pass++) {
+                var changed = false;
+                $container.find('.dgptm-question[data-parent-id]').each(function() {
+                    var $q = $(this);
+                    if ($q.hasClass('dgptm-question-hidden') || $q.hasClass('dgptm-question-hidden-nested')) {
+                        return; // Already hidden
+                    }
+                    var parentId = $q.data('parent-id');
+                    var $parent = $container.find('.dgptm-question[data-question-id="' + parentId + '"]');
+                    if ($parent.length && ($parent.hasClass('dgptm-question-hidden') || $parent.hasClass('dgptm-question-hidden-nested'))) {
+                        $q.addClass('dgptm-question-hidden-nested');
+                        changed = true;
+                    }
+                });
+                // Also cascade: questions with skip-logic-hidden parents
+                $container.find('.dgptm-question[data-parent-id]').each(function() {
+                    var $q = $(this);
+                    if ($q.hasClass('dgptm-question-hidden') || $q.hasClass('dgptm-question-hidden-nested')) {
+                        return;
+                    }
+                    var parentId = $q.data('parent-id');
+                    var $parent = $container.find('.dgptm-question[data-question-id="' + parentId + '"]');
+                    if ($parent.length && ($parent.hasClass('dgptm-question-hidden') || $parent.hasClass('dgptm-question-hidden-nested'))) {
+                        $q.addClass('dgptm-question-hidden-nested');
+                        changed = true;
+                    }
+                });
+                if (!changed) break;
+            }
+        },
+
         // --- Skip Logic ---
 
         bindSkipLogic: function($container) {
             var self = this;
 
             $container.on('change', 'input[type="radio"], input[type="checkbox"], select', function() {
-                self.evaluateSkipLogic($container);
+                self.evaluateVisibility($container);
             });
         },
 
         evaluateSkipLogic: function($container) {
-            $container.find('.dgptm-question').removeClass('dgptm-question-hidden');
+            // Note: reset is handled by evaluateVisibility()
 
             $container.find('.dgptm-question[data-skip-logic]').each(function() {
                 var $q = $(this);
@@ -294,12 +347,12 @@
         bindNesting: function($container) {
             var self = this;
             $container.on('change input', '.dgptm-question input, .dgptm-question textarea, .dgptm-question select', function() {
-                self.evaluateNesting($container);
+                self.evaluateVisibility($container);
             });
         },
 
         evaluateNesting: function($container) {
-            $container.find('.dgptm-question[data-parent-id]').removeClass('dgptm-question-hidden-nested');
+            // Note: reset is handled by evaluateVisibility()
 
             for (var pass = 0; pass < 10; pass++) {
                 var changed = false;
@@ -641,16 +694,36 @@
                         break;
                     case 'matrix':
                         var matrixVals = {};
-                        $q.find('.dgptm-matrix-table tbody tr').each(function() {
-                            var $checked = $(this).find('input:checked');
-                            if ($checked.length) {
-                                var name = $checked.attr('name');
-                                var match = name.match(/\[([^\]]+)\]$/);
-                                if (match) {
-                                    matrixVals[match[1]] = $checked.val();
+                        var $mw = $q.find('.dgptm-matrix-wrapper');
+                        var matrixType = $mw.data('matrix-type') || 'radio';
+
+                        if (matrixType === 'number') {
+                            // Number matrix: { row_key: { col_key: number } }
+                            $q.find('.dgptm-matrix-table tbody tr').each(function() {
+                                $(this).find('input[type="number"]').each(function() {
+                                    var name = $(this).attr('name');
+                                    var val = $.trim($(this).val());
+                                    // Parse name: answers[qId][row_key][col_key]
+                                    var matches = name.match(/\[([^\]]+)\]\[([^\]]+)\]$/);
+                                    if (matches && val !== '') {
+                                        if (!matrixVals[matches[1]]) matrixVals[matches[1]] = {};
+                                        matrixVals[matches[1]][matches[2]] = val;
+                                    }
+                                });
+                            });
+                        } else {
+                            // Radio matrix: { row_key: selected_col }
+                            $q.find('.dgptm-matrix-table tbody tr').each(function() {
+                                var $checked = $(this).find('input:checked');
+                                if ($checked.length) {
+                                    var name = $checked.attr('name');
+                                    var match = name.match(/\[([^\]]+)\]$/);
+                                    if (match) {
+                                        matrixVals[match[1]] = $checked.val();
+                                    }
                                 }
-                            }
-                        });
+                            });
+                        }
                         if (Object.keys(matrixVals).length > 0) answers[qId] = matrixVals;
                         break;
                     case 'file':

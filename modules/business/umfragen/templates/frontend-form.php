@@ -314,10 +314,11 @@ if ($resume_data) {
                                 case 'matrix':
                                     $rows = isset($choices['rows']) ? $choices['rows'] : [];
                                     $cols = isset($choices['columns']) ? $choices['columns'] : [];
+                                    $matrix_input = isset($choices['matrix_input_type']) ? $choices['matrix_input_type'] : 'radio';
                                     $matrix_vals = is_array($prefill_decoded) ? $prefill_decoded : [];
                                     if ($rows && $cols) :
                                     ?>
-                                        <div class="dgptm-matrix-wrapper">
+                                        <div class="dgptm-matrix-wrapper" data-matrix-type="<?php echo esc_attr($matrix_input); ?>">
                                             <table class="dgptm-matrix-table">
                                                 <thead>
                                                     <tr>
@@ -333,8 +334,21 @@ if ($resume_data) {
                                                     ?>
                                                         <tr>
                                                             <th><?php echo esc_html($row); ?></th>
-                                                            <?php foreach ($cols as $col) :
-                                                                $checked = isset($matrix_vals[$row_key]) && $matrix_vals[$row_key] === $col;
+                                                            <?php if ($matrix_input === 'number') :
+                                                                foreach ($cols as $col) :
+                                                                    $col_key = sanitize_title($col);
+                                                                    $pf_num = isset($matrix_vals[$row_key][$col_key]) ? $matrix_vals[$row_key][$col_key] : '';
+                                                            ?>
+                                                                <td>
+                                                                    <input type="number"
+                                                                           name="<?php echo esc_attr($field_name . '[' . $row_key . '][' . $col_key . ']'); ?>"
+                                                                           class="dgptm-matrix-number-input"
+                                                                           value="<?php echo esc_attr($pf_num); ?>">
+                                                                </td>
+                                                            <?php endforeach;
+                                                            else :
+                                                                foreach ($cols as $col) :
+                                                                    $checked = isset($matrix_vals[$row_key]) && $matrix_vals[$row_key] === $col;
                                                             ?>
                                                                 <td>
                                                                     <input type="radio"
@@ -342,7 +356,8 @@ if ($resume_data) {
                                                                            value="<?php echo esc_attr($col); ?>"
                                                                            <?php checked($checked); ?>>
                                                                 </td>
-                                                            <?php endforeach; ?>
+                                                            <?php endforeach;
+                                                            endif; ?>
                                                         </tr>
                                                     <?php endforeach; ?>
                                                 </tbody>

@@ -441,6 +441,27 @@ select + .dgptm-other-text-input {
     cursor: pointer;
 }
 
+.dgptm-matrix-number-input {
+    width: 70px;
+    padding: 4px 6px;
+    border: 1px solid var(--dgptm-gray-300);
+    border-radius: 4px;
+    font-size: 0.85rem;
+    text-align: center;
+    -moz-appearance: textfield;
+}
+
+.dgptm-matrix-number-input::-webkit-inner-spin-button,
+.dgptm-matrix-number-input::-webkit-outer-spin-button {
+    opacity: 1;
+}
+
+.dgptm-matrix-number-input:focus {
+    outline: none;
+    border-color: var(--dgptm-primary);
+    box-shadow: 0 0 0 2px var(--dgptm-primary-light);
+}
+
 /* File upload */
 .dgptm-file-upload-area {
     padding: 8px 0;

@@ -912,12 +912,16 @@ class Handler {
 	 * Aktualisiert Titel, Agenda und Startzeit beim Zoho Webinar.
 	 */
 	public function zm_update_webinar() {
+		Helpers::log( 'zm_update_webinar: Handler aufgerufen', 'info' );
+
 		$event_id = $this->zm_validate_event();
 
 		$session_key = get_post_meta( $event_id, Constants::META_ZM_KEY, true );
 		if ( ! $session_key ) {
 			wp_send_json_error( [ 'message' => __( 'Kein Webinar verknuepft.', 'event-tracker' ) ] );
 		}
+
+		Helpers::log( sprintf( 'zm_update_webinar: Event %d, Key %s', $event_id, $session_key ), 'info' );
 
 		// Alle editierbaren Felder aus POST lesen
 		$topic     = isset( $_POST['topic'] ) ? sanitize_text_field( wp_unslash( $_POST['topic'] ) ) : '';

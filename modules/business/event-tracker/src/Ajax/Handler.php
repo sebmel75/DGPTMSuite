@@ -43,6 +43,7 @@ class Handler {
 
 		// Zoho Meeting
 		add_action( 'wp_ajax_et_zm_create_webinar', [ $this, 'zm_create_webinar' ] );
+		add_action( 'wp_ajax_et_zm_update_webinar', [ $this, 'zm_update_webinar' ] );
 		add_action( 'wp_ajax_et_zm_get_links', [ $this, 'zm_get_links' ] );
 		add_action( 'wp_ajax_et_zm_add_cohosts', [ $this, 'zm_add_cohosts' ] );
 		add_action( 'wp_ajax_et_zm_get_recording', [ $this, 'zm_get_recording' ] );
@@ -647,70 +648,65 @@ class Handler {
 			</button>
 			<div class="et-zm-body">
 				<div class="et-zm-msg" id="et-zm-msg"></div>
+				<?php $zm_agenda = get_post_meta( $event_id, '_et_zoho_meeting_agenda', true ); ?>
 
 				<?php if ( ! $zm_key ) : ?>
-					<!-- No webinar linked yet -->
 					<div class="et-zm-section">
-						<p><?php esc_html_e( 'Noch kein Webinar verknuepft.', 'event-tracker' ); ?></p>
+						<div class="et-zm-field">
+							<label class="et-zm-field-label"><?php esc_html_e( 'Beschreibung / Agenda', 'event-tracker' ); ?></label>
+							<textarea id="et-zm-agenda" class="et-zm-textarea" rows="3" placeholder="<?php esc_attr_e( 'Optionale Beschreibung...', 'event-tracker' ); ?>"><?php echo esc_textarea( $zm_agenda ); ?></textarea>
+						</div>
 						<button type="button" class="et-zm-btn primary" data-zm-action="create"><?php esc_html_e( 'Webinar anlegen', 'event-tracker' ); ?></button>
 					</div>
 				<?php else : ?>
-					<!-- Links Section -->
+					<div class="et-zm-section">
+						<h4><?php esc_html_e( 'Beschreibung', 'event-tracker' ); ?></h4>
+						<textarea id="et-zm-agenda" class="et-zm-textarea" rows="2" placeholder="<?php esc_attr_e( 'Agenda...', 'event-tracker' ); ?>"><?php echo esc_textarea( $zm_agenda ); ?></textarea>
+						<button type="button" class="et-zm-btn" data-zm-action="update-webinar" style="margin-top:8px;"><?php esc_html_e( 'Webinar aktualisieren', 'event-tracker' ); ?></button>
+					</div>
 					<div class="et-zm-section">
 						<h4><?php esc_html_e( 'Links', 'event-tracker' ); ?></h4>
 						<div class="et-zm-link-row">
-							<strong class="et-zm-label"><?php esc_html_e( 'Start-Link:', 'event-tracker' ); ?></strong>
+							<strong class="et-zm-label"><?php esc_html_e( 'Start:', 'event-tracker' ); ?></strong>
 							<input type="text" id="et-zm-start-url" value="<?php echo esc_attr( $zm_start_url ); ?>" readonly />
-							<button type="button" class="et-zm-btn" data-zm-action="copy" data-zm-target="et-zm-start-url"><?php esc_html_e( 'Kopieren', 'event-tracker' ); ?></button>
+							<button type="button" class="et-zm-btn" data-zm-action="copy" data-zm-target="et-zm-start-url" title="Kopieren">&#x2398;</button>
 						</div>
 						<div class="et-zm-link-row">
-							<strong class="et-zm-label"><?php esc_html_e( 'Zugangs-Link:', 'event-tracker' ); ?></strong>
+							<strong class="et-zm-label"><?php esc_html_e( 'Zugang:', 'event-tracker' ); ?></strong>
 							<input type="text" id="et-zm-join-url" value="<?php echo esc_attr( $zm_join_url ); ?>" readonly />
-							<button type="button" class="et-zm-btn" data-zm-action="copy" data-zm-target="et-zm-join-url"><?php esc_html_e( 'Kopieren', 'event-tracker' ); ?></button>
-							<button type="button" class="et-zm-btn" data-zm-action="adopt-redirect" title="<?php esc_attr_e( 'Join-URL als Redirect-URL uebernehmen', 'event-tracker' ); ?>"><?php esc_html_e( 'In Redirect-URL', 'event-tracker' ); ?></button>
+							<button type="button" class="et-zm-btn" data-zm-action="copy" data-zm-target="et-zm-join-url" title="Kopieren">&#x2398;</button>
+							<button type="button" class="et-zm-btn" data-zm-action="adopt-redirect" title="<?php esc_attr_e( 'Als Redirect-URL uebernehmen', 'event-tracker' ); ?>">&#x21B3; Redirect</button>
 						</div>
-						<button type="button" class="et-zm-btn" data-zm-action="refresh-links"><?php esc_html_e( 'Links aktualisieren', 'event-tracker' ); ?></button>
+						<button type="button" class="et-zm-btn" data-zm-action="refresh-links"><?php esc_html_e( 'Aktualisieren', 'event-tracker' ); ?></button>
 					</div>
-
-					<!-- Co-Hosts Section -->
 					<div class="et-zm-section">
-						<h4><?php esc_html_e( 'Co-Hosts', 'event-tracker' ); ?></h4>
+						<h4><?php esc_html_e( 'Teilnehmer', 'event-tracker' ); ?></h4>
 						<div class="et-zm-user-search">
-							<input type="text" id="et-zm-user-search" class="et-zm-search-input" placeholder="<?php esc_attr_e( 'WP-Benutzer suchen...', 'event-tracker' ); ?>" autocomplete="off" />
+							<input type="text" id="et-zm-user-search" class="et-zm-search-input" placeholder="<?php esc_attr_e( 'Benutzer suchen...', 'event-tracker' ); ?>" autocomplete="off" />
 							<div class="et-zm-user-results" id="et-zm-user-results"></div>
 						</div>
 						<div class="et-zm-cohost-tags" id="et-zm-cohost-tags">
 							<?php foreach ( $cohosts_arr as $email ) : ?>
-								<span class="et-zm-tag" data-email="<?php echo esc_attr( $email ); ?>">
-									<?php echo esc_html( $email ); ?>
-									<span class="et-zm-tag-remove">&times;</span>
-								</span>
+								<span class="et-zm-tag" data-email="<?php echo esc_attr( $email ); ?>"><?php echo esc_html( $email ); ?> <span class="et-zm-tag-remove">&times;</span></span>
 							<?php endforeach; ?>
 						</div>
-						<button type="button" class="et-zm-btn primary" data-zm-action="save-cohosts"><?php esc_html_e( 'Co-Hosts speichern', 'event-tracker' ); ?></button>
+						<button type="button" class="et-zm-btn" data-zm-action="save-cohosts"><?php esc_html_e( 'Speichern', 'event-tracker' ); ?></button>
 					</div>
-
-					<!-- Recording Section -->
 					<div class="et-zm-section">
 						<h4><?php esc_html_e( 'Aufzeichnung', 'event-tracker' ); ?></h4>
 						<div class="et-zm-link-row">
 							<input type="text" id="et-zm-recording-url" value="<?php echo esc_attr( $zm_rec_url ); ?>" readonly />
 							<?php if ( $zm_rec_url ) : ?>
-								<button type="button" class="et-zm-btn" data-zm-action="copy" data-zm-target="et-zm-recording-url"><?php esc_html_e( 'Kopieren', 'event-tracker' ); ?></button>
-								<button type="button" class="et-zm-btn" data-zm-action="adopt-recording"><?php esc_html_e( 'In Recording-URL', 'event-tracker' ); ?></button>
+								<button type="button" class="et-zm-btn" data-zm-action="copy" data-zm-target="et-zm-recording-url" title="Kopieren">&#x2398;</button>
+								<button type="button" class="et-zm-btn" data-zm-action="adopt-recording">&#x21B3; Recording-URL</button>
 							<?php endif; ?>
 						</div>
-						<button type="button" class="et-zm-btn" data-zm-action="fetch-recording"><?php esc_html_e( 'Recording abrufen', 'event-tracker' ); ?></button>
+						<button type="button" class="et-zm-btn" data-zm-action="fetch-recording"><?php esc_html_e( 'Abrufen', 'event-tracker' ); ?></button>
 					</div>
-
-					<!-- Actions Section -->
-					<div class="et-zm-section">
-						<h4><?php esc_html_e( 'Aktionen', 'event-tracker' ); ?></h4>
-						<div class="et-zm-actions">
-							<button type="button" class="et-zm-btn" data-zm-action="test-connection"><?php esc_html_e( 'Verbindung testen', 'event-tracker' ); ?></button>
-							<button type="button" class="et-zm-btn primary" data-zm-action="start-webinar"><?php esc_html_e( 'Webinar starten', 'event-tracker' ); ?></button>
-							<button type="button" class="et-zm-btn danger" data-zm-action="delete-webinar"><?php esc_html_e( 'Webinar loeschen', 'event-tracker' ); ?></button>
-						</div>
+					<div class="et-zm-section et-zm-section--actions">
+						<button type="button" class="et-zm-btn" data-zm-action="test-connection"><?php esc_html_e( 'Test', 'event-tracker' ); ?></button>
+						<button type="button" class="et-zm-btn primary" data-zm-action="start-webinar"><?php esc_html_e( 'Starten', 'event-tracker' ); ?></button>
+						<button type="button" class="et-zm-btn danger" data-zm-action="delete-webinar"><?php esc_html_e( 'Loeschen', 'event-tracker' ); ?></button>
 					</div>
 				<?php endif; ?>
 			</div>
@@ -782,12 +778,22 @@ class Handler {
 
 		$client = $this->get_zm_client();
 
+		$agenda = isset( $_POST['agenda'] ) ? sanitize_textarea_field( wp_unslash( $_POST['agenda'] ) ) : '';
+
 		$payload = [
 			'topic'     => $title,
+			'agenda'    => $agenda,
 			'startTime' => $start_dt->format( 'M d, Y h:i A' ),
 			'duration'  => $duration_ms,
 			'timezone'  => $tz->getName(),
 		];
+
+		// Agenda lokal speichern
+		if ( $agenda ) {
+			Helpers::begin_cap_override();
+			update_post_meta( $event_id, '_et_zoho_meeting_agenda', $agenda );
+			Helpers::end_cap_override();
+		}
 
 		Helpers::log( sprintf( 'zm_create_webinar: Sende an Zoho: %s', wp_json_encode( $payload ) ), 'info' );
 
@@ -824,6 +830,15 @@ class Handler {
 			Helpers::end_cap_override();
 		}
 
+		// Cron: 1 Stunde nach Event-Ende automatisch Recording abrufen
+		if ( $session_key && $end_ts ) {
+			$fetch_time = $end_ts + 3600; // 1h nach Ende
+			if ( ! wp_next_scheduled( 'et_zm_fetch_recording_cron', [ $event_id ] ) ) {
+				wp_schedule_single_event( $fetch_time, 'et_zm_fetch_recording_cron', [ $event_id ] );
+				Helpers::log( sprintf( 'Recording-Abruf geplant: Event %d um %s', $event_id, wp_date( 'd.m.Y H:i', $fetch_time ) ), 'info' );
+			}
+		}
+
 		Helpers::log( sprintf( 'Zoho Meeting erstellt fuer Event %d: %s', $event_id, $session_key ), 'info' );
 
 		wp_send_json_success( [
@@ -833,6 +848,57 @@ class Handler {
 			'join_url'    => $join_url,
 			'status'      => 'created',
 		] );
+	}
+
+	/**
+	 * Update Webinar (AJAX: et_zm_update_webinar)
+	 *
+	 * Aktualisiert Titel, Agenda und Startzeit beim Zoho Webinar.
+	 */
+	public function zm_update_webinar() {
+		$event_id = $this->zm_validate_event();
+
+		$session_key = get_post_meta( $event_id, Constants::META_ZM_KEY, true );
+		if ( ! $session_key ) {
+			wp_send_json_error( [ 'message' => __( 'Kein Webinar verknuepft.', 'event-tracker' ) ] );
+		}
+
+		$title    = html_entity_decode( get_the_title( $event_id ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+		$start_ts = (int) get_post_meta( $event_id, Constants::META_START_TS, true );
+		$end_ts   = (int) get_post_meta( $event_id, Constants::META_END_TS, true );
+		$agenda   = isset( $_POST['agenda'] ) ? sanitize_textarea_field( wp_unslash( $_POST['agenda'] ) ) : '';
+
+		// Agenda lokal speichern
+		Helpers::begin_cap_override();
+		update_post_meta( $event_id, '_et_zoho_meeting_agenda', $agenda );
+		Helpers::end_cap_override();
+
+		$update_data = [
+			'topic'  => $title,
+			'agenda' => $agenda,
+		];
+
+		if ( $start_ts && $end_ts ) {
+			$tz = wp_timezone();
+			$start_dt = new \DateTimeImmutable( '@' . $start_ts );
+			$start_dt = $start_dt->setTimezone( $tz );
+			$duration_ms = max( 60000, (int) ( ( $end_ts - $start_ts ) * 1000 ) );
+
+			$update_data['startTime'] = $start_dt->format( 'M d, Y h:i A' );
+			$update_data['duration']  = $duration_ms;
+			$update_data['timezone']  = $tz->getName();
+		}
+
+		$client = $this->get_zm_client();
+		$result = $client->update_webinar( $session_key, $update_data );
+
+		if ( ! $result['ok'] ) {
+			wp_send_json_error( [ 'message' => $result['message'] ?? 'Fehler beim Aktualisieren' ] );
+		}
+
+		Helpers::log( sprintf( 'Webinar aktualisiert: Event %d, Key %s', $event_id, $session_key ), 'info' );
+
+		wp_send_json_success( [ 'message' => __( 'Webinar aktualisiert.', 'event-tracker' ) ] );
 	}
 
 	/**

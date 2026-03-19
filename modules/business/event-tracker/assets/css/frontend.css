@@ -693,7 +693,50 @@
 	display: block;
 }
 
+/* Textarea / Fields */
+.et-zm-textarea {
+	width: 100%;
+	padding: 8px 10px;
+	border: 1px solid var(--et-border);
+	border-radius: var(--et-radius-sm);
+	font-size: 0.8125rem;
+	font-family: inherit;
+	color: var(--et-text);
+	resize: vertical;
+	transition: border-color var(--et-transition), box-shadow var(--et-transition);
+}
+
+.et-zm-textarea:focus {
+	outline: none;
+	border-color: var(--et-zm-accent);
+	box-shadow: 0 0 0 2px var(--et-zm-accent-light);
+}
+
+.et-zm-field {
+	margin-bottom: 10px;
+}
+
+.et-zm-field-label {
+	display: block;
+	font-size: 0.75rem;
+	font-weight: 600;
+	color: var(--et-text-secondary);
+	margin-bottom: 4px;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
 /* Actions Row */
+.et-zm-section--actions {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+	padding-top: 12px;
+	border-bottom: none;
+	margin-bottom: 0;
+	padding-bottom: 0;
+}
+
 .et-zm-actions {
 	display: flex;
 	gap: 8px;

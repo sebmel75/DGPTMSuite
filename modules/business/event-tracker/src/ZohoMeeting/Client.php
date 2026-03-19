@@ -431,15 +431,16 @@ class Client {
 	 * @return array
 	 */
 	public function add_cohost( $session_key, $email ) {
+		Helpers::log( sprintf( 'Co-Host hinzufuegen: key=%s, email=%s', $session_key, $email ), 'info' );
+
+		// Zoho Meeting: Co-Presenter werden via Webinar-Update als copresenter hinzugefuegt
 		$payload = [
 			'session' => [
-				'participants' => [
+				'copresenter' => [
 					[ 'email' => $email ],
 				],
 			],
 		];
-
-		Helpers::log( sprintf( 'Co-Host hinzufuegen: key=%s, email=%s', $session_key, $email ), 'info' );
 
 		$result = $this->make_request( 'webinar/' . urlencode( $session_key ) . '.json', 'PUT', $payload );
 
@@ -447,11 +448,35 @@ class Client {
 			return [ 'ok' => false, 'message' => $result->get_error_message() ];
 		}
 
+		// Pruefen ob Co-Presenter in der Antwort enthalten ist
 		if ( $result['code'] >= 200 && $result['code'] < 300 ) {
+			Helpers::log( sprintf( 'Co-Host Response: %s', wp_json_encode( $result['body'] ) ), 'info' );
 			return [ 'ok' => true, 'data' => $result['body'] ];
 		}
 
-		return [ 'ok' => false, 'message' => $this->extract_error( $result['body'], $result['code'] ) ];
+		// Falls copresenter nicht funktioniert, Fallback auf participants
+		Helpers::log( sprintf( 'Co-Host copresenter fehlgeschlagen (HTTP %d), versuche participants...', $result['code'] ), 'warning' );
+
+		$payload_fallback = [
+			'session' => [
+				'participants' => [
+					[ 'email' => $email ],
+				],
+			],
+		];
+
+		$result2 = $this->make_request( 'webinar/' . urlencode( $session_key ) . '.json', 'PUT', $payload_fallback );
+
+		if ( is_wp_error( $result2 ) ) {
+			return [ 'ok' => false, 'message' => $result2->get_error_message() ];
+		}
+
+		if ( $result2['code'] >= 200 && $result2['code'] < 300 ) {
+			Helpers::log( sprintf( 'Co-Host participants Response: %s', wp_json_encode( $result2['body'] ) ), 'info' );
+			return [ 'ok' => true, 'data' => $result2['body'] ];
+		}
+
+		return [ 'ok' => false, 'message' => $this->extract_error( $result2['body'], $result2['code'] ) ];
 	}
 
 	/* =========================================================================

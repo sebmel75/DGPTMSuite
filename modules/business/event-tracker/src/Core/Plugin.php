@@ -118,6 +118,9 @@ class Plugin {
 		// WP Rocket: exclude our CSS/JS from combine/minify to prevent stale bundles
 		add_filter( 'rocket_exclude_css', [ $this, 'rocket_exclude_assets' ] );
 		add_filter( 'rocket_exclude_js', [ $this, 'rocket_exclude_assets' ] );
+
+		// Cron: Automatischer Recording-Abruf nach Webinar-Ende
+		add_action( 'et_zm_fetch_recording_cron', [ $this, 'cron_fetch_recording' ] );
 	}
 
 	/**
@@ -377,5 +380,45 @@ class Plugin {
 		$wpdb->query(
 			"DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_dgptm_events_%' OR option_name LIKE '_transient_timeout_dgptm_events_%'"
 		);
+	}
+
+	/**
+	 * Cron: Automatisch Recording-URL abrufen (1h nach Webinar-Ende)
+	 *
+	 * @param int $event_id Event ID.
+	 */
+	public function cron_fetch_recording( $event_id ) {
+		$session_key = get_post_meta( $event_id, Constants::META_ZM_KEY, true );
+		if ( ! $session_key ) {
+			Helpers::log( sprintf( 'Cron Recording: Event %d hat keinen Meeting-Key', $event_id ), 'warning' );
+			return;
+		}
+
+		$client = new \EventTracker\ZohoMeeting\Client();
+		$result = $client->get_recordings( $session_key );
+
+		if ( ! $result['ok'] ) {
+			Helpers::log( sprintf( 'Cron Recording: Abruf fehlgeschlagen fuer Event %d: %s', $event_id, $result['message'] ?? 'unbekannt' ), 'error' );
+			return;
+		}
+
+		$recordings = isset( $result['data']['recordings'] ) ? $result['data']['recordings'] : [];
+
+		if ( empty( $recordings ) ) {
+			Helpers::log( sprintf( 'Cron Recording: Keine Aufzeichnung fuer Event %d verfuegbar', $event_id ), 'info' );
+			return;
+		}
+
+		$recording_url = $recordings[0]['play_url'] ?? $recordings[0]['share_url'] ?? $recordings[0]['download_url'] ?? '';
+
+		if ( $recording_url ) {
+			Helpers::begin_cap_override();
+			update_post_meta( $event_id, Constants::META_ZM_RECORDING_URL, $recording_url );
+			update_post_meta( $event_id, Constants::META_RECORDING_URL, $recording_url );
+			update_post_meta( $event_id, Constants::META_ZM_STATUS, 'ended' );
+			Helpers::end_cap_override();
+
+			Helpers::log( sprintf( 'Cron Recording: URL gespeichert fuer Event %d: %s', $event_id, $recording_url ), 'info' );
+		}
 	}
 }

@@ -219,7 +219,7 @@
 		$(document).on('click', '[data-zm-action="create"]', function() {
 			var btn = $(this);
 			btn.prop('disabled', true).text('Erstelle...');
-			zmAjax('et_zm_create_webinar', {}, function(res) {
+			zmAjax('et_zm_create_webinar', { agenda: $('#et-zm-agenda').val() || '' }, function(res) {
 				if (res && res.success) {
 					zmShowMsg(getMsg(res, 'Webinar erstellt'), 'success');
 					currentPanel = 'form';
@@ -227,6 +227,20 @@
 				} else {
 					zmShowMsg(getMsg(res, 'Webinar konnte nicht erstellt werden'), 'error');
 					btn.prop('disabled', false).text('Webinar anlegen');
+				}
+			});
+		});
+
+		// Update Webinar (Titel, Agenda, Startzeit)
+		$(document).on('click', '[data-zm-action="update-webinar"]', function() {
+			var btn = $(this);
+			btn.prop('disabled', true).text('Aktualisiere...');
+			zmAjax('et_zm_update_webinar', { agenda: $('#et-zm-agenda').val() || '' }, function(res) {
+				btn.prop('disabled', false).text('Webinar aktualisieren');
+				if (res && res.success) {
+					zmShowMsg(getMsg(res, 'Webinar aktualisiert'), 'success');
+				} else {
+					zmShowMsg(getMsg(res, 'Aktualisierung fehlgeschlagen'), 'error');
 				}
 			});
 		});

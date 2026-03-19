@@ -101,6 +101,64 @@
 		});
 
 		/**
+		 * Save event form via AJAX (statt regulaerem POST)
+		 */
+		panelsContainer.on('submit', '.et-form', function(e) {
+			e.preventDefault();
+			var $form = $(this);
+			var $btn = $form.find('[type="submit"]');
+			$btn.prop('disabled', true).text('Speichern...');
+
+			var formData = {
+				action: 'et_save_event',
+				nonce: nonce,
+				event_id: $form.find('[name="et_event_id"]').val() || 0,
+				et_title: $form.find('[name="et_title"]').val() || '',
+				et_start: $form.find('[name="et_start"]').val() || '',
+				et_end: $form.find('[name="et_end"]').val() || '',
+				et_url: $form.find('[name="et_url"]').val() || '',
+				et_zoho_id: $form.find('[name="et_zoho_id"]').val() || '',
+				et_recording_url: $form.find('[name="et_recording_url"]').val() || '',
+				et_iframe_enable: $form.find('[name="et_iframe_enable"]').is(':checked') ? '1' : '0',
+				et_iframe_url: $form.find('[name="et_iframe_url"]').val() || ''
+			};
+
+			// Additional dates
+			var addStarts = [];
+			var addEnds = [];
+			$form.find('[name="et_additional_start[]"]').each(function() { addStarts.push($(this).val()); });
+			$form.find('[name="et_additional_end[]"]').each(function() { addEnds.push($(this).val()); });
+			if (addStarts.length) {
+				formData['et_additional_start'] = addStarts;
+				formData['et_additional_end'] = addEnds;
+			}
+
+			$.ajax({
+				url: ajaxUrl,
+				type: 'POST',
+				dataType: 'json',
+				data: formData,
+				success: function(res) {
+					if (res && res.success) {
+						showMsg(getMsg(res, 'Gespeichert'), 'success');
+						// Formular mit neuem Event-ID neu laden
+						if (res.data && res.data.event_id) {
+							currentPanel = 'form';
+							fetchPanel('et_fetch_event_form', { event_id: res.data.event_id });
+						}
+					} else {
+						showMsg(getMsg(res, 'Fehler beim Speichern'), 'error');
+						$btn.prop('disabled', false).text('Speichern');
+					}
+				},
+				error: function() {
+					showMsg('Netzwerkfehler beim Speichern', 'error');
+					$btn.prop('disabled', false).text('Speichern');
+				}
+			});
+		});
+
+		/**
 		 * Edit button in list
 		 */
 		panelsContainer.on('click', '.et-btn[data-action="edit"]', function(e) {

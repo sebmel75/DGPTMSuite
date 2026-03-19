@@ -28,6 +28,7 @@ class Handler {
 		// Event List & Form AJAX (nur eingeloggte User)
 		add_action( 'wp_ajax_et_fetch_event_list', [ $this, 'fetch_event_list' ] );
 		add_action( 'wp_ajax_et_fetch_event_form', [ $this, 'fetch_event_form' ] );
+		add_action( 'wp_ajax_et_save_event', [ $this, 'save_event' ] );
 		add_action( 'wp_ajax_et_delete_event', [ $this, 'delete_event' ] );
 
 		// Template Management
@@ -212,6 +213,95 @@ class Handler {
 		$html = ob_get_clean();
 
 		wp_send_json_success( [ 'html' => $html ] );
+	}
+
+	/**
+	 * Save Event via AJAX (fuer Dashboard-Tab-Kontext)
+	 */
+	public function save_event() {
+		check_ajax_referer( 'et_panels', 'nonce' );
+
+		if ( ! Helpers::user_has_access() ) {
+			wp_send_json_error( [ 'message' => __( 'Keine Berechtigung.', 'event-tracker' ) ] );
+		}
+
+		$event_id = isset( $_POST['event_id'] ) ? absint( $_POST['event_id'] ) : 0;
+		$title    = isset( $_POST['et_title'] ) ? sanitize_text_field( wp_unslash( $_POST['et_title'] ) ) : '';
+		$start    = isset( $_POST['et_start'] ) ? sanitize_text_field( wp_unslash( $_POST['et_start'] ) ) : '';
+		$end      = isset( $_POST['et_end'] ) ? sanitize_text_field( wp_unslash( $_POST['et_end'] ) ) : '';
+		$url_raw  = isset( $_POST['et_url'] ) ? trim( wp_unslash( $_POST['et_url'] ) ) : '';
+		$zoho     = isset( $_POST['et_zoho_id'] ) ? sanitize_text_field( wp_unslash( $_POST['et_zoho_id'] ) ) : '';
+		$rec_raw  = isset( $_POST['et_recording_url'] ) ? trim( wp_unslash( $_POST['et_recording_url'] ) ) : '';
+		$if_enable = isset( $_POST['et_iframe_enable'] ) ? '1' : '0';
+		$if_raw    = isset( $_POST['et_iframe_url'] ) ? trim( wp_unslash( $_POST['et_iframe_url'] ) ) : '';
+
+		if ( ! $title || ! $start || ! $end ) {
+			wp_send_json_error( [ 'message' => __( 'Titel, Start und Ende sind Pflichtfelder.', 'event-tracker' ) ] );
+		}
+
+		$start_ts = Helpers::sanitize_datetime_local( $start );
+		$end_ts   = Helpers::sanitize_datetime_local( $end );
+
+		if ( ! $start_ts || ! $end_ts || $end_ts <= $start_ts ) {
+			wp_send_json_error( [ 'message' => __( 'Ungueltiger Zeitraum.', 'event-tracker' ) ] );
+		}
+
+		$url = esc_url_raw( $url_raw, [ 'http', 'https' ] );
+		$rec = $rec_raw ? esc_url_raw( $rec_raw, [ 'http', 'https' ] ) : '';
+		$iframe_url = $if_raw ? esc_url_raw( $if_raw, [ 'http', 'https' ] ) : '';
+
+		Helpers::begin_cap_override();
+
+		if ( $event_id && get_post_type( $event_id ) === Constants::CPT ) {
+			wp_update_post( [ 'ID' => $event_id, 'post_title' => $title ] );
+			$message = __( 'Veranstaltung aktualisiert.', 'event-tracker' );
+		} else {
+			$event_id = wp_insert_post( [
+				'post_type'   => Constants::CPT,
+				'post_title'  => $title,
+				'post_status' => 'publish',
+				'post_author' => get_current_user_id(),
+			] );
+			$message = __( 'Veranstaltung erstellt.', 'event-tracker' );
+		}
+
+		if ( is_wp_error( $event_id ) || ! $event_id ) {
+			Helpers::end_cap_override();
+			wp_send_json_error( [ 'message' => __( 'Fehler beim Speichern.', 'event-tracker' ) ] );
+		}
+
+		update_post_meta( $event_id, Constants::META_START_TS, $start_ts );
+		update_post_meta( $event_id, Constants::META_END_TS, $end_ts );
+		update_post_meta( $event_id, Constants::META_REDIRECT_URL, $url );
+		update_post_meta( $event_id, Constants::META_ZOHO_ID, $zoho );
+		update_post_meta( $event_id, Constants::META_RECORDING_URL, $rec );
+		update_post_meta( $event_id, Constants::META_IFRAME_ENABLE, $if_enable );
+		update_post_meta( $event_id, Constants::META_IFRAME_URL, $iframe_url );
+
+		// Additional dates
+		$additional_dates = [];
+		if ( isset( $_POST['et_additional_start'] ) && is_array( $_POST['et_additional_start'] ) ) {
+			$starts = array_map( 'sanitize_text_field', array_map( 'wp_unslash', $_POST['et_additional_start'] ) );
+			$ends   = isset( $_POST['et_additional_end'] ) ? array_map( 'sanitize_text_field', array_map( 'wp_unslash', $_POST['et_additional_end'] ) ) : [];
+			foreach ( $starts as $idx => $si ) {
+				$ei = isset( $ends[ $idx ] ) ? $ends[ $idx ] : '';
+				$as = Helpers::sanitize_datetime_local( $si );
+				$ae = Helpers::sanitize_datetime_local( $ei );
+				if ( $as && $ae && $ae > $as ) {
+					$additional_dates[] = [ 'start' => $as, 'end' => $ae ];
+				}
+			}
+		}
+		update_post_meta( $event_id, Constants::META_ADDITIONAL_DATES, $additional_dates );
+
+		Helpers::end_cap_override();
+
+		Helpers::log( sprintf( 'Event gespeichert via AJAX: %s (ID: %d)', $title, $event_id ), 'info' );
+
+		wp_send_json_success( [
+			'message'  => $message,
+			'event_id' => $event_id,
+		] );
 	}
 
 	/**

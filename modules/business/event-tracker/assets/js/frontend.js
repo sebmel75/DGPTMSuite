@@ -231,11 +231,21 @@
 			});
 		});
 
-		// Update Webinar (Titel, Agenda, Startzeit)
+		// Update Webinar (alle editierbaren Felder)
 		$(document).on('click', '[data-zm-action="update-webinar"]', function() {
 			var btn = $(this);
 			btn.prop('disabled', true).text('Aktualisiere...');
-			zmAjax('et_zm_update_webinar', { agenda: $('#et-zm-agenda').val() || '' }, function(res) {
+
+			var durationMin = parseInt($('#et-zm-duration').val(), 10) || 60;
+
+			zmAjax('et_zm_update_webinar', {
+				topic:     $('#et-zm-topic').val() || '',
+				agenda:    $('#et-zm-agenda').val() || '',
+				startTime: $('#et-zm-starttime').val() || '',
+				duration:  durationMin * 60000,
+				timezone:  $('#et-zm-timezone').val() || '',
+				presenter: $('#et-zm-presenter').val() || ''
+			}, function(res) {
 				btn.prop('disabled', false).text('Webinar aktualisieren');
 				if (res && res.success) {
 					zmShowMsg(getMsg(res, 'Webinar aktualisiert'), 'success');

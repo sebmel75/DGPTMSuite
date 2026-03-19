@@ -648,7 +648,27 @@ class Handler {
 			</button>
 			<div class="et-zm-body">
 				<div class="et-zm-msg" id="et-zm-msg"></div>
-				<?php $zm_agenda = get_post_meta( $event_id, '_et_zoho_meeting_agenda', true ); ?>
+				<?php
+				$zm_agenda = get_post_meta( $event_id, '_et_zoho_meeting_agenda', true );
+				$title_decoded = html_entity_decode( get_the_title( $event_id ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+				$start_ts = (int) get_post_meta( $event_id, Constants::META_START_TS, true );
+				$end_ts   = (int) get_post_meta( $event_id, Constants::META_END_TS, true );
+				$tz = wp_timezone();
+
+				// Format fuer Zoho: "Mar 19, 2026 04:00 PM"
+				$start_formatted = '';
+				$duration_ms = 3600000;
+				if ( $start_ts ) {
+					$dt = ( new \DateTimeImmutable( '@' . $start_ts ) )->setTimezone( $tz );
+					$start_formatted = $dt->format( 'M d, Y h:i A' );
+				}
+				if ( $start_ts && $end_ts ) {
+					$duration_ms = max( 60000, (int) ( ( $end_ts - $start_ts ) * 1000 ) );
+				}
+				$duration_min = round( $duration_ms / 60000 );
+				$settings_arr = get_option( Constants::OPT_KEY, [] );
+				$presenter_id = ! empty( $settings_arr['zoho_meeting_presenter'] ) ? $settings_arr['zoho_meeting_presenter'] : '20086597172';
+				?>
 
 				<?php if ( ! $zm_key ) : ?>
 					<div class="et-zm-section">
@@ -659,11 +679,40 @@ class Handler {
 						<button type="button" class="et-zm-btn primary" data-zm-action="create"><?php esc_html_e( 'Webinar anlegen', 'event-tracker' ); ?></button>
 					</div>
 				<?php else : ?>
+					<!-- Webinar-Felder (alle von Zoho API unterstuetzten) -->
 					<div class="et-zm-section">
-						<h4><?php esc_html_e( 'Beschreibung', 'event-tracker' ); ?></h4>
-						<textarea id="et-zm-agenda" class="et-zm-textarea" rows="2" placeholder="<?php esc_attr_e( 'Agenda...', 'event-tracker' ); ?>"><?php echo esc_textarea( $zm_agenda ); ?></textarea>
-						<button type="button" class="et-zm-btn" data-zm-action="update-webinar" style="margin-top:8px;"><?php esc_html_e( 'Webinar aktualisieren', 'event-tracker' ); ?></button>
+						<h4><?php esc_html_e( 'Webinar-Daten', 'event-tracker' ); ?></h4>
+						<div class="et-zm-grid">
+							<div class="et-zm-field et-zm-field--full">
+								<label class="et-zm-field-label"><?php esc_html_e( 'Titel', 'event-tracker' ); ?></label>
+								<input type="text" id="et-zm-topic" class="et-zm-input" value="<?php echo esc_attr( $title_decoded ); ?>" />
+							</div>
+							<div class="et-zm-field et-zm-field--full">
+								<label class="et-zm-field-label"><?php esc_html_e( 'Agenda / Beschreibung', 'event-tracker' ); ?></label>
+								<textarea id="et-zm-agenda" class="et-zm-textarea" rows="2" placeholder="<?php esc_attr_e( 'Beschreibung...', 'event-tracker' ); ?>"><?php echo esc_textarea( $zm_agenda ); ?></textarea>
+							</div>
+							<div class="et-zm-field">
+								<label class="et-zm-field-label"><?php esc_html_e( 'Startzeit', 'event-tracker' ); ?></label>
+								<input type="text" id="et-zm-starttime" class="et-zm-input" value="<?php echo esc_attr( $start_formatted ); ?>" placeholder="Apr 15, 2026 05:30 PM" />
+							</div>
+							<div class="et-zm-field">
+								<label class="et-zm-field-label"><?php esc_html_e( 'Dauer (Minuten)', 'event-tracker' ); ?></label>
+								<input type="number" id="et-zm-duration" class="et-zm-input" value="<?php echo esc_attr( $duration_min ); ?>" min="1" />
+							</div>
+							<div class="et-zm-field">
+								<label class="et-zm-field-label"><?php esc_html_e( 'Zeitzone', 'event-tracker' ); ?></label>
+								<input type="text" id="et-zm-timezone" class="et-zm-input" value="<?php echo esc_attr( $tz->getName() ); ?>" />
+							</div>
+							<div class="et-zm-field">
+								<label class="et-zm-field-label"><?php esc_html_e( 'Presenter (ZUID)', 'event-tracker' ); ?></label>
+								<input type="text" id="et-zm-presenter" class="et-zm-input" value="<?php echo esc_attr( $presenter_id ); ?>" />
+							</div>
+						</div>
+						<button type="button" class="et-zm-btn primary" data-zm-action="update-webinar" style="margin-top:10px;"><?php esc_html_e( 'Webinar aktualisieren', 'event-tracker' ); ?></button>
+						<span class="et-zm-hint"><?php esc_html_e( 'Meeting-Key:', 'event-tracker' ); ?> <?php echo esc_html( $zm_key ); ?></span>
 					</div>
+
+					<!-- Links -->
 					<div class="et-zm-section">
 						<h4><?php esc_html_e( 'Links', 'event-tracker' ); ?></h4>
 						<div class="et-zm-link-row">
@@ -679,6 +728,8 @@ class Handler {
 						</div>
 						<button type="button" class="et-zm-btn" data-zm-action="refresh-links"><?php esc_html_e( 'Aktualisieren', 'event-tracker' ); ?></button>
 					</div>
+
+					<!-- Teilnehmer (Hinweis: API-Limitation) -->
 					<div class="et-zm-section">
 						<h4><?php esc_html_e( 'Teilnehmer', 'event-tracker' ); ?></h4>
 						<div class="et-zm-user-search">
@@ -691,7 +742,10 @@ class Handler {
 							<?php endforeach; ?>
 						</div>
 						<button type="button" class="et-zm-btn" data-zm-action="save-cohosts"><?php esc_html_e( 'Speichern', 'event-tracker' ); ?></button>
+						<span class="et-zm-hint"><?php esc_html_e( 'Co-Organizer muessen ggf. manuell in Zoho Meeting hinzugefuegt werden.', 'event-tracker' ); ?></span>
 					</div>
+
+					<!-- Aufzeichnung -->
 					<div class="et-zm-section">
 						<h4><?php esc_html_e( 'Aufzeichnung', 'event-tracker' ); ?></h4>
 						<div class="et-zm-link-row">
@@ -703,6 +757,8 @@ class Handler {
 						</div>
 						<button type="button" class="et-zm-btn" data-zm-action="fetch-recording"><?php esc_html_e( 'Abrufen', 'event-tracker' ); ?></button>
 					</div>
+
+					<!-- Aktionen -->
 					<div class="et-zm-section et-zm-section--actions">
 						<button type="button" class="et-zm-btn" data-zm-action="test-connection"><?php esc_html_e( 'Test', 'event-tracker' ); ?></button>
 						<button type="button" class="et-zm-btn primary" data-zm-action="start-webinar"><?php esc_html_e( 'Starten', 'event-tracker' ); ?></button>
@@ -863,31 +919,44 @@ class Handler {
 			wp_send_json_error( [ 'message' => __( 'Kein Webinar verknuepft.', 'event-tracker' ) ] );
 		}
 
-		$title    = html_entity_decode( get_the_title( $event_id ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
-		$start_ts = (int) get_post_meta( $event_id, Constants::META_START_TS, true );
-		$end_ts   = (int) get_post_meta( $event_id, Constants::META_END_TS, true );
-		$agenda   = isset( $_POST['agenda'] ) ? sanitize_textarea_field( wp_unslash( $_POST['agenda'] ) ) : '';
+		// Alle editierbaren Felder aus POST lesen
+		$topic     = isset( $_POST['topic'] ) ? sanitize_text_field( wp_unslash( $_POST['topic'] ) ) : '';
+		$agenda    = isset( $_POST['agenda'] ) ? sanitize_textarea_field( wp_unslash( $_POST['agenda'] ) ) : '';
+		$starttime = isset( $_POST['startTime'] ) ? sanitize_text_field( wp_unslash( $_POST['startTime'] ) ) : '';
+		$duration  = isset( $_POST['duration'] ) ? absint( $_POST['duration'] ) : 0;
+		$timezone  = isset( $_POST['timezone'] ) ? sanitize_text_field( wp_unslash( $_POST['timezone'] ) ) : '';
+		$presenter = isset( $_POST['presenter'] ) ? sanitize_text_field( wp_unslash( $_POST['presenter'] ) ) : '';
+
+		// Fallback: Titel aus Event-Post wenn nicht im POST
+		if ( ! $topic ) {
+			$topic = html_entity_decode( get_the_title( $event_id ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+		}
+
+		// Fallback: Startzeit/Duration aus Event-Meta
+		if ( ! $starttime ) {
+			$start_ts = (int) get_post_meta( $event_id, Constants::META_START_TS, true );
+			$end_ts   = (int) get_post_meta( $event_id, Constants::META_END_TS, true );
+			if ( $start_ts && $end_ts ) {
+				$tz = wp_timezone();
+				$start_dt  = ( new \DateTimeImmutable( '@' . $start_ts ) )->setTimezone( $tz );
+				$starttime = $start_dt->format( 'M d, Y h:i A' );
+				$duration  = max( 60000, (int) ( ( $end_ts - $start_ts ) * 1000 ) );
+				$timezone  = $tz->getName();
+			}
+		}
 
 		// Agenda lokal speichern
 		Helpers::begin_cap_override();
 		update_post_meta( $event_id, '_et_zoho_meeting_agenda', $agenda );
 		Helpers::end_cap_override();
 
-		$update_data = [
-			'topic'  => $title,
-			'agenda' => $agenda,
-		];
-
-		if ( $start_ts && $end_ts ) {
-			$tz = wp_timezone();
-			$start_dt = new \DateTimeImmutable( '@' . $start_ts );
-			$start_dt = $start_dt->setTimezone( $tz );
-			$duration_ms = max( 60000, (int) ( ( $end_ts - $start_ts ) * 1000 ) );
-
-			$update_data['startTime'] = $start_dt->format( 'M d, Y h:i A' );
-			$update_data['duration']  = $duration_ms;
-			$update_data['timezone']  = $tz->getName();
-		}
+		// Nur gesetzte Felder senden
+		$update_data = [ 'topic' => $topic ];
+		if ( $agenda )    $update_data['agenda']    = $agenda;
+		if ( $starttime ) $update_data['startTime'] = $starttime;
+		if ( $duration )  $update_data['duration']  = $duration;
+		if ( $timezone )  $update_data['timezone']  = $timezone;
+		if ( $presenter ) $update_data['presenter'] = $presenter;
 
 		$client = $this->get_zm_client();
 		$result = $client->update_webinar( $session_key, $update_data );
@@ -896,7 +965,7 @@ class Handler {
 			wp_send_json_error( [ 'message' => $result['message'] ?? 'Fehler beim Aktualisieren' ] );
 		}
 
-		Helpers::log( sprintf( 'Webinar aktualisiert: Event %d, Key %s', $event_id, $session_key ), 'info' );
+		Helpers::log( sprintf( 'Webinar aktualisiert: Event %d, Key %s, Felder: %s', $event_id, $session_key, implode( ', ', array_keys( $update_data ) ) ), 'info' );
 
 		wp_send_json_success( [ 'message' => __( 'Webinar aktualisiert.', 'event-tracker' ) ] );
 	}

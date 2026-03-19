@@ -716,14 +716,48 @@
 	margin-bottom: 10px;
 }
 
+.et-zm-field--full {
+	grid-column: 1 / -1;
+}
+
 .et-zm-field-label {
 	display: block;
-	font-size: 0.75rem;
+	font-size: 0.6875rem;
 	font-weight: 600;
-	color: var(--et-text-secondary);
-	margin-bottom: 4px;
+	color: var(--et-text-muted);
+	margin-bottom: 3px;
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
+}
+
+.et-zm-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 10px;
+}
+
+.et-zm-input {
+	width: 100%;
+	padding: 7px 9px;
+	border: 1px solid var(--et-border);
+	border-radius: var(--et-radius-sm);
+	font-size: 0.8125rem;
+	color: var(--et-text);
+	transition: border-color var(--et-transition), box-shadow var(--et-transition);
+}
+
+.et-zm-input:focus {
+	outline: none;
+	border-color: var(--et-zm-accent);
+	box-shadow: 0 0 0 2px var(--et-zm-accent-light);
+}
+
+.et-zm-hint {
+	display: inline-block;
+	font-size: 0.7rem;
+	color: var(--et-text-muted);
+	margin-left: 8px;
+	font-style: italic;
 }
 
 /* Actions Row */
@@ -935,6 +969,10 @@
 
 	.et-zm-actions {
 		flex-direction: column;
+	}
+
+	.et-zm-grid {
+		grid-template-columns: 1fr;
 	}
 
 	.et-date-range {

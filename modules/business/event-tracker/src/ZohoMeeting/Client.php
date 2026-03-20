@@ -82,12 +82,10 @@ class Client {
 			? $settings['zoho_meeting_presenter']
 			: self::DEFAULT_PRESENTER;
 
-		Helpers::log( sprintf(
-			'ZohoMeeting Client init: api_base=%s, zsoid=%s, presenter=%s',
-			$this->api_base,
-			$this->zsoid,
-			$this->presenter_zuid
-		), 'info' );
+		// Nur bei fehlendem ZSOID warnen (sonst zu verbose)
+		if ( ! $this->zsoid ) {
+			Helpers::log( 'ZohoMeeting Client: ZSOID nicht konfiguriert', 'warning' );
+		}
 	}
 
 	/* =========================================================================
@@ -165,7 +163,7 @@ class Client {
 		// Cache: 55 Minuten (wie in Referenz-Implementierung)
 		set_transient( self::TOKEN_TRANSIENT, $token, 55 * MINUTE_IN_SECONDS );
 
-		Helpers::log( 'Access-Token erfolgreich erneuert', 'info' );
+		Helpers::log( 'Access-Token erneuert', 'verbose' );
 
 		return $token;
 	}
@@ -195,7 +193,7 @@ class Client {
 
 		$url = $this->api_base . '/api/v2/' . $this->zsoid . '/' . ltrim( $endpoint, '/' );
 
-		Helpers::log( sprintf( 'API Request: %s %s', $method, $url ), 'info' );
+		Helpers::log( sprintf( 'API Request: %s %s', $method, $url ), 'verbose' );
 
 		$headers = [
 			'Content-Type'  => 'application/json;charset=UTF-8',
@@ -205,7 +203,7 @@ class Client {
 		// POST/PUT: wp_remote_post mit JSON body (wie Referenz)
 		if ( in_array( $method, [ 'POST', 'PUT' ], true ) && ! empty( $body ) ) {
 			$json_body = wp_json_encode( $body );
-			Helpers::log( sprintf( 'Request Body: %s', $json_body ), 'info' );
+			Helpers::log( sprintf( 'Request Body: %s', $json_body ), 'verbose' );
 
 			$response = wp_remote_post( $url, [
 				'headers' => $headers,
@@ -231,7 +229,7 @@ class Client {
 		$raw_body    = wp_remote_retrieve_body( $response );
 		$parsed_body = json_decode( $raw_body, true );
 
-		Helpers::log( sprintf( 'API Response: HTTP %d, Body: %s', $status_code, substr( $raw_body, 0, 500 ) ), 'info' );
+		Helpers::log( sprintf( 'API Response: HTTP %d, Body: %s', $status_code, substr( $raw_body, 0, 500 ) ), 'verbose' );
 
 		// 401 handling
 		if ( $status_code === 401 && ! $is_retry ) {
@@ -431,7 +429,7 @@ class Client {
 	 * @return array
 	 */
 	public function add_cohost( $session_key, $email ) {
-		Helpers::log( sprintf( 'Co-Host hinzufuegen: key=%s, email=%s', $session_key, $email ), 'info' );
+		Helpers::log( sprintf( 'Co-Host hinzufuegen: key=%s, email=%s', $session_key, $email ), 'verbose' );
 
 		// Zoho Meeting: Co-Presenter werden via Webinar-Update als copresenter hinzugefuegt
 		$payload = [
@@ -450,7 +448,7 @@ class Client {
 
 		// Pruefen ob Co-Presenter in der Antwort enthalten ist
 		if ( $result['code'] >= 200 && $result['code'] < 300 ) {
-			Helpers::log( sprintf( 'Co-Host Response: %s', wp_json_encode( $result['body'] ) ), 'info' );
+			Helpers::log( sprintf( 'Co-Host Response: %s', wp_json_encode( $result['body'] ) ), 'verbose' );
 			return [ 'ok' => true, 'data' => $result['body'] ];
 		}
 
@@ -472,7 +470,7 @@ class Client {
 		}
 
 		if ( $result2['code'] >= 200 && $result2['code'] < 300 ) {
-			Helpers::log( sprintf( 'Co-Host participants Response: %s', wp_json_encode( $result2['body'] ) ), 'info' );
+			Helpers::log( sprintf( 'Co-Host participants Response: %s', wp_json_encode( $result2['body'] ) ), 'verbose' );
 			return [ 'ok' => true, 'data' => $result2['body'] ];
 		}
 

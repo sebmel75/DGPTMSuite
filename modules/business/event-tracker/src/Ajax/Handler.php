@@ -908,7 +908,7 @@ class Handler {
 		$start_ts = (int) get_post_meta( $event_id, Constants::META_START_TS, true );
 		$end_ts   = (int) get_post_meta( $event_id, Constants::META_END_TS, true );
 
-		Helpers::log( sprintf( 'zm_create_webinar: Event %d, Titel=%s, Start=%d, End=%d', $event_id, $title, $start_ts, $end_ts ), 'info' );
+		Helpers::log( sprintf( 'zm_create_webinar: Event %d, Titel=%s', $event_id, $title ), 'verbose' );
 
 		if ( ! $start_ts || ! $end_ts ) {
 			Helpers::log( 'zm_create_webinar: Abgebrochen — kein Start/End-Datum', 'error' );
@@ -941,7 +941,7 @@ class Handler {
 			Helpers::end_cap_override();
 		}
 
-		Helpers::log( sprintf( 'zm_create_webinar: Sende an Zoho: %s', wp_json_encode( $payload ) ), 'info' );
+		Helpers::log( sprintf( 'zm_create_webinar: Payload: %s', wp_json_encode( $payload ) ), 'verbose' );
 
 		// Zoho Meeting Startzeit-Format: "Mar 18, 2026 04:00 PM"
 		$result = $client->create_webinar( $payload );
@@ -965,7 +965,7 @@ class Handler {
 		$start_url   = isset( $session['start_url'] ) ? $session['start_url'] : '';
 		$join_url    = isset( $session['join_url'] ) ? $session['join_url'] : '';
 
-		Helpers::log( sprintf( 'zm_create_webinar: Response parsed — key=%s, start_url=%s, join_url=%s', $session_key ?: '(leer)', $start_url ? 'ja' : '(leer)', $join_url ? 'ja' : '(leer)' ), 'info' );
+		Helpers::log( sprintf( 'zm_create_webinar: key=%s', $session_key ?: '(leer)' ), 'verbose' );
 
 		if ( $session_key ) {
 			Helpers::begin_cap_override();

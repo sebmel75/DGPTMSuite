@@ -280,7 +280,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
             check_ajax_referer('dgptm_daten_bearbeiten_nonce', 'nonce');
 
             if (!is_user_logged_in()) {
-                $this->log('ERROR: User not logged in');
+                $this->log('User not logged in', 'warning');
                 wp_send_json_error(['message' => 'Nicht angemeldet']);
             }
 
@@ -291,14 +291,14 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
             $this->log('Zoho ID from user meta: ' . ($zoho_id ? $zoho_id : 'EMPTY'));
 
             if (empty($zoho_id)) {
-                $this->log('ERROR: No Zoho ID found for user ' . $user_id);
+                $this->log('No Zoho ID found for user ' . $user_id);
                 wp_send_json_error(['message' => 'Keine Zoho ID gefunden. Bitte kontaktieren Sie die Geschäftsstelle.']);
             }
 
             // Get OAuth token
             $token = $this->get_oauth_token();
             if (!$token) {
-                $this->log('ERROR: No OAuth token available');
+                $this->log('No OAuth token available', 'error');
                 wp_send_json_error(['message' => 'OAuth-Token nicht verfügbar. Bitte aktivieren Sie das Mitgliedsantrag- oder CRM-Abruf-Modul.']);
             }
 
@@ -308,7 +308,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
             $contact_data = $this->fetch_contact_from_crm($zoho_id, $token);
 
             if (!$contact_data) {
-                $this->log('ERROR: Contact not found in CRM for Zoho ID: ' . $zoho_id);
+                $this->log('Contact not found in CRM for Zoho ID: ' . $zoho_id, 'error');
                 wp_send_json_error(['message' => 'Kontakt nicht gefunden in Zoho CRM (ID: ' . $zoho_id . ')']);
             }
 
@@ -508,7 +508,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
             $this->log('Please ensure crm-abruf or mitgliedsantrag module is active and has valid OAuth credentials.');
             $this->log('==============================================');
 
-            $this->log('ERROR: No OAuth token available from any source');
+            $this->log('No OAuth token available from any source', 'error');
             return false;
         }
 
@@ -527,7 +527,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
             ]);
 
             if (is_wp_error($response)) {
-                $this->log('ERROR: Failed to fetch contact: ' . $response->get_error_message());
+                $this->log('Failed to fetch contact: ' . $response->get_error_message());
                 return false;
             }
 
@@ -564,7 +564,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
             );
 
             if (is_wp_error($response)) {
-                $this->log('ERROR: Failed to update contact: ' . $response->get_error_message());
+                $this->log('Failed to update contact: ' . $response->get_error_message());
                 return false;
             }
 
@@ -828,7 +828,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
             );
 
             if (is_wp_error($response)) {
-                $this->log('ERROR: Failed to search accounts: ' . $response->get_error_message());
+                $this->log('Failed to search accounts: ' . $response->get_error_message());
                 return false;
             }
 
@@ -841,7 +841,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
             }
 
             if ($http_code !== 200 || !isset($body['data'])) {
-                $this->log('ERROR: Invalid response when searching accounts (HTTP ' . $http_code . ')');
+                $this->log(' Invalid response when searching accounts (HTTP ' . $http_code . ')');
                 return false;
             }
 
@@ -886,7 +886,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
                 );
 
                 if (is_wp_error($response)) {
-                    $this->log('ERROR: Failed to fetch accounts: ' . $response->get_error_message());
+                    $this->log('Failed to fetch accounts: ' . $response->get_error_message());
                     return false;
                 }
 
@@ -894,7 +894,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
                 $body = json_decode(wp_remote_retrieve_body($response), true);
 
                 if ($http_code !== 200 || !isset($body['data'])) {
-                    $this->log('ERROR: Invalid response when fetching accounts (HTTP ' . $http_code . ')');
+                    $this->log(' Invalid response when fetching accounts (HTTP ' . $http_code . ')');
                     return false;
                 }
 
@@ -954,7 +954,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
             // Get OAuth token
             $token = $this->get_oauth_token();
             if (!$token) {
-                $this->log('ERROR: Kein OAuth-Token verfügbar für Clinics-Cache-Refresh');
+                $this->log(' Kein OAuth-Token verfügbar für Clinics-Cache-Refresh');
                 return false;
             }
 
@@ -962,7 +962,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
             $clinics = $this->fetch_all_accounts($token, 'Klinik');
 
             if ($clinics === false) {
-                $this->log('ERROR: Fehler beim Laden der Kliniken für Cache');
+                $this->log(' Fehler beim Laden der Kliniken für Cache');
                 return false;
             }
 
@@ -1029,7 +1029,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
             $token = $this->get_gocardless_token();
 
             if (empty($token)) {
-                $this->log('ERROR: GoCardless Token nicht konfiguriert. Bitte unter Einstellungen > Daten bearbeiten konfigurieren.');
+                $this->log(' GoCardless Token nicht konfiguriert. Bitte unter Einstellungen > Daten bearbeiten konfigurieren.');
                 return false;
             }
 
@@ -1049,7 +1049,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
             );
 
             if (is_wp_error($response)) {
-                $this->log('ERROR: Failed to fetch mandates: ' . $response->get_error_message());
+                $this->log('Failed to fetch mandates: ' . $response->get_error_message());
                 return false;
             }
 
@@ -1059,7 +1059,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
             $this->log('Mandates response HTTP ' . $http_code . ': ' . wp_json_encode($body));
 
             if ($http_code !== 200 || !isset($body['mandates'])) {
-                $this->log('ERROR: Invalid mandates response');
+                $this->log(' Invalid mandates response');
                 return false;
             }
 
@@ -1095,7 +1095,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
                     );
 
                     if (is_wp_error($cancel_response)) {
-                        $this->log('ERROR: Failed to cancel mandate ' . $mandate_id . ': ' . $cancel_response->get_error_message());
+                        $this->log('Failed to cancel mandate ' . $mandate_id . ': ' . $cancel_response->get_error_message());
                         continue;
                     }
 
@@ -1141,7 +1141,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
             if ($sent) {
                 $this->log('Bank change notification sent successfully');
             } else {
-                $this->log('ERROR: Failed to send bank change notification');
+                $this->log('Failed to send bank change notification', 'error');
             }
 
             return $sent;
@@ -1298,7 +1298,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
                     $this->log('Valid_Through successfully cleared from CRM (Student_Status = false)');
                     $valid_through = ''; // Auch lokal leeren für die Antwort
                 } else {
-                    $this->log('ERROR: Failed to clear Valid_Through from CRM');
+                    $this->log('Failed to clear Valid_Through from CRM', 'error');
                 }
             }
 
@@ -1315,7 +1315,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
                     $this->log('Valid_Through successfully cleared from CRM (status display = inactive)');
                     $valid_through = '';
                 } else {
-                    $this->log('ERROR: Failed to clear Valid_Through from CRM');
+                    $this->log('Failed to clear Valid_Through from CRM', 'error');
                 }
             }
 
@@ -1474,7 +1474,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
                             // Verify again
                             $verify_data2 = $this->fetch_contact_from_crm($zoho_id, $token);
                             if ($verify_data2 && !empty($verify_data2['StudinachweisDirekt'])) {
-                                $this->log('ERROR: File still exists after 5 seconds total. Upload may fail.');
+                                $this->log(' File still exists after 5 seconds total. Upload may fail.');
                             } else {
                                 $this->log('Deletion verified after additional wait');
                             }
@@ -1493,7 +1493,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
             $upload_result = $this->upload_file_to_zoho($zoho_id, $file, 'StudinachweisDirekt', $token);
 
             if (!$upload_result) {
-                $this->log('ERROR: Failed to upload certificate to Zoho');
+                $this->log('Failed to upload certificate to Zoho', 'error');
                 wp_send_json_error(['message' => 'Fehler beim Hochladen der Datei zu Zoho CRM']);
             }
 
@@ -1540,13 +1540,13 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
                         $update_success = true; // Fields are updated, that's the main goal
                     }
                 } else {
-                    $this->log('ERROR: Failed to update fields');
+                    $this->log('Failed to update fields', 'error');
                     $update_success = false;
                 }
             }
 
             if (!$update_success) {
-                $this->log('ERROR: Failed to update student status fields');
+                $this->log('Failed to update student status fields', 'error');
                 wp_send_json_error(['message' => 'Datei hochgeladen, aber Status-Aktualisierung fehlgeschlagen']);
             }
 
@@ -1571,7 +1571,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
             $file_contents = file_get_contents($file['tmp_name']);
 
             if ($file_contents === false) {
-                $this->log('ERROR: Could not read file contents');
+                $this->log(' Could not read file contents');
                 return false;
             }
 
@@ -1602,7 +1602,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
             );
 
             if (is_wp_error($response)) {
-                $this->log('ERROR: Zoho file upload failed: ' . $response->get_error_message());
+                $this->log(' Zoho file upload failed: ' . $response->get_error_message());
                 return false;
             }
 
@@ -1614,7 +1614,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
 
             // Get file_id from response
             if (!isset($response_body['data'][0]['details']['id'])) {
-                $this->log('ERROR: No file ID in response');
+                $this->log(' No file ID in response');
                 return false;
             }
 
@@ -1643,7 +1643,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
             );
 
             if (is_wp_error($response)) {
-                $this->log('ERROR: Failed to link file to contact: ' . $response->get_error_message());
+                $this->log('Failed to link file to contact: ' . $response->get_error_message());
                 return false;
             }
 
@@ -1659,7 +1659,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
                 if (isset($response_body['data'][0]['status']) && $response_body['data'][0]['status'] === 'error') {
                     $error_code = $response_body['data'][0]['code'] ?? 'UNKNOWN';
                     $error_message = $response_body['data'][0]['message'] ?? 'Unknown error';
-                    $this->log('ERROR: File link failed despite HTTP 2xx: ' . $error_code . ' - ' . $error_message);
+                    $this->log(' File link failed despite HTTP 2xx: ' . $error_code . ' - ' . $error_message);
 
                     // Special handling for LIMIT_EXCEEDED
                     if ($error_code === 'LIMIT_EXCEEDED') {
@@ -1723,7 +1723,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
             );
 
             if (is_wp_error($response)) {
-                $this->log('ERROR: Failed to delete file: ' . $response->get_error_message());
+                $this->log('Failed to delete file: ' . $response->get_error_message());
                 return false;
             }
 
@@ -1739,7 +1739,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
                         $this->log('File(s) deleted successfully');
                         return true;
                     } else {
-                        $this->log('ERROR: Delete failed with code: ' . $body['data'][0]['code']);
+                        $this->log(' Delete failed with code: ' . $body['data'][0]['code']);
                         if (isset($body['data'][0]['message'])) {
                             $this->log('Error message: ' . $body['data'][0]['message']);
                         }
@@ -1796,7 +1796,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
             );
 
             if (is_wp_error($response)) {
-                $this->log('ERROR: Blueprint transition failed: ' . $response->get_error_message());
+                $this->log(' Blueprint transition failed: ' . $response->get_error_message());
                 return false;
             }
 
@@ -1815,11 +1815,14 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
         }
 
         /**
-         * Log message
+         * Log message via DGPTM Logger
+         *
+         * @param string $message Message.
+         * @param string $level   Level: error, warning, info, verbose.
          */
-        private function log($message) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('[DGPTM Daten bearbeiten] ' . $message);
+        private function log($message, $level = 'verbose') {
+            if (class_exists('DGPTM_Logger')) {
+                DGPTM_Logger::log($message, $level, 'daten-bearbeiten');
             }
         }
     }

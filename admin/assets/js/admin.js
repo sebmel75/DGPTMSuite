@@ -104,9 +104,13 @@
                 });
             }
 
-            // Debounce: 150ms fuer Suche, sofort fuer Dropdown-Filter
+            // Debounce: 150ms fuer Suche, Filter zuruecksetzen bei Texteingabe
             $searchInput.on('input', function() {
                 clearTimeout(searchTimer);
+                if ($searchInput.val().trim()) {
+                    $categoryFilter.val('');
+                    $statusFilter.val('');
+                }
                 searchTimer = setTimeout(filterModules, 150);
             });
             $categoryFilter.on('change', filterModules);

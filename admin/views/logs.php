@@ -319,6 +319,21 @@ $level_icons = [
                 </button>
             </p>
         </form>
+
+        <!-- Health-Check API -->
+        <?php if (class_exists('DGPTM_Health_Check')): ?>
+        <div style="background: #f0f6fc; border-left: 4px solid #2271b1; padding: 15px; margin: 20px 0;">
+            <h4 style="margin-top: 0;">Health-Check API</h4>
+            <p class="description"><?php _e('REST-Endpoint fuer automatisierte Ueberwachung (z.B. Claude Code, Monitoring).', 'dgptm-suite'); ?></p>
+            <p><strong>Endpoint:</strong> <code><?php echo esc_html(home_url('/wp-json/dgptm/v1/health-check')); ?></code></p>
+            <p>
+                <strong>Token:</strong>
+                <input type="text" value="<?php echo esc_attr(DGPTM_Health_Check::get_token()); ?>" readonly style="width:400px;font-family:monospace;font-size:12px;" onclick="this.select();">
+                <button type="button" class="button button-small" onclick="navigator.clipboard.writeText(this.previousElementSibling.value);this.textContent='Kopiert!';">Kopieren</button>
+            </p>
+            <p class="description"><?php _e('Verwende diesen Token als Bearer-Token im Authorization-Header.', 'dgptm-suite'); ?></p>
+        </div>
+        <?php endif; ?>
     </div>
 
     <?php elseif ($current_tab === 'modules'): ?>

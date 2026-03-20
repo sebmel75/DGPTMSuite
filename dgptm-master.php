@@ -44,6 +44,7 @@ require_once DGPTM_SUITE_PATH . 'core/class-version-extractor.php';
 require_once DGPTM_SUITE_PATH . 'core/class-module-settings-manager.php';
 require_once DGPTM_SUITE_PATH . 'core/class-central-settings-registry.php';
 require_once DGPTM_SUITE_PATH . 'core/class-zoho-auth.php';
+require_once DGPTM_SUITE_PATH . 'core/class-health-check.php';
 
 // Admin-Klassen laden
 if (is_admin()) {
@@ -86,6 +87,9 @@ final class DGPTM_Plugin_Suite {
 
         // Zentrale Zoho-Authentifizierung initialisieren (vor Modulen)
         dgptm_zoho_auth();
+
+        // Health-Check REST API
+        DGPTM_Health_Check::get_instance();
 
         // Bei Bedarf Logger-DB erstellen/aktualisieren (nach Plugin-Updates)
         add_action('admin_init', [$this, 'maybe_upgrade_logger_db']);

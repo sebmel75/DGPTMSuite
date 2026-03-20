@@ -357,6 +357,9 @@ class DGPTM_Plugin_Manager {
 
         do_action('dgptm_suite_module_activated', $module_id);
 
+        // Version-Cache invalidieren
+        delete_transient('dgptm_module_versions');
+
         return $result;
     }
 
@@ -410,6 +413,10 @@ class DGPTM_Plugin_Manager {
         dgptm_log("Deaktivierung von '$module_id' - Result: " . ($result ? 'SUCCESS' : 'FAILED'), 'verbose');
 
         do_action('dgptm_suite_module_deactivated', $module_id);
+
+        // Version-Cache invalidieren
+        delete_transient('dgptm_module_versions');
+
         return true;
     }
 

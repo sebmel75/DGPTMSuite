@@ -150,20 +150,7 @@ foreach ($active_checkouts as $checkout_info) {
         </div>
     </div>
 
-    <!-- Wartungs-Tools -->
-    <div class="dgptm-maintenance-tools" style="margin: 20px 0; padding: 15px; background: #f9f9f9; border-left: 4px solid #2271b1; border-radius: 4px;">
-        <h3 style="margin-top: 0;"><?php _e('Wartungs-Tools', 'dgptm-suite'); ?></h3>
-        <button type="button" id="dgptm-repair-flags-btn" class="button button-secondary">
-            <span class="dashicons dashicons-admin-tools" style="margin-top: 3px;"></span>
-            <?php _e('Module-Flags reparieren', 'dgptm-suite'); ?>
-        </button>
-        <p class="description">
-            <?php _e('Repariert fehlerhafte Flag-Daten aus älteren Versionen. Führen Sie dies aus, wenn Module Fehler bei der Flag-Anzeige haben.', 'dgptm-suite'); ?>
-        </p>
-        <div id="dgptm-repair-result" style="margin-top: 10px; display: none;"></div>
-    </div>
-
-    <!-- Suchfeld -->
+    <!-- Suchfeld + Filter + Collapse -->
     <div class="dgptm-search-box">
         <input type="text" id="dgptm-module-search" placeholder="<?php esc_attr_e('Module suchen...', 'dgptm-suite'); ?>" />
         <select id="dgptm-category-filter">
@@ -173,22 +160,12 @@ foreach ($active_checkouts as $checkout_info) {
             <?php endforeach; ?>
         </select>
         <select id="dgptm-status-filter">
-            <option value=""><?php _e('Alle Module', 'dgptm-suite'); ?></option>
-            <option value="active"><?php _e('Nur aktive', 'dgptm-suite'); ?></option>
-            <option value="inactive"><?php _e('Nur inaktive', 'dgptm-suite'); ?></option>
+            <option value=""><?php _e('Alle', 'dgptm-suite'); ?></option>
+            <option value="active"><?php _e('Aktiv', 'dgptm-suite'); ?></option>
+            <option value="inactive"><?php _e('Inaktiv', 'dgptm-suite'); ?></option>
         </select>
-    </div>
-
-    <!-- Alle auf-/zuklappen -->
-    <div class="dgptm-collapse-controls">
-        <button type="button" id="dgptm-expand-all" class="button button-secondary">
-            <span class="dashicons dashicons-arrow-down-alt2"></span>
-            <?php _e('Alle aufklappen', 'dgptm-suite'); ?>
-        </button>
-        <button type="button" id="dgptm-collapse-all" class="button button-secondary">
-            <span class="dashicons dashicons-arrow-up-alt2"></span>
-            <?php _e('Alle einklappen', 'dgptm-suite'); ?>
-        </button>
+        <button type="button" id="dgptm-expand-all" class="button button-small" title="<?php esc_attr_e('Alle aufklappen', 'dgptm-suite'); ?>">&#x25BC;</button>
+        <button type="button" id="dgptm-collapse-all" class="button button-small" title="<?php esc_attr_e('Alle einklappen', 'dgptm-suite'); ?>">&#x25B2;</button>
     </div>
 
     <!-- Bulk Actions -->
@@ -208,6 +185,23 @@ foreach ($active_checkouts as $checkout_info) {
         </div>
 
         <!-- Module nach Kategorien -->
+        <?php
+        // Performance: Versionen einmalig cached extrahieren (statt 65x file_get_contents im Loop)
+        $version_cache_key = 'dgptm_module_versions';
+        $version_cache = get_transient( $version_cache_key );
+        if ( false === $version_cache ) {
+            $version_cache = [];
+            foreach ( $available_modules as $mid => $minfo ) {
+                $version_cache[ $mid ] = DGPTM_Version_Extractor::get_module_version( $mid );
+            }
+            set_transient( $version_cache_key, $version_cache, 5 * MINUTE_IN_SECONDS );
+        }
+
+        // Performance: Metadata-Manager + Safe-Loader + Failed-Activations einmalig laden
+        $metadata_manager = DGPTM_Module_Metadata_File::get_instance();
+        $safe_loader = DGPTM_Safe_Loader::get_instance();
+        $failed_activations = $safe_loader->get_failed_activations();
+        ?>
         <?php foreach ($categories as $cat_id => $cat_data): ?>
             <?php if (isset($modules_by_category[$cat_id]) && !empty($modules_by_category[$cat_id])): ?>
                 <div class="dgptm-category-section" data-category="<?php echo esc_attr($cat_id); ?>">
@@ -244,24 +238,18 @@ foreach ($active_checkouts as $checkout_info) {
                                 $can_deactivate = $dependency_manager->can_deactivate_module($module_id);
                                 $is_checked_out = in_array($module_id, $checked_out_modules);
 
-                                // WICHTIG: Version aus Hauptdatei extrahieren statt aus module.json
-                                $version = DGPTM_Version_Extractor::get_module_version($module_id);
+                                // Version aus Cache (statt file_get_contents im Loop)
+                                $version = $version_cache[$module_id] ?? ($config['version'] ?? '?');
 
-                                // Metadata laden
-                                $metadata_manager = DGPTM_Module_Metadata_File::get_instance();
+                                // Metadata laden (kein sync_critical_flag mehr im Loop)
                                 $metadata = $metadata_manager->get_module_metadata($module_id);
                                 $flags = $metadata['flags'] ?? [];
                                 $comment = $metadata['comment'] ?? '';
 
-                                // Sync critical flag from config
-                                $metadata_manager->sync_critical_flag($module_id, $config);
-
-                                // Prüfe ob kritisch (Flag oder Config)
+                                // Prüfe ob kritisch
                                 $is_critical = $metadata_manager->is_module_critical($module_id, $config);
 
                                 // Prüfe ob Modul fehlerhaft ist
-                                $safe_loader = DGPTM_Safe_Loader::get_instance();
-                                $failed_activations = $safe_loader->get_failed_activations();
                                 $has_error = isset($failed_activations[$module_id]);
                                 $error_info = $has_error ? $failed_activations[$module_id] : null;
                                 $error_age = $has_error ? (time() - ($error_info['timestamp'] ?? 0)) : 0;

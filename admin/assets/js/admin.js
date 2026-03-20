@@ -54,54 +54,61 @@
             const $searchInput = $('#dgptm-module-search');
             const $categoryFilter = $('#dgptm-category-filter');
             const $statusFilter = $('#dgptm-status-filter');
+            let searchTimer = null;
+
+            // Pre-build search index (einmalig statt 65x DOM-Reads pro Tastendruck)
+            const searchIndex = [];
+            $('.dgptm-module-row').each(function() {
+                const $row = $(this);
+                const $section = $row.closest('.dgptm-category-section');
+                searchIndex.push({
+                    $row: $row,
+                    $section: $section,
+                    name: ($row.find('strong').first().text() || '').toLowerCase(),
+                    id: String($row.data('module-id') || '').toLowerCase(),
+                    desc: ($row.find('td').eq(1).text() || '').toLowerCase(),
+                    status: $row.data('status'),
+                    category: $section.data('category')
+                });
+            });
 
             function filterModules() {
-                const searchTerm = $searchInput.val().toLowerCase();
+                const searchTerm = $searchInput.val().toLowerCase().trim();
                 const selectedCategory = $categoryFilter.val();
                 const selectedStatus = $statusFilter.val();
 
-                $('.dgptm-module-row').each(function() {
-                    const $row = $(this);
-                    const moduleName = $row.find('strong').text().toLowerCase();
-                    const moduleId = $row.data('module-id');
-                    const moduleStatus = $row.data('status');
-                    const $section = $row.closest('.dgptm-category-section');
-                    const moduleCategory = $section.data('category');
+                // Sichtbare Kategorien tracken
+                const catVisible = {};
 
+                for (let i = 0; i < searchIndex.length; i++) {
+                    const m = searchIndex[i];
                     let show = true;
 
-                    // Search term
-                    if (searchTerm && !moduleName.includes(searchTerm) && !moduleId.includes(searchTerm)) {
+                    if (searchTerm && !m.name.includes(searchTerm) && !m.id.includes(searchTerm) && !m.desc.includes(searchTerm)) {
+                        show = false;
+                    }
+                    if (selectedCategory && m.category !== selectedCategory) {
+                        show = false;
+                    }
+                    if (selectedStatus && m.status !== selectedStatus) {
                         show = false;
                     }
 
-                    // Category filter
-                    if (selectedCategory && moduleCategory !== selectedCategory) {
-                        show = false;
-                    }
+                    m.$row[0].style.display = show ? '' : 'none';
+                    if (show) catVisible[m.category] = true;
+                }
 
-                    // Status filter
-                    if (selectedStatus) {
-                        if (selectedStatus === 'active' && moduleStatus !== 'active') {
-                            show = false;
-                        }
-                        if (selectedStatus === 'inactive' && moduleStatus !== 'inactive') {
-                            show = false;
-                        }
-                    }
-
-                    $row.toggle(show);
-                });
-
-                // Hide empty categories
+                // Leere Kategorien ausblenden
                 $('.dgptm-category-section').each(function() {
-                    const $section = $(this);
-                    const visibleRows = $section.find('.dgptm-module-row:visible').length;
-                    $section.toggle(visibleRows > 0);
+                    this.style.display = catVisible[$(this).data('category')] ? '' : 'none';
                 });
             }
 
-            $searchInput.on('input', filterModules);
+            // Debounce: 150ms fuer Suche, sofort fuer Dropdown-Filter
+            $searchInput.on('input', function() {
+                clearTimeout(searchTimer);
+                searchTimer = setTimeout(filterModules, 150);
+            });
             $categoryFilter.on('change', filterModules);
             $statusFilter.on('change', filterModules);
         },

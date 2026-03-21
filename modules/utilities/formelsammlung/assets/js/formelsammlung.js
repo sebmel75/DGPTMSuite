@@ -99,7 +99,7 @@
         { id:'tmp', params:['pArt','pVen','pDial'], unit:'mmHg', fmt:0,
           compute: function(v){ return ((v.pArt+v.pVen)/2)-v.pDial; }},
         { id:'tube-volume', params:['r','l'], unit:'ml', fmt:2,
-          compute: function(v){ return (Math.PI*Math.pow(v.r,2)*v.l)/1000; }}
+          compute: function(v){ return (Math.PI*Math.pow(v.r,2)*v.l)/100; }}
     ];
 
     /* ============================================================

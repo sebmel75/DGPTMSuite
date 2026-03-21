@@ -349,6 +349,28 @@
     /* ============================================================
      *  INITIALISIERUNG
      * ============================================================ */
+    /** Kategorie-Filter */
+    function bindFilterButtons() {
+        var btns = document.querySelectorAll('.mc-filter-btn[data-filter]');
+        var sections = document.querySelectorAll('.mc-section[data-category]');
+        for (var i = 0; i < btns.length; i++) {
+            btns[i].addEventListener('click', function () {
+                var f = this.getAttribute('data-filter');
+                // Aktiven Button setzen
+                for (var j = 0; j < btns.length; j++) btns[j].classList.remove('mc-filter-active');
+                this.classList.add('mc-filter-active');
+                // Sektionen ein-/ausblenden
+                for (var k = 0; k < sections.length; k++) {
+                    if (f === 'all' || sections[k].getAttribute('data-category') === f) {
+                        sections[k].classList.remove('mc-hidden');
+                    } else {
+                        sections[k].classList.add('mc-hidden');
+                    }
+                }
+            });
+        }
+    }
+
     /** Zoll-Referenz-Buttons (Schlauchvolumen) */
     function bindInchButtons() {
         var btns = document.querySelectorAll('.mc-inch-btn[data-r]');
@@ -378,6 +400,7 @@
         bindCardInputs();
         bindResetAll();
         bindCardResets();
+        bindFilterButtons();
         bindInchButtons();
         recalcAll();
     }

@@ -111,7 +111,110 @@ if ( ! class_exists( 'DGPTM_Formelsammlung' ) ) {
                     </div>
                 </div>
 
+                <!-- Kategorie-Filter -->
+                <div class="mc-filter-bar">
+                    <button type="button" class="mc-filter-btn mc-filter-active" data-filter="all">Alle</button>
+                    <button type="button" class="mc-filter-btn" data-filter="gdp">GDP</button>
+                    <button type="button" class="mc-filter-btn" data-filter="medical">Medizinisch</button>
+                    <button type="button" class="mc-filter-btn" data-filter="technical">Technisch</button>
+                </div>
+
+                <!-- ==================== GOAL DIRECTED PERFUSION ==================== -->
+                <div class="mc-section" data-category="gdp">
+                <h3 class="mc-section-title">Goal Directed Perfusion (GDP)</h3>
+                <div class="mc-cards-grid">
+
+                    <!-- GDP: Soll-Flussrate -->
+                    <?php echo $this->card( 'gdp-flow', 'Soll-Flussrate', 'Q_{soll} = BSA \times CI_{Ziel}', [
+                        [ 'bsa', 'KOF (m²)', 'number', [ 'step' => '0.01' ] ],
+                        [ 'ciTarget', 'CI Ziel (l/min/m²)', 'number', [ 'step' => '0.1', 'value' => '2.4' ] ],
+                    ], 'l/min', 'Standard-CI: 2,4 l/min/m² (Hypothermie: 1,8–2,0)' ); ?>
+
+                    <!-- GDP: Soll-DO2 -->
+                    <?php echo $this->card( 'gdp-do2', 'Soll-DO₂ (kritische Grenze)', 'DO_{2,soll} = BSA \times DO_{2I,Ziel}', [
+                        [ 'bsa', 'KOF (m²)', 'number', [ 'step' => '0.01' ] ],
+                        [ 'do2Target', 'DO₂I Ziel (ml/min/m²)', 'number', [ 'step' => '1', 'value' => '280' ] ],
+                    ], 'ml/min', 'Kritisch: &lt; 272 ml/min/m². Empfohlen: &ge; 280 ml/min/m²' ); ?>
+
+                    <!-- GDP: Aktueller DO2I -->
+                    <?php echo $this->card( 'gdp-do2i-actual', 'Aktueller DO₂I', 'DO_{2I} = \frac{Hb \times 1{,}34 \times SaO_2 \times CI \times 10}{100}', [
+                        [ 'hb', 'Hb (g/dl)', 'number', [ 'step' => '0.1' ] ],
+                        [ 'sat', 'SaO₂ (%)', 'number', [ 'step' => '0.1', 'value' => '100' ] ],
+                        [ 'ciActual', 'CI (l/min/m²)', 'number', [ 'step' => '0.1' ] ],
+                    ], 'ml/min/m²', 'Ziel: &ge; 280. Kritisch: &lt; 272' ); ?>
+
+                    <!-- GDP: Minimaler Hb -->
+                    <?php echo $this->card( 'gdp-min-hb', 'Minimaler Hb für Ziel-DO₂', 'Hb_{min} = \frac{DO_{2I,Ziel}}{CI \times 1{,}34 \times SaO_2 \times 10}', [
+                        [ 'do2iTarget', 'DO₂I Ziel (ml/min/m²)', 'number', [ 'step' => '1', 'value' => '280' ] ],
+                        [ 'ciActual', 'Aktueller CI (l/min/m²)', 'number', [ 'step' => '0.1' ] ],
+                        [ 'sat', 'SaO₂ (%)', 'number', [ 'step' => '0.1', 'value' => '100' ] ],
+                    ], 'g/dl', 'Nadir-Hb unter dem DO₂ kritisch wird' ); ?>
+
+                    <!-- GDP: Nötiger Fluss -->
+                    <?php echo $this->card( 'gdp-flow-for-hb', 'Nötiger Fluss für Ziel-DO₂I', 'Q = \frac{DO_{2I,Ziel} \times BSA}{Hb \times 1{,}34 \times \frac{SaO_2}{100} \times 10}', [
+                        [ 'do2iTarget', 'DO₂I Ziel (ml/min/m²)', 'number', [ 'step' => '1', 'value' => '280' ] ],
+                        [ 'bsa', 'KOF (m²)', 'number', [ 'step' => '0.01' ] ],
+                        [ 'hb', 'Aktueller Hb (g/dl)', 'number', [ 'step' => '0.1' ] ],
+                        [ 'sat', 'SaO₂ (%)', 'number', [ 'step' => '0.1', 'value' => '100' ] ],
+                    ], 'l/min', 'Benötigter Pumpenfluss um DO₂I-Ziel zu erreichen' ); ?>
+
+                    <!-- GDP: Transfusionstrigger -->
+                    <?php echo $this->card( 'gdp-transfusion', 'Transfusionstrigger', 'Hb_{trigger} = \frac{272}{CI \times 1{,}34 \times SaO_2 \times 10}', [
+                        [ 'ciActual', 'Max. CI (l/min/m²)', 'number', [ 'step' => '0.1' ] ],
+                        [ 'sat', 'SaO₂ (%)', 'number', [ 'step' => '0.1', 'value' => '100' ] ],
+                    ], 'g/dl', 'Hb unter dem bei max. Fluss DO₂I &lt; 272 → Transfusion nötig' ); ?>
+
+                    <!-- GDP: Hb nach Hämodilution -->
+                    <?php echo $this->card( 'hb-dilution', 'Hb nach Hämodilution', 'Hb_{neu} = \frac{Hb \times BV}{BV + V_{priming}}', [
+                        [ 'hb', 'Hb aktuell (g/dl)', 'number', [ 'step' => '0.1' ] ],
+                        [ 'bloodVolume', 'Blutvolumen (ml)', 'number', [ 'step' => '1' ] ],
+                        [ 'primingVol', 'Priming-Vol. (ml)', 'number', [ 'step' => '1' ] ],
+                    ], 'g/dl' ); ?>
+
+                    <!-- GDP: Sauerstoffgehalt -->
+                    <?php echo $this->card( 'o2-content', 'Sauerstoffgehalt (CaO₂)', 'CaO_2 = (Hb \times 1{,}34 \times \frac{SaO_2}{100}) + (PaO_2 \times 0{,}003)', [
+                        [ 'hb', 'Hb (g/dl)', 'number', [ 'step' => '0.1' ] ],
+                        [ 'sat', 'Sättigung (%)', 'number', [ 'step' => '0.1' ] ],
+                        [ 'po2', 'PO₂ (mmHg)', 'number', [ 'step' => '0.1' ] ],
+                    ], 'ml/dl', 'Hüfner-Zahl: 1,34 ml O₂/g Hb' ); ?>
+
+                    <!-- GDP: AV-Differenz -->
+                    <?php echo $this->card( 'avdo2', 'AV-Sauerstoffdifferenz (avDO₂)', 'avDO_2 = CaO_2 - CvO_2', [
+                        [ 'cao2', 'CaO₂ (ml/dl)', 'number', [ 'step' => '0.1' ] ],
+                        [ 'cvo2', 'CvO₂ (ml/dl)', 'number', [ 'step' => '0.1' ] ],
+                    ], 'ml/dl', 'Normal: 4–6 ml/dl' ); ?>
+
+                    <!-- GDP: DO2 -->
+                    <?php echo $this->card( 'do2', 'Sauerstoffangebot (DO₂ / DO₂I)', 'DO_2 = CaO_2 \times HZV \times 10', [
+                        [ 'cao2', 'CaO₂ (ml/dl)', 'number', [ 'step' => '0.1' ] ],
+                        [ 'co', 'HZV (l/min)', 'number', [ 'step' => '0.1' ] ],
+                        [ 'bsa', 'KOF (m²)', 'number', [ 'step' => '0.01' ] ],
+                    ], 'ml/min', 'DO₂I = DO₂ / KOF. Normal: 520–720 ml/min/m²' ); ?>
+
+                    <!-- GDP: VO2 -->
+                    <?php echo $this->card( 'vo2', 'Sauerstoffverbrauch (VO₂ / VO₂I)', 'VO_2 = avDO_2 \times HZV \times 10', [
+                        [ 'avdo2', 'avDO₂ (ml/dl)', 'number', [ 'step' => '0.1' ] ],
+                        [ 'co', 'HZV (l/min)', 'number', [ 'step' => '0.1' ] ],
+                        [ 'bsa', 'KOF (m²)', 'number', [ 'step' => '0.01' ] ],
+                    ], 'ml/min', 'VO₂I = VO₂ / KOF. Normal: 110–160 ml/min/m²' ); ?>
+
+                    <!-- GDP: O2ER -->
+                    <?php echo $this->card( 'o2er', 'Sauerstoffextraktionsrate (O₂ER)', 'O_2ER = \frac{VO_2}{DO_2} \times 100', [
+                        [ 'vo2', 'VO₂ (ml/min)', 'number', [ 'step' => '1' ] ],
+                        [ 'do2', 'DO₂ (ml/min)', 'number', [ 'step' => '1' ] ],
+                    ], '%', 'Normal: 22–32 %' ); ?>
+
+                    <!-- GDP: Herzindex -->
+                    <?php echo $this->card( 'ci', 'Herzindex (CI)', 'CI = \frac{HZV}{BSA}', [
+                        [ 'co', 'HZV (l/min)', 'number', [ 'step' => '0.1' ] ],
+                        [ 'bsa', 'KOF (m²)', 'number', [ 'step' => '0.01' ] ],
+                    ], 'l/min/m²', 'Normal: 2,5–4,0' ); ?>
+
+                </div>
+                </div><!-- /gdp -->
+
                 <!-- ==================== MEDIZINISCHE FORMELN ==================== -->
+                <div class="mc-section" data-category="medical">
                 <h3 class="mc-section-title">Medizinische Formeln</h3>
                 <div class="mc-cards-grid">
 
@@ -145,13 +248,6 @@ if ( ! class_exists( 'DGPTM_Formelsammlung' ) ) {
                         [ 'ibw', 'Ideales KG (kg)', 'number', [ 'step' => '0.1' ] ],
                         [ 'weight', 'Aktuelles KG (kg)', 'number', [ 'step' => '0.1' ] ],
                     ], 'kg' ); ?>
-
-                    <!-- 6. Hb nach Hämodilution -->
-                    <?php echo $this->card( 'hb-dilution', 'Hb nach Hämodilution', 'Hb_{neu} = \frac{Hb \times BV}{BV + V_{priming}}', [
-                        [ 'hb', 'Hb aktuell (g/dl)', 'number', [ 'step' => '0.1' ] ],
-                        [ 'bloodVolume', 'Blutvolumen (ml)', 'number', [ 'step' => '1' ] ],
-                        [ 'primingVol', 'Priming-Vol. (ml)', 'number', [ 'step' => '1' ] ],
-                    ], 'g/dl' ); ?>
 
                     <!-- 7. MAP -->
                     <?php echo $this->card( 'map', 'Mittlerer Arterieller Druck (MAP)', 'MAP = \frac{2 \times P_{dia} + P_{sys}}{3}', [
@@ -192,40 +288,7 @@ if ( ! class_exists( 'DGPTM_Formelsammlung' ) ) {
                         [ 'weight', 'Gewicht (kg)', 'number', [ 'step' => '0.1' ] ],
                     ], 'mmol' ); ?>
 
-                    <!-- 13. Sauerstoffgehalt -->
-                    <?php echo $this->card( 'o2-content', 'Sauerstoffgehalt (CaO₂/CvO₂)', 'CaO_2 = (Hb \times 1{,}34 \times \frac{SaO_2}{100}) + (PaO_2 \times 0{,}003)', [
-                        [ 'hb', 'Hb (g/dl)', 'number', [ 'step' => '0.1' ] ],
-                        [ 'sat', 'Sättigung (%)', 'number', [ 'step' => '0.1' ] ],
-                        [ 'po2', 'PO₂ (mmHg)', 'number', [ 'step' => '0.1' ] ],
-                    ], 'ml/dl', 'Hüfner-Zahl: 1,34 ml O₂/g Hb' ); ?>
-
-                    <!-- 14. AV-Differenz -->
-                    <?php echo $this->card( 'avdo2', 'AV-Sauerstoffdifferenz (avDO₂)', 'avDO_2 = CaO_2 - CvO_2', [
-                        [ 'cao2', 'CaO₂ (ml/dl)', 'number', [ 'step' => '0.1' ] ],
-                        [ 'cvo2', 'CvO₂ (ml/dl)', 'number', [ 'step' => '0.1' ] ],
-                    ], 'ml/dl', 'Normal: 4–6 ml/dl' ); ?>
-
-                    <!-- 15. DO2 -->
-                    <?php echo $this->card( 'do2', 'Sauerstoffangebot (DO₂ / DO₂I)', 'DO_2 = CaO_2 \times HZV \times 10', [
-                        [ 'cao2', 'CaO₂ (ml/dl)', 'number', [ 'step' => '0.1' ] ],
-                        [ 'co', 'HZV (l/min)', 'number', [ 'step' => '0.1' ] ],
-                        [ 'bsa', 'KOF (m²)', 'number', [ 'step' => '0.01' ] ],
-                    ], 'ml/min', 'DO₂I = DO₂ / KOF. Normal: 520–720 ml/min/m²' ); ?>
-
-                    <!-- 16. VO2 -->
-                    <?php echo $this->card( 'vo2', 'Sauerstoffverbrauch (VO₂ / VO₂I)', 'VO_2 = avDO_2 \times HZV \times 10', [
-                        [ 'avdo2', 'avDO₂ (ml/dl)', 'number', [ 'step' => '0.1' ] ],
-                        [ 'co', 'HZV (l/min)', 'number', [ 'step' => '0.1' ] ],
-                        [ 'bsa', 'KOF (m²)', 'number', [ 'step' => '0.01' ] ],
-                    ], 'ml/min', 'VO₂I = VO₂ / KOF. Normal: 110–160 ml/min/m²' ); ?>
-
-                    <!-- 17. O2ER -->
-                    <?php echo $this->card( 'o2er', 'Sauerstoffextraktionsrate (O₂ER)', 'O_2ER = \frac{VO_2}{DO_2} \times 100', [
-                        [ 'vo2', 'VO₂ (ml/min)', 'number', [ 'step' => '1' ] ],
-                        [ 'do2', 'DO₂ (ml/min)', 'number', [ 'step' => '1' ] ],
-                    ], '%', 'Normal: 22–32 %' ); ?>
-
-                    <!-- 18. VCO2 -->
+                    <!-- VCO2 (bleibt in Medizin) -->
                     <?php echo $this->card( 'vco2', 'CO₂-Produktion (VCO₂)', 'VCO_2 = HZV \times (CvCO_2 - CaCO_2) \times 10', [
                         [ 'co', 'HZV (l/min)', 'number', [ 'step' => '0.1' ] ],
                         [ 'cvco2', 'CvCO₂ (ml/dl)', 'number', [ 'step' => '0.1' ] ],
@@ -233,67 +296,17 @@ if ( ! class_exists( 'DGPTM_Formelsammlung' ) ) {
                         [ 'bsa', 'KOF (m²)', 'number', [ 'step' => '0.01' ] ],
                     ], 'ml/min' ); ?>
 
-                    <!-- 19. HZV nach Fick -->
+                    <!-- HZV nach Fick -->
                     <?php echo $this->card( 'co-fick', 'Herzzeitvolumen nach Fick', 'HZV = \frac{VO_2}{avDO_2 \times 10}', [
                         [ 'vo2', 'VO₂ (ml/min)', 'number', [ 'step' => '1' ] ],
                         [ 'avdo2', 'avDO₂ (ml/dl)', 'number', [ 'step' => '0.1' ] ],
                     ], 'l/min' ); ?>
 
-                    <!-- 20. Herzindex -->
-                    <?php echo $this->card( 'ci', 'Herzindex (CI)', 'CI = \frac{HZV}{BSA}', [
-                        [ 'co', 'HZV (l/min)', 'number', [ 'step' => '0.1' ] ],
-                        [ 'bsa', 'KOF (m²)', 'number', [ 'step' => '0.01' ] ],
-                    ], 'l/min/m²', 'Normal: 2,5–4,0' ); ?>
-
                 </div>
-
-                <!-- ==================== GOAL DIRECTED PERFUSION ==================== -->
-                <h3 class="mc-section-title">Goal Directed Perfusion (GDP)</h3>
-                <div class="mc-cards-grid">
-
-                    <!-- GDP 1: Soll-Flussrate -->
-                    <?php echo $this->card( 'gdp-flow', 'Soll-Flussrate (GDP)', 'Q_{soll} = BSA \times CI_{Ziel}', [
-                        [ 'bsa', 'KOF (m²)', 'number', [ 'step' => '0.01' ] ],
-                        [ 'ciTarget', 'CI Ziel (l/min/m²)', 'number', [ 'step' => '0.1', 'value' => '2.4' ] ],
-                    ], 'l/min', 'Standard-CI: 2,4 l/min/m² (Hypothermie: 1,8–2,0)' ); ?>
-
-                    <!-- GDP 2: Soll-DO2 -->
-                    <?php echo $this->card( 'gdp-do2', 'Soll-DO₂ (kritische Grenze)', 'DO_{2,soll} = BSA \times 280', [
-                        [ 'bsa', 'KOF (m²)', 'number', [ 'step' => '0.01' ] ],
-                        [ 'do2Target', 'DO₂I Ziel (ml/min/m²)', 'number', [ 'step' => '1', 'value' => '280' ] ],
-                    ], 'ml/min', 'Kritisch: &lt; 272 ml/min/m². Empfohlen: &ge; 280 ml/min/m²' ); ?>
-
-                    <!-- GDP 3: Minimaler Hb für Ziel-DO2 -->
-                    <?php echo $this->card( 'gdp-min-hb', 'Minimaler Hb für Ziel-DO₂', 'Hb_{min} = \frac{DO_{2I,Ziel}}{CI \times 1{,}34 \times SaO_2 \times 10}', [
-                        [ 'do2iTarget', 'DO₂I Ziel (ml/min/m²)', 'number', [ 'step' => '1', 'value' => '280' ] ],
-                        [ 'ciActual', 'Aktueller CI (l/min/m²)', 'number', [ 'step' => '0.1' ] ],
-                        [ 'sat', 'SaO₂ (%)', 'number', [ 'step' => '0.1', 'value' => '100' ] ],
-                    ], 'g/dl', 'Nadir-Hb unter dem DO₂ kritisch wird' ); ?>
-
-                    <!-- GDP 4: Aktueller DO2I aus Ist-Werten -->
-                    <?php echo $this->card( 'gdp-do2i-actual', 'Aktueller DO₂I', 'DO_{2I} = \frac{Hb \times 1{,}34 \times SaO_2 \times CI \times 10}{100}', [
-                        [ 'hb', 'Hb (g/dl)', 'number', [ 'step' => '0.1' ] ],
-                        [ 'sat', 'SaO₂ (%)', 'number', [ 'step' => '0.1', 'value' => '100' ] ],
-                        [ 'ciActual', 'CI (l/min/m²)', 'number', [ 'step' => '0.1' ] ],
-                    ], 'ml/min/m²', 'Ziel: &ge; 280. Kritisch: &lt; 272' ); ?>
-
-                    <!-- GDP 5: Soll-Fluss bei gegebenem Hb -->
-                    <?php echo $this->card( 'gdp-flow-for-hb', 'Nötiger Fluss für Ziel-DO₂I', 'Q = \frac{DO_{2I,Ziel} \times BSA}{Hb \times 1{,}34 \times SaO_2 / 100 \times 10}', [
-                        [ 'do2iTarget', 'DO₂I Ziel (ml/min/m²)', 'number', [ 'step' => '1', 'value' => '280' ] ],
-                        [ 'bsa', 'KOF (m²)', 'number', [ 'step' => '0.01' ] ],
-                        [ 'hb', 'Aktueller Hb (g/dl)', 'number', [ 'step' => '0.1' ] ],
-                        [ 'sat', 'SaO₂ (%)', 'number', [ 'step' => '0.1', 'value' => '100' ] ],
-                    ], 'l/min', 'Benötigter Pumpenfluss um DO₂I-Ziel zu erreichen' ); ?>
-
-                    <!-- GDP 6: Transfusionstrigger -->
-                    <?php echo $this->card( 'gdp-transfusion', 'Transfusionstrigger (GDP)', 'Hb_{trigger} = \frac{272}{CI \times 1{,}34 \times SaO_2 \times 10}', [
-                        [ 'ciActual', 'Max. CI (l/min/m²)', 'number', [ 'step' => '0.1' ] ],
-                        [ 'sat', 'SaO₂ (%)', 'number', [ 'step' => '0.1', 'value' => '100' ] ],
-                    ], 'g/dl', 'Hb unter dem bei max. Fluss DO₂I &lt; 272 → Transfusion nötig' ); ?>
-
-                </div>
+                </div><!-- /medical -->
 
                 <!-- ==================== TECHNISCHE FORMELN ==================== -->
+                <div class="mc-section" data-category="technical">
                 <h3 class="mc-section-title">Technische Formeln</h3>
                 <div class="mc-cards-grid">
 
@@ -358,6 +371,7 @@ if ( ! class_exists( 'DGPTM_Formelsammlung' ) ) {
                     </div>
 
                 </div>
+                </div><!-- /technical -->
             </div>
             <?php
             return ob_get_clean();

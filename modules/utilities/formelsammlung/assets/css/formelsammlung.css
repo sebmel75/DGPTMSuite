@@ -475,6 +475,49 @@
 }
 
 /* ===================================================================
+ *  Kategorie-Filter
+ * =================================================================== */
+.mc-filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.mc-filter-btn {
+    padding: 8px 18px;
+    border: 2px solid var(--mc-gray-300, #e0e0e0);
+    border-radius: 20px;
+    background: white;
+    color: var(--mc-gray-700, #495057);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--mc-transition, all 0.3s ease);
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.mc-filter-btn:hover {
+    border-color: var(--mc-primary, #1a5276);
+    color: var(--mc-primary, #1a5276);
+}
+
+.mc-filter-btn.mc-filter-active {
+    background: var(--mc-primary, #1a5276);
+    color: white;
+    border-color: var(--mc-primary, #1a5276);
+}
+
+.mc-section[data-category] {
+    transition: opacity 0.3s ease;
+}
+
+.mc-section.mc-hidden {
+    display: none;
+}
+
+/* ===================================================================
  *  Zoll-Referenz-Buttons (Schlauchvolumen)
  * =================================================================== */
 .mc-inch-ref {

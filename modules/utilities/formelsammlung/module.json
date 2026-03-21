@@ -1,0 +1,20 @@
+{
+    "id": "formelsammlung",
+    "name": "DGPTM - Formelsammlung",
+    "description": "Medizinische und technische Formelsammlung für die Perfusionstechnik. 25 Formeln mit geteilten Eingabewerten, automatischer Berechnung und KaTeX-Darstellung. Shortcode: [dgptm_formelsammlung]",
+    "version": "1.0.0",
+    "author": "Sebastian Melzer / DGPTM",
+    "main_file": "dgptm-formelsammlung.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": []
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "utilities",
+    "icon": "dashicons-calculator",
+    "active": false,
+    "can_export": true,
+    "critical": false
+}

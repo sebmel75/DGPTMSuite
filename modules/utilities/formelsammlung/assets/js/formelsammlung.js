@@ -143,7 +143,14 @@
             if (!card) continue;
             if (dirtyInputs[dKey(card.getAttribute('data-formula'), key)]) continue;
 
-            var display = (value !== null && value !== undefined) ? parseFloat(Number(value).toPrecision(6)) : '';
+            var display;
+            if (value === null || value === undefined) {
+                display = '';
+            } else if (typeof value === 'string') {
+                display = value;
+            } else {
+                display = parseFloat(Number(value).toPrecision(6));
+            }
             inp.value = display;
             inp.classList.add('mc-autofilled');
         }

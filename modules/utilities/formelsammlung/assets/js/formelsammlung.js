@@ -14,8 +14,9 @@
      * ============================================================ */
     var F = [
         // --- Medizinische Formeln ---
-        { id:'blood-volume', params:['height','weight','gender'], unit:'l', produces:'bloodVolume', fmt:0,
-          producesTransform: function(r){ return r*1000; },
+        { id:'blood-volume', params:['height','weight','gender'], unit:'l', produces:'bloodVolume', fmt:2,
+          producesTransform: function(r){ return Math.round(r*1000); },
+          extra: function(_,r){ return {label:'', value:Math.round(r*1000)+' ml', unit:''}; },
           compute: function(v){
               var h=v.height/100;
               if(v.gender==='m')   return 0.3669*Math.pow(h,3)+0.03219*v.weight+0.6041;
@@ -140,7 +141,8 @@
             if (!card) continue;
             if (dirtyInputs[dKey(card.getAttribute('data-formula'), key)]) continue;
 
-            inp.value = (value !== null && value !== undefined) ? value : '';
+            var display = (value !== null && value !== undefined) ? parseFloat(Number(value).toPrecision(6)) : '';
+            inp.value = display;
             inp.classList.add('mc-autofilled');
         }
     }

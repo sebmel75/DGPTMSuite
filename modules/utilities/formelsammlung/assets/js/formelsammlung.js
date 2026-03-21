@@ -33,8 +33,8 @@
               if(v.gender==='f') return 45.5+2.3*(i-60);
               return null;
           }},
-        { id:'abw', params:['ibw','actualWeight'], unit:'kg', fmt:1,
-          compute: function(v){ return v.ibw+0.4*(v.actualWeight-v.ibw); }},
+        { id:'abw', params:['ibw','weight'], unit:'kg', fmt:1,
+          compute: function(v){ return v.ibw+0.4*(v.weight-v.ibw); }},
         { id:'hb-dilution', params:['hb','bloodVolume','primingVol'], unit:'g/dl', fmt:1,
           compute: function(v){ var d=v.bloodVolume+v.primingVol; return d===0?null:(v.hb*v.bloodVolume)/d; }},
         { id:'map', params:['systolic','diastolic'], unit:'mmHg', produces:'map', fmt:0,

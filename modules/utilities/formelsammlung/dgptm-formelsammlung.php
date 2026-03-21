@@ -143,7 +143,7 @@ if ( ! class_exists( 'DGPTM_Formelsammlung' ) ) {
                     <!-- 5. Angepasstes Körpergewicht -->
                     <?php echo $this->card( 'abw', 'Angepasstes Körpergewicht (aBW)', 'aBW = iBW + 0{,}4 \times (W_{akt} - iBW)', [
                         [ 'ibw', 'Ideales KG (kg)', 'number', [ 'step' => '0.1' ] ],
-                        [ 'actualWeight', 'Aktuelles KG (kg)', 'number', [ 'step' => '0.1' ] ],
+                        [ 'weight', 'Aktuelles KG (kg)', 'number', [ 'step' => '0.1' ] ],
                     ], 'kg' ); ?>
 
                     <!-- 6. Hb nach Hämodilution -->

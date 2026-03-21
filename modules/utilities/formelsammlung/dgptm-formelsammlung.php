@@ -339,9 +339,9 @@ if ( ! class_exists( 'DGPTM_Formelsammlung' ) ) {
                                 <label>Radius r (mm)</label>
                                 <input type="number" data-param="r" step="0.1" inputmode="decimal">
                                 <div class="mc-inch-ref">
-                                    <span class="mc-inch-btn" data-r="3.175">¼″ = 3,18 mm</span>
-                                    <span class="mc-inch-btn" data-r="4.7625">⅜″ = 4,76 mm</span>
-                                    <span class="mc-inch-btn" data-r="6.35">½″ = 6,35 mm</span>
+                                    <span class="mc-inch-btn" data-r="3.175">¼″ (⌀ 6,35 mm)</span>
+                                    <span class="mc-inch-btn" data-r="4.7625">⅜″ (⌀ 9,53 mm)</span>
+                                    <span class="mc-inch-btn" data-r="6.35">½″ (⌀ 12,7 mm)</span>
                                 </div>
                             </div>
                             <div class="mc-input-group">

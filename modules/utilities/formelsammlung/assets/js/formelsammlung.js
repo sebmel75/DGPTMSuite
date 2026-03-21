@@ -14,7 +14,7 @@
      * ============================================================ */
     var F = [
         // --- Medizinische Formeln ---
-        { id:'blood-volume', params:['height','weight','gender'], unit:'l', produces:'bloodVolume', fmt:2,
+        { id:'blood-volume', params:['height','weight','gender'], unit:'l', produces:'bloodVolume', fmt:0,
           producesTransform: function(r){ return r*1000; },
           compute: function(v){
               var h=v.height/100;

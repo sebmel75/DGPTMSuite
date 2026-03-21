@@ -64,14 +64,6 @@ if ( ! class_exists( 'DGPTM_Formelsammlung' ) ) {
          * Shortcode [dgptm_formelsammlung]
          */
         public function render_shortcode( $atts ) {
-            if ( ! is_user_logged_in() ) {
-                return '<div class="mc-login-required">'
-                     . '<span class="dashicons dashicons-lock" style="font-size:48px;width:48px;height:48px;margin-bottom:15px;"></span>'
-                     . '<p>Diese Seite ist nur für angemeldete Benutzer zugänglich.</p>'
-                     . '<p><a href="' . esc_url( wp_login_url( get_permalink() ) ) . '">Zum Login</a></p>'
-                     . '</div>';
-            }
-
             wp_enqueue_style( 'dgptm-formelsammlung' );
             wp_enqueue_script( 'dgptm-formelsammlung' );
 

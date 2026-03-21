@@ -473,3 +473,41 @@
         border: 1px solid var(--mc-gray-300);
     }
 }
+
+/* ===================================================================
+ *  Zoll-Referenz-Buttons (Schlauchvolumen)
+ * =================================================================== */
+.mc-inch-ref {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+}
+
+.mc-inch-btn {
+    display: inline-block;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--mc-primary, #1a5276);
+    background: var(--mc-gray-100, #f5f5f5);
+    border: 1px solid var(--mc-gray-300, #e0e0e0);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: var(--mc-transition, all 0.3s ease);
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.mc-inch-btn:hover,
+.mc-inch-btn:active {
+    background: var(--mc-primary, #1a5276);
+    color: white;
+    border-color: var(--mc-primary, #1a5276);
+}
+
+.mc-inch-btn.mc-inch-active {
+    background: var(--mc-primary, #1a5276);
+    color: white;
+    border-color: var(--mc-primary, #1a5276);
+}

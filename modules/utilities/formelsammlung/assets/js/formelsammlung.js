@@ -345,6 +345,28 @@
     /* ============================================================
      *  INITIALISIERUNG
      * ============================================================ */
+    /** Zoll-Referenz-Buttons (Schlauchvolumen) */
+    function bindInchButtons() {
+        var btns = document.querySelectorAll('.mc-inch-btn[data-r]');
+        for (var i = 0; i < btns.length; i++) {
+            btns[i].addEventListener('click', function () {
+                var r = parseFloat(this.getAttribute('data-r'));
+                if (isNaN(r)) return;
+                var card = this.closest('.mc-card');
+                if (!card) return;
+                var inp = card.querySelector('input[data-param="r"]');
+                if (!inp) return;
+                inp.value = r;
+                inp.classList.remove('mc-autofilled');
+                // Aktiven Button markieren
+                var siblings = card.querySelectorAll('.mc-inch-btn');
+                for (var j = 0; j < siblings.length; j++) siblings[j].classList.remove('mc-inch-active');
+                this.classList.add('mc-inch-active');
+                scheduleRecalc();
+            });
+        }
+    }
+
     function init() {
         if (!document.querySelector('.mc-calculator')) return;
         renderKatex();
@@ -352,6 +374,7 @@
         bindCardInputs();
         bindResetAll();
         bindCardResets();
+        bindInchButtons();
         recalcAll();
     }
 

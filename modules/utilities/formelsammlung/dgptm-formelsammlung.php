@@ -328,10 +328,34 @@ if ( ! class_exists( 'DGPTM_Formelsammlung' ) ) {
                     ], 'mmHg' ); ?>
 
                     <!-- 25. Schlauchvolumen -->
-                    <?php echo $this->card( 'tube-volume', 'Schlauchvolumen', 'V = \pi \cdot r^2 \cdot L', [
-                        [ 'r', 'Radius r (mm)', 'number', [ 'step' => '0.1' ] ],
-                        [ 'l', 'Länge L (cm)', 'number', [ 'step' => '0.1' ] ],
-                    ], 'ml' ); ?>
+                    <div class="mc-card" data-formula="tube-volume">
+                        <div class="mc-card-header">
+                            <h4>Schlauchvolumen</h4>
+                            <button type="button" class="mc-card-reset" title="Zurücksetzen">&#8634;</button>
+                        </div>
+                        <div class="mc-formula-display" data-katex="V = \pi \cdot r^2 \cdot L"></div>
+                        <div class="mc-card-inputs">
+                            <div class="mc-input-group">
+                                <label>Radius r (mm)</label>
+                                <input type="number" data-param="r" step="0.1" inputmode="decimal">
+                                <div class="mc-inch-ref">
+                                    <span class="mc-inch-btn" data-r="3.175">¼″ = 3,18 mm</span>
+                                    <span class="mc-inch-btn" data-r="4.7625">⅜″ = 4,76 mm</span>
+                                    <span class="mc-inch-btn" data-r="6.35">½″ = 6,35 mm</span>
+                                </div>
+                            </div>
+                            <div class="mc-input-group">
+                                <label>Länge L (cm)</label>
+                                <input type="number" data-param="l" step="0.1" inputmode="decimal">
+                            </div>
+                        </div>
+                        <div class="mc-card-result">
+                            <span class="mc-result-label">Ergebnis:</span>
+                            <span class="mc-result-value mc-result-placeholder" id="result-tube-volume">--</span>
+                            <span class="mc-result-unit">ml</span>
+                        </div>
+                        <div class="mc-note">Klick auf Zollmaß übernimmt den Radius</div>
+                    </div>
 
                 </div>
             </div>

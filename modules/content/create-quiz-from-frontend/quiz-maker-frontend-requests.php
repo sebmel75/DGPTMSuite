@@ -13,11 +13,11 @@
  * @package           Quiz_Maker_Frontend_Requests
  *
  * @wordpress-plugin
- * Plugin Name:       Quiz Maker Add-on - Create quiz from frontend
+ * Plugin Name:       DGPTM - Quiz Frontend-Erstellung
  * Plugin URI:        https://ays-pro.com/frontend-request-addon
- * Description:       This is a short description of what the plugin does. It's displayed in the WordPress admin area.
- * Version:           1.0.6
- * Author:            Quiz Maker team
+ * Description:       Ermöglicht eingeloggten Nutzern, Quiz-Vorschläge direkt im Frontend zu erstellen.
+ * Version:           2.0.0
+ * Author:            Quiz Maker team / Sebastian Melzer
  * Author URI:        https://ays-pro.com/
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt

@@ -154,7 +154,7 @@ class Quiz_Maker_Frontend_Requests_Public {
 		$content .= '<div class="ays-quiz-fr-container">';
 			$content .= '<div class="ays-quiz-fr-content">';
 				$content .= '<div class="ays-quiz-fr-header">';
-					$content .= '<span>'.__('Build your Quiz in a few minutes',$this->plugin_name).'</span>';
+					$content .= '<span>'.__('Quiz erstellen',$this->plugin_name).'</span>';
 				$content .= '</div>';
 				$content .= '<div class="ays-quiz-front-requests-body">';
 					$content .= '<div class="ays-quiz-front-requests-preloader">';
@@ -166,7 +166,7 @@ class Quiz_Maker_Frontend_Requests_Public {
 							$content .= '<div class="ays-quiz-fr-row">';
 								$content .= '<div class="ays-quiz-fr-col-3">';
 									$content .= '<div class="ays-quiz-fr-quiz-title-content">';
-										$content .= '<label for="ays_quiz_fr_quiz_title"><span>'.__('Quiz Title',$this->plugin_name).'</span></label>';
+										$content .= '<label for="ays_quiz_fr_quiz_title"><span>'.__('Quiz-Titel',$this->plugin_name).'</span></label>';
 									$content .= '</div>';
 								$content .= '</div>';
 								$content .= '<div class="ays-quiz-fr-col-9">';
@@ -179,7 +179,7 @@ class Quiz_Maker_Frontend_Requests_Public {
 							$content .= '<div class="ays-quiz-fr-row">';
 								$content .= '<div class="ays-quiz-fr-col-3">';
 									$content .= '<div class="ays-quiz-fr-quiz-category-content">';
-										$content .= '<label for="ays_quiz_fr_quiz_category"><span>'. __('Quiz Category',$this->plugin_name).'</span></label>';
+										$content .= '<label for="ays_quiz_fr_quiz_category"><span>'. __('Quiz-Kategorie',$this->plugin_name).'</span></label>';
 									$content .= '</div>';
 								$content .= '</div>';
 								$content .= '<div class="ays-quiz-fr-col-9">';
@@ -198,13 +198,13 @@ class Quiz_Maker_Frontend_Requests_Public {
 							$content .= '<div class="ays-quiz-fr-row">';
 								$content .= '<div class="ays-quiz-fr-col-12">';
 									$content .= '<div class="ays_quiz_fr_question-container-title">';
-										$content .= '<span class="ays_quiz_fr_question_container-title">'. __( 'Questions', $this->plugin_name ) .'</span>';
+										$content .= '<span class="ays_quiz_fr_question_container-title">'. __( 'Fragen', $this->plugin_name ) .'</span>';
 									$content .= '</div>';
 
 									$content .= '<div class="ays-quiz-fr-quiz-add-question-container">';
 										$content .= '<a href="javascript:void(0)"  class="ays-quiz-fr-add-question">';	
 											$content .= '<i class="ays_fa_fr ays_fa_fr_plus_square"></i>';
-											$content .= '<span>'. __( 'Add question', $this->plugin_name ) .'</span>';	
+											$content .= '<span>'. __( 'Frage hinzufügen', $this->plugin_name ) .'</span>';	
 										$content .= '</a>';	
 									$content .= '</div>';
 
@@ -221,7 +221,7 @@ class Quiz_Maker_Frontend_Requests_Public {
 
 											//Quiz Question Name
 											$content .= '<div class="ays-quiz-fr-quest-title">';
-												$content .= '<span class="ays_quiz_fr_question_container-title">'.__('Question title',$this->plugin_name).'</span>';
+												$content .= '<span class="ays_quiz_fr_question_container-title">'.__('Fragetitel',$this->plugin_name).'</span>';
 												$content .= '<textarea id="ays_quiz_fr_quest_title_1" class="ays-quiz-fr-question" name="ays_quiz_fr_question[1][question]"></textarea>';
 											$content .= '</div>';
 										$content .= '</div>';
@@ -253,29 +253,29 @@ class Quiz_Maker_Frontend_Requests_Public {
 									//Quiz Question Answer
 									$content .='<div class="ays-quiz-fr-answer">';
 
-										$content .= '<span class="ays_quiz_fr_answers_container-title">'.__('Answers',$this->plugin_name).'</span>';
+										$content .= '<span class="ays_quiz_fr_answers_container-title">'.__('Antworten',$this->plugin_name).'</span>';
 
 										$content .= '<div class="ays-quiz-fr-row">';
 											$content .= '<div class="ays-quiz-fr-answer-content ays-quiz-fr-col-8">';
 												$content .= '<div class="ays-quiz-fr-radio-answer">';
 													$content .= '<div class="ays-quiz-fr-answer-row">';
-														$content .= '<input type="radio" class="ays-quiz-fr-right-answer" name="ays_quiz_fr_question[1][correct][]" value="1" title="' . __( "Correct answer", $this->plugin_name ) . '" checked>';
-														$content .= '<input type="text" class="ays-quiz-fr-answer-input" placeholder="Answer text" name="ays_quiz_fr_question[1][answers][1][title]">';
-														$content .= '<a href="javascript:void(0)" class="ays-quiz-fr-delete-answer" title="' . __( "Delete", $this->plugin_name ) . '">';
+														$content .= '<input type="radio" class="ays-quiz-fr-right-answer" name="ays_quiz_fr_question[1][correct][]" value="1" title="' . __( "Richtige Antwort", $this->plugin_name ) . '" checked>';
+														$content .= '<input type="text" class="ays-quiz-fr-answer-input" placeholder="Antworttext" name="ays_quiz_fr_question[1][answers][1][title]">';
+														$content .= '<a href="javascript:void(0)" class="ays-quiz-fr-delete-answer" title="' . __( "Löschen", $this->plugin_name ) . '">';
 															$content .= '<i class="ays_fa_fr ays_fa_fr_times"></i>';
 														$content .= '</a>';
 													$content .= '</div>';
 													$content .= '<div class="ays-quiz-fr-answer-row">';
-														$content .= '<input type="radio" class="ays-quiz-fr-right-answer" name="ays_quiz_fr_question[1][correct][]" value="2" title="' . __( "Correct answer", $this->plugin_name ) . '">';
-														$content .= '<input type="text" class="ays-quiz-fr-answer-input" placeholder="Answer text" name="ays_quiz_fr_question[1][answers][2][title]">';
-														$content .= '<a href="javascript:void(0)" class="ays-quiz-fr-delete-answer" title="' . __( "Delete", $this->plugin_name ) . '">';
+														$content .= '<input type="radio" class="ays-quiz-fr-right-answer" name="ays_quiz_fr_question[1][correct][]" value="2" title="' . __( "Richtige Antwort", $this->plugin_name ) . '">';
+														$content .= '<input type="text" class="ays-quiz-fr-answer-input" placeholder="Antworttext" name="ays_quiz_fr_question[1][answers][2][title]">';
+														$content .= '<a href="javascript:void(0)" class="ays-quiz-fr-delete-answer" title="' . __( "Löschen", $this->plugin_name ) . '">';
 															$content .= '<i class="ays_fa_fr ays_fa_fr_times"></i>';
 														$content .= '</a>';
 													$content .= '</div>';
 													$content .= '<div class="ays-quiz-fr-answer-row">';
-														$content .= '<input type="radio" class="ays-quiz-fr-right-answer" name="ays_quiz_fr_question[1][correct][]" value="3" title="' . __( "Correct answer", $this->plugin_name ) . '">';
-														$content .= '<input type="text" class="ays-quiz-fr-answer-input" placeholder="Answer text" name="ays_quiz_fr_question[1][answers][3][title]">';
-														$content .= '<a href="javascript:void(0)" class="ays-quiz-fr-delete-answer" title="' . __( "Delete", $this->plugin_name ) . '">';
+														$content .= '<input type="radio" class="ays-quiz-fr-right-answer" name="ays_quiz_fr_question[1][correct][]" value="3" title="' . __( "Richtige Antwort", $this->plugin_name ) . '">';
+														$content .= '<input type="text" class="ays-quiz-fr-answer-input" placeholder="Antworttext" name="ays_quiz_fr_question[1][answers][3][title]">';
+														$content .= '<a href="javascript:void(0)" class="ays-quiz-fr-delete-answer" title="' . __( "Löschen", $this->plugin_name ) . '">';
 															$content .= '<i class="ays_fa_fr ays_fa_fr_times"></i>';
 														$content .= '</a>';
 													$content .= '</div>';
@@ -289,15 +289,15 @@ class Quiz_Maker_Frontend_Requests_Public {
 											$content .= '<div class="ays-quiz-fr-quiz-add-answer-container">';
 												$content .= '<a href="javascript:void(0)" class="ays-quiz-fr-add-answer">';
 													$content .= '<i class="ays_fa_fr ays_fa_fr_plus_square"></i>';
-													$content .= '<span>'.__('Add answer',$this->plugin_name).'</span>';	
+													$content .= '<span>'.__('Antwort hinzufügen',$this->plugin_name).'</span>';	
 												$content .= '</a>';	
 											$content .= '</div>';
 
 											$content .= '<div class="ays-quiz-fr-answer-duplicate-delete-content">';
-												$content .= '<a href="javascript:void(0)" class="ays-quiz-fr-clone-question" title="' . __( "Duplicate", $this->plugin_name ) . '">';
+												$content .= '<a href="javascript:void(0)" class="ays-quiz-fr-clone-question" title="' . __( "Duplizieren", $this->plugin_name ) . '">';
 													$content .= '<i class="ays_fa_fr ays_fa_fr_clone"></i>';
 												$content .= '</a>';
-												$content .= '<a href="javascript:void(0)" class="ays-quiz-fr-delete-question" title="' . __( "Delete", $this->plugin_name ) . '">';
+												$content .= '<a href="javascript:void(0)" class="ays-quiz-fr-delete-question" title="' . __( "Löschen", $this->plugin_name ) . '">';
 													$content .= '<i class="ays_fa_fr ays_fa_fr_trash_o"></i>';
 												$content .= '</a>';
 											$content .= '</div>';
@@ -311,14 +311,14 @@ class Quiz_Maker_Frontend_Requests_Public {
 							$content .= '<div class="ays-quiz-fr-quiz-add-question-container">';
 								$content .= '<a href="javascript:void(0)"  class="ays-quiz-fr-add-question">';	
 									$content .= '<i class="ays_fa_fr ays_fa_fr_plus_square"></i>';
-									$content .= '<span>'. __( 'Add question', $this->plugin_name ) .'</span>';	
+									$content .= '<span>'. __( 'Frage hinzufügen', $this->plugin_name ) .'</span>';	
 								$content .= '</a>';	
 							$content .= '</div>'; 
 							
 							$content .= '<hr>';
 
 							$content .= '<div class="ays-quiz-fr-quiz-submit-content">';
-								$content .= '<input type="button" name="ays_quiz_front_requests_quiz_submit" id="ays_quiz_front_requests_quiz_submit" class="ays-quiz-front-requests-quiz-submit" value="Submit"/>';
+								$content .= '<input type="button" name="ays_quiz_front_requests_quiz_submit" id="ays_quiz_front_requests_quiz_submit" class="ays-quiz-front-requests-quiz-submit" value="Absenden"/>';
 							$content .= '</div>'; 
 						$content .= '</div>'; 
 					$content .= '</form>';
@@ -425,8 +425,8 @@ class Quiz_Maker_Frontend_Requests_Public {
 					$nfrom = "From:Quiz Maker<quiz_maker@".$nsite_url.">";
 					$reply_to = "Reply-To: " . $to;
 
-					$subject = "New Quiz Request";
-					$message = "Someone has created a new quiz on your " . $page_url . " website.";
+					$subject = "Neuer Quiz-Vorschlag";
+					$message = "Ein Mitglied hat auf " . $page_url . " einen neuen Quiz-Vorschlag erstellt.";
 
 					$headers = $nfrom."\r\n";
 					$headers .= $reply_to . "\r\n";
@@ -441,7 +441,7 @@ class Quiz_Maker_Frontend_Requests_Public {
 			}
 
 			if( $request_res ){
-				$response_text = __( 'Your request has been sent', $this->plugin_name );
+				$response_text = __( 'Ihr Quiz-Vorschlag wurde erfolgreich gesendet', $this->plugin_name );
 			}else{
 				$response_text = __( 'Your request does not send, please try again.', $this->plugin_name );
 			}
@@ -461,7 +461,7 @@ class Quiz_Maker_Frontend_Requests_Public {
 			$result = array(
 				'status' => false,
 				'data'   => false,
-				'message' => __( "Your request does not send, please try again.", $this->plugin_name ),
+				'message' => __( "Ihr Vorschlag konnte nicht gesendet werden. Bitte versuchen Sie es erneut.", $this->plugin_name ),
 			);
 
 			ob_end_clean();

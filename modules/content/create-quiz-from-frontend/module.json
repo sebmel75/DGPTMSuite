@@ -1,19 +1,19 @@
 {
     "id": "create-quiz-from-frontend",
-    "name": "Quiz Maker Add-on - Create quiz from frontend",
-    "description": "This is a short description of what the plugin does. It\\'s displayed in the WordPress admin area.",
-    "version": "1.0.6",
-    "author": "Quiz Maker team",
+    "name": "DGPTM - Quiz Frontend-Erstellung",
+    "description": "Ermöglicht eingeloggten Nutzern, Quiz-Vorschläge direkt im Frontend zu erstellen. Shortcode: [ays_quiz_frontend_requests]",
+    "version": "2.0.0",
+    "author": "Quiz Maker team / Sebastian Melzer",
     "main_file": "quiz-maker-frontend-requests.php",
-    "dependencies": [],
+    "dependencies": ["quiz-manager"],
     "optional_dependencies": [],
     "wp_dependencies": {
-        "plugins": []
+        "plugins": ["quiz-maker"]
     },
     "requires_php": "7.4",
     "requires_wp": "5.8",
-    "category": "content",
-    "icon": "dashicons-edit",
+    "category": "business",
+    "icon": "dashicons-welcome-write-blog",
     "active": false,
     "can_export": true
 }

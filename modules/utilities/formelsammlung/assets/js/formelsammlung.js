@@ -24,8 +24,10 @@
               return null;
           }},
         { id:'bsa-mosteller', params:['height','weight'], unit:'m\u00B2', produces:'bsa', fmt:2,
+          producesTransform: function(r){ return Math.round(r*100)/100; },
           compute: function(v){ return Math.sqrt((v.height*v.weight)/3600); }},
         { id:'bsa-dubois', params:['height','weight'], unit:'m\u00B2', produces:'bsa', fmt:2,
+          producesTransform: function(r){ return Math.round(r*100)/100; },
           compute: function(v){ return 0.007184*Math.pow(v.height,0.725)*Math.pow(v.weight,0.425); }},
         { id:'ibw-devine', params:['height','gender'], unit:'kg', produces:'ibw', fmt:1,
           compute: function(v){

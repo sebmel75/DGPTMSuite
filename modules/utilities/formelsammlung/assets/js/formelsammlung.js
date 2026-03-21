@@ -49,7 +49,7 @@
           compute: function(v){ return Math.abs(v.be)*v.weight*0.3; }},
         { id:'tris', params:['be','weight'], unit:'mmol', fmt:0,
           compute: function(v){ return Math.abs(v.be)*v.weight*0.5; }},
-        { id:'o2-content', params:['hb','sat','po2'], unit:'ml/dl', produces:'cao2', fmt:2,
+        { id:'o2-content', params:['hb','sat','po2'], unit:'ml/dl', produces:'cao2', fmt:0,
           compute: function(v){ return (v.hb*1.34*v.sat/100)+(v.po2*0.003); }},
         { id:'avdo2', params:['cao2','cvo2'], unit:'ml/dl', produces:'avdo2', fmt:2,
           compute: function(v){ return v.cao2-v.cvo2; }},
@@ -69,6 +69,20 @@
           compute: function(v){ return v.avdo2===0?null:v.vo2/(v.avdo2*10); }},
         { id:'ci', params:['co','bsa'], unit:'l/min/m\u00B2', fmt:2,
           compute: function(v){ return v.bsa===0?null:v.co/v.bsa; }},
+
+        // --- Goal Directed Perfusion ---
+        { id:'gdp-flow', params:['bsa','ciTarget'], unit:'l/min', fmt:1,
+          compute: function(v){ return v.bsa*v.ciTarget; }},
+        { id:'gdp-do2', params:['bsa','do2Target'], unit:'ml/min', fmt:0,
+          compute: function(v){ return v.bsa*v.do2Target; }},
+        { id:'gdp-min-hb', params:['do2iTarget','ciActual','sat'], unit:'g/dl', fmt:1,
+          compute: function(v){ var d=v.ciActual*1.34*(v.sat/100)*10; return d===0?null:v.do2iTarget/d; }},
+        { id:'gdp-do2i-actual', params:['hb','sat','ciActual'], unit:'ml/min/m\u00B2', fmt:0,
+          compute: function(v){ return v.hb*1.34*(v.sat/100)*v.ciActual*10; }},
+        { id:'gdp-flow-for-hb', params:['do2iTarget','bsa','hb','sat'], unit:'l/min', fmt:1,
+          compute: function(v){ var d=v.hb*1.34*(v.sat/100)*10; return d===0?null:(v.do2iTarget*v.bsa)/d; }},
+        { id:'gdp-transfusion', params:['ciActual','sat'], unit:'g/dl', fmt:1,
+          compute: function(v){ var d=v.ciActual*1.34*(v.sat/100)*10; return d===0?null:272/d; }},
 
         // --- Technische Formeln ---
         { id:'hagen-poiseuille', params:['dp','r','eta','l'], unit:'ml/s', fmt:4,

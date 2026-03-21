@@ -247,6 +247,52 @@ if ( ! class_exists( 'DGPTM_Formelsammlung' ) ) {
 
                 </div>
 
+                <!-- ==================== GOAL DIRECTED PERFUSION ==================== -->
+                <h3 class="mc-section-title">Goal Directed Perfusion (GDP)</h3>
+                <div class="mc-cards-grid">
+
+                    <!-- GDP 1: Soll-Flussrate -->
+                    <?php echo $this->card( 'gdp-flow', 'Soll-Flussrate (GDP)', 'Q_{soll} = BSA \times CI_{Ziel}', [
+                        [ 'bsa', 'KOF (m²)', 'number', [ 'step' => '0.01' ] ],
+                        [ 'ciTarget', 'CI Ziel (l/min/m²)', 'number', [ 'step' => '0.1', 'value' => '2.4' ] ],
+                    ], 'l/min', 'Standard-CI: 2,4 l/min/m² (Hypothermie: 1,8–2,0)' ); ?>
+
+                    <!-- GDP 2: Soll-DO2 -->
+                    <?php echo $this->card( 'gdp-do2', 'Soll-DO₂ (kritische Grenze)', 'DO_{2,soll} = BSA \times 280', [
+                        [ 'bsa', 'KOF (m²)', 'number', [ 'step' => '0.01' ] ],
+                        [ 'do2Target', 'DO₂I Ziel (ml/min/m²)', 'number', [ 'step' => '1', 'value' => '280' ] ],
+                    ], 'ml/min', 'Kritisch: &lt; 272 ml/min/m². Empfohlen: &ge; 280 ml/min/m²' ); ?>
+
+                    <!-- GDP 3: Minimaler Hb für Ziel-DO2 -->
+                    <?php echo $this->card( 'gdp-min-hb', 'Minimaler Hb für Ziel-DO₂', 'Hb_{min} = \frac{DO_{2I,Ziel}}{CI \times 1{,}34 \times SaO_2 \times 10}', [
+                        [ 'do2iTarget', 'DO₂I Ziel (ml/min/m²)', 'number', [ 'step' => '1', 'value' => '280' ] ],
+                        [ 'ciActual', 'Aktueller CI (l/min/m²)', 'number', [ 'step' => '0.1' ] ],
+                        [ 'sat', 'SaO₂ (%)', 'number', [ 'step' => '0.1', 'value' => '100' ] ],
+                    ], 'g/dl', 'Nadir-Hb unter dem DO₂ kritisch wird' ); ?>
+
+                    <!-- GDP 4: Aktueller DO2I aus Ist-Werten -->
+                    <?php echo $this->card( 'gdp-do2i-actual', 'Aktueller DO₂I', 'DO_{2I} = \frac{Hb \times 1{,}34 \times SaO_2 \times CI \times 10}{100}', [
+                        [ 'hb', 'Hb (g/dl)', 'number', [ 'step' => '0.1' ] ],
+                        [ 'sat', 'SaO₂ (%)', 'number', [ 'step' => '0.1', 'value' => '100' ] ],
+                        [ 'ciActual', 'CI (l/min/m²)', 'number', [ 'step' => '0.1' ] ],
+                    ], 'ml/min/m²', 'Ziel: &ge; 280. Kritisch: &lt; 272' ); ?>
+
+                    <!-- GDP 5: Soll-Fluss bei gegebenem Hb -->
+                    <?php echo $this->card( 'gdp-flow-for-hb', 'Nötiger Fluss für Ziel-DO₂I', 'Q = \frac{DO_{2I,Ziel} \times BSA}{Hb \times 1{,}34 \times SaO_2 / 100 \times 10}', [
+                        [ 'do2iTarget', 'DO₂I Ziel (ml/min/m²)', 'number', [ 'step' => '1', 'value' => '280' ] ],
+                        [ 'bsa', 'KOF (m²)', 'number', [ 'step' => '0.01' ] ],
+                        [ 'hb', 'Aktueller Hb (g/dl)', 'number', [ 'step' => '0.1' ] ],
+                        [ 'sat', 'SaO₂ (%)', 'number', [ 'step' => '0.1', 'value' => '100' ] ],
+                    ], 'l/min', 'Benötigter Pumpenfluss um DO₂I-Ziel zu erreichen' ); ?>
+
+                    <!-- GDP 6: Transfusionstrigger -->
+                    <?php echo $this->card( 'gdp-transfusion', 'Transfusionstrigger (GDP)', 'Hb_{trigger} = \frac{272}{CI \times 1{,}34 \times SaO_2 \times 10}', [
+                        [ 'ciActual', 'Max. CI (l/min/m²)', 'number', [ 'step' => '0.1' ] ],
+                        [ 'sat', 'SaO₂ (%)', 'number', [ 'step' => '0.1', 'value' => '100' ] ],
+                    ], 'g/dl', 'Hb unter dem bei max. Fluss DO₂I &lt; 272 → Transfusion nötig' ); ?>
+
+                </div>
+
                 <!-- ==================== TECHNISCHE FORMELN ==================== -->
                 <h3 class="mc-section-title">Technische Formeln</h3>
                 <div class="mc-cards-grid">

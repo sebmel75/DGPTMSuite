@@ -120,7 +120,7 @@ if ( ! class_exists( 'DGPTM_Formelsammlung' ) ) {
                     <?php echo $this->card( 'gdp-flow', 'Soll-Flussrate', 'Q_{soll} = BSA \times CI_{Ziel}', [
                         [ 'bsa', 'KOF (m²)', 'number', [ 'step' => '0.01' ] ],
                         [ 'ciTarget', 'CI Ziel (l/min/m²)', 'number', [ 'step' => '0.1', 'value' => '2.4' ] ],
-                    ], 'l/min', 'Standard-CI: 2,4 l/min/m² (Hypothermie: 1,8–2,0)' ); ?>
+                    ], 'l/min', 'Standard-CI: 2,4 l/min/m²' ); ?>
 
                     <!-- GDP: Soll-DO2 -->
                     <?php echo $this->card( 'gdp-do2', 'Soll-DO₂ (kritische Grenze)', 'DO_{2,soll} = BSA \times DO_{2I,Ziel}', [

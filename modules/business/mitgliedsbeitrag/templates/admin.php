@@ -38,6 +38,61 @@ if (!empty($_FILES['config_file']['tmp_name']) && check_admin_referer('dgptm_mb_
         echo '<div class="notice notice-error"><p>Datei enthaelt kein gueltiges JSON.</p></div>';
     }
 }
+
+// Billing-Ergebnisse hochladen
+if (isset($_POST['dgptm_mb_import_results']) && check_admin_referer('dgptm_mb_config_save')) {
+    $history = get_option('dgptm_mb_billing_history', []);
+    $imported = 0;
+
+    if (!empty($_FILES['billing_results_files']['tmp_name'])) {
+        foreach ($_FILES['billing_results_files']['tmp_name'] as $i => $tmp) {
+            if (empty($tmp) || $_FILES['billing_results_files']['error'][$i] !== UPLOAD_ERR_OK) continue;
+
+            $content = file_get_contents($tmp);
+            $data = json_decode($content, true);
+            if (!$data || !is_array($data)) continue;
+
+            $filename = sanitize_file_name($_FILES['billing_results_files']['name'][$i]);
+
+            // Jahr und Timestamp aus Dateiname extrahieren: billing_results_2026_20260323_060103.json
+            $year = '';
+            $ts = '';
+            if (preg_match('/billing_results_(\d{4})_(\d{8}_\d{6})/', $filename, $m)) {
+                $year = $m[1];
+                $ts = substr($m[2], 0, 4) . '-' . substr($m[2], 4, 2) . '-' . substr($m[2], 6, 2) . ' ' .
+                      substr($m[2], 9, 2) . ':' . substr($m[2], 11, 2) . ':' . substr($m[2], 13, 2);
+            }
+
+            // Zusammenfassung extrahieren
+            $total = 0;
+            if (isset($data['summary']['total'])) {
+                $total = (int) $data['summary']['total'];
+            } elseif (is_array($data) && isset($data[0])) {
+                $total = count($data);
+            }
+
+            $history[] = [
+                'filename'  => $filename,
+                'year'      => $year ?: ($data['year'] ?? '?'),
+                'timestamp' => $ts ?: ($data['timestamp'] ?? date('Y-m-d H:i:s')),
+                'total'     => $total,
+                'dry_run'   => $data['dry_run'] ?? null,
+                'summary'   => $data['summary'] ?? null,
+            ];
+
+            // Vollstaendige Daten in separater Option speichern
+            update_option('dgptm_mb_result_' . sanitize_key($filename), $data, false);
+            $imported++;
+        }
+    }
+
+    if ($imported > 0) {
+        update_option('dgptm_mb_billing_history', $history, false);
+        echo '<div class="notice notice-success"><p>' . $imported . ' Ergebnis-Datei(en) importiert.</p></div>';
+    } else {
+        echo '<div class="notice notice-error"><p>Keine gueltigen JSON-Dateien gefunden.</p></div>';
+    }
+}
 ?>
 <div class="wrap">
     <h1>Mitgliedsbeitrag - Konfiguration</h1>
@@ -88,4 +143,36 @@ if (!empty($_FILES['config_file']['tmp_name']) && check_admin_referer('dgptm_mb_
         <p>Benoetigte Felder: <code>zoho.client.client_id</code>, <code>zoho.client.refresh_token</code>, <code>zoho.organization_id</code>, <code>gocardless.access_token</code></p>
     </div>
     <?php endif; ?>
+
+    <!-- Bisherige Billing-Ergebnisse hochladen -->
+    <div class="card" style="max-width:800px;padding:20px;margin-top:20px;">
+        <h2>Bisherige Abrechnungsergebnisse importieren</h2>
+        <p>Laden Sie die <code>billing_results_*.json</code> Dateien aus dem bisherigen Python-Tool hoch.</p>
+        <form method="post" enctype="multipart/form-data">
+            <?php wp_nonce_field('dgptm_mb_config_save'); ?>
+            <input type="file" name="billing_results_files[]" accept=".json" multiple />
+            <p>
+                <button type="submit" name="dgptm_mb_import_results" value="1" class="button button-secondary">Ergebnisse importieren</button>
+            </p>
+        </form>
+        <?php
+        $existing_results = get_option('dgptm_mb_billing_history', []);
+        if (!empty($existing_results)):
+        ?>
+        <h3>Importierte Ergebnisse</h3>
+        <table class="widefat striped" style="margin-top:10px;">
+            <thead><tr><th>Datei</th><th>Jahr</th><th>Datum</th><th>Mitglieder</th></tr></thead>
+            <tbody>
+            <?php foreach ($existing_results as $r): ?>
+                <tr>
+                    <td><code><?php echo esc_html($r['filename'] ?? ''); ?></code></td>
+                    <td><?php echo esc_html($r['year'] ?? '-'); ?></td>
+                    <td><?php echo esc_html($r['timestamp'] ?? '-'); ?></td>
+                    <td><?php echo esc_html($r['total'] ?? '-'); ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php endif; ?>
+    </div>
 </div>

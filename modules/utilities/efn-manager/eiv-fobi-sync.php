@@ -482,16 +482,49 @@ function dgptm_eiv_find_user_via_crm( $efn, $log = null ) {
     $crm_id  = $contact['id'] ?? '';
     $name    = trim( ( $contact['First_Name'] ?? '' ) . ' ' . ( $contact['Last_Name'] ?? '' ) );
 
+    // IDPerfusiologie leer → Fallback: User über Website_Login (= user_login) finden
     if ( $wp_id <= 0 ) {
-        if ( $log ) $log( "CRM-Fallback: Kontakt '{$name}' hat keine IDPerfusiologie." );
-        return null;
-    }
+        $website_login = trim( (string) ( $contact['Website_Login'] ?? '' ) );
+        if ( $website_login === '' ) {
+            if ( $log ) $log( "CRM-Fallback: Kontakt '{$name}' hat weder IDPerfusiologie noch Website_Login." );
+            return null;
+        }
 
-    // WordPress-User prüfen
-    $wp_user = get_userdata( $wp_id );
-    if ( ! $wp_user ) {
-        if ( $log ) $log( "CRM-Fallback: WP-User ID {$wp_id} existiert nicht." );
-        return null;
+        $wp_user = get_user_by( 'login', $website_login );
+        if ( ! $wp_user ) {
+            if ( $log ) $log( "CRM-Fallback: Kein WP-User mit Login '{$website_login}' gefunden." );
+            return null;
+        }
+
+        $wp_id = $wp_user->ID;
+        if ( $log ) $log( "User '{$wp_user->display_name}' (ID {$wp_id}) über Website_Login '{$website_login}' gefunden." );
+
+        // IDPerfusiologie im CRM nachtragen
+        $update_url = "https://www.zohoapis.eu/crm/v7/Contacts/{$crm_id}";
+        $update_resp = wp_remote_request( $update_url, [
+            'method'  => 'PUT',
+            'timeout' => 30,
+            'headers' => [
+                'Authorization' => 'Zoho-oauthtoken ' . $token,
+                'Content-Type'  => 'application/json',
+            ],
+            'body' => wp_json_encode([
+                'data' => [[ 'IDPerfusiologie' => (string) $wp_id ]],
+            ]),
+        ]);
+
+        if ( ! is_wp_error( $update_resp ) && wp_remote_retrieve_response_code( $update_resp ) >= 200 && wp_remote_retrieve_response_code( $update_resp ) < 300 ) {
+            if ( $log ) $log( "IDPerfusiologie={$wp_id} im CRM-Kontakt '{$name}' (ID {$crm_id}) nachgetragen." );
+        } else {
+            if ( $log ) $log( "WARNUNG: IDPerfusiologie konnte im CRM nicht aktualisiert werden für Kontakt '{$name}'." );
+        }
+    } else {
+        // WordPress-User per IDPerfusiologie prüfen
+        $wp_user = get_userdata( $wp_id );
+        if ( ! $wp_user ) {
+            if ( $log ) $log( "CRM-Fallback: WP-User ID {$wp_id} existiert nicht." );
+            return null;
+        }
     }
 
     // EFN im WordPress-User nachtragen

@@ -99,59 +99,7 @@ if (!class_exists('DGPTM_Mitgliedsbeitrag_Module')) {
         }
 
         public function render_shortcode($atts): string {
-            if (!is_user_logged_in()) {
-                return '<p>Bitte einloggen.</p>';
-            }
-            if (!$this->user_can_view_stats()) {
-                return '<p>Kein Zugriff. Berechtigung: Praesident, Schatzmeister oder Geschaeftsstelle.</p>';
-            }
-
-            $is_ajax = defined('DOING_AJAX') && DOING_AJAX;
-            $version = '1.0.0.' . gmdate('ymd');
-            $css_url = DGPTM_MB_URL . 'assets/css/mitgliedsbeitrag.css?ver=' . $version;
-            $js_url  = DGPTM_MB_URL . 'assets/js/mitgliedsbeitrag.js?ver=' . $version;
-            $ajax_url = esc_url(admin_url('admin-ajax.php'));
-            $nonce    = wp_create_nonce(self::NONCE);
-
-            if ($is_ajax) {
-                // Dashboard-Tab: Assets inline laden (wp_enqueue wirkt nicht in AJAX)
-                $inline_assets = <<<HTML
-<script>
-(function() {
-    if (window.dgptmMBLoaded) return;
-    window.dgptmMBLoaded = true;
-    if (typeof window.dgptmMB === 'undefined') {
-        window.dgptmMB = { ajaxUrl: '{$ajax_url}', nonce: '{$nonce}' };
-    }
-    if (!document.querySelector('link[href*="mitgliedsbeitrag"]')) {
-        var l = document.createElement('link');
-        l.rel = 'stylesheet'; l.href = '{$css_url}';
-        document.head.appendChild(l);
-    }
-    if (!document.querySelector('script[src*="mitgliedsbeitrag"]')) {
-        var s = document.createElement('script');
-        s.src = '{$js_url}';
-        document.body.appendChild(s);
-    }
-})();
-</script>
-HTML;
-            } else {
-                // Normaler Seitenaufruf
-                wp_enqueue_style('dgptm-mb', DGPTM_MB_URL . 'assets/css/mitgliedsbeitrag.css', [], $version);
-                wp_enqueue_script('dgptm-mb', DGPTM_MB_URL . 'assets/js/mitgliedsbeitrag.js', ['jquery'], $version, true);
-                wp_localize_script('dgptm-mb', 'dgptmMB', [
-                    'ajaxUrl' => admin_url('admin-ajax.php'),
-                    'nonce'   => $nonce,
-                ]);
-                $inline_assets = '';
-            }
-
-            ob_start();
-            include DGPTM_MB_PATH . 'templates/dashboard.php';
-            $output = ob_get_clean();
-
-            return $output . $inline_assets;
+            return do_shortcode('[dgptm_finanzen]');
         }
 
         /* ============================================================ */
@@ -362,6 +310,7 @@ HTML;
         }
 
         public function render_admin_page(): void {
+            echo '<div class="notice notice-warning"><p><strong>Hinweis:</strong> Dieses Modul wurde durch "Finanzen" ersetzt. Bitte das Finanzen-Modul aktivieren.</p></div>';
             $config = DGPTM_MB_Config::load();
             include DGPTM_MB_PATH . 'templates/admin.php';
         }

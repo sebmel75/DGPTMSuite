@@ -1,0 +1,30 @@
+{
+  "id": "finanzen",
+  "name": "Finanzen",
+  "description": "Mitgliedsbeitrag, Finanzberichte, Rechnungen, GoCardless — konsolidiertes Finanzmodul",
+  "version": "1.0.0",
+  "category": "business",
+  "main_file": "finanzen.php",
+  "icon": "dashicons-chart-area",
+  "critical": false,
+  "can_export": true,
+  "php_required": "7.4",
+  "wp_required": "5.8",
+  "dependencies": [],
+  "optional_dependencies": ["crm-abruf"],
+  "features": [
+    "Mitgliedsbeitrag-Abrechnungslauf (5 Varianten)",
+    "Chunk-basierte Verarbeitung mit Fortschrittsanzeige",
+    "Zoho CRM Integration (Mitglieder, COQL, Blueprints)",
+    "Zoho Books Integration (Rechnungen, Credits, Finanzberichte)",
+    "GoCardless SEPA-Lastschrift Integration",
+    "Offene-Rechnungen-Management mit Kreditentscheidungen",
+    "Mitgliederliste mit Filter und Ad-hoc-Abrechnung",
+    "Finanzberichte (Jahrestagung, Sachkundekurs, Zeitschrift)",
+    "Historische Finanzdaten 2023-2024",
+    "Schatzmeister Auslagen-/Erstattungstracker",
+    "Mandats-Synchronisation",
+    "ACF-Berechtigungen (schatzmeister, praesident, geschaeftsstelle)",
+    "Zugriffs-Logging"
+  ]
+}

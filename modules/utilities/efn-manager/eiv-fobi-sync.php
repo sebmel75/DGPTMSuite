@@ -344,56 +344,41 @@ function dgptm_eiv_get_event( $jwt, $vnr ) {
  * ============================================================ */
 
 /**
- * Berechnet EBCP-Punkte basierend auf Typcode und Dauer.
+ * Berechnet EBCP-Punkte basierend auf BÄK-Kategorie.
  *
- * @param string $type_code     Veranstaltungs-Typcode (A-K)
- * @param int    $duration_min  Dauer in Minuten
+ * Festes Mapping (wie im Deluge-Skript): Jede Kategorie hat fixe EBCP-Punkte.
+ * Die Dauer wird NICHT zur Berechnung herangezogen, da beginn/ende den
+ * Gesamtzeitraum (nicht Unterrichtseinheiten) abbilden.
+ *
+ * @param string $type_code  Veranstaltungs-Typcode (A-K)
  * @return array  ['points' => float, 'label' => string]
  */
-function dgptm_eiv_calculate_points( $type_code, $duration_min ) {
+function dgptm_eiv_calculate_points( $type_code ) {
     $type_code = strtoupper( trim( $type_code ) );
 
-    // Mapping aus Fortbildungs-Einstellungen laden
-    $fobi_settings = [];
-    if ( defined( 'FOBI_AEK_OPTION_KEY' ) ) {
-        $fobi_settings = get_option( FOBI_AEK_OPTION_KEY, [] );
-    }
-    $mapping_json = $fobi_settings['mapping_json'] ?? '[]';
-    $mapping = json_decode( $mapping_json, true );
-    if ( ! is_array( $mapping ) ) $mapping = [];
+    // Festes Kategorie-Mapping (identisch zum Deluge-Skript)
+    $mapping = [
+        'A' => [ 'points' => 1, 'label' => 'Vortragsveranstaltung' ],
+        'B' => [ 'points' => 2, 'label' => 'Kongress' ],
+        'C' => [ 'points' => 1, 'label' => 'Workshop' ],
+        'D' => [ 'points' => 1, 'label' => 'Print / elektronisch' ],
+        'E' => [ 'points' => 1, 'label' => 'Unbestimmt' ],
+        'F' => [ 'points' => 2, 'label' => 'Unbestimmt' ],
+        'G' => [ 'points' => 1, 'label' => 'Hospitation' ],
+        'H' => [ 'points' => 1, 'label' => 'Curricula' ],
+        'I' => [ 'points' => 1, 'label' => 'eLearning' ],
+        'J' => [ 'points' => 2, 'label' => 'Unbestimmt' ],
+        'K' => [ 'points' => 1, 'label' => 'Blended Learning' ],
+    ];
 
-    // Mapping nach Code indexieren
-    $map = [];
-    foreach ( $mapping as $row ) {
-        $c = strtoupper( trim( $row['code'] ?? '' ) );
-        if ( $c !== '' ) $map[ $c ] = $row;
-    }
-
-    if ( ! isset( $map[ $type_code ] ) ) {
+    if ( ! isset( $mapping[ $type_code ] ) ) {
         return [ 'points' => 0.0, 'label' => 'Unbekannt' ];
     }
 
-    $m     = $map[ $type_code ];
-    $calc  = strtolower( $m['calc'] ?? 'fixed' );
-    $base  = floatval( $m['points'] ?? 0 );
-    $label = $m['label'] ?? 'Unbekannt';
-
-    switch ( $calc ) {
-        case 'unit':
-            $unit  = max( 1, intval( $m['unit_minutes'] ?? 45 ) );
-            $units = $duration_min > 0 ? ceil( $duration_min / $unit ) : 1;
-            $pts   = $base * $units;
-            break;
-        case 'per_hour':
-            $hours = $duration_min > 0 ? ( $duration_min / 60.0 ) : 1.0;
-            $pts   = round( $base * $hours, 1 );
-            break;
-        default: // fixed
-            $pts = $base;
-            break;
-    }
-
-    return [ 'points' => $pts, 'label' => $label ];
+    return [
+        'points' => (float) $mapping[ $type_code ]['points'],
+        'label'  => $mapping[ $type_code ]['label'],
+    ];
 }
 
 /* ============================================================
@@ -700,8 +685,13 @@ function dgptm_eiv_run_sync( $since_override = null ) {
 
         // Punkte berechnen
         $type_code = $event['typeCode'] ?? '';
-        $duration  = (int) ( $event['durationMinutes'] ?? 0 );
-        $calc      = dgptm_eiv_calculate_points( $type_code, $duration );
+        $calc      = dgptm_eiv_calculate_points( $type_code );
+
+        // Dozentenpunkte (punkte_referent) 1:1 addieren
+        $referent_punkte = intval( $tn['punkte_referent'] ?? 0 );
+        if ( $referent_punkte > 0 ) {
+            $calc['points'] += $referent_punkte;
+        }
 
         // Fortbildung erstellen
         $pid = wp_insert_post([

@@ -141,20 +141,34 @@ if (!class_exists('DGPTM_Finanzbericht')) {
             $role = $this->get_user_role($user_id);
             $is_schatzmeister = $this->user_is_schatzmeister($user_id);
 
-            wp_enqueue_style('dgptm-fb', DGPTM_FB_URL . 'assets/css/finanzbericht.css', [], '1.1.0');
-            wp_enqueue_script('dgptm-fb', DGPTM_FB_URL . 'assets/js/finanzbericht.js', ['jquery'], '1.1.0', true);
-            wp_localize_script('dgptm-fb', 'dgptmFB', [
+            $is_ajax  = defined('DOING_AJAX') && DOING_AJAX;
+            $version  = '1.1.0.' . gmdate('ymd');
+            $css_url  = DGPTM_FB_URL . 'assets/css/finanzbericht.css?ver=' . $version;
+            $js_url   = DGPTM_FB_URL . 'assets/js/finanzbericht.js?ver=' . $version;
+            $ajax_url = esc_url(admin_url('admin-ajax.php'));
+            $nonce    = wp_create_nonce(self::NONCE_ACTION);
+
+            $localize = wp_json_encode([
                 'ajaxUrl'         => admin_url('admin-ajax.php'),
-                'nonce'           => wp_create_nonce(self::NONCE_ACTION),
+                'nonce'           => $nonce,
                 'access'          => $access,
                 'reports'         => self::REPORTS,
                 'role'            => $role,
                 'isSchatzmeister' => $is_schatzmeister,
             ]);
 
+            if ($is_ajax) {
+                $inline_assets = "<script>(function(){if(window.dgptmFBLoaded)return;window.dgptmFBLoaded=true;window.dgptmFB={$localize};if(!document.querySelector('link[href*=\"finanzbericht\"]')){var l=document.createElement('link');l.rel='stylesheet';l.href='{$css_url}';document.head.appendChild(l);}if(!document.querySelector('script[src*=\"finanzbericht\"]')){var s=document.createElement('script');s.src='{$js_url}';document.body.appendChild(s);}})();</script>";
+            } else {
+                wp_enqueue_style('dgptm-fb', DGPTM_FB_URL . 'assets/css/finanzbericht.css', [], $version);
+                wp_enqueue_script('dgptm-fb', DGPTM_FB_URL . 'assets/js/finanzbericht.js', ['jquery'], $version, true);
+                wp_localize_script('dgptm-fb', 'dgptmFB', json_decode($localize, true));
+                $inline_assets = '';
+            }
+
             ob_start();
             include DGPTM_FB_PATH . 'templates/dashboard.php';
-            return ob_get_clean();
+            return ob_get_clean() . $inline_assets;
         }
 
         /* ============================================================ */

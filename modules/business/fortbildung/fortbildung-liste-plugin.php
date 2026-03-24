@@ -569,16 +569,30 @@ class Fortbildung_Liste_Plugin {
      * [EBCP-Punkte]        → Punkte dieses Jahr (Default: jahr=0)
      * [EBCP-Punkte jahr=0] → Punkte dieses Jahr
      * [EBCP-Punkte jahr=1] → Punkte letztes Jahr
-     * [EBCP-Punkte jahr=2] → Punkte vorletztes Jahr
+     * [EBCP-Punkte jahr=2]  → Punkte vorletztes Jahr
+     * [EBCP-Punkte summe=3] → Summe der letzten 3 Jahre
      */
     public function display_ebcp_points( $atts ) {
         if ( ! is_user_logged_in() ) return '0';
 
-        $atts = shortcode_atts( array( 'jahr' => 0 ), $atts, 'EBCP-Punkte' );
-        $offset = max( 0, intval( $atts['jahr'] ) );
-        $year   = intval( date( 'Y' ) ) - $offset;
-        $uid    = get_current_user_id();
+        $atts = shortcode_atts( array( 'jahr' => null, 'summe' => null ), $atts, 'EBCP-Punkte' );
+        $uid  = get_current_user_id();
+        $now  = intval( date( 'Y' ) );
 
+        // Summe über mehrere Jahre
+        if ( $atts['summe'] !== null ) {
+            $count = max( 1, intval( $atts['summe'] ) );
+            $from  = $now - $count + 1;
+            return number_format( self::sum_points( $uid, $from, $now ), 1, ',', '.' );
+        }
+
+        // Einzelnes Jahr
+        $offset = max( 0, intval( $atts['jahr'] ?? 0 ) );
+        $year   = $now - $offset;
+        return number_format( self::sum_points( $uid, $year, $year ), 1, ',', '.' );
+    }
+
+    private static function sum_points( $uid, $from_year, $to_year ) {
         $q = new WP_Query(array(
             'post_type'      => 'fortbildung',
             'post_status'    => 'publish',
@@ -587,10 +601,9 @@ class Fortbildung_Liste_Plugin {
             'meta_query'     => array(
                 'relation' => 'AND',
                 array( 'key' => 'user', 'value' => $uid, 'compare' => '=' ),
-                array( 'key' => 'date', 'value' => array( $year . '-01-01', $year . '-12-31' ), 'compare' => 'BETWEEN', 'type' => 'DATE' ),
+                array( 'key' => 'date', 'value' => array( $from_year . '-01-01', $to_year . '-12-31' ), 'compare' => 'BETWEEN', 'type' => 'DATE' ),
             ),
         ));
-
         $pts = 0.0;
         if ( $q->have_posts() ) {
             foreach ( $q->posts as $pid ) {
@@ -600,8 +613,7 @@ class Fortbildung_Liste_Plugin {
             }
         }
         wp_reset_postdata();
-
-        return number_format( $pts, 1, ',', '.' );
+        return $pts;
     }
 }
 new Fortbildung_Liste_Plugin();

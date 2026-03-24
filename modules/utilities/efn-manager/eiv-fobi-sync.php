@@ -21,8 +21,9 @@ function dgptm_eiv_default_settings() {
         'batch_enabled'  => '0',
         'start_date'     => '',
         'zoho_function'  => 'test_baek',
-        'api_base'       => 'https://backend.eiv-fobi.de',
-        'last_call'      => '',
+        'api_base'        => 'https://backend.eiv-fobi.de',
+        'last_call'       => '',
+        'claude_api_key'  => '',
     ];
 }
 
@@ -401,12 +402,18 @@ function dgptm_eiv_event_days( $date_begin, $date_end ) {
 }
 
 /* ============================================================
- * Dubletten-Check
+ * Dubletten-Check (dreistufig)
+ *
+ * 1. Exakte VNR-Übereinstimmung → Dublette
+ * 2. Grobe Übereinstimmung (gleicher User, ähnliches Datum/Titel,
+ *    aber ohne VNR) → Claude KI befragen
+ * 3. Wenn Dublette mit/ohne VNR: Eintrag MIT VNR bevorzugen
+ *
+ * Regel: Unterschiedliche VNRs = unterschiedliche Veranstaltungen
  * ============================================================ */
 
 /**
- * Prüft ob eine Fortbildung für User+VNR bereits existiert.
- * Checkt sowohl ACF-Feld 'vnr' als auch altes Meta 'aek_vnr'.
+ * Prüft ob eine Fortbildung für User+VNR bereits existiert (exakt).
  *
  * @param int    $user_id  WordPress User-ID
  * @param string $vnr      Veranstaltungsnummer
@@ -432,6 +439,176 @@ function dgptm_eiv_fortbildung_exists( $user_id, $vnr ) {
     $found = $q->have_posts();
     wp_reset_postdata();
     return $found;
+}
+
+/**
+ * Sucht grobe Übereinstimmungen: gleicher User, ähnliches Datum (±7 Tage),
+ * aber OHNE VNR (oder mit leerer VNR).
+ *
+ * @param int    $user_id    WordPress User-ID
+ * @param string $event_date Veranstaltungsdatum (Y-m-d)
+ * @param string $title      Veranstaltungstitel
+ * @return array  Array von möglichen Dubletten [{post_id, title, date, vnr, type, points}]
+ */
+function dgptm_eiv_find_fuzzy_matches( $user_id, $event_date, $title ) {
+    if ( ! $event_date ) return [];
+
+    // Zeitfenster: ±7 Tage
+    $ts = strtotime( $event_date );
+    if ( ! $ts ) return [];
+    $date_from = date( 'Y-m-d', $ts - 7 * 86400 );
+    $date_to   = date( 'Y-m-d', $ts + 7 * 86400 );
+
+    // Alle Fortbildungen dieses Users im Zeitfenster
+    $q = new WP_Query([
+        'post_type'      => 'fortbildung',
+        'posts_per_page' => 20,
+        'post_status'    => 'any',
+        'meta_query'     => [
+            'relation' => 'AND',
+            [ 'key' => 'user', 'value' => $user_id, 'compare' => '=' ],
+            [ 'key' => 'date', 'value' => [ $date_from, $date_to ], 'compare' => 'BETWEEN', 'type' => 'DATE' ],
+        ],
+    ]);
+
+    $matches = [];
+    while ( $q->have_posts() ) {
+        $q->the_post();
+        $pid = get_the_ID();
+        $existing_vnr = get_field( 'vnr', $pid );
+        $existing_aek = get_post_meta( $pid, 'aek_vnr', true );
+
+        // Nur Einträge OHNE VNR sind potenzielle Fuzzy-Dubletten
+        // (Einträge MIT anderer VNR sind per Definition andere Veranstaltungen)
+        if ( ! empty( $existing_vnr ) || ! empty( $existing_aek ) ) continue;
+
+        $matches[] = [
+            'post_id' => $pid,
+            'title'   => get_the_title(),
+            'date'    => get_field( 'date', $pid ),
+            'type'    => get_field( 'type', $pid ),
+            'points'  => floatval( get_field( 'points', $pid ) ),
+        ];
+    }
+    wp_reset_postdata();
+
+    return $matches;
+}
+
+/**
+ * Fragt Claude KI ob zwei Einträge Dubletten sind.
+ *
+ * @param array  $new_entry      Neuer Eintrag [title, date, type, vnr]
+ * @param array  $existing_entry Bestehender Eintrag [title, date, type, points]
+ * @return bool|null  true = Dublette, false = keine Dublette, null = KI nicht verfügbar
+ */
+function dgptm_eiv_ask_claude_duplicate( $new_entry, $existing_entry ) {
+    $settings = dgptm_eiv_get_settings();
+    $api_key  = $settings['claude_api_key'] ?? '';
+
+    // Fallback: Key aus Fortbildungs-Upload-Einstellungen
+    if ( empty( $api_key ) ) {
+        $upload_settings = get_option( 'fobi_upload_settings', [] );
+        $api_key = $upload_settings['claude_api_key'] ?? '';
+    }
+
+    if ( empty( $api_key ) ) return null;
+
+    $prompt = sprintf(
+        'Sind diese zwei Fortbildungseinträge desselben Teilnehmers die GLEICHE Veranstaltung (Dublette)?
+
+NEUER EINTRAG (aus BÄK mit VNR):
+- Titel: %s
+- Datum: %s
+- Typ: %s
+- VNR: %s
+
+BESTEHENDER EINTRAG (manuell/ohne VNR):
+- Titel: %s
+- Datum: %s
+- Typ: %s
+
+Antworte NUR mit einem JSON-Objekt: {"duplicate": true} oder {"duplicate": false}
+Kriterien: Gleiche Veranstaltung wenn Titel und Datum grob übereinstimmen (z.B. "DGPTM Jahrestagung" und "Jahrestagung DGPTM 2025" am gleichen Tag). Unterschiedliche Veranstaltungen wenn Titel klar verschieden oder Datum >3 Tage auseinander.',
+        $new_entry['title'], $new_entry['date'], $new_entry['type'], $new_entry['vnr'],
+        $existing_entry['title'], $existing_entry['date'], $existing_entry['type']
+    );
+
+    $resp = wp_remote_post( 'https://api.anthropic.com/v1/messages', [
+        'timeout' => 15,
+        'headers' => [
+            'Content-Type'      => 'application/json',
+            'x-api-key'         => $api_key,
+            'anthropic-version' => '2023-06-01',
+        ],
+        'body' => wp_json_encode([
+            'model'      => 'claude-haiku-4-5-20251001',
+            'max_tokens' => 100,
+            'messages'   => [
+                [ 'role' => 'user', 'content' => $prompt ],
+            ],
+        ]),
+    ]);
+
+    if ( is_wp_error( $resp ) ) return null;
+    $code = wp_remote_retrieve_response_code( $resp );
+    if ( $code < 200 || $code >= 300 ) return null;
+
+    $body = json_decode( wp_remote_retrieve_body( $resp ), true );
+    $text = $body['content'][0]['text'] ?? '';
+
+    // JSON aus Antwort extrahieren
+    if ( preg_match( '/\{[^}]*"duplicate"\s*:\s*(true|false)[^}]*\}/', $text, $m ) ) {
+        return $m[1] === 'true';
+    }
+
+    return null;
+}
+
+/**
+ * Erweiterte Dublettenprüfung mit Fuzzy-Match und Claude KI.
+ *
+ * @param int    $user_id    WordPress User-ID
+ * @param string $vnr        Veranstaltungsnummer
+ * @param string $event_date Veranstaltungsdatum (Y-m-d)
+ * @param string $title      Veranstaltungstitel
+ * @param string $type_label Typ-Label (z.B. "Workshop")
+ * @param callable|null $log Log-Funktion
+ * @return string  'none' | 'exact_vnr' | 'replaced_without_vnr' | 'ai_duplicate'
+ */
+function dgptm_eiv_check_duplicate( $user_id, $vnr, $event_date, $title, $type_label, $log = null ) {
+    // 1. Exakte VNR-Übereinstimmung
+    if ( dgptm_eiv_fortbildung_exists( $user_id, $vnr ) ) {
+        return 'exact_vnr';
+    }
+
+    // 2. Fuzzy-Match: gleicher User, ähnliches Datum, OHNE VNR
+    $fuzzy = dgptm_eiv_find_fuzzy_matches( $user_id, $event_date, $title );
+    if ( empty( $fuzzy ) ) return 'none';
+
+    foreach ( $fuzzy as $match ) {
+        // Claude KI befragen
+        $is_dup = dgptm_eiv_ask_claude_duplicate(
+            [ 'title' => $title, 'date' => $event_date, 'type' => $type_label, 'vnr' => $vnr ],
+            $match
+        );
+
+        if ( $is_dup === true ) {
+            // Dublette erkannt: Eintrag OHNE VNR löschen → Eintrag MIT VNR wird neu erstellt
+            wp_delete_post( $match['post_id'], true );
+            if ( $log ) $log( sprintf(
+                'Dublette erkannt (KI): "%s" (%s) ersetzt durch VNR-Eintrag "%s" (%s).',
+                $match['title'], $match['date'], $title, $vnr
+            ));
+            return 'replaced_without_vnr';
+        }
+
+        if ( $is_dup === null && $log ) {
+            $log( "KI-Dublettencheck nicht verfügbar (API-Key fehlt oder Fehler). Fuzzy-Match übersprungen." );
+        }
+    }
+
+    return 'none';
 }
 
 /* ============================================================
@@ -666,18 +843,7 @@ function dgptm_eiv_run_sync( $since_override = null ) {
             ];
         }
 
-        // Dubletten-Check
-        if ( dgptm_eiv_fortbildung_exists( $wp_user->ID, $vnr ) ) {
-            $result['skipped']++;
-            $result['results'][] = [
-                'user' => $wp_user->display_name, 'event' => $vnr,
-                'points' => 0, 'vnr' => $vnr,
-                'status' => 'Übersprungen (Dublette)',
-            ];
-            continue;
-        }
-
-        // Event-Daten holen (Cache oder API)
+        // Event-Daten holen (Cache oder API) — VOR Dubletten-Check, damit Titel verfügbar
         $event = dgptm_eiv_get_event( $jwt, $vnr );
         if ( is_wp_error( $event ) ) {
             $result['errors']++;
@@ -711,6 +877,30 @@ function dgptm_eiv_run_sync( $since_override = null ) {
         $referent_punkte = intval( $tn['punkte_referent'] ?? 0 );
         if ( $referent_punkte > 0 ) {
             $calc['points'] += $referent_punkte;
+        }
+
+        // Erweiterte Dublettenprüfung (exakt + Fuzzy + KI)
+        $dup_result = dgptm_eiv_check_duplicate(
+            $wp_user->ID, $vnr,
+            $event['date'] ?? '', $event['title'] ?? '', $calc['label'],
+            $log
+        );
+        if ( $dup_result === 'exact_vnr' ) {
+            $result['skipped']++;
+            $result['results'][] = [
+                'user' => $wp_user->display_name, 'event' => $event['title'] ?? $vnr,
+                'points' => 0, 'vnr' => $vnr,
+                'status' => 'Übersprungen (Dublette)',
+            ];
+            continue;
+        }
+        if ( $dup_result === 'replaced_without_vnr' ) {
+            // Alter Eintrag ohne VNR wurde gelöscht → neuer mit VNR wird erstellt
+            $result['results'][] = [
+                'user' => $wp_user->display_name, 'event' => $event['title'] ?? $vnr,
+                'points' => $calc['points'], 'vnr' => $vnr,
+                'status' => 'Ersetzt (Dublette ohne VNR gelöscht)',
+            ];
         }
 
         // Fortbildung erstellen
@@ -922,6 +1112,7 @@ add_action( 'admin_init', function() {
     $settings['start_date']     = sanitize_text_field( $_POST['eiv_start_date'] ?? '' );
     $settings['zoho_function']  = sanitize_text_field( $_POST['eiv_zoho_function'] ?? 'test_baek' );
     $settings['api_base']       = esc_url_raw( $_POST['eiv_api_base'] ?? 'https://backend.eiv-fobi.de' );
+    $settings['claude_api_key'] = sanitize_text_field( $_POST['eiv_claude_api_key'] ?? '' );
 
     update_option( DGPTM_EIV_OPTION_KEY, $settings );
     dgptm_eiv_reschedule_cron( $settings );
@@ -973,6 +1164,12 @@ function dgptm_eiv_render_admin_page() {
                     <tr>
                         <th>BÄK API Base-URL</th>
                         <td><input type="url" name="eiv_api_base" value="<?php echo esc_attr( $settings['api_base'] ); ?>" class="regular-text"></td>
+                    </tr>
+                    <tr>
+                        <th>Claude API Key</th>
+                        <td><input type="password" name="eiv_claude_api_key" value="<?php echo esc_attr( $settings['claude_api_key'] ); ?>" class="regular-text" autocomplete="off">
+                            <p class="description">Für KI-gestützte Dublettenprüfung. Fallback: Key aus Fortbildungs-Upload-Einstellungen.</p>
+                        </td>
                     </tr>
                     <tr>
                         <th>Letzter Abruf</th>

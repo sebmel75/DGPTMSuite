@@ -225,8 +225,12 @@ finanzen.php (AJAX-Handler)
 ### Schatzmeister-Tab (`class-treasurer.php`)
 
 - Auslagen-/Zuschuss-Erstattungstracker
-- Datenspeicherung: `wp_options`-basiert (`dgptm_fin_treasurer_entries`)
-- CRUD für Erstattungsanträge: Datum, Beschreibung, Betrag, Status, Belege
+- Datenspeicherung: **Zoho CRM + Books** (nicht wp_options) — 1:1 wie im Python-Tool
+  - CRM-Modul "Expenses" (Status: "An Schatzmeister übergeben")
+  - CRM-Modul "EduGrant" (Status: "An Schatzmeister übergeben")
+  - Books-Bills (Custom Field `cf_zahlstatus` = "Schatzmeister benachrichtigt")
+- Aktionen: "Überwiesen"-Button triggert Blueprint-Transition in CRM oder Status-Update in Books
+- Bankdaten aus Config anzeigen (kein QR-Code wie im Python-Tool)
 
 ## Zoho-API-Clients
 

@@ -269,8 +269,8 @@ if (!class_exists('DGPTM_Finanzbericht')) {
                 'timestamp' => current_time('c'),
             ];
 
-            // Abfrage 1: Mitglieder nach Typ
-            $coql = "SELECT COUNT(id) as cnt, Membership_Type FROM Contacts WHERE Mitglied = true AND Contact_Status in ('Aktiv', 'Freigestellt') GROUP BY Membership_Type";
+            // Abfrage 1: Mitglieder nach Typ (COQL: "in" nicht bei allen Feldern — nutze "or")
+            $coql = "SELECT COUNT(id) as cnt, Membership_Type FROM Contacts WHERE Mitglied = true AND (Contact_Status = 'Aktiv' or Contact_Status = 'Freigestellt') GROUP BY Membership_Type";
             $response = wp_remote_post($api_url . '/crm/v7/coql', [
                 'headers' => [
                     'Authorization' => 'Zoho-oauthtoken ' . $token,
@@ -294,7 +294,7 @@ if (!class_exists('DGPTM_Finanzbericht')) {
 
             // Abfrage 2: Beitragslauf-Status (letztesBeitragsjahr)
             $current_year = (int) date('Y');
-            $coql2 = "SELECT COUNT(id) as cnt, letztesBeitragsjahr FROM Contacts WHERE Mitglied = true AND Contact_Status in ('Aktiv', 'Freigestellt') GROUP BY letztesBeitragsjahr";
+            $coql2 = "SELECT COUNT(id) as cnt, letztesBeitragsjahr FROM Contacts WHERE Mitglied = true AND (Contact_Status = 'Aktiv' or Contact_Status = 'Freigestellt') GROUP BY letztesBeitragsjahr";
             $response2 = wp_remote_post($api_url . '/crm/v7/coql', [
                 'headers' => [
                     'Authorization' => 'Zoho-oauthtoken ' . $token,

@@ -135,22 +135,26 @@ class DGPTM_MB_Zoho_CRM {
     /* ============================================================ */
 
     public function get_members_for_billing(int $year): array {
-        $statuses = implode("','", $this->config->allowed_statuses());
+        // COQL: "in" Operator funktioniert nicht bei allen Feldtypen
+        // Nutze "or" fuer Contact_Status und Membership_Type
+        $statuses = $this->config->allowed_statuses();
+        $status_clause = '(' . implode(' or ', array_map(function($s) { return "Contact_Status = '$s'"; }, $statuses)) . ')';
+
         $types = array_keys($this->config->membership_types());
-        $types_str = implode("','", $types);
+        $type_clause = '(' . implode(' or ', array_map(function($t) { return "Membership_Type = '$t'"; }, $types)) . ')';
 
         $fields = 'id,Full_Name,First_Name,Last_Name,Email,Membership_Type,Membership_Number,Member_Since,letztesBeitragsjahr,Guthaben2,GoCardlessID,MandatID,Finance_ID,Contact_Status,Student_Status,Valid_Through,Freigestellt_bis,goCardlessPayment,last_invoice';
 
         // Gruppe 1: Bereits abgerechnet, Beitragsjahr < aktuelles Jahr
-        $q1 = "SELECT {$fields} FROM Contacts WHERE Mitglied = true AND Contact_Status IN ('{$statuses}') AND Membership_Type IN ('{$types_str}') AND letztesBeitragsjahr < {$year} LIMIT 200";
+        $q1 = "SELECT {$fields} FROM Contacts WHERE Mitglied = true AND {$status_clause} AND {$type_clause} AND letztesBeitragsjahr < {$year} LIMIT 200";
         $group1 = $this->coql_query($q1);
 
         // Gruppe 2: Nie abgerechnet, aber Member_Since gesetzt
-        $q2 = "SELECT {$fields} FROM Contacts WHERE Mitglied = true AND Contact_Status IN ('{$statuses}') AND Membership_Type IN ('{$types_str}') AND letztesBeitragsjahr IS NULL AND Member_Since IS NOT NULL LIMIT 200";
+        $q2 = "SELECT {$fields} FROM Contacts WHERE Mitglied = true AND {$status_clause} AND {$type_clause} AND letztesBeitragsjahr is null AND Member_Since is not null LIMIT 200";
         $group2 = $this->coql_query($q2);
 
         // Gruppe 3: Nie abgerechnet, Member_Since auch leer
-        $q3 = "SELECT {$fields} FROM Contacts WHERE Mitglied = true AND Contact_Status IN ('{$statuses}') AND Membership_Type IN ('{$types_str}') AND letztesBeitragsjahr IS NULL AND Member_Since IS NULL LIMIT 200";
+        $q3 = "SELECT {$fields} FROM Contacts WHERE Mitglied = true AND {$status_clause} AND {$type_clause} AND letztesBeitragsjahr is null AND Member_Since is null LIMIT 200";
         $group3 = $this->coql_query($q3);
 
         return array_merge($group1, $group2, $group3);
@@ -250,8 +254,8 @@ class DGPTM_MB_Zoho_CRM {
             'timestamp' => current_time('c'),
         ];
 
-        // Nach Typ
-        $type_data = $this->coql_query("SELECT COUNT(id) as cnt, Membership_Type FROM Contacts WHERE Mitglied = true AND Contact_Status IN ('Aktiv','Freigestellt') GROUP BY Membership_Type");
+        // Nach Typ (COQL: "in" Operator nicht fuer alle Felder — nutze "or")
+        $type_data = $this->coql_query("SELECT COUNT(id) as cnt, Membership_Type FROM Contacts WHERE Mitglied = true AND (Contact_Status = 'Aktiv' or Contact_Status = 'Freigestellt') GROUP BY Membership_Type");
         foreach ($type_data as $row) {
             $type = $row['Membership_Type'] ?? 'Unbekannt';
             $count = (int) ($row['cnt'] ?? 0);
@@ -261,7 +265,7 @@ class DGPTM_MB_Zoho_CRM {
 
         // Beitragslauf-Status
         $year = (int) date('Y');
-        $billing_data = $this->coql_query("SELECT COUNT(id) as cnt, letztesBeitragsjahr FROM Contacts WHERE Mitglied = true AND Contact_Status IN ('Aktiv','Freigestellt') GROUP BY letztesBeitragsjahr");
+        $billing_data = $this->coql_query("SELECT COUNT(id) as cnt, letztesBeitragsjahr FROM Contacts WHERE Mitglied = true AND (Contact_Status = 'Aktiv' or Contact_Status = 'Freigestellt') GROUP BY letztesBeitragsjahr");
 
         $billed_current = 0;
         $billed_previous = 0;

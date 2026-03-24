@@ -187,10 +187,16 @@ HTML;
             }
 
             // Mitgliederzahlen aus Cache oder live
-            $stats = get_transient('dgptm_mb_member_stats');
-            if (false !== $stats) {
-                error_log('[DGPTM MB] Stats aus Cache geladen');
+            // Force-Refresh per Parameter
+            $force = !empty($_POST['force_refresh']);
+            $stats = $force ? false : get_transient('dgptm_mb_member_stats');
+            if (false !== $stats && !empty($stats['total_active'])) {
+                error_log('[DGPTM MB] Stats aus Cache geladen: total_active=' . ($stats['total_active'] ?? 0));
             } else {
+                if ($stats !== false) {
+                    error_log('[DGPTM MB] Cache vorhanden aber leer/ungueltig — lade neu');
+                    delete_transient('dgptm_mb_member_stats');
+                }
                 error_log('[DGPTM MB] Stats-Cache leer, lade live von Zoho CRM...');
                 try {
                     $crm = new DGPTM_MB_Zoho_CRM($config);

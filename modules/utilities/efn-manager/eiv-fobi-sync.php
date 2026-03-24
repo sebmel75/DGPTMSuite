@@ -1030,15 +1030,103 @@ add_action( 'wp_ajax_dgptm_eiv_manual_sync', function() {
     wp_send_json_success( $result );
 });
 
-// AJAX: Punkte korrigieren (alle EIV-importierten Fortbildungen neu berechnen)
-add_action( 'wp_ajax_dgptm_eiv_recalc_points', function() {
-    if ( ! current_user_can( 'manage_options' ) ) {
-        wp_send_json_error( [ 'message' => 'Keine Berechtigung.' ] );
-    }
+// AJAX: Fortbildungen gruppiert nach Veranstaltungsname laden
+add_action( 'wp_ajax_dgptm_eiv_list_groups', function() {
+    if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( [ 'message' => 'Keine Berechtigung.' ] );
     check_ajax_referer( 'dgptm_eiv_sync_nonce' );
     nocache_headers();
 
-    // Alle Fortbildungen mit VNR finden (= von EIV importiert)
+    $q = new WP_Query([
+        'post_type'      => 'fortbildung',
+        'posts_per_page' => -1,
+        'post_status'    => 'any',
+    ]);
+
+    $groups = [];
+    while ( $q->have_posts() ) {
+        $q->the_post();
+        $pid   = get_the_ID();
+        $title = get_the_title();
+        $vnr   = get_field( 'vnr', $pid ) ?: get_post_meta( $pid, 'aek_vnr', true );
+        $pts   = floatval( get_field( 'points', $pid ) );
+        $date  = get_field( 'date', $pid );
+        $type  = get_field( 'type', $pid );
+        $user_id = get_field( 'user', $pid );
+        $uname = $user_id ? get_userdata( $user_id ) : null;
+
+        $key = sanitize_title( $title ) ?: 'ohne-titel-' . $pid;
+        if ( ! isset( $groups[ $key ] ) ) {
+            $groups[ $key ] = [
+                'title'  => $title,
+                'vnr'    => $vnr ?: '',
+                'type'   => $type,
+                'count'  => 0,
+                'points' => $pts,
+                'entries' => [],
+            ];
+        }
+        $groups[ $key ]['count']++;
+        $groups[ $key ]['entries'][] = [
+            'id'     => $pid,
+            'user'   => $uname ? $uname->display_name : "User #{$user_id}",
+            'date'   => $date,
+            'points' => $pts,
+            'vnr'    => $vnr,
+        ];
+    }
+    wp_reset_postdata();
+
+    // Nach Anzahl sortieren (größte Gruppen zuerst)
+    uasort( $groups, function( $a, $b ) { return $b['count'] - $a['count']; } );
+
+    wp_send_json_success( [ 'groups' => array_values( $groups ) ] );
+});
+
+// AJAX: Punkte einer Gruppe (alle Einträge mit gleichem Titel) ändern
+add_action( 'wp_ajax_dgptm_eiv_update_group_points', function() {
+    if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( [ 'message' => 'Keine Berechtigung.' ] );
+    check_ajax_referer( 'dgptm_eiv_sync_nonce' );
+    nocache_headers();
+
+    $post_ids   = array_map( 'intval', (array) ( $_POST['post_ids'] ?? [] ) );
+    $new_points = floatval( $_POST['new_points'] ?? 0 );
+
+    $updated = 0;
+    foreach ( $post_ids as $pid ) {
+        if ( $pid <= 0 ) continue;
+        if ( get_post_type( $pid ) !== 'fortbildung' ) continue;
+        update_field( 'points', $new_points, $pid );
+        $updated++;
+    }
+
+    wp_send_json_success( [ 'updated' => $updated ] );
+});
+
+// AJAX: Gruppe löschen (alle Einträge mit gleichem Titel)
+add_action( 'wp_ajax_dgptm_eiv_delete_group', function() {
+    if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( [ 'message' => 'Keine Berechtigung.' ] );
+    check_ajax_referer( 'dgptm_eiv_sync_nonce' );
+    nocache_headers();
+
+    $post_ids = array_map( 'intval', (array) ( $_POST['post_ids'] ?? [] ) );
+
+    $deleted = 0;
+    foreach ( $post_ids as $pid ) {
+        if ( $pid <= 0 ) continue;
+        if ( get_post_type( $pid ) !== 'fortbildung' ) continue;
+        wp_delete_post( $pid, true );
+        $deleted++;
+    }
+
+    wp_send_json_success( [ 'deleted' => $deleted ] );
+});
+
+// AJAX: Punkte korrigieren (nur Einträge MIT VNR + Cache)
+add_action( 'wp_ajax_dgptm_eiv_recalc_points', function() {
+    if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( [ 'message' => 'Keine Berechtigung.' ] );
+    check_ajax_referer( 'dgptm_eiv_sync_nonce' );
+    nocache_headers();
+
     $q = new WP_Query([
         'post_type'      => 'fortbildung',
         'posts_per_page' => -1,
@@ -1049,6 +1137,7 @@ add_action( 'wp_ajax_dgptm_eiv_recalc_points', function() {
     ]);
 
     $updated = 0;
+    $skipped = 0;
     $results = [];
 
     while ( $q->have_posts() ) {
@@ -1057,24 +1146,15 @@ add_action( 'wp_ajax_dgptm_eiv_recalc_points', function() {
         $vnr = get_field( 'vnr', $pid );
         if ( ! $vnr ) continue;
 
-        // Event-Daten aus Cache holen
         $cached = dgptm_eiv_cache_lookup( $vnr );
         if ( ! $cached ) {
-            $results[] = [
-                'post_id' => $pid,
-                'title'   => get_the_title(),
-                'vnr'     => $vnr,
-                'old'     => floatval( get_field( 'points', $pid ) ),
-                'new'     => '—',
-                'status'  => 'Kein Cache',
-            ];
-            continue;
+            $skipped++;
+            continue; // Kein Cache → Punkte NICHT anfassen
         }
 
         $type_code  = $cached['typeCode'] ?? '';
         $event_days = dgptm_eiv_event_days( $cached['date'] ?? '', $cached['endDate'] ?? '' );
         $calc       = dgptm_eiv_calculate_points( $type_code, $event_days );
-
         $old_points = floatval( get_field( 'points', $pid ) );
         $new_points = $calc['points'];
 
@@ -1083,22 +1163,16 @@ add_action( 'wp_ajax_dgptm_eiv_recalc_points', function() {
             update_field( 'type', $calc['label'], $pid );
             $updated++;
             $results[] = [
-                'post_id' => $pid,
-                'title'   => get_the_title(),
-                'vnr'     => $vnr,
-                'old'     => $old_points,
-                'new'     => $new_points,
-                'status'  => 'Korrigiert',
+                'title' => get_the_title(),
+                'vnr'   => $vnr,
+                'old'   => $old_points,
+                'new'   => $new_points,
             ];
         }
     }
     wp_reset_postdata();
 
-    wp_send_json_success([
-        'updated' => $updated,
-        'total'   => $q->found_posts,
-        'results' => $results,
-    ]);
+    wp_send_json_success( [ 'updated' => $updated, 'skipped_no_cache' => $skipped, 'total' => $q->found_posts, 'results' => $results ] );
 });
 
 // Settings speichern
@@ -1134,6 +1208,7 @@ function dgptm_eiv_render_admin_page() {
         <h2 class="nav-tab-wrapper">
             <a href="#tab-settings" class="nav-tab nav-tab-active">Einstellungen</a>
             <a href="#tab-sync" class="nav-tab">Manueller Abruf</a>
+            <a href="#tab-groups" class="nav-tab">Fortbildungen verwalten</a>
         </h2>
 
         <!-- Tab: Einstellungen -->
@@ -1218,11 +1293,35 @@ function dgptm_eiv_render_admin_page() {
             </div>
         </div>
 
+        <!-- Tab: Fortbildungen verwalten -->
+        <div id="tab-groups" class="dgptm-eiv-tab" style="display:none;">
+            <h3>Fortbildungen gruppiert nach Veranstaltung</h3>
+            <p>
+                <button id="eiv-load-groups" class="button button-secondary">Gruppen laden</button>
+                <span id="eiv-groups-spinner" class="spinner" style="float:none;display:none;"></span>
+            </p>
+            <div id="eiv-groups-container" style="margin-top:15px;"></div>
+        </div>
+
         <style>
             .dgptm-eiv-tab { padding-top: 15px; }
             #eiv-results-table .status-imported { color: #00a32a; font-weight: 600; }
             #eiv-results-table .status-skipped  { color: #996800; }
             #eiv-results-table .status-error    { color: #d63638; }
+            .eiv-group { background:#fff; border:1px solid #ccd0d4; margin-bottom:12px; border-radius:4px; }
+            .eiv-group-header { display:flex; justify-content:space-between; align-items:center; padding:10px 15px; cursor:pointer; background:#f6f7f7; border-bottom:1px solid #ccd0d4; }
+            .eiv-group-header:hover { background:#eef0f1; }
+            .eiv-group-title { font-weight:600; flex:1; }
+            .eiv-group-meta { color:#666; font-size:13px; margin-left:15px; }
+            .eiv-group-body { padding:12px 15px; display:none; }
+            .eiv-group-body.open { display:block; }
+            .eiv-group-actions { display:flex; gap:8px; align-items:center; margin-bottom:10px; }
+            .eiv-group-actions input[type=number] { width:80px; }
+            .eiv-group-entries { font-size:13px; }
+            .eiv-group-entries td { padding:4px 8px; }
+            .eiv-badge { display:inline-block; padding:2px 8px; border-radius:3px; font-size:12px; }
+            .eiv-badge-vnr { background:#e7f5e7; color:#1a7a1a; }
+            .eiv-badge-no-vnr { background:#fef3e7; color:#996800; }
         </style>
         <script>
         jQuery(function($){
@@ -1297,6 +1396,80 @@ function dgptm_eiv_render_admin_page() {
                 });
             });
 
+            // ===== Gruppen-Verwaltung =====
+            $('#eiv-load-groups').on('click', function(e){
+                e.preventDefault();
+                $('#eiv-groups-spinner').show();
+                $('#eiv-groups-container').html('');
+
+                $.post(ajaxurl, { action:'dgptm_eiv_list_groups', _wpnonce:nonce }, function(resp){
+                    $('#eiv-groups-spinner').hide();
+                    if (!resp.success) { alert('Fehler: '+(resp.data?.message||'Unbekannt')); return; }
+                    var groups = resp.data.groups;
+                    if (!groups.length) { $('#eiv-groups-container').html('<p>Keine Fortbildungen vorhanden.</p>'); return; }
+
+                    var html = '<p><strong>'+groups.length+' Veranstaltungsgruppen</strong></p>';
+                    groups.forEach(function(g, idx){
+                        var ids = g.entries.map(function(e){ return e.id; });
+                        var badge = g.vnr ? '<span class="eiv-badge eiv-badge-vnr">VNR '+$('<span>').text(g.vnr).html()+'</span>' : '<span class="eiv-badge eiv-badge-no-vnr">Keine VNR</span>';
+
+                        html += '<div class="eiv-group" data-idx="'+idx+'">';
+                        html += '<div class="eiv-group-header" data-toggle="'+idx+'">';
+                        html += '<span class="eiv-group-title">'+$('<span>').text(g.title||'(Ohne Titel)').html()+'</span>';
+                        html += '<span class="eiv-group-meta">'+g.count+' Einträge &middot; '+g.points+' Pkt. '+badge+'</span>';
+                        html += '</div>';
+                        html += '<div class="eiv-group-body" id="eiv-gb-'+idx+'">';
+                        html += '<div class="eiv-group-actions">';
+                        html += '<label>Punkte setzen: <input type="number" step="0.1" min="0" value="'+g.points+'" class="eiv-grp-pts" data-ids=\''+JSON.stringify(ids)+'\'></label>';
+                        html += '<button class="button eiv-grp-save" data-ids=\''+JSON.stringify(ids)+'\'>Punkte speichern</button>';
+                        html += '<button class="button eiv-grp-delete" data-ids=\''+JSON.stringify(ids)+'\' style="color:#d63638;">Alle '+g.count+' löschen</button>';
+                        html += '</div>';
+                        html += '<table class="eiv-group-entries widefat striped"><thead><tr><th>Benutzer</th><th>Datum</th><th>Punkte</th><th>VNR</th></tr></thead><tbody>';
+                        g.entries.forEach(function(e){
+                            html += '<tr><td>'+$('<span>').text(e.user).html()+'</td><td>'+$('<span>').text(e.date||'—').html()+'</td><td>'+e.points+'</td><td><code>'+$('<span>').text(e.vnr||'—').html()+'</code></td></tr>';
+                        });
+                        html += '</tbody></table></div></div>';
+                    });
+
+                    var $c = $('#eiv-groups-container').html(html);
+
+                    // Toggle
+                    $c.on('click', '.eiv-group-header', function(){
+                        var id = $(this).data('toggle');
+                        $('#eiv-gb-'+id).toggleClass('open');
+                    });
+
+                    // Punkte speichern
+                    $c.on('click', '.eiv-grp-save', function(){
+                        var $btn = $(this);
+                        var ids = $btn.data('ids');
+                        var pts = $btn.closest('.eiv-group-actions').find('.eiv-grp-pts').val();
+                        if (!confirm('Punkte für alle '+ids.length+' Einträge auf '+pts+' setzen?')) return;
+                        $btn.prop('disabled',true).text('Speichere…');
+                        $.post(ajaxurl, { action:'dgptm_eiv_update_group_points', _wpnonce:nonce, post_ids:ids, new_points:pts }, function(r){
+                            $btn.prop('disabled',false).text('Punkte speichern');
+                            if (r.success) { alert(r.data.updated+' Einträge aktualisiert.'); $('#eiv-load-groups').click(); }
+                            else alert('Fehler: '+(r.data?.message||''));
+                        });
+                    });
+
+                    // Gruppe löschen
+                    $c.on('click', '.eiv-grp-delete', function(){
+                        var $btn = $(this);
+                        var ids = $btn.data('ids');
+                        if (!confirm('ACHTUNG: Alle '+ids.length+' Fortbildungseinträge dieser Veranstaltung unwiderruflich löschen?')) return;
+                        $btn.prop('disabled',true).text('Lösche…');
+                        $.post(ajaxurl, { action:'dgptm_eiv_delete_group', _wpnonce:nonce, post_ids:ids }, function(r){
+                            $btn.prop('disabled',false).text('Gelöscht');
+                            if (r.success) { alert(r.data.deleted+' Einträge gelöscht.'); $('#eiv-load-groups').click(); }
+                            else alert('Fehler: '+(r.data?.message||''));
+                        });
+                    });
+
+                }).fail(function(xhr){ $('#eiv-groups-spinner').hide(); alert('HTTP-Fehler ('+xhr.status+')'); });
+            });
+
+            // ===== Manueller Sync =====
             $('#eiv-sync-btn').on('click', function(e){
                 e.preventDefault();
                 var sinceDate = $('#eiv-sync-since').val();

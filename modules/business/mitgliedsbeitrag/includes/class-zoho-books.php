@@ -70,9 +70,20 @@ class DGPTM_MB_Zoho_Books {
         }
 
         $response = wp_remote_request($url, $args);
-        if (is_wp_error($response)) return null;
 
-        return json_decode(wp_remote_retrieve_body($response), true);
+        if (is_wp_error($response)) {
+            error_log('[DGPTM Mitgliedsbeitrag Books] WP_Error: ' . $response->get_error_message() . ' | URL: ' . $url);
+            return null;
+        }
+
+        $code = wp_remote_retrieve_response_code($response);
+        $raw = wp_remote_retrieve_body($response);
+
+        if ($code >= 400) {
+            error_log(sprintf('[DGPTM Mitgliedsbeitrag Books] HTTP %d | %s %s | Body: %s', $code, $method, $endpoint, substr($raw, 0, 500)));
+        }
+
+        return json_decode($raw, true);
     }
 
     /* ============================================================ */

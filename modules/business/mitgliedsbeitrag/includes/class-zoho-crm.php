@@ -32,20 +32,31 @@ class DGPTM_MB_Zoho_CRM {
             return $cached;
         }
 
+        $client_id = $this->config->zoho_client_id();
+        $refresh = $this->config->zoho_refresh_token();
+        error_log(sprintf('[DGPTM Mitgliedsbeitrag CRM] Token-Refresh: client_id=%s, refresh_token=%s',
+            $client_id ? 'gesetzt' : 'FEHLT', $refresh ? 'gesetzt' : 'FEHLT'));
+
         $response = wp_remote_post($this->config->zoho_accounts_domain() . '/oauth/v2/token', [
             'timeout' => 15,
             'body' => [
                 'grant_type'    => 'refresh_token',
-                'client_id'     => $this->config->zoho_client_id(),
+                'client_id'     => $client_id,
                 'client_secret' => $this->config->zoho_client_secret(),
-                'refresh_token' => $this->config->zoho_refresh_token(),
+                'refresh_token' => $refresh,
             ],
         ]);
 
-        if (is_wp_error($response)) return null;
+        if (is_wp_error($response)) {
+            error_log('[DGPTM Mitgliedsbeitrag CRM] OAuth WP_Error: ' . $response->get_error_message());
+            return null;
+        }
 
         $body = json_decode(wp_remote_retrieve_body($response), true);
-        if (empty($body['access_token'])) return null;
+        if (empty($body['access_token'])) {
+            error_log('[DGPTM Mitgliedsbeitrag CRM] OAuth fehlgeschlagen: ' . substr(wp_remote_retrieve_body($response), 0, 300));
+            return null;
+        }
 
         $this->access_token = $body['access_token'];
         set_transient('dgptm_mb_crm_token', $this->access_token, 55 * MINUTE_IN_SECONDS);
@@ -72,13 +83,27 @@ class DGPTM_MB_Zoho_CRM {
         $url = $this->base_url . '/' . ltrim($endpoint, '/');
         $response = wp_remote_request($url, $args);
 
-        if (is_wp_error($response)) return null;
-        return json_decode(wp_remote_retrieve_body($response), true);
+        if (is_wp_error($response)) {
+            error_log('[DGPTM Mitgliedsbeitrag CRM] WP_Error: ' . $response->get_error_message() . ' | URL: ' . $url);
+            return null;
+        }
+
+        $code = wp_remote_retrieve_response_code($response);
+        $raw = wp_remote_retrieve_body($response);
+
+        if ($code >= 400) {
+            error_log(sprintf('[DGPTM Mitgliedsbeitrag CRM] HTTP %d | URL: %s | Body: %s', $code, $url, substr($raw, 0, 500)));
+        }
+
+        return json_decode($raw, true);
     }
 
     private function coql_query(string $query): array {
         $token = $this->get_token();
-        if (!$token) return [];
+        if (!$token) {
+            error_log('[DGPTM Mitgliedsbeitrag CRM] COQL abgebrochen: Kein Token');
+            return [];
+        }
 
         $response = wp_remote_post($this->base_url . '/coql', [
             'timeout' => 30,
@@ -89,8 +114,19 @@ class DGPTM_MB_Zoho_CRM {
             'body' => wp_json_encode(['select_query' => $query]),
         ]);
 
-        if (is_wp_error($response)) return [];
-        $body = json_decode(wp_remote_retrieve_body($response), true);
+        if (is_wp_error($response)) {
+            error_log('[DGPTM Mitgliedsbeitrag CRM] COQL WP_Error: ' . $response->get_error_message());
+            return [];
+        }
+
+        $code = wp_remote_retrieve_response_code($response);
+        $raw = wp_remote_retrieve_body($response);
+
+        if ($code >= 400) {
+            error_log(sprintf('[DGPTM Mitgliedsbeitrag CRM] COQL HTTP %d | Query: %s | Body: %s', $code, substr($query, 0, 200), substr($raw, 0, 300)));
+        }
+
+        $body = json_decode($raw, true);
         return $body['data'] ?? [];
     }
 

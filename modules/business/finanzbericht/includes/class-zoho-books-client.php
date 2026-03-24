@@ -56,12 +56,15 @@ class DGPTM_FB_Zoho_Books_Client {
         ]);
 
         if (is_wp_error($response)) {
+            error_log('[DGPTM Finanzbericht] OAuth WP_Error: ' . $response->get_error_message());
             throw new \RuntimeException('OAuth-Fehler: ' . $response->get_error_message());
         }
 
         $body = json_decode(wp_remote_retrieve_body($response), true);
         if (empty($body['access_token'])) {
-            throw new \RuntimeException('Kein Access-Token erhalten');
+            $err = $body['error'] ?? wp_remote_retrieve_body($response);
+            error_log('[DGPTM Finanzbericht] OAuth fehlgeschlagen: ' . substr(print_r($err, true), 0, 300));
+            throw new \RuntimeException('Kein Access-Token erhalten: ' . (is_string($err) ? $err : 'unbekannt'));
         }
 
         $this->access_token = $body['access_token'];
@@ -91,17 +94,33 @@ class DGPTM_FB_Zoho_Books_Client {
         }
 
         $code = wp_remote_retrieve_response_code($response);
+        $raw_body = wp_remote_retrieve_body($response);
+
         if ($code >= 400) {
+            // Detail-Logging fuer Debugging
+            $parsed = json_decode($raw_body, true);
+            $error_msg = $parsed['message'] ?? $raw_body;
+            $error_code = $parsed['code'] ?? '';
+
+            error_log(sprintf(
+                '[DGPTM Finanzbericht] API HTTP %d | URL: %s | Error: %s | Code: %s',
+                $code, $url, substr($error_msg, 0, 300), $error_code
+            ));
+
+            if (class_exists('DGPTM_Logger')) {
+                \DGPTM_Logger::error(sprintf('Zoho Books API HTTP %d: %s (URL: %s)', $code, $error_msg, $endpoint), 'finanzbericht');
+            }
+
             // Token abgelaufen? Einmal neu versuchen
             if ($code === 401) {
                 delete_transient(self::TRANSIENT_KEY);
                 $this->access_token = null;
                 return $this->api_get($endpoint, $params);
             }
-            throw new \RuntimeException("API HTTP $code");
+            throw new \RuntimeException("API HTTP $code: $error_msg");
         }
 
-        return json_decode(wp_remote_retrieve_body($response), true) ?: [];
+        return json_decode($raw_body, true) ?: [];
     }
 
     private function api_get_all(string $endpoint, string $list_key, array $params = []): array {

@@ -50,9 +50,18 @@ class DGPTM_FB_Report_Builder {
 
     public function get_available_years(string $report): array {
         $static = DGPTM_FB_Historical_Data::available_years($report);
-        // Dynamische Jahre: 2025 bis aktuelles Jahr
         $current = intval(date('Y'));
-        $dynamic = range(self::DYNAMIC_START_YEAR, $current);
+        $current_month = intval(date('m'));
+        $rule = self::PERIOD_RULES[$report] ?? [];
+
+        // Dynamische Jahre: 2025 bis aktuelles Jahr
+        // Bei cross_year (JT): aktuelles Jahr nur zeigen wenn Startmonat erreicht
+        $max_year = $current;
+        if (!empty($rule['cross_year']) && $current_month < ($rule['start_month'] ?? 1)) {
+            $max_year = $current - 1;
+        }
+
+        $dynamic = range(self::DYNAMIC_START_YEAR, max(self::DYNAMIC_START_YEAR, $max_year));
         return array_unique(array_merge($static, $dynamic));
     }
 
@@ -63,6 +72,18 @@ class DGPTM_FB_Report_Builder {
     private function build_dynamic(string $report, int $year): array {
         $client = new DGPTM_FB_Zoho_Books_Client();
         $period = $this->get_date_range($report, $year);
+
+        // Zeitraum liegt komplett in der Zukunft
+        if (!empty($period['future'])) {
+            return [
+                'title'    => self::PERIOD_RULES[$report] ? ucfirst($report) . " $year" : $report,
+                'period'   => $period['label'],
+                'income'   => ['total' => 0, 'count' => 0],
+                'expenses' => ['total' => 0, 'count' => 0],
+                'net_result' => 0,
+                'note'     => 'Zeitraum hat noch nicht begonnen.',
+            ];
+        }
 
         switch ($report) {
             case 'jahrestagung':
@@ -79,29 +100,40 @@ class DGPTM_FB_Report_Builder {
     private function get_date_range(string $report, int $year): array {
         $rule = self::PERIOD_RULES[$report];
         $start_month = $rule['start_month'];
+        $today = date('Y-m-d');
 
         if ($rule['cross_year']) {
             // Juli YEAR bis Juni YEAR+1 (oder bis heute)
             $start = sprintf('%04d-%02d-01', $year, $start_month);
             $end_year = $year + 1;
             $end = sprintf('%04d-06-30', $end_year);
-            // Nicht in die Zukunft
-            $today = date('Y-m-d');
+
             if ($end > $today) {
                 $end = $today;
             }
+
+            // Start liegt in der Zukunft? → noch keine Daten
+            if ($start > $today) {
+                return ['start' => $start, 'end' => $start, 'label' => 'Noch nicht gestartet', 'future' => true];
+            }
+
             $label = sprintf('Juli %d - %s', $year, ($end === $today) ? 'heute' : "Juni $end_year");
         } else {
             $start = "$year-01-01";
             $end = "$year-12-31";
-            $today = date('Y-m-d');
+
             if ($end > $today) {
                 $end = $today;
             }
+
+            if ($start > $today) {
+                return ['start' => $start, 'end' => $start, 'label' => 'Noch nicht gestartet', 'future' => true];
+            }
+
             $label = "Januar - Dezember $year";
         }
 
-        return ['start' => $start, 'end' => $end, 'label' => $label];
+        return ['start' => $start, 'end' => $end, 'label' => $label, 'future' => false];
     }
 
     private function build_jahrestagung($client, int $year, array $period): array {

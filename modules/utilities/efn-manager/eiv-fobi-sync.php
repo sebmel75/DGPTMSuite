@@ -431,6 +431,87 @@ function dgptm_eiv_fortbildung_exists( $user_id, $vnr ) {
 }
 
 /* ============================================================
+ * CRM-Fallback: User über Barcode (EFN) im CRM suchen
+ * ============================================================ */
+
+/**
+ * Sucht einen WordPress-User via Zoho CRM Barcode-Feld (EFN).
+ * Wenn gefunden: EFN im WP-User nachtragen und ggf. zoho_id korrigieren.
+ *
+ * @param string        $efn  Die EFN aus der BÄK-Teilnahme
+ * @param callable|null $log  Log-Funktion
+ * @return object|null  WP_User-Objekt (ID + display_name) oder null
+ */
+function dgptm_eiv_find_user_via_crm( $efn, $log = null ) {
+    if ( ! class_exists( 'DGPTM_Zoho_Plugin' ) ) return null;
+
+    $zoho = DGPTM_Zoho_Plugin::get_instance();
+    $token = $zoho->get_oauth_token();
+    if ( is_wp_error( $token ) ) {
+        if ( $log ) $log( "CRM-Fallback: Zoho OAuth fehlgeschlagen." );
+        return null;
+    }
+
+    // CRM-Suche: Contact mit Barcode = EFN
+    $search_url = 'https://www.zohoapis.eu/crm/v7/Contacts/search?' . http_build_query([
+        'criteria' => "(Barcode:equals:{$efn})",
+    ]);
+
+    $resp = wp_remote_get( $search_url, [
+        'timeout' => 30,
+        'headers' => [
+            'Authorization' => 'Zoho-oauthtoken ' . $token,
+            'Accept'        => 'application/json',
+        ],
+    ]);
+
+    if ( is_wp_error( $resp ) || wp_remote_retrieve_response_code( $resp ) < 200 || wp_remote_retrieve_response_code( $resp ) >= 300 ) {
+        if ( $log ) $log( "CRM-Fallback: Suche nach Barcode={$efn} fehlgeschlagen." );
+        return null;
+    }
+
+    $body = json_decode( wp_remote_retrieve_body( $resp ), true );
+    $contacts = $body['data'] ?? [];
+    if ( empty( $contacts ) ) {
+        if ( $log ) $log( "CRM-Fallback: Kein CRM-Kontakt mit Barcode={$efn} gefunden." );
+        return null;
+    }
+
+    $contact = $contacts[0];
+    $wp_id   = intval( $contact['IDPerfusiologie'] ?? 0 );
+    $crm_id  = $contact['id'] ?? '';
+    $name    = trim( ( $contact['First_Name'] ?? '' ) . ' ' . ( $contact['Last_Name'] ?? '' ) );
+
+    if ( $wp_id <= 0 ) {
+        if ( $log ) $log( "CRM-Fallback: Kontakt '{$name}' hat keine IDPerfusiologie." );
+        return null;
+    }
+
+    // WordPress-User prüfen
+    $wp_user = get_userdata( $wp_id );
+    if ( ! $wp_user ) {
+        if ( $log ) $log( "CRM-Fallback: WP-User ID {$wp_id} existiert nicht." );
+        return null;
+    }
+
+    // EFN im WordPress-User nachtragen
+    $current_efn = get_user_meta( $wp_id, 'EFN', true );
+    if ( $current_efn !== $efn ) {
+        update_user_meta( $wp_id, 'EFN', $efn );
+        if ( $log ) $log( "EFN '{$efn}' für User '{$wp_user->display_name}' (ID {$wp_id}) nachgetragen." );
+    }
+
+    // zoho_id korrigieren falls falsch
+    $current_zoho_id = get_user_meta( $wp_id, 'zoho_id', true );
+    if ( $crm_id && $current_zoho_id !== $crm_id ) {
+        update_user_meta( $wp_id, 'zoho_id', $crm_id );
+        if ( $log ) $log( "CRM-Zuordnung für User '{$wp_user->display_name}' korrigiert: {$current_zoho_id} → {$crm_id}" );
+    }
+
+    return (object) [ 'ID' => $wp_id, 'display_name' => $wp_user->display_name ];
+}
+
+/* ============================================================
  * Haupt-Sync-Funktion
  * ============================================================ */
 
@@ -519,23 +600,34 @@ function dgptm_eiv_run_sync( $since_override = null ) {
             continue;
         }
 
-        // User finden
+        // User finden (1. via EFN-Meta, 2. Fallback via CRM Barcode)
         $users = get_users([
             'meta_key'   => 'EFN',
             'meta_value' => $efn,
             'number'     => 1,
             'fields'     => [ 'ID', 'display_name' ],
         ]);
-        if ( empty( $users ) ) {
-            $result['skipped']++;
+
+        if ( ! empty( $users ) ) {
+            $wp_user = $users[0];
+        } else {
+            // CRM-Fallback: User über Barcode (EFN) im CRM suchen
+            $wp_user = dgptm_eiv_find_user_via_crm( $efn, $log );
+            if ( ! $wp_user ) {
+                $result['skipped']++;
+                $result['results'][] = [
+                    'user' => "EFN {$efn} (kein User)", 'event' => $vnr,
+                    'points' => 0, 'vnr' => $vnr,
+                    'status' => 'Übersprungen (kein User, auch nicht im CRM)',
+                ];
+                continue;
+            }
             $result['results'][] = [
-                'user' => "EFN {$efn} (kein User)", 'event' => $vnr,
+                'user' => $wp_user->display_name, 'event' => '—',
                 'points' => 0, 'vnr' => $vnr,
-                'status' => 'Übersprungen (kein User)',
+                'status' => 'EFN via CRM nachgetragen',
             ];
-            continue;
         }
-        $wp_user = $users[0];
 
         // Dubletten-Check
         if ( dgptm_eiv_fortbildung_exists( $wp_user->ID, $vnr ) ) {

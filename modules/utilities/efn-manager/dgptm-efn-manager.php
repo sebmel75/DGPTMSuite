@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - EFN Manager
  * Description: Zentrales Management-System für die Einheitliche Fortbildungsnummer (EFN). Umfasst: JsBarcode-basierte Code128-Barcodes, A4-Aufkleberbogen-Generierung (diverse Vorlagen), Self-Service-Kiosk mit Scanner-Integration, PrintNode Silent Printing, Benutzerprofil-Verwaltung, Zoho CRM-Integration, Webhook-Verarbeitung und präzise Druckkalibierung.
- * Version: 1.0.3
+ * Version: 1.1.0
  * Author: Sebastian Melzer
  * Text Domain: dgptm-efn-manager
  */
@@ -1302,6 +1302,14 @@ add_action('admin_post_dgptm_printnode_test', function(){
     }
     wp_safe_redirect( add_query_arg('dgptm_printnode_test', 'ok', admin_url('options-general.php?page=dgptm-efn-manager')) ); exit;
 });
+
+/* ============================================================
+ * EIV-Fobi Sync laden
+ * ============================================================ */
+$eiv_sync_file = __DIR__ . '/eiv-fobi-sync.php';
+if ( file_exists( $eiv_sync_file ) ) {
+    require_once $eiv_sync_file;
+}
 
 /* ============================================================
  * Initialisierung

@@ -48,11 +48,23 @@ if (!class_exists('DGPTM_Finanzen')) {
 
         private function __construct() {
             // Includes laden (mit file_exists Guard fuer inkrementelle Entwicklung)
+            $dir = dirname(__FILE__) . '/includes/';
             $includes = [
-                'includes/class-config.php',
+                'class-config.php',
+                'class-zoho-crm.php',
+                'class-zoho-books.php',
+                'class-gocardless.php',
+                'class-chunk-processor.php',
+                'class-billing-engine.php',
+                'class-invoice-manager.php',
+                'class-member-list.php',
+                'class-treasurer.php',
+                'class-report-builder.php',
+                'class-historical-data.php',
+                'class-access-logger.php',
             ];
             foreach ($includes as $file) {
-                $path = DGPTM_FIN_PATH . $file;
+                $path = $dir . $file;
                 if (file_exists($path)) {
                     require_once $path;
                 }
@@ -88,6 +100,9 @@ if (!class_exists('DGPTM_Finanzen')) {
                 $next_3am = strtotime('tomorrow 03:00:00');
                 wp_schedule_event($next_3am, 'daily', 'dgptm_fin_nightly_refresh');
             }
+
+            // Migration von finanzbericht + mitgliedsbeitrag
+            $this->maybe_migrate();
         }
 
         /* ============================================================ */
@@ -214,13 +229,43 @@ if (!class_exists('DGPTM_Finanzen')) {
 
         public function render_shortcode($atts): string {
             if (!is_user_logged_in()) {
-                return '<p>Bitte einloggen.</p>';
-            }
-            if (!$this->user_can_view()) {
-                return '<p>Kein Zugriff. Berechtigung: Praesident, Schatzmeister oder Geschaeftsstelle.</p>';
+                return '<div class="dgptm-fin-error"><p>Bitte einloggen.</p></div>';
             }
 
-            return '<div class="dgptm-fin-wrap"><p>Finanzen-Dashboard wird geladen...</p></div>';
+            $user_id = get_current_user_id();
+            $role    = $this->get_user_role($user_id);
+
+            if (!$role) {
+                return '<div class="dgptm-fin-error"><p>Kein Zugriff. Berechtigung: Praesident, Schatzmeister oder Geschaeftsstelle.</p></div>';
+            }
+
+            $css_url = DGPTM_FIN_URL . 'assets/css/finanzen.css';
+            $js_url  = DGPTM_FIN_URL . 'assets/js/finanzen.js';
+            $version = '1.0.0';
+
+            $localize_data = [
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'nonce'   => wp_create_nonce(self::NONCE),
+                'role'    => $role,
+                'tabs'    => array_values($this->get_visible_tabs($user_id)),
+            ];
+
+            // If headers already sent (AJAX context), output inline
+            if (did_action('wp_head')) {
+                // Normal enqueue
+                wp_enqueue_style('dgptm-finanzen-css', $css_url, [], $version);
+                wp_enqueue_script('dgptm-finanzen-js', $js_url, ['jquery'], $version, true);
+                wp_localize_script('dgptm-finanzen-js', 'dgptmFin', $localize_data);
+            } else {
+                // Fallback: inline CSS/JS tags
+                echo '<link rel="stylesheet" href="' . esc_url($css_url) . '?ver=' . esc_attr($version) . '">';
+                echo '<script>var dgptmFin = ' . wp_json_encode($localize_data) . ';</script>';
+                echo '<script src="' . esc_url($js_url) . '?ver=' . esc_attr($version) . '"></script>';
+            }
+
+            ob_start();
+            include dirname(__FILE__) . '/templates/dashboard.php';
+            return ob_get_clean();
         }
 
         /* ============================================================ */
@@ -239,7 +284,7 @@ if (!class_exists('DGPTM_Finanzen')) {
         }
 
         public function render_admin_page(): void {
-            echo '<div class="wrap"><h1>DGPTM Finanzen</h1><p>Admin-Seite wird in einem spaeteren Task implementiert.</p></div>';
+            include dirname(__FILE__) . '/templates/admin.php';
         }
 
         /* ============================================================ */
@@ -999,6 +1044,61 @@ if (!class_exists('DGPTM_Finanzen')) {
             } catch (\Throwable $e) {
                 $this->log('Naechtlicher Refresh Fehler: ' . $e->getMessage(), 'error');
             }
+        }
+
+        /* ============================================================ */
+        /* Migration                                                     */
+        /* ============================================================ */
+
+        private function maybe_migrate(): void {
+            if (get_option('dgptm_fin_migrated')) return;
+
+            // 1. Config from mitgliedsbeitrag
+            $mb_config = get_option('dgptm_mb_config');
+            $fb_creds = get_option('dgptm_finanzbericht_credentials');
+            if ($mb_config) {
+                $config_data = is_string($mb_config) ? json_decode($mb_config, true) : $mb_config;
+                if ($fb_creds) {
+                    $creds = is_string($fb_creds) ? json_decode($fb_creds, true) : $fb_creds;
+                    if (is_array($creds) && is_array($config_data)) {
+                        // Map finanzbericht credentials into config
+                        if (!isset($config_data['zoho'])) $config_data['zoho'] = [];
+                        if (!isset($config_data['zoho']['client'])) $config_data['zoho']['client'] = [];
+                        foreach (['client_id','client_secret','refresh_token'] as $k) {
+                            if (isset($creds[$k]) && !isset($config_data['zoho']['client'][$k])) {
+                                $config_data['zoho']['client'][$k] = $creds[$k];
+                            }
+                        }
+                        if (isset($creds['organization_id'])) {
+                            $config_data['zoho']['organization_id'] = $creds['organization_id'];
+                        }
+                        if (isset($creds['accounts_domain'])) {
+                            $config_data['zoho']['accounts_domain'] = $creds['accounts_domain'];
+                        }
+                    }
+                }
+                update_option(self::OPT_CONFIG, is_array($config_data) ? json_encode($config_data) : $mb_config);
+            }
+
+            // 2. Billing history
+            $history = get_option('dgptm_mb_billing_history');
+            if ($history) update_option(self::OPT_HISTORY, $history);
+
+            // 3. Last results
+            $results = get_option('dgptm_mb_last_results');
+            if ($results) update_option(self::OPT_RESULTS, $results);
+
+            // 4. Imported historical data
+            $imported = get_option('dgptm_fb_imported_data');
+            if ($imported) update_option('dgptm_fin_imported_data', $imported);
+
+            // 5. Cron migration
+            $next = wp_next_scheduled('dgptm_fb_nightly_refresh');
+            if ($next) wp_unschedule_event($next, 'dgptm_fb_nightly_refresh');
+
+            // 6. Done
+            update_option('dgptm_fin_migrated', true);
+            $this->log('Migration von finanzbericht + mitgliedsbeitrag abgeschlossen');
         }
 
         /* ============================================================ */

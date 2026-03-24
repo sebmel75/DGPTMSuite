@@ -19,6 +19,7 @@
   "active": false,
   "can_export": true,
   "critical": false,
+  "deprecated": true,
   "features": [
     "Mitgliedsbeitrag-Abrechnungslauf",
     "5 Rechnungsvarianten (Guthaben, GoCardless, Ueberweisung)",

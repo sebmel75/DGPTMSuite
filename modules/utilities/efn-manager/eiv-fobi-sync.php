@@ -344,23 +344,24 @@ function dgptm_eiv_get_event( $jwt, $vnr ) {
  * ============================================================ */
 
 /**
- * Berechnet EBCP-Punkte basierend auf BÄK-Kategorie.
+ * Berechnet EBCP-Punkte basierend auf BÄK-Kategorie × Veranstaltungstage.
  *
- * Festes Mapping (wie im Deluge-Skript): Jede Kategorie hat fixe EBCP-Punkte.
- * Die Dauer wird NICHT zur Berechnung herangezogen, da beginn/ende den
- * Gesamtzeitraum (nicht Unterrichtseinheiten) abbilden.
+ * Feste Punkte pro Tag und Kategorie. Die Anzahl der Veranstaltungstage
+ * wird aus beginn/ende berechnet (mindestens 1 Tag).
  *
  * @param string $type_code  Veranstaltungs-Typcode (A-K)
+ * @param int    $days       Anzahl Veranstaltungstage (mindestens 1)
  * @return array  ['points' => float, 'label' => string]
  */
-function dgptm_eiv_calculate_points( $type_code ) {
+function dgptm_eiv_calculate_points( $type_code, $days = 1 ) {
     $type_code = strtoupper( trim( $type_code ) );
+    $days = max( 1, intval( $days ) );
 
-    // Festes Kategorie-Mapping (identisch zum Deluge-Skript)
+    // Feste EBCP-Punkte pro Tag je Kategorie
     $mapping = [
         'A' => [ 'points' => 1, 'label' => 'Vortragsveranstaltung' ],
         'B' => [ 'points' => 2, 'label' => 'Kongress' ],
-        'C' => [ 'points' => 1, 'label' => 'Workshop' ],
+        'C' => [ 'points' => 2, 'label' => 'Workshop' ],
         'D' => [ 'points' => 1, 'label' => 'Print / elektronisch' ],
         'E' => [ 'points' => 1, 'label' => 'Unbestimmt' ],
         'F' => [ 'points' => 2, 'label' => 'Unbestimmt' ],
@@ -375,10 +376,28 @@ function dgptm_eiv_calculate_points( $type_code ) {
         return [ 'points' => 0.0, 'label' => 'Unbekannt' ];
     }
 
+    $pts_per_day = (float) $mapping[ $type_code ]['points'];
     return [
-        'points' => (float) $mapping[ $type_code ]['points'],
+        'points' => $pts_per_day * $days,
         'label'  => $mapping[ $type_code ]['label'],
     ];
+}
+
+/**
+ * Berechnet die Anzahl Veranstaltungstage aus beginn/ende.
+ *
+ * @param string $date_begin  Startdatum (Y-m-d oder ISO 8601)
+ * @param string $date_end    Enddatum (Y-m-d oder ISO 8601)
+ * @return int  Anzahl Tage (mindestens 1)
+ */
+function dgptm_eiv_event_days( $date_begin, $date_end ) {
+    if ( ! $date_begin || ! $date_end ) return 1;
+    $ts_begin = strtotime( $date_begin );
+    $ts_end   = strtotime( $date_end );
+    if ( ! $ts_begin || ! $ts_end || $ts_end <= $ts_begin ) return 1;
+    // Differenz in Tagen (aufgerundet)
+    $diff_days = (int) ceil( ( $ts_end - $ts_begin ) / 86400 );
+    return max( 1, $diff_days );
 }
 
 /* ============================================================
@@ -683,9 +702,10 @@ function dgptm_eiv_run_sync( $since_override = null ) {
             continue;
         }
 
-        // Punkte berechnen
-        $type_code = $event['typeCode'] ?? '';
-        $calc      = dgptm_eiv_calculate_points( $type_code );
+        // Punkte berechnen (Punkte pro Tag × Veranstaltungstage)
+        $type_code  = $event['typeCode'] ?? '';
+        $event_days = dgptm_eiv_event_days( $event['date'] ?? '', $event['endDate'] ?? '' );
+        $calc       = dgptm_eiv_calculate_points( $type_code, $event_days );
 
         // Dozentenpunkte (punkte_referent) 1:1 addieren
         $referent_punkte = intval( $tn['punkte_referent'] ?? 0 );
@@ -820,6 +840,77 @@ add_action( 'wp_ajax_dgptm_eiv_manual_sync', function() {
     wp_send_json_success( $result );
 });
 
+// AJAX: Punkte korrigieren (alle EIV-importierten Fortbildungen neu berechnen)
+add_action( 'wp_ajax_dgptm_eiv_recalc_points', function() {
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_send_json_error( [ 'message' => 'Keine Berechtigung.' ] );
+    }
+    check_ajax_referer( 'dgptm_eiv_sync_nonce' );
+    nocache_headers();
+
+    // Alle Fortbildungen mit VNR finden (= von EIV importiert)
+    $q = new WP_Query([
+        'post_type'      => 'fortbildung',
+        'posts_per_page' => -1,
+        'post_status'    => 'any',
+        'meta_query'     => [
+            [ 'key' => 'vnr', 'value' => '', 'compare' => '!=' ],
+        ],
+    ]);
+
+    $updated = 0;
+    $results = [];
+
+    while ( $q->have_posts() ) {
+        $q->the_post();
+        $pid = get_the_ID();
+        $vnr = get_field( 'vnr', $pid );
+        if ( ! $vnr ) continue;
+
+        // Event-Daten aus Cache holen
+        $cached = dgptm_eiv_cache_lookup( $vnr );
+        if ( ! $cached ) {
+            $results[] = [
+                'post_id' => $pid,
+                'title'   => get_the_title(),
+                'vnr'     => $vnr,
+                'old'     => floatval( get_field( 'points', $pid ) ),
+                'new'     => '—',
+                'status'  => 'Kein Cache',
+            ];
+            continue;
+        }
+
+        $type_code  = $cached['typeCode'] ?? '';
+        $event_days = dgptm_eiv_event_days( $cached['date'] ?? '', $cached['endDate'] ?? '' );
+        $calc       = dgptm_eiv_calculate_points( $type_code, $event_days );
+
+        $old_points = floatval( get_field( 'points', $pid ) );
+        $new_points = $calc['points'];
+
+        if ( abs( $old_points - $new_points ) > 0.01 ) {
+            update_field( 'points', $new_points, $pid );
+            update_field( 'type', $calc['label'], $pid );
+            $updated++;
+            $results[] = [
+                'post_id' => $pid,
+                'title'   => get_the_title(),
+                'vnr'     => $vnr,
+                'old'     => $old_points,
+                'new'     => $new_points,
+                'status'  => 'Korrigiert',
+            ];
+        }
+    }
+    wp_reset_postdata();
+
+    wp_send_json_success([
+        'updated' => $updated,
+        'total'   => $q->found_posts,
+        'results' => $results,
+    ]);
+});
+
 // Settings speichern
 add_action( 'admin_init', function() {
     if ( ! isset( $_POST['dgptm_eiv_save'] ) ) return;
@@ -907,6 +998,7 @@ function dgptm_eiv_render_admin_page() {
             </table>
             <p>
                 <button id="eiv-sync-btn" class="button button-secondary">Jetzt von BÄK abrufen</button>
+                <button id="eiv-recalc-btn" class="button" style="margin-left:10px;">Punkte korrigieren</button>
                 <span id="eiv-sync-spinner" class="spinner" style="float:none;display:none;"></span>
             </p>
             <div id="eiv-sync-log" style="margin-top:10px;max-width:900px;padding:10px;background:#fff;border:1px solid #ccd0d4;line-height:1.5;max-height:200px;overflow-y:auto;display:none;"></div>
@@ -963,6 +1055,50 @@ function dgptm_eiv_render_admin_page() {
                 $box.append('<div>['+t+'] '+msg+'</div>');
                 $box.scrollTop($box.prop('scrollHeight'));
             }
+
+            // Punkte korrigieren
+            $('#eiv-recalc-btn').on('click', function(e){
+                e.preventDefault();
+                if (!confirm('Alle EIV-importierten Fortbildungen werden neu berechnet. Fortfahren?')) return;
+
+                $('#eiv-sync-spinner').show();
+                $('#eiv-sync-log').html('').show();
+                $('#eiv-sync-results').hide();
+                $('#eiv-results-table tbody').html('');
+                slog('Starte Punkte-Neuberechnung…');
+
+                $.post(ajaxurl, {
+                    action: 'dgptm_eiv_recalc_points',
+                    _wpnonce: nonce
+                }, function(resp) {
+                    $('#eiv-sync-spinner').hide();
+                    if (!resp.success) {
+                        slog('Fehler: ' + (resp.data?.message || 'Unbekannt'));
+                        return;
+                    }
+                    var d = resp.data;
+                    slog(d.updated + ' von ' + d.total + ' Fortbildungen korrigiert.');
+                    if (d.results && d.results.length > 0) {
+                        var $tb = $('#eiv-results-table tbody');
+                        d.results.forEach(function(r){
+                            var cls = r.status === 'Korrigiert' ? 'status-imported' : 'status-skipped';
+                            $tb.append(
+                                '<tr>' +
+                                '<td>' + $('<span>').text(r.title).html() + '</td>' +
+                                '<td><code>' + $('<span>').text(r.vnr).html() + '</code></td>' +
+                                '<td>' + r.old + ' → <strong>' + r['new'] + '</strong></td>' +
+                                '<td>' + $('<span>').text(r.vnr).html() + '</td>' +
+                                '<td class="' + cls + '">' + $('<span>').text(r.status).html() + '</td>' +
+                                '</tr>'
+                            );
+                        });
+                        $('#eiv-sync-results').show();
+                    }
+                }).fail(function(xhr){
+                    $('#eiv-sync-spinner').hide();
+                    slog('HTTP-Fehler (' + xhr.status + ')');
+                });
+            });
 
             $('#eiv-sync-btn').on('click', function(e){
                 e.preventDefault();

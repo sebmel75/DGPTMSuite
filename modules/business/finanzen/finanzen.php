@@ -239,9 +239,8 @@ if (!class_exists('DGPTM_Finanzen')) {
                 return '<div class="dgptm-fin-error"><p>Kein Zugriff. Berechtigung: Praesident, Schatzmeister oder Geschaeftsstelle.</p></div>';
             }
 
-            $css_url = DGPTM_FIN_URL . 'assets/css/finanzen.css';
-            $js_url  = DGPTM_FIN_URL . 'assets/js/finanzen.js';
-            $version = '1.0.0';
+            $base_path = dirname(__FILE__) . '/';
+            $version   = '1.0.0.' . date('ymd');
 
             $localize_data = [
                 'ajaxUrl' => admin_url('admin-ajax.php'),
@@ -250,21 +249,30 @@ if (!class_exists('DGPTM_Finanzen')) {
                 'tabs'    => array_values($this->get_visible_tabs($user_id)),
             ];
 
-            // If headers already sent (AJAX context), output inline
-            if (did_action('wp_head')) {
-                // Normal enqueue
-                wp_enqueue_style('dgptm-finanzen-css', $css_url, [], $version);
-                wp_enqueue_script('dgptm-finanzen-js', $js_url, ['jquery'], $version, true);
-                wp_localize_script('dgptm-finanzen-js', 'dgptmFin', $localize_data);
-            } else {
-                // Fallback: inline CSS/JS tags
-                echo '<link rel="stylesheet" href="' . esc_url($css_url) . '?ver=' . esc_attr($version) . '">';
-                echo '<script>var dgptmFin = ' . wp_json_encode($localize_data) . ';</script>';
-                echo '<script src="' . esc_url($js_url) . '?ver=' . esc_attr($version) . '"></script>';
+            ob_start();
+
+            // CSS inline einbetten (zuverlaessig, egal wann der Shortcode gerendert wird)
+            $css_file = $base_path . 'assets/css/finanzen.css';
+            if (file_exists($css_file)) {
+                echo '<style id="dgptm-finanzen-css">' . "\n";
+                echo file_get_contents($css_file);
+                echo "\n</style>\n";
             }
 
-            ob_start();
-            include dirname(__FILE__) . '/templates/dashboard.php';
+            // JS-Konfiguration
+            echo '<script>var dgptmFin = ' . wp_json_encode($localize_data) . ';</script>' . "\n";
+
+            // Dashboard-Template
+            include $base_path . 'templates/dashboard.php';
+
+            // JS inline einbetten (nach dem HTML, damit DOM-Elemente existieren)
+            $js_file = $base_path . 'assets/js/finanzen.js';
+            if (file_exists($js_file)) {
+                echo '<script id="dgptm-finanzen-js">' . "\n";
+                echo file_get_contents($js_file);
+                echo "\n</script>\n";
+            }
+
             return ob_get_clean();
         }
 

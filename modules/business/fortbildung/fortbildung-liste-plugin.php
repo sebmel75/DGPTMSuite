@@ -473,40 +473,64 @@ class Fortbildung_Liste_Plugin {
         $q=new WP_Query($args);
         if(!$q->have_posts()) return '<p>Keine Fortbildungen gefunden.</p>';
 
-        // Mobile + Desktop
+        // Einträge sammeln und nach Titel gruppieren (Punkte aufsummieren)
+        $grouped = array(); // key = Titel, value = {title, dates[], location, sum_points, type, approved}
+        while ( $q->have_posts() ) {
+            $q->the_post();
+            $pid   = get_the_ID();
+            $title = html_entity_decode( get_the_title( $pid ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+            $raw_date = (string) get_field('date', $pid);
+            $display_date = '';
+            if ($raw_date !== '') {
+                $fmts = array('Y-m-d','d.m.Y','Ymd');
+                foreach ($fmts as $fmt) {
+                    $dt = DateTime::createFromFormat($fmt, $raw_date);
+                    if ($dt instanceof DateTime) { $display_date = date_i18n('d.m.Y', $dt->getTimestamp()); break; }
+                }
+            }
+            $points  = floatval( get_field( 'points', $pid ) );
+            $type    = (string) get_field( 'type', $pid );
+            $loc     = (string) get_field( 'location', $pid );
+            $free    = fobi_is_freigegeben( get_field( 'freigegeben', $pid ) );
+            $key     = $title ?: '(Ohne Titel)';
+
+            if ( ! isset( $grouped[$key] ) ) {
+                $grouped[$key] = array(
+                    'title' => $title, 'dates' => array(), 'location' => $loc,
+                    'sum_points' => 0.0, 'type' => $type, 'approved' => $free, 'count' => 0,
+                );
+            }
+            if ( $display_date && ! in_array($display_date, $grouped[$key]['dates']) ) {
+                $grouped[$key]['dates'][] = $display_date;
+            }
+            if ( $free ) $grouped[$key]['sum_points'] += $points;
+            if ( ! $free ) $grouped[$key]['approved'] = false;
+            $grouped[$key]['count']++;
+        }
+        wp_reset_postdata();
+
+        // Nach erstem Datum sortieren
+        uasort($grouped, function($a, $b) {
+            $da = $a['dates'][0] ?? ''; $db = $b['dates'][0] ?? '';
+            return strcmp($da, $db);
+        });
+
+        $total_points = 0.0;
+        foreach ($grouped as $g) { if ($g['approved']) $total_points += $g['sum_points']; }
+
         ob_start(); ?>
         <!-- Mobile -->
         <div class="fobi-mobile">
             <ul class="fobi-list">
-            <?php
-            $total_points = 0;
-            while ( $q->have_posts() ) {
-                $q->the_post();
-                $pid        = get_the_ID();
-                $raw_date = (string) get_field('date', $pid);
-$display_date = '';
-if ($raw_date !== '') {
-    $fmts = array('Y-m-d','d.m.Y','Ymd');
-    foreach ($fmts as $fmt) {
-        $dt = DateTime::createFromFormat($fmt, $raw_date);
-        if ($dt instanceof DateTime) { $ts = $dt->getTimestamp(); $display_date = date_i18n('d.m.Y', $ts); break; }
-    }
-}
-
-                $title      = get_the_title( $pid );
-                $location   = (string) get_field( 'location', $pid );
-                $points     = floatval( get_field( 'points', $pid ) );
-                $type       = (string) get_field( 'type', $pid );
-                $free       = get_field( 'freigegeben', $pid );
-                if ( fobi_is_freigegeben( $free ) ) $total_points += $points; ?>
-                <li class="fobi-card<?php echo fobi_is_freigegeben($free) ? '' : ' fobi-grey'; ?>">
-                    <div class="fobi-row"><div class="fobi-label">Datum</div><div><?php echo esc_html( $display_date ); ?></div></div>
-                    <div class="fobi-row"><div class="fobi-label">Titel</div><div><?php echo esc_html( $title ); ?></div></div>
-                    <div class="fobi-row"><div class="fobi-label">Ort</div><div class="fobi-dim"><?php echo esc_html( $location ); ?></div></div>
-                    <div class="fobi-row"><div class="fobi-label">Punkte</div><div class="fobi-points"><?php echo esc_html( number_format($points,1,',','.') ); ?></div></div>
-                    <div class="fobi-row"><div class="fobi-label">Art</div><div class="fobi-dim"><?php echo esc_html( $type ); ?></div></div>
+            <?php foreach ($grouped as $g): $date_str = implode(', ', $g['dates']); ?>
+                <li class="fobi-card<?php echo $g['approved'] ? '' : ' fobi-grey'; ?>">
+                    <div class="fobi-row"><div class="fobi-label">Datum</div><div><?php echo esc_html( $date_str ); ?></div></div>
+                    <div class="fobi-row"><div class="fobi-label">Titel</div><div><?php echo esc_html( $g['title'] ); ?><?php if ($g['count']>1) echo ' <small style="color:#666;">('.$g['count'].' Teile)</small>'; ?></div></div>
+                    <div class="fobi-row"><div class="fobi-label">Ort</div><div class="fobi-dim"><?php echo esc_html( $g['location'] ); ?></div></div>
+                    <div class="fobi-row"><div class="fobi-label">Punkte</div><div class="fobi-points"><?php echo esc_html( number_format($g['sum_points'],1,',','.') ); ?></div></div>
+                    <div class="fobi-row"><div class="fobi-label">Art</div><div class="fobi-dim"><?php echo esc_html( $g['type'] ); ?></div></div>
                 </li>
-            <?php } ?>
+            <?php endforeach; ?>
             </ul>
             <p style="text-align:right; margin-top:10px;">
                EBCP Gesamtpunkte im Zeitraum: <strong><?php echo esc_html( number_format($total_points,1,',','.') ); ?></strong>
@@ -518,43 +542,22 @@ if ($raw_date !== '') {
             <table class="fortbildung-liste">
                 <thead><tr><th>Datum</th><th>Titel</th><th>Ort</th><th style="width:110px; text-align:right;">Punkte</th><th>Art</th></tr></thead>
                 <tbody>
-                <?php
-                $q->rewind_posts();
-                $total_points = 0;
-                while ( $q->have_posts() ) {
-                    $q->the_post();
-                    $pid        = get_the_ID();
-                    $raw_date = (string) get_field('date', $pid);
-$display_date = '';
-if ($raw_date !== '') {
-    $fmts = array('Y-m-d','d.m.Y','Ymd');
-    foreach ($fmts as $fmt) {
-        $dt = DateTime::createFromFormat($fmt, $raw_date);
-        if ($dt instanceof DateTime) { $ts = $dt->getTimestamp(); $display_date = date_i18n('d.m.Y', $ts); break; }
-    }
-}
-
-                    $title      = get_the_title( $pid );
-                    $location   = (string) get_field( 'location', $pid );
-                    $points     = floatval( get_field( 'points', $pid ) );
-                    $type       = (string) get_field( 'type', $pid );
-                    $free       = get_field( 'freigegeben', $pid );
-                    if ( fobi_is_freigegeben( $free ) ) $total_points += $points; ?>
-                    <tr<?php echo fobi_is_freigegeben($free) ? '' : ' style="color:#9aa"'; ?>>
-                        <td><?php echo esc_html( $display_date ); ?></td>
-                        <td><?php echo esc_html( $title ); ?></td>
-                        <td class="fobi-dim"><?php echo esc_html( $location ); ?></td>
-                        <td style="text-align:right;"><?php echo esc_html( number_format($points,1,',','.') ); ?></td>
-                        <td class="fobi-dim"><?php echo esc_html( $type ); ?></td>
+                <?php foreach ($grouped as $g): $date_str = implode(', ', $g['dates']); ?>
+                    <tr<?php echo $g['approved'] ? '' : ' style="color:#9aa"'; ?>>
+                        <td><?php echo esc_html( $date_str ); ?></td>
+                        <td><?php echo esc_html( $g['title'] ); ?><?php if ($g['count']>1) echo ' <small style="color:#666;">('.$g['count'].' Teile)</small>'; ?></td>
+                        <td class="fobi-dim"><?php echo esc_html( $g['location'] ); ?></td>
+                        <td style="text-align:right;"><?php echo esc_html( number_format($g['sum_points'],1,',','.') ); ?></td>
+                        <td class="fobi-dim"><?php echo esc_html( $g['type'] ); ?></td>
                     </tr>
-                <?php } ?>
+                <?php endforeach; ?>
                 </tbody>
             </table>
             <p style="text-align:right; margin-top:10px;">
                EBCP Gesamtpunkte im Zeitraum: <strong><?php echo esc_html( number_format($total_points,1,',','.') ); ?></strong>
             </p>
         </div>
-        <?php wp_reset_postdata();
+        <?php
         return ob_get_clean();
     }
 }
@@ -766,7 +769,7 @@ class Quiz_Report_Importer {
         ));
     }
 
-    // Daten sammeln (nur freigegeben) — Datum robust parsen und fertig formatiert bereitstellen
+    // Daten sammeln (nur freigegeben), nach Titel gruppieren (Punkte summieren)
     $q = new WP_Query(array(
         'post_type'=>'fortbildung','post_status'=>'publish','posts_per_page'=>-1,
         'meta_query'=>array('relation'=>'AND',
@@ -774,7 +777,7 @@ class Quiz_Report_Importer {
             array('key'=>'date','value'=>array($period_from,$period_to),'compare'=>'BETWEEN','type'=>'DATE'),
         ),
     ));
-    $rows=array(); $sum=0.0;
+    $grouped_pdf = array(); $sum = 0.0;
     if($q->have_posts()){
         while($q->have_posts()){ $q->the_post();
             $pid=get_the_ID();
@@ -792,18 +795,35 @@ class Quiz_Report_Importer {
                 $date_disp = ($date_ts !== false) ? date_i18n('d.m.Y', $date_ts) : $raw_date;
             }
 
-            $r = array(
-                'date_raw'  => $raw_date,
-                'date_disp' => $date_disp,
-                'title'     => get_the_title($pid),
-                'loc'       => (string) get_field('location', $pid),
-                'points'    => floatval( get_field('points', $pid) ),
-            );
+            $title  = html_entity_decode( get_the_title($pid), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+            $points = floatval( get_field('points', $pid) );
+            $loc    = (string) get_field('location', $pid);
+            $key    = $title ?: '(Ohne Titel)';
 
-            $sum += $r['points'];
-            $rows[] = $r;
+            if ( ! isset( $grouped_pdf[$key] ) ) {
+                $grouped_pdf[$key] = array(
+                    'date_raw' => $raw_date, 'dates' => array(),
+                    'title' => $title, 'loc' => $loc, 'points' => 0.0,
+                );
+            }
+            if ( $date_disp && ! in_array($date_disp, $grouped_pdf[$key]['dates']) ) {
+                $grouped_pdf[$key]['dates'][] = $date_disp;
+            }
+            $grouped_pdf[$key]['points'] += $points;
+            $sum += $points;
         }
         wp_reset_postdata();
+    }
+    // Gruppierte Daten in $rows umwandeln (für PDF-Kompatibilität)
+    $rows = array();
+    foreach ( $grouped_pdf as $g ) {
+        $rows[] = array(
+            'date_raw'  => $g['date_raw'],
+            'date_disp' => implode(', ', $g['dates']),
+            'title'     => $g['title'],
+            'loc'       => $g['loc'],
+            'points'    => $g['points'],
+        );
     }
     if(empty($rows)){ wp_send_json_error(array('message'=>'Keine freigegebenen Fortbildungseinträge im Zeitraum gefunden.')); }
 

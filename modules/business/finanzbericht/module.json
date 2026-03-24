@@ -1,0 +1,36 @@
+{
+  "id": "finanzbericht",
+  "name": "Finanzbericht",
+  "description": "Finanzauswertung Jahrestagung, Sachkundekurs und Zeitschrift mit Zoho Books Integration",
+  "version": "1.0.0",
+  "author": "Sebastian Melzer",
+  "main_file": "finanzbericht.php",
+  "dependencies": [],
+  "optional_dependencies": [
+    "crm-abruf"
+  ],
+  "wp_dependencies": {
+    "plugins": []
+  },
+  "requires_php": "7.4",
+  "requires_wp": "5.8",
+  "category": "business",
+  "icon": "dashicons-chart-area",
+  "active": false,
+  "can_export": true,
+  "critical": false,
+  "features": [
+    "Jahrestagung Finanzauswertung",
+    "Sachkundekurs Auswertung",
+    "Zeitschrift Auswertung",
+    "Zoho Books API Integration",
+    "Historische Daten 2023/2024",
+    "Dynamische Daten ab 2025",
+    "Benutzer-Berechtigungen via User Meta",
+    "Access-Logging",
+    "Transfer-JSON fuer sensible Daten"
+  ],
+  "changelog": {
+    "1.0.0": "Initiale Version mit JT/SKK/Zeitschrift Auswertung, historische + dynamische Daten"
+  }
+}

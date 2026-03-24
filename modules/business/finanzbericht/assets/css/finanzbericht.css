@@ -1,0 +1,208 @@
+/* DGPTM Finanzbericht */
+.dgptm-fb-wrap {
+    max-width: 960px;
+    margin: 0 auto;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.dgptm-fb-header {
+    margin-bottom: 24px;
+}
+.dgptm-fb-header h2 {
+    margin: 0 0 4px;
+    font-size: 1.6em;
+    color: #1a3a5c;
+}
+.dgptm-fb-subtitle {
+    color: #666;
+    margin: 0;
+}
+
+/* Navigation Tabs */
+.dgptm-fb-nav {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.dgptm-fb-tab {
+    padding: 10px 20px;
+    border: 2px solid #ddd;
+    background: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+.dgptm-fb-tab:hover {
+    border-color: #1a3a5c;
+    color: #1a3a5c;
+}
+.dgptm-fb-tab.active {
+    background: #1a3a5c;
+    color: #fff;
+    border-color: #1a3a5c;
+}
+
+/* Controls */
+.dgptm-fb-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    background: #f5f7fa;
+    border-radius: 6px;
+}
+.dgptm-fb-controls select {
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+.dgptm-fb-btn {
+    padding: 6px 16px;
+    background: #1a3a5c;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+}
+.dgptm-fb-btn:hover { background: #0d2840; }
+
+.dgptm-fb-badge {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+.dgptm-fb-badge.static { background: #e8e8e8; color: #666; }
+.dgptm-fb-badge.live { background: #d4edda; color: #155724; }
+
+/* Loading */
+.dgptm-fb-loading {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+}
+
+/* KPI Boxes */
+.dgptm-fb-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+.dgptm-fb-kpi {
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+}
+.dgptm-fb-kpi-green { background: #d4edda; border: 1px solid #c3e6cb; }
+.dgptm-fb-kpi-red { background: #f8d7da; border: 1px solid #f5c6cb; }
+.dgptm-fb-kpi-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #555;
+    margin-bottom: 6px;
+}
+.dgptm-fb-kpi-value {
+    display: block;
+    font-size: 1.5em;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+/* Report Sections */
+.dgptm-fb-report-header {
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #1a3a5c;
+}
+.dgptm-fb-report-header h3 {
+    margin: 0 0 4px;
+    color: #1a3a5c;
+}
+.dgptm-fb-period, .dgptm-fb-location {
+    margin: 2px 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.dgptm-fb-section {
+    margin-bottom: 24px;
+}
+.dgptm-fb-section h4 {
+    margin: 0 0 8px;
+    font-size: 1em;
+    color: #333;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 6px;
+}
+
+/* Tables */
+.dgptm-fb-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.dgptm-fb-table th {
+    background: #1a3a5c;
+    color: #fff;
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+}
+.dgptm-fb-table td {
+    padding: 7px 12px;
+    border-bottom: 1px solid #eee;
+}
+.dgptm-fb-table tbody tr:nth-child(even) {
+    background: #f9fafb;
+}
+.dgptm-fb-table tbody tr:hover {
+    background: #eef2f7;
+}
+.dgptm-fb-table .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+.dgptm-fb-table tfoot td {
+    border-top: 2px solid #1a3a5c;
+    font-weight: 700;
+}
+
+/* Errors & Notes */
+.dgptm-fb-error {
+    color: #721c24;
+    background: #f8d7da;
+    padding: 12px 16px;
+    border-radius: 6px;
+    border: 1px solid #f5c6cb;
+}
+.dgptm-fb-note {
+    font-style: italic;
+    color: #856404;
+    background: #fff3cd;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+}
+.dgptm-fb-placeholder {
+    color: #999;
+    text-align: center;
+    padding: 40px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .dgptm-fb-kpis { grid-template-columns: 1fr; }
+    .dgptm-fb-nav { flex-direction: column; }
+    .dgptm-fb-controls { flex-direction: column; align-items: stretch; }
+}

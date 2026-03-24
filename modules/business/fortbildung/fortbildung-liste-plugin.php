@@ -575,18 +575,25 @@ class Fortbildung_Liste_Plugin {
     public function display_ebcp_points( $atts ) {
         if ( ! is_user_logged_in() ) return '0';
 
-        $atts = shortcode_atts( array( 'jahr' => null, 'summe' => null ), $atts, 'EBCP-Punkte' );
-        $uid  = get_current_user_id();
+        $atts = shortcode_atts( array( 'jahr' => null, 'summe' => null, 'jahreszahl' => null ), $atts, 'EBCP-Punkte' );
         $now  = intval( date( 'Y' ) );
 
-        // Summe über mehrere Jahre
+        // [EBCP-Punkte jahreszahl=0] → "2026", jahreszahl=1 → "2025"
+        if ( $atts['jahreszahl'] !== null ) {
+            return (string) ( $now - max( 0, intval( $atts['jahreszahl'] ) ) );
+        }
+
+        if ( ! is_user_logged_in() ) return '0';
+        $uid = get_current_user_id();
+
+        // [EBCP-Punkte summe=3] → Summe der letzten 3 Jahre
         if ( $atts['summe'] !== null ) {
             $count = max( 1, intval( $atts['summe'] ) );
             $from  = $now - $count + 1;
             return number_format( self::sum_points( $uid, $from, $now ), 1, ',', '.' );
         }
 
-        // Einzelnes Jahr
+        // [EBCP-Punkte jahr=0] → Punkte dieses Jahr
         $offset = max( 0, intval( $atts['jahr'] ?? 0 ) );
         $year   = $now - $offset;
         return number_format( self::sum_points( $uid, $year, $year ), 1, ',', '.' );

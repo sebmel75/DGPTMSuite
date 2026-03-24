@@ -1102,6 +1102,26 @@ add_action( 'wp_ajax_dgptm_eiv_update_group_points', function() {
     wp_send_json_success( [ 'updated' => $updated ] );
 });
 
+// AJAX: Bezeichnung einer Gruppe (alle Einträge) umbenennen
+add_action( 'wp_ajax_dgptm_eiv_rename_group', function() {
+    if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( [ 'message' => 'Keine Berechtigung.' ] );
+    check_ajax_referer( 'dgptm_eiv_sync_nonce' );
+    nocache_headers();
+
+    $post_ids  = array_map( 'intval', (array) ( $_POST['post_ids'] ?? [] ) );
+    $new_title = sanitize_text_field( $_POST['new_title'] ?? '' );
+    if ( $new_title === '' ) wp_send_json_error( [ 'message' => 'Titel darf nicht leer sein.' ] );
+
+    $updated = 0;
+    foreach ( $post_ids as $pid ) {
+        if ( $pid <= 0 || get_post_type( $pid ) !== 'fortbildung' ) continue;
+        wp_update_post( [ 'ID' => $pid, 'post_title' => $new_title ] );
+        $updated++;
+    }
+
+    wp_send_json_success( [ 'updated' => $updated ] );
+});
+
 // AJAX: Gruppe löschen (alle Einträge mit gleichem Titel)
 add_action( 'wp_ajax_dgptm_eiv_delete_group', function() {
     if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( [ 'message' => 'Keine Berechtigung.' ] );
@@ -1419,9 +1439,13 @@ function dgptm_eiv_render_admin_page() {
                         html += '<span class="eiv-group-meta">'+g.count+' Einträge &middot; '+g.points+' Pkt. '+badge+'</span>';
                         html += '</div>';
                         html += '<div class="eiv-group-body" id="eiv-gb-'+idx+'">';
-                        html += '<div class="eiv-group-actions">';
-                        html += '<label>Punkte setzen: <input type="number" step="0.1" min="0" value="'+g.points+'" class="eiv-grp-pts" data-ids=\''+JSON.stringify(ids)+'\'></label>';
+                        html += '<div class="eiv-group-actions" style="flex-wrap:wrap;">';
+                        html += '<label>Bezeichnung: <input type="text" value="'+$('<span>').text(g.title).html()+'" class="eiv-grp-title regular-text" style="width:300px;"></label>';
+                        html += '<button class="button eiv-grp-rename" data-ids=\''+JSON.stringify(ids)+'\'>Umbenennen</button>';
+                        html += '<span style="border-left:1px solid #ccc;margin:0 8px;"></span>';
+                        html += '<label>Punkte: <input type="number" step="0.1" min="0" value="'+g.points+'" class="eiv-grp-pts"></label>';
                         html += '<button class="button eiv-grp-save" data-ids=\''+JSON.stringify(ids)+'\'>Punkte speichern</button>';
+                        html += '<span style="border-left:1px solid #ccc;margin:0 8px;"></span>';
                         html += '<button class="button eiv-grp-delete" data-ids=\''+JSON.stringify(ids)+'\' style="color:#d63638;">Alle '+g.count+' löschen</button>';
                         html += '</div>';
                         html += '<table class="eiv-group-entries widefat striped"><thead><tr><th>Benutzer</th><th>Datum</th><th>Punkte</th><th>VNR</th></tr></thead><tbody>';
@@ -1437,6 +1461,21 @@ function dgptm_eiv_render_admin_page() {
                     $c.on('click', '.eiv-group-header', function(){
                         var id = $(this).data('toggle');
                         $('#eiv-gb-'+id).toggleClass('open');
+                    });
+
+                    // Umbenennen
+                    $c.on('click', '.eiv-grp-rename', function(){
+                        var $btn = $(this);
+                        var ids = $btn.data('ids');
+                        var newTitle = $btn.closest('.eiv-group-actions').find('.eiv-grp-title').val().trim();
+                        if (!newTitle) { alert('Bezeichnung darf nicht leer sein.'); return; }
+                        if (!confirm('Alle '+ids.length+' Einträge umbenennen zu "'+newTitle+'"?')) return;
+                        $btn.prop('disabled',true).text('Speichere…');
+                        $.post(ajaxurl, { action:'dgptm_eiv_rename_group', _wpnonce:nonce, post_ids:ids, new_title:newTitle }, function(r){
+                            $btn.prop('disabled',false).text('Umbenennen');
+                            if (r.success) { alert(r.data.updated+' Einträge umbenannt.'); $('#eiv-load-groups').click(); }
+                            else alert('Fehler: '+(r.data?.message||''));
+                        });
                     });
 
                     // Punkte speichern

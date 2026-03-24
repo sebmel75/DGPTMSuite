@@ -197,8 +197,52 @@ $current_year = (int) date('Y');
     <!-- Panel: Settings -->
     <div class="dgptm-fin-panel" id="panel-settings" style="display:none">
         <h3>Einstellungen</h3>
-        <div id="dgptm-fin-settings-content" class="dgptm-fin-section">
+
+        <!-- Config Status (via JS geladen) -->
+        <div id="dgptm-fin-settings-status" class="dgptm-fin-section">
             <div class="dgptm-fin-loading"><span class="spinner is-active"></span> Lade Konfiguration...</div>
+        </div>
+
+        <!-- Config Import -->
+        <div class="dgptm-fin-section">
+            <h4>Konfiguration importieren</h4>
+            <div class="dgptm-fin-controls" style="flex-direction:column;align-items:flex-start;">
+                <label>config.json hochladen:
+                    <input type="file" id="dgptm-fin-config-file" accept=".json,application/json" />
+                </label>
+                <span style="color:#666;">— oder JSON einfuegen:</span>
+                <textarea id="dgptm-fin-config-json" rows="6" style="width:100%;font-family:monospace;font-size:12px;" placeholder='{"zoho":{...},"gocardless":{...}}'></textarea>
+                <button type="button" class="dgptm-fin-btn dgptm-fin-btn-primary" id="dgptm-fin-save-config">Konfiguration speichern</button>
+            </div>
+        </div>
+
+        <!-- Billing History Import -->
+        <div class="dgptm-fin-section">
+            <h4>Billing-History importieren</h4>
+            <p style="color:#666;">Bisherige <code>billing_results_*.json</code> aus dem Python-Tool hochladen.</p>
+            <div class="dgptm-fin-controls" style="flex-direction:column;align-items:flex-start;">
+                <input type="file" id="dgptm-fin-results-files" accept=".json" multiple />
+                <button type="button" class="dgptm-fin-btn" id="dgptm-fin-import-results">Ergebnisse importieren</button>
+            </div>
+            <div id="dgptm-fin-billing-history-table"></div>
+        </div>
+
+        <!-- Historical Financial Data Import -->
+        <div class="dgptm-fin-section">
+            <h4>Historische Finanzdaten importieren</h4>
+            <p style="color:#666;">JSON-Daten fuer den Report-Builder (Format: <code>{"berichtstyp": {"jahr": {...}}}</code>)</p>
+            <div class="dgptm-fin-controls" style="flex-direction:column;align-items:flex-start;">
+                <textarea id="dgptm-fin-historical-json" rows="4" style="width:100%;font-family:monospace;font-size:12px;" placeholder='{"jahrestagung":{"2022":{"title":"...","income":{...},"expenses":{...}}}}'></textarea>
+                <button type="button" class="dgptm-fin-btn" id="dgptm-fin-import-historical">Historische Daten importieren</button>
+            </div>
+        </div>
+
+        <!-- Access Log -->
+        <div class="dgptm-fin-section">
+            <h4>Zugriffs-Log</h4>
+            <div id="dgptm-fin-access-log">
+                <p style="color:#666;">Wird geladen...</p>
+            </div>
         </div>
     </div>
 

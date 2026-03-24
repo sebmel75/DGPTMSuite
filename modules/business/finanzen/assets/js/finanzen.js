@@ -673,34 +673,126 @@
     DgptmFin.tabs.settings = {
         _loaded: false,
         load: function() {
-            var $p = $('#dgptm-fin-panel-settings');
-            DgptmFin.showLoading($p);
+            var self = this;
+            if (self._loaded) return;
+            self._loaded = true;
+            self.loadStatus();
+            self.loadHistory();
+            self.bindActions();
+        },
+        loadStatus: function() {
+            var $s = $('#dgptm-fin-settings-status');
             DgptmFin.ajax('dgptm_fin_get_dashboard').done(function(res) {
-                if (!res || !res.success) { DgptmFin.showError($p, DgptmFin.errMsg(res)); return; }
+                if (!res || !res.success) { DgptmFin.showError($s, DgptmFin.errMsg(res)); return; }
                 var d = res.data, html = '';
-                html += '<div class="dgptm-fin-section"><h4>Konfiguration</h4>';
-                if (d.config) {
+                if (d.config_valid) {
+                    html += '<p style="color:#00a32a;"><strong>&#10003; Konfiguration aktiv</strong></p>';
                     html += '<table class="dgptm-fin-table"><tbody>';
-                    html += '<tr><td>Zoho Org-ID</td><td>' + DgptmFin.esc(d.config.zoho_org_id || '-') + '</td></tr>';
-                    html += '<tr><td>GoCardless</td><td>' + (d.config.gocardless_configured ? 'Konfiguriert' : 'Nicht konfiguriert') + '</td></tr>';
-                    html += '<tr><td>Letzte Aktualisierung</td><td>' + DgptmFin.esc(d.config.last_update || '-') + '</td></tr>';
+                    if (d.config) {
+                        html += '<tr><td>Zoho Org-ID</td><td>' + DgptmFin.esc(d.config.zoho_org_id || '-') + '</td></tr>';
+                        html += '<tr><td>GoCardless</td><td>' + (d.config.gocardless_configured ? 'Konfiguriert' : 'Nicht konfiguriert') + '</td></tr>';
+                    }
                     html += '</tbody></table>';
-                } else { html += '<p class="dgptm-fin-error">Konfiguration nicht gesetzt. Bitte config.json importieren.</p>'; }
-                html += '</div>';
-                if (d.membership_types && Object.keys(d.membership_types).length) {
-                    html += '<div class="dgptm-fin-section"><h4>Mitgliedstypen und Beitraege</h4>';
-                    html += '<table class="dgptm-fin-table"><thead><tr><th>Typ</th><th class="num">Beitrag</th><th>Item-Code</th></tr></thead><tbody>';
-                    var mt = d.membership_types;
-                    Object.keys(mt).forEach(function(key) {
-                        html += '<tr><td>' + DgptmFin.esc(key) + '</td><td class="num">' + DgptmFin.feur(mt[key].amount) + '</td><td>' + DgptmFin.esc(mt[key].item_code || '-') + '</td></tr>';
-                    });
-                    html += '</tbody></table></div>';
+                    if (d.membership_types && Object.keys(d.membership_types).length) {
+                        html += '<h4>Mitgliedstypen und Beitraege</h4>';
+                        html += '<table class="dgptm-fin-table"><thead><tr><th>Typ</th><th class="num">Beitrag</th><th>Item-Code</th></tr></thead><tbody>';
+                        var mt = d.membership_types;
+                        Object.keys(mt).forEach(function(key) {
+                            html += '<tr><td>' + DgptmFin.esc(key) + '</td><td class="num">' + DgptmFin.feur(mt[key].amount || 0) + '</td><td>' + DgptmFin.esc(mt[key].item_code || '-') + '</td></tr>';
+                        });
+                        html += '</tbody></table>';
+                    }
+                } else {
+                    html += '<p style="color:orange;"><strong>&#9888; Keine gueltige Konfiguration.</strong> Bitte config.json unten importieren.</p>';
                 }
-                html += '<div class="dgptm-fin-section"><h4>Zugriff</h4>';
-                html += '<p>Aktuelle Rolle: <strong>' + DgptmFin.esc(dgptmFin.role || '-') + '</strong></p>';
-                html += '<p>Sichtbare Tabs: ' + DgptmFin.esc((dgptmFin.tabs || []).join(', ')) + '</p></div>';
-                $p.html(html);
-            }).fail(function() { DgptmFin.showError($p, 'Netzwerkfehler'); });
+                html += '<p style="margin-top:8px;">Rolle: <strong>' + DgptmFin.esc(dgptmFin.role || '-') + '</strong> | Tabs: ' + DgptmFin.esc((dgptmFin.tabs || []).join(', ')) + '</p>';
+                $s.html(html);
+            }).fail(function() { DgptmFin.showError($s, 'Netzwerkfehler'); });
+        },
+        loadHistory: function() {
+            var $t = $('#dgptm-fin-billing-history-table');
+            DgptmFin.ajax('dgptm_fin_get_results').done(function(res) {
+                if (!res || !res.success || !res.data || !res.data.length) { $t.html(''); return; }
+                var rows = res.data, html = '<table class="dgptm-fin-table"><thead><tr><th>Datum</th><th>Jahr</th><th>Dry-Run</th><th>Total</th><th>Erfolg</th><th>Fehler</th><th class="num">Betrag</th></tr></thead><tbody>';
+                rows.forEach(function(r) {
+                    html += '<tr><td>' + DgptmFin.esc(r.timestamp || '-') + '</td><td>' + DgptmFin.esc(r.year || '-') + '</td>';
+                    html += '<td>' + (r.dry_run ? 'Ja' : 'Nein') + '</td><td>' + (r.total || 0) + '</td>';
+                    html += '<td>' + (r.success || 0) + '</td><td>' + (r.errors || 0) + '</td>';
+                    html += '<td class="num">' + DgptmFin.feur(r.amount || 0) + '</td></tr>';
+                });
+                html += '</tbody></table>';
+                $t.html(html);
+            });
+        },
+        bindActions: function() {
+            var self = this;
+
+            // Config speichern (JSON-Paste oder Datei)
+            $('#dgptm-fin-save-config').on('click', function() {
+                var $btn = $(this), fileInput = $('#dgptm-fin-config-file')[0];
+                $btn.prop('disabled', true).text('Speichere...');
+
+                var processJson = function(json) {
+                    DgptmFin.ajax('dgptm_fin_save_config', { config: json }).done(function(res) {
+                        if (res && res.success) {
+                            alert('Konfiguration gespeichert.');
+                            self._loaded = false;
+                            self.loadStatus();
+                        } else { alert(DgptmFin.errMsg(res)); }
+                    }).fail(function() { alert('Netzwerkfehler'); }).always(function() {
+                        $btn.prop('disabled', false).text('Konfiguration speichern');
+                    });
+                };
+
+                if (fileInput.files && fileInput.files.length) {
+                    var reader = new FileReader();
+                    reader.onload = function(e) { processJson(e.target.result); };
+                    reader.readAsText(fileInput.files[0]);
+                } else {
+                    var json = $('#dgptm-fin-config-json').val().trim();
+                    if (!json) { alert('Bitte JSON eingeben oder Datei auswaehlen.'); $btn.prop('disabled', false).text('Konfiguration speichern'); return; }
+                    processJson(json);
+                }
+            });
+
+            // Billing-Results importieren
+            $('#dgptm-fin-import-results').on('click', function() {
+                var $btn = $(this), fileInput = $('#dgptm-fin-results-files')[0];
+                if (!fileInput.files || !fileInput.files.length) { alert('Bitte Dateien auswaehlen.'); return; }
+                $btn.prop('disabled', true).text('Importiere...');
+                var done = 0, total = fileInput.files.length, errors = 0;
+
+                Array.from(fileInput.files).forEach(function(file) {
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            var data = JSON.parse(e.target.result);
+                            DgptmFin.ajax('dgptm_fin_import_historical', { data: JSON.stringify(data), filename: file.name, type: 'billing_results' }).always(function() {
+                                done++;
+                                if (done >= total) {
+                                    alert(done + ' Datei(en) verarbeitet.');
+                                    self.loadHistory();
+                                    $btn.prop('disabled', false).text('Ergebnisse importieren');
+                                }
+                            });
+                        } catch(ex) { errors++; done++; }
+                    };
+                    reader.readAsText(file);
+                });
+            });
+
+            // Historische Daten importieren
+            $('#dgptm-fin-import-historical').on('click', function() {
+                var $btn = $(this), json = $('#dgptm-fin-historical-json').val().trim();
+                if (!json) { alert('Bitte JSON eingeben.'); return; }
+                $btn.prop('disabled', true).text('Importiere...');
+                DgptmFin.ajax('dgptm_fin_import_historical', { data: json }).done(function(res) {
+                    if (res && res.success) { alert('Import erfolgreich: ' + (res.data.count || 0) + ' Datensaetze.'); }
+                    else { alert(DgptmFin.errMsg(res)); }
+                }).fail(function() { alert('Netzwerkfehler'); }).always(function() {
+                    $btn.prop('disabled', false).text('Historische Daten importieren');
+                });
+            });
         }
     };
 

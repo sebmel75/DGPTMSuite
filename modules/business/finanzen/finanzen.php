@@ -284,7 +284,12 @@ if (!class_exists('DGPTM_Finanzen')) {
         }
 
         public function render_admin_page(): void {
-            include dirname(__FILE__) . '/templates/admin.php';
+            echo '<div class="wrap">';
+            echo '<h1>DGPTM Finanzen</h1>';
+            echo '<p>Alle Einstellungen befinden sich im <strong>Einstellungen-Tab</strong> des Finanzen-Dashboards.</p>';
+            echo '<p>Shortcode: <code>[dgptm_finanzen]</code></p>';
+            echo '<p>Berechtigung: Administrator, Schatzmeister, Praesident oder Geschaeftsstelle (via ACF-Benutzerfelder).</p>';
+            echo '</div>';
         }
 
         /* ============================================================ */

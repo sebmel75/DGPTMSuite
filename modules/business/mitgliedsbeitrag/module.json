@@ -1,0 +1,36 @@
+{
+  "id": "mitgliedsbeitrag",
+  "name": "Mitgliedsbeitrag",
+  "description": "Mitgliedsbeitragsverwaltung mit Zoho CRM/Books und GoCardless Integration",
+  "version": "1.0.0",
+  "author": "Sebastian Melzer",
+  "main_file": "mitgliedsbeitrag.php",
+  "dependencies": [],
+  "optional_dependencies": [
+    "crm-abruf"
+  ],
+  "wp_dependencies": {
+    "plugins": []
+  },
+  "requires_php": "7.4",
+  "requires_wp": "5.8",
+  "category": "business",
+  "icon": "dashicons-money-alt",
+  "active": false,
+  "can_export": true,
+  "critical": false,
+  "features": [
+    "Mitgliedsbeitrag-Abrechnungslauf",
+    "5 Rechnungsvarianten (Guthaben, GoCardless, Ueberweisung)",
+    "Zoho CRM Integration (Mitgliederdaten, Beitragshoehe)",
+    "Zoho Books Integration (Rechnungserstellung)",
+    "GoCardless SEPA-Lastschrift Integration",
+    "Dry-Run / Live-Run Modus",
+    "Mandats-Synchronisation",
+    "Zahlungsverarbeitung (Einzug, Ruecklastschrift)",
+    "ACF-Berechtigung: schatzmeister"
+  ],
+  "changelog": {
+    "1.0.0": "Initiale WordPress-Portierung des Python Mitgliedsbeitrag-Tools"
+  }
+}

@@ -261,6 +261,7 @@ class Fortbildung_Liste_Plugin {
     public function __construct() {
         add_action( 'init', array( $this, 'register_post_types' ) );
         add_shortcode( 'fortbildung_liste', array( $this, 'display_fortbildung_list' ) );
+        add_shortcode( 'EBCP-Punkte', array( $this, 'display_ebcp_points' ) );
     }
     public function register_post_types() {
         if ( ! post_type_exists( 'fortbildung' ) ) {
@@ -559,6 +560,48 @@ class Fortbildung_Liste_Plugin {
         </div>
         <?php
         return ob_get_clean();
+    }
+
+    /**
+     * Shortcode [EBCP-Punkte]
+     * Gibt nur die Punktzahl zurück (inline, kein HTML-Wrapper).
+     *
+     * [EBCP-Punkte]        → Punkte dieses Jahr (Default: jahr=0)
+     * [EBCP-Punkte jahr=0] → Punkte dieses Jahr
+     * [EBCP-Punkte jahr=1] → Punkte letztes Jahr
+     * [EBCP-Punkte jahr=2] → Punkte vorletztes Jahr
+     */
+    public function display_ebcp_points( $atts ) {
+        if ( ! is_user_logged_in() ) return '0';
+
+        $atts = shortcode_atts( array( 'jahr' => 0 ), $atts, 'EBCP-Punkte' );
+        $offset = max( 0, intval( $atts['jahr'] ) );
+        $year   = intval( date( 'Y' ) ) - $offset;
+        $uid    = get_current_user_id();
+
+        $q = new WP_Query(array(
+            'post_type'      => 'fortbildung',
+            'post_status'    => 'publish',
+            'posts_per_page' => -1,
+            'fields'         => 'ids',
+            'meta_query'     => array(
+                'relation' => 'AND',
+                array( 'key' => 'user', 'value' => $uid, 'compare' => '=' ),
+                array( 'key' => 'date', 'value' => array( $year . '-01-01', $year . '-12-31' ), 'compare' => 'BETWEEN', 'type' => 'DATE' ),
+            ),
+        ));
+
+        $pts = 0.0;
+        if ( $q->have_posts() ) {
+            foreach ( $q->posts as $pid ) {
+                if ( fobi_is_freigegeben( get_field( 'freigegeben', $pid ) ) ) {
+                    $pts += floatval( get_field( 'points', $pid ) );
+                }
+            }
+        }
+        wp_reset_postdata();
+
+        return number_format( $pts, 1, ',', '.' );
     }
 }
 new Fortbildung_Liste_Plugin();

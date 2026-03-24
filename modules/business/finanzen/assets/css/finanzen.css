@@ -1,0 +1,458 @@
+/* ==========================================================================
+   DGPTM Finanzen — Consolidated Stylesheet
+   ========================================================================== */
+
+/* Container */
+.dgptm-fin-wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #1a1a1a;
+}
+
+/* Header */
+.dgptm-fin-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+.dgptm-fin-header h2 {
+    margin: 0;
+    font-size: 1.6em;
+    color: #1a3a5c;
+}
+.dgptm-fin-role-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 0.7em;
+    font-weight: 600;
+    background: #eef2ff;
+    color: #4f46e5;
+    letter-spacing: 0.03em;
+}
+
+/* Tab Navigation */
+.dgptm-fin-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 0;
+}
+.dgptm-fin-tab {
+    padding: 10px 18px;
+    border: 2px solid transparent;
+    border-bottom: none;
+    background: #f9fafb;
+    border-radius: 6px 6px 0 0;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+    transition: all 0.2s ease;
+    margin-bottom: -2px;
+}
+.dgptm-fin-tab:hover {
+    background: #eef2f7;
+    color: #1a3a5c;
+}
+.dgptm-fin-tab.active {
+    background: #1a3a5c;
+    color: #fff;
+    border-color: #1a3a5c;
+}
+
+/* Panels */
+.dgptm-fin-panel {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+}
+.dgptm-fin-panel h3 {
+    margin: 0 0 14px;
+    font-size: 1.05em;
+    font-weight: 600;
+    color: #1a3a5c;
+}
+
+/* Sections */
+.dgptm-fin-section {
+    margin-bottom: 20px;
+}
+.dgptm-fin-section h3 {
+    margin: 0 0 10px;
+    font-size: 1em;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 6px;
+}
+
+/* KPI Grid */
+.dgptm-fin-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+.dgptm-fin-kpi {
+    padding: 18px;
+    border-radius: 8px;
+    text-align: center;
+}
+.dgptm-fin-kpi-green {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+}
+.dgptm-fin-kpi-red {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+}
+.dgptm-fin-kpi-blue {
+    background: #cce5ff;
+    border: 1px solid #b8daff;
+}
+.dgptm-fin-kpi-warning {
+    background: #fff3cd;
+    border: 1px solid #ffeeba;
+}
+.dgptm-fin-kpi-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #555;
+    margin-bottom: 6px;
+}
+.dgptm-fin-kpi-value {
+    display: block;
+    font-size: 1.5em;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+/* Controls */
+.dgptm-fin-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    background: #f5f7fa;
+    border-radius: 6px;
+}
+.dgptm-fin-controls label {
+    font-size: 0.85em;
+    color: #6b7280;
+}
+.dgptm-fin-controls select,
+.dgptm-fin-controls input[type="text"],
+.dgptm-fin-controls textarea {
+    padding: 6px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 13px;
+}
+.dgptm-fin-controls textarea {
+    min-width: 240px;
+    resize: vertical;
+}
+.dgptm-fin-checkbox-label {
+    font-size: 0.85em;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 4px;
+}
+
+/* Filter Bar */
+.dgptm-fin-filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    background: #f5f7fa;
+    border-radius: 6px;
+}
+.dgptm-fin-filter-bar label {
+    font-size: 0.85em;
+    color: #6b7280;
+}
+.dgptm-fin-filter-bar select {
+    padding: 6px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+/* Buttons */
+.dgptm-fin-btn {
+    padding: 7px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: #374151;
+    transition: all 150ms ease;
+}
+.dgptm-fin-btn:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+}
+.dgptm-fin-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.dgptm-fin-btn-primary {
+    background: #1a3a5c;
+    color: #fff;
+    border-color: #1a3a5c;
+}
+.dgptm-fin-btn-primary:hover {
+    background: #0d2840;
+    border-color: #0d2840;
+}
+.dgptm-fin-btn-danger {
+    background: #dc3545;
+    color: #fff;
+    border-color: #dc3545;
+}
+.dgptm-fin-btn-danger:hover {
+    background: #c82333;
+    border-color: #bd2130;
+}
+
+/* Tables */
+.dgptm-fin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.dgptm-fin-table th {
+    background: #1a3a5c;
+    color: #fff;
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+.dgptm-fin-table td {
+    padding: 7px 12px;
+    border-bottom: 1px solid #e5e7eb;
+}
+.dgptm-fin-table tbody tr:nth-child(even) {
+    background: #f9fafb;
+}
+.dgptm-fin-table tbody tr:hover {
+    background: #eef2f7;
+}
+.dgptm-fin-table .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+.dgptm-fin-table tfoot td {
+    border-top: 2px solid #1a3a5c;
+    font-weight: 700;
+}
+
+/* Invoice Actions */
+.dgptm-fin-invoice-actions {
+    display: flex;
+    gap: 6px;
+}
+.dgptm-fin-invoice-actions button {
+    padding: 3px 8px;
+    font-size: 11px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+    transition: background 150ms ease;
+}
+.dgptm-fin-invoice-actions button:hover {
+    background: #f3f4f6;
+}
+
+/* Progress Bar */
+.dgptm-fin-progress {
+    background: #e5e7eb;
+    border-radius: 6px;
+    height: 22px;
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+.dgptm-fin-progress-bar {
+    height: 100%;
+    width: 0;
+    background: #1a3a5c;
+    border-radius: 6px;
+    transition: width 0.4s ease;
+    text-align: center;
+    color: #fff;
+    font-size: 11px;
+    line-height: 22px;
+    font-weight: 600;
+}
+
+/* Badges */
+.dgptm-fin-badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+.dgptm-fin-badge-static {
+    background: #e8e8e8;
+    color: #666;
+}
+.dgptm-fin-badge-live {
+    background: #d4edda;
+    color: #155724;
+}
+.dgptm-fin-badge-draft {
+    background: #fff3cd;
+    color: #856404;
+}
+.dgptm-fin-badge-sent {
+    background: #cce5ff;
+    color: #004085;
+}
+
+/* Alerts */
+.dgptm-fin-error {
+    color: #721c24;
+    background: #f8d7da;
+    padding: 12px 16px;
+    border-radius: 6px;
+    border: 1px solid #f5c6cb;
+    margin-bottom: 12px;
+}
+.dgptm-fin-note {
+    font-style: italic;
+    color: #856404;
+    background: #fff3cd;
+    padding: 10px 14px;
+    border-radius: 6px;
+    border: 1px solid #ffeeba;
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+
+/* Loading */
+.dgptm-fin-loading {
+    text-align: center;
+    padding: 32px;
+    color: #6b7280;
+    font-size: 14px;
+}
+.dgptm-fin-loading .spinner {
+    margin-right: 6px;
+}
+.dgptm-fin-placeholder {
+    color: #999;
+    text-align: center;
+    padding: 40px;
+    font-style: italic;
+}
+
+/* Log Output */
+.dgptm-fin-log {
+    max-height: 400px;
+    overflow-y: auto;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 12px;
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-size: 0.8em;
+    white-space: pre-wrap;
+    line-height: 1.5;
+}
+
+/* Sub-tabs (Reports) */
+.dgptm-fin-sub-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+.dgptm-fin-sub-tab {
+    padding: 6px 14px;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+    transition: all 150ms ease;
+}
+.dgptm-fin-sub-tab:hover {
+    border-color: #1a3a5c;
+    color: #1a3a5c;
+}
+.dgptm-fin-sub-tab.active {
+    background: #1a3a5c;
+    color: #fff;
+    border-color: #1a3a5c;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .dgptm-fin-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    .dgptm-fin-tabs {
+        flex-direction: column;
+        border-bottom: none;
+    }
+    .dgptm-fin-tab {
+        border-radius: 6px;
+        margin-bottom: 0;
+        border: 1px solid #e5e7eb;
+    }
+    .dgptm-fin-tab.active {
+        border-color: #1a3a5c;
+    }
+    .dgptm-fin-kpis {
+        grid-template-columns: 1fr;
+    }
+    .dgptm-fin-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .dgptm-fin-filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .dgptm-fin-sub-tabs {
+        flex-direction: column;
+    }
+    .dgptm-fin-panel {
+        padding: 14px;
+    }
+    .dgptm-fin-table {
+        font-size: 12px;
+    }
+    .dgptm-fin-table th,
+    .dgptm-fin-table td {
+        padding: 6px 8px;
+    }
+}

@@ -11,22 +11,65 @@ class DGPTM_FB_Historical_Data {
      * Liefert statische Daten fuer ein Jahr/Berichtstyp.
      * @return array|null  null wenn kein statischer Datensatz vorhanden
      */
+    const IMPORT_OPTION = 'dgptm_fb_imported_data';
+
     public static function get(string $report, int $year): ?array {
+        // Zuerst statische Methoden pruefen
         $method = "get_{$report}_{$year}";
         if (method_exists(self::class, $method)) {
             return self::$method();
         }
+
+        // Dann importierte Daten pruefen (wp_options)
+        $imported = get_option(self::IMPORT_OPTION, []);
+        if (isset($imported[$report][$year])) {
+            return $imported[$report][$year];
+        }
+
         return null;
     }
 
     public static function available_years(string $report): array {
         $years = [];
+        // Statische Jahre
         foreach ([2023, 2024] as $y) {
             if (method_exists(self::class, "get_{$report}_{$y}")) {
                 $years[] = $y;
             }
         }
-        return $years;
+        // Importierte Jahre
+        $imported = get_option(self::IMPORT_OPTION, []);
+        if (isset($imported[$report]) && is_array($imported[$report])) {
+            $years = array_merge($years, array_map('intval', array_keys($imported[$report])));
+        }
+        return array_unique($years);
+    }
+
+    /**
+     * Importiert historische Daten aus JSON in wp_options.
+     * Format: {"jahrestagung": {"2022": {"title": "...", "income": {...}, "expenses": {...}}}}
+     *
+     * @param array $data Importdaten
+     * @return int Anzahl importierter Datensaetze
+     */
+    public static function import(array $data): int {
+        $existing = get_option(self::IMPORT_OPTION, []);
+        $count = 0;
+
+        foreach ($data as $report => $years) {
+            if (!is_array($years)) continue;
+            if (!isset($existing[$report])) {
+                $existing[$report] = [];
+            }
+            foreach ($years as $year => $report_data) {
+                if (!is_array($report_data)) continue;
+                $existing[$report][(int) $year] = $report_data;
+                $count++;
+            }
+        }
+
+        update_option(self::IMPORT_OPTION, $existing, false);
+        return $count;
     }
 
     /* ================================================================ */

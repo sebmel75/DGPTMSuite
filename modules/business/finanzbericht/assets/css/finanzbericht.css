@@ -7,11 +7,24 @@
 
 .dgptm-fb-header {
     margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 .dgptm-fb-header h2 {
-    margin: 0 0 4px;
+    margin: 0;
     font-size: 1.6em;
     color: #1a3a5c;
+}
+.dgptm-fb-role-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 0.7em;
+    font-weight: 600;
+    background: #eef2ff;
+    color: #4f46e5;
+    letter-spacing: 0.03em;
 }
 .dgptm-fb-subtitle {
     color: #666;
@@ -198,6 +211,9 @@
     color: #999;
     text-align: center;
     padding: 40px;
+}
+.dgptm-fb-highlight td {
+    background: #fef3cd;
 }
 
 /* Responsive */

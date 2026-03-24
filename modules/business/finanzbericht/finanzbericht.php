@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: DGPTM - Finanzbericht
- * Description: Finanzauswertung Jahrestagung, Sachkundekurs und Zeitschrift
- * Version:     1.0.0
+ * Description: Finanzauswertung mit rollenbasiertem Zugang (ACF: schatzmeister/praesident/geschaeftsstelle)
+ * Version:     1.1.0
  * Author:      Sebastian Melzer
  */
 
@@ -15,7 +15,6 @@ if (!defined('ABSPATH')) {
 define('DGPTM_FB_PATH', plugin_dir_path(__FILE__));
 define('DGPTM_FB_URL', plugin_dir_url(__FILE__));
 
-// Includes
 require_once DGPTM_FB_PATH . 'includes/class-access-logger.php';
 require_once DGPTM_FB_PATH . 'includes/class-historical-data.php';
 require_once DGPTM_FB_PATH . 'includes/class-zoho-books-client.php';
@@ -27,16 +26,27 @@ if (!class_exists('DGPTM_Finanzbericht')) {
 
         private static ?self $instance = null;
 
-        const USER_META_KEY = 'dgptm_finanzbericht_access';
         const OPTION_CREDENTIALS = 'dgptm_finanzbericht_credentials';
         const NONCE_ACTION = 'dgptm_finanzbericht_nonce';
 
-        // Verfuegbare Berichte
+        /**
+         * Rollen-basierte Berichte:
+         * - praesident: Alle Berichte + Mitgliederzahlen
+         * - schatzmeister: Alle Berichte + Mitgliederzahlen + Mitgliedsbeitrag
+         * - geschaeftsstelle: Alle Berichte + Mitgliederzahlen
+         */
         const REPORTS = [
-            'jahrestagung' => 'Jahrestagung',
-            'sachkundekurs' => 'Sachkundekurs ECLS',
-            'zeitschrift'   => 'Zeitschrift',
+            'jahrestagung'    => 'Jahrestagung',
+            'sachkundekurs'   => 'Sachkundekurs ECLS',
+            'zeitschrift'     => 'Zeitschrift',
+            'mitgliederzahl'  => 'Mitgliederzahlen',
         ];
+
+        /**
+         * ACF-Felder fuer rollenbasierte Berechtigungen
+         * Werden als User-Meta geprueft (ACF User Fields)
+         */
+        const ROLE_FIELDS = ['schatzmeister', 'praesident', 'geschaeftsstelle'];
 
         public static function get_instance(): self {
             if (null === self::$instance) {
@@ -48,19 +58,69 @@ if (!class_exists('DGPTM_Finanzbericht')) {
         private function __construct() {
             add_action('init', [$this, 'register_shortcode']);
             add_action('wp_ajax_dgptm_fb_get_report', [$this, 'ajax_get_report']);
+            add_action('wp_ajax_dgptm_fb_get_member_stats', [$this, 'ajax_get_member_stats']);
             add_action('wp_ajax_dgptm_fb_upload_credentials', [$this, 'ajax_upload_credentials']);
+            add_action('wp_ajax_dgptm_fb_import_historical', [$this, 'ajax_import_historical']);
+            add_action('wp_ajax_dgptm_fb_refresh_cache', [$this, 'ajax_refresh_cache']);
             add_action('admin_menu', [$this, 'add_admin_menu']);
 
-            // User-Profile: Berechtigungsfeld
-            add_action('show_user_profile', [$this, 'render_user_meta_field']);
-            add_action('edit_user_profile', [$this, 'render_user_meta_field']);
-            add_action('personal_options_update', [$this, 'save_user_meta_field']);
-            add_action('edit_user_profile_update', [$this, 'save_user_meta_field']);
+            // Naechtlicher Cron: Daten um 3:00 Uhr aktualisieren
+            add_action('dgptm_fb_nightly_refresh', [$this, 'cron_refresh_all_caches']);
+            if (!wp_next_scheduled('dgptm_fb_nightly_refresh')) {
+                $next_3am = strtotime('tomorrow 03:00:00');
+                wp_schedule_event($next_3am, 'daily', 'dgptm_fb_nightly_refresh');
+            }
+
         }
 
-        /* ------------------------------------------------------------ */
+        /* ============================================================ */
+        /* Berechtigungen (ACF User-Felder: schatzmeister, praesident,   */
+        /* geschaeftsstelle — bereits in ACF-Gruppe "Berechtigungen")    */
+        /* ============================================================ */
+
+        /**
+         * Rolle des Users ermitteln (erste passende)
+         */
+        public function get_user_role(int $user_id): string {
+            if (user_can($user_id, 'manage_options')) {
+                return 'admin';
+            }
+
+            foreach (self::ROLE_FIELDS as $field) {
+                $val = get_field($field, 'user_' . $user_id);
+                if ($val) {
+                    return $field;
+                }
+            }
+
+            return '';
+        }
+
+        /**
+         * Zugriffsliste fuer einen User
+         */
+        public function get_user_access(int $user_id): array {
+            $role = $this->get_user_role($user_id);
+
+            if (!$role) {
+                return [];
+            }
+
+            // Alle Rollen sehen alle Berichte
+            return array_keys(self::REPORTS);
+        }
+
+        /**
+         * Prueft ob User Schatzmeister-Tools sehen darf
+         */
+        public function user_is_schatzmeister(int $user_id): bool {
+            $role = $this->get_user_role($user_id);
+            return in_array($role, ['admin', 'schatzmeister'], true);
+        }
+
+        /* ============================================================ */
         /* Shortcode                                                     */
-        /* ------------------------------------------------------------ */
+        /* ============================================================ */
 
         public function register_shortcode(): void {
             add_shortcode('dgptm_finanzbericht', [$this, 'render_shortcode']);
@@ -75,17 +135,21 @@ if (!class_exists('DGPTM_Finanzbericht')) {
             $access = $this->get_user_access($user_id);
 
             if (empty($access)) {
-                return '<p class="dgptm-fb-error">Kein Zugriff auf Finanzberichte.</p>';
+                return '<p class="dgptm-fb-error">Kein Zugriff auf Finanzberichte. Benoetigte Rolle: Praesident, Schatzmeister oder Geschaeftsstelle.</p>';
             }
 
-            // Assets laden
-            wp_enqueue_style('dgptm-fb', DGPTM_FB_URL . 'assets/css/finanzbericht.css', [], '1.0.0');
-            wp_enqueue_script('dgptm-fb', DGPTM_FB_URL . 'assets/js/finanzbericht.js', ['jquery'], '1.0.0', true);
+            $role = $this->get_user_role($user_id);
+            $is_schatzmeister = $this->user_is_schatzmeister($user_id);
+
+            wp_enqueue_style('dgptm-fb', DGPTM_FB_URL . 'assets/css/finanzbericht.css', [], '1.1.0');
+            wp_enqueue_script('dgptm-fb', DGPTM_FB_URL . 'assets/js/finanzbericht.js', ['jquery'], '1.1.0', true);
             wp_localize_script('dgptm-fb', 'dgptmFB', [
-                'ajaxUrl' => admin_url('admin-ajax.php'),
-                'nonce'   => wp_create_nonce(self::NONCE_ACTION),
-                'access'  => $access,
-                'reports' => self::REPORTS,
+                'ajaxUrl'         => admin_url('admin-ajax.php'),
+                'nonce'           => wp_create_nonce(self::NONCE_ACTION),
+                'access'          => $access,
+                'reports'         => self::REPORTS,
+                'role'            => $role,
+                'isSchatzmeister' => $is_schatzmeister,
             ]);
 
             ob_start();
@@ -93,9 +157,9 @@ if (!class_exists('DGPTM_Finanzbericht')) {
             return ob_get_clean();
         }
 
-        /* ------------------------------------------------------------ */
+        /* ============================================================ */
         /* AJAX: Report laden                                            */
-        /* ------------------------------------------------------------ */
+        /* ============================================================ */
 
         public function ajax_get_report(): void {
             check_ajax_referer(self::NONCE_ACTION, 'nonce');
@@ -114,8 +178,13 @@ if (!class_exists('DGPTM_Finanzbericht')) {
                 wp_send_json_error(['message' => 'Kein Zugriff']);
             }
 
-            // Access loggen
             DGPTM_FB_Access_Logger::log($user_id, $report, $year, 'granted');
+
+            // Mitgliederzahlen separat behandeln
+            if ($report === 'mitgliederzahl') {
+                $data = $this->get_member_stats_data();
+                wp_send_json_success($data);
+            }
 
             $builder = new DGPTM_FB_Report_Builder();
             $data = $builder->get_report($report, $year);
@@ -123,65 +192,198 @@ if (!class_exists('DGPTM_Finanzbericht')) {
             wp_send_json_success($data);
         }
 
-        /* ------------------------------------------------------------ */
-        /* Benutzer-Berechtigungen                                       */
-        /* ------------------------------------------------------------ */
+        /* ============================================================ */
+        /* AJAX: Mitgliederzahlen                                        */
+        /* ============================================================ */
 
-        public function get_user_access(int $user_id): array {
-            // Admins haben immer vollen Zugriff
-            if (user_can($user_id, 'manage_options')) {
-                return array_keys(self::REPORTS);
+        public function ajax_get_member_stats(): void {
+            check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+            $user_id = get_current_user_id();
+            if (empty($this->get_user_access($user_id))) {
+                wp_send_json_error(['message' => 'Kein Zugriff']);
             }
 
-            $meta = get_user_meta($user_id, self::USER_META_KEY, true);
-            if (!is_array($meta)) {
-                return [];
-            }
-            return array_intersect($meta, array_keys(self::REPORTS));
+            $data = $this->get_member_stats_data();
+            wp_send_json_success($data);
         }
 
-        public function render_user_meta_field($user): void {
+        private function get_member_stats_data(bool $force_refresh = false): array {
+            // Transient-Cache: 24 Stunden (wird naechtlich per Cron aktualisiert)
+            if (!$force_refresh) {
+                $cached = get_transient('dgptm_fb_member_stats');
+                if (false !== $cached) {
+                    $cached['source'] = 'cache';
+                    return $cached;
+                }
+            }
+
+            $data = [
+                'title'  => 'Mitgliederzahlen',
+                'source' => 'live',
+            ];
+
+            // Zoho CRM abfragen ueber crm-abruf
+            if (!class_exists('DGPTM_Zoho_Plugin')) {
+                $data['error'] = 'CRM-Modul nicht verfuegbar';
+                return $data;
+            }
+
+            $crm = \DGPTM_Zoho_Plugin::get_instance();
+            $token = $crm->get_oauth_token();
+
+            if (!$token) {
+                $data['error'] = 'Kein CRM OAuth-Token verfuegbar';
+                return $data;
+            }
+
+            $api_url = get_option('dgptm_zoho_api_url', 'https://www.zohoapis.eu');
+
+            // COQL Abfrage: Aktive Mitglieder nach Typ
+            $stats = $this->query_member_stats($token, $api_url);
+            $data = array_merge($data, $stats);
+
+            set_transient('dgptm_fb_member_stats', $data, DAY_IN_SECONDS);
+            return $data;
+        }
+
+        private function query_member_stats(string $token, string $api_url): array {
+            $result = [
+                'total_active' => 0,
+                'by_type' => [],
+                'billing_status' => [],
+                'timestamp' => current_time('c'),
+            ];
+
+            // Abfrage 1: Mitglieder nach Typ
+            $coql = "SELECT COUNT(id) as cnt, Membership_Type FROM Contacts WHERE Mitglied = true AND Contact_Status in ('Aktiv', 'Freigestellt') GROUP BY Membership_Type";
+            $response = wp_remote_post($api_url . '/crm/v7/coql', [
+                'headers' => [
+                    'Authorization' => 'Zoho-oauthtoken ' . $token,
+                    'Content-Type'  => 'application/json',
+                ],
+                'body' => wp_json_encode(['select_query' => $coql]),
+                'timeout' => 30,
+            ]);
+
+            if (!is_wp_error($response)) {
+                $body = json_decode(wp_remote_retrieve_body($response), true);
+                if (!empty($body['data'])) {
+                    foreach ($body['data'] as $row) {
+                        $type = $row['Membership_Type'] ?? 'Unbekannt';
+                        $count = (int) ($row['cnt'] ?? 0);
+                        $result['by_type'][$type] = $count;
+                        $result['total_active'] += $count;
+                    }
+                }
+            }
+
+            // Abfrage 2: Beitragslauf-Status (letztesBeitragsjahr)
+            $current_year = (int) date('Y');
+            $coql2 = "SELECT COUNT(id) as cnt, letztesBeitragsjahr FROM Contacts WHERE Mitglied = true AND Contact_Status in ('Aktiv', 'Freigestellt') GROUP BY letztesBeitragsjahr";
+            $response2 = wp_remote_post($api_url . '/crm/v7/coql', [
+                'headers' => [
+                    'Authorization' => 'Zoho-oauthtoken ' . $token,
+                    'Content-Type'  => 'application/json',
+                ],
+                'body' => wp_json_encode(['select_query' => $coql2]),
+                'timeout' => 30,
+            ]);
+
+            if (!is_wp_error($response2)) {
+                $body2 = json_decode(wp_remote_retrieve_body($response2), true);
+                $billed_current = 0;
+                $billed_previous = 0;
+                $never_billed = 0;
+
+                if (!empty($body2['data'])) {
+                    foreach ($body2['data'] as $row) {
+                        $year = $row['letztesBeitragsjahr'] ?? null;
+                        $count = (int) ($row['cnt'] ?? 0);
+
+                        if ($year === null || $year === '' || $year === 'null') {
+                            $never_billed += $count;
+                        } elseif ((int) $year >= $current_year) {
+                            $billed_current += $count;
+                        } else {
+                            $billed_previous += $count;
+                        }
+                    }
+                }
+
+                $result['billing_status'] = [
+                    'current_year'    => $current_year,
+                    'billed_current'  => $billed_current,
+                    'billed_previous' => $billed_previous,
+                    'never_billed'    => $never_billed,
+                    'pending'         => $result['total_active'] - $billed_current,
+                ];
+            }
+
+            return $result;
+        }
+
+        /* ============================================================ */
+        /* AJAX: Historische Daten importieren                           */
+        /* ============================================================ */
+
+        public function ajax_import_historical(): void {
+            check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
             if (!current_user_can('manage_options')) {
-                return;
+                wp_send_json_error(['message' => 'Keine Berechtigung']);
             }
 
-            $access = get_user_meta($user->ID, self::USER_META_KEY, true);
-            if (!is_array($access)) {
-                $access = [];
+            $json_raw = stripslashes($_POST['import_json'] ?? '');
+            $data = json_decode($json_raw, true);
+
+            if (!$data || !is_array($data)) {
+                wp_send_json_error(['message' => 'Ungueltiges JSON-Format. Erwartet: {"jahrestagung": {"2024": {...}}, ...}']);
             }
-            ?>
-            <h3>Finanzbericht-Zugriff</h3>
-            <table class="form-table">
-                <tr>
-                    <th><label>Berichte</label></th>
-                    <td>
-                        <?php foreach (self::REPORTS as $key => $label): ?>
-                            <label style="display:block;margin-bottom:5px;">
-                                <input type="checkbox"
-                                       name="dgptm_fb_access[]"
-                                       value="<?php echo esc_attr($key); ?>"
-                                       <?php checked(in_array($key, $access, true)); ?>>
-                                <?php echo esc_html($label); ?>
-                            </label>
-                        <?php endforeach; ?>
-                    </td>
-                </tr>
-            </table>
-            <?php
+
+            $imported = DGPTM_FB_Historical_Data::import($data);
+            wp_send_json_success(['message' => "Import erfolgreich: $imported Datensaetze", 'count' => $imported]);
         }
 
-        public function save_user_meta_field(int $user_id): void {
-            if (!current_user_can('manage_options')) {
-                return;
+        /* ============================================================ */
+        /* AJAX: Cache manuell aktualisieren                             */
+        /* ============================================================ */
+
+        public function ajax_refresh_cache(): void {
+            check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+            $user_id = get_current_user_id();
+            if (empty($this->get_user_access($user_id))) {
+                wp_send_json_error(['message' => 'Kein Zugriff']);
             }
-            $access = array_map('sanitize_key', $_POST['dgptm_fb_access'] ?? []);
-            $access = array_intersect($access, array_keys(self::REPORTS));
-            update_user_meta($user_id, self::USER_META_KEY, $access);
+
+            // Cache loeschen und neu laden
+            delete_transient('dgptm_fb_member_stats');
+            $data = $this->get_member_stats_data(true);
+            $data['source'] = 'refreshed';
+
+            if (class_exists('DGPTM_Logger')) {
+                \DGPTM_Logger::info('Finanzbericht Cache manuell aktualisiert', 'finanzbericht');
+            }
+
+            wp_send_json_success($data);
         }
 
-        /* ------------------------------------------------------------ */
-        /* Admin: Credentials Upload                                     */
-        /* ------------------------------------------------------------ */
+        /**
+         * Cron: Naechtliche Aktualisierung aller Caches
+         */
+        public function cron_refresh_all_caches(): void {
+            delete_transient('dgptm_fb_member_stats');
+            $this->get_member_stats_data(true);
+
+            if (class_exists('DGPTM_Logger')) {
+                \DGPTM_Logger::info('Finanzbericht Caches naechtlich aktualisiert', 'finanzbericht');
+            }
+        }
+
+        /* ============================================================ */
+        /* Admin: Credentials + Import                                   */
+        /* ============================================================ */
 
         public function add_admin_menu(): void {
             add_submenu_page(
@@ -214,7 +416,6 @@ if (!class_exists('DGPTM_Finanzbericht')) {
                 wp_send_json_error(['message' => 'Ungueltiges JSON-Format']);
             }
 
-            // Validierung
             $required = ['accounts_domain', 'client_id', 'client_secret', 'refresh_token', 'organization_id'];
             foreach ($required as $key) {
                 if (empty($data['zoho'][$key])) {
@@ -222,13 +423,12 @@ if (!class_exists('DGPTM_Finanzbericht')) {
                 }
             }
 
-            update_option(self::OPTION_CREDENTIALS, $data, false); // autoload=false
+            update_option(self::OPTION_CREDENTIALS, $data, false);
             wp_send_json_success(['message' => 'Zugangsdaten gespeichert']);
         }
     }
 }
 
-// Initialisierung
 if (!isset($GLOBALS['dgptm_finanzbericht_initialized'])) {
     $GLOBALS['dgptm_finanzbericht_initialized'] = true;
     DGPTM_Finanzbericht::get_instance();

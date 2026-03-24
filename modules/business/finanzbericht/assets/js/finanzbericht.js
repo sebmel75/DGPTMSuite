@@ -23,8 +23,14 @@
             loadReport();
         });
 
-        // Reload
-        $('#dgptm-fb-reload').on('click', loadReport);
+        // Reload (bei Mitgliederzahlen: Cache-Refresh, sonst Report-Reload)
+        $('#dgptm-fb-reload').on('click', function() {
+            if (state.report === 'mitgliederzahl') {
+                refreshCache();
+            } else {
+                loadReport();
+            }
+        });
 
         // Ersten Tab aktivieren
         $('.dgptm-fb-tab:first').trigger('click');
@@ -91,7 +97,12 @@
                 return;
             }
 
-            renderReport(data);
+            // Mitgliederzahlen haben eigenes Rendering
+            if (state.report === 'mitgliederzahl') {
+                renderMemberStats(data);
+            } else {
+                renderReport(data);
+            }
         });
     }
 
@@ -177,9 +188,79 @@
         return html;
     }
 
+    function refreshCache() {
+        var $content = $('#dgptm-fb-content');
+        var $loading = $('#dgptm-fb-loading');
+        $content.hide();
+        $loading.show();
+
+        $.post(dgptmFB.ajaxUrl, {
+            action: 'dgptm_fb_refresh_cache',
+            nonce: dgptmFB.nonce
+        }, function(response) {
+            $loading.hide();
+            $content.show();
+            if (response.success) {
+                renderMemberStats(response.data);
+            } else {
+                $content.html('<p class="dgptm-fb-error">' + (response.data?.message || 'Fehler') + '</p>');
+            }
+        });
+    }
+
+    function renderMemberStats(data) {
+        var html = '<div class="dgptm-fb-report-header"><h3>' + esc(data.title || 'Mitgliederzahlen') + '</h3></div>';
+
+        if (data.error) {
+            html += '<p class="dgptm-fb-error">' + esc(data.error) + '</p>';
+            $('#dgptm-fb-content').html(html);
+            return;
+        }
+
+        // KPIs
+        html += '<div class="dgptm-fb-kpis">';
+        html += kpiBox('Aktive Mitglieder', data.total_active || 0, 'green');
+        if (data.billing_status) {
+            var bs = data.billing_status;
+            html += kpiBox('Beitrag ' + bs.current_year + ' abgerechnet', bs.billed_current || 0, 'green');
+            html += kpiBox('Noch ausstehend', bs.pending || 0, bs.pending > 0 ? 'red' : 'green');
+        }
+        html += '</div>';
+
+        // Mitglieder nach Typ
+        if (data.by_type && Object.keys(data.by_type).length) {
+            html += '<div class="dgptm-fb-section"><h4>Nach Mitgliedstyp</h4>';
+            html += '<table class="dgptm-fb-table"><thead><tr><th>Typ</th><th>Anzahl</th></tr></thead><tbody>';
+            var types = Object.keys(data.by_type).sort(function(a, b) { return data.by_type[b] - data.by_type[a]; });
+            types.forEach(function(t) {
+                html += '<tr><td>' + esc(t || 'Ohne Typ') + '</td><td class="num">' + data.by_type[t] + '</td></tr>';
+            });
+            html += '</tbody></table></div>';
+        }
+
+        // Beitragslauf-Status
+        if (data.billing_status) {
+            var bs = data.billing_status;
+            html += '<div class="dgptm-fb-section"><h4>Beitragslauf ' + bs.current_year + '</h4>';
+            html += '<table class="dgptm-fb-table"><thead><tr><th>Status</th><th>Anzahl</th></tr></thead><tbody>';
+            html += '<tr><td>Beitrag ' + bs.current_year + ' abgerechnet</td><td class="num">' + bs.billed_current + '</td></tr>';
+            html += '<tr><td>Frueheres Jahr abgerechnet</td><td class="num">' + bs.billed_previous + '</td></tr>';
+            html += '<tr><td>Noch nie abgerechnet</td><td class="num">' + bs.never_billed + '</td></tr>';
+            html += '<tr class="dgptm-fb-highlight"><td><strong>Ausstehend fuer ' + bs.current_year + '</strong></td><td class="num"><strong>' + bs.pending + '</strong></td></tr>';
+            html += '</tbody></table></div>';
+        }
+
+        if (data.timestamp) {
+            html += '<p class="dgptm-fb-note">Stand: ' + data.timestamp + (data.source === 'cache' ? ' (Cache)' : ' (Live)') + '</p>';
+        }
+
+        $('#dgptm-fb-content').html(html);
+    }
+
     function esc(str) {
+        if (str == null) return '';
         var div = document.createElement('div');
-        div.appendChild(document.createTextNode(str));
+        div.appendChild(document.createTextNode(String(str)));
         return div.innerHTML;
     }
 

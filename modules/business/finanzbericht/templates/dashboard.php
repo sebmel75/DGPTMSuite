@@ -1,15 +1,18 @@
-<?php if (!defined('ABSPATH')) exit; ?>
+<?php if (!defined('ABSPATH')) exit;
+$user_id = get_current_user_id();
+$fb = DGPTM_Finanzbericht::get_instance();
+$access = $fb->get_user_access($user_id);
+$role = $fb->get_user_role($user_id);
+$role_labels = ['admin' => 'Administrator', 'schatzmeister' => 'Schatzmeister', 'praesident' => 'Praesident', 'geschaeftsstelle' => 'Geschaeftsstelle'];
+?>
 <div id="dgptm-fb-app" class="dgptm-fb-wrap">
     <div class="dgptm-fb-header">
         <h2>Finanzberichte DGPTM</h2>
-        <p class="dgptm-fb-subtitle">Einnahmen und Ausgaben nach Bereichen</p>
+        <span class="dgptm-fb-role-badge"><?php echo esc_html($role_labels[$role] ?? $role); ?></span>
     </div>
 
     <div class="dgptm-fb-nav">
-        <?php
-        $user_id = get_current_user_id();
-        $access = DGPTM_Finanzbericht::get_instance()->get_user_access($user_id);
-        foreach (DGPTM_Finanzbericht::REPORTS as $key => $label):
+        <?php foreach (DGPTM_Finanzbericht::REPORTS as $key => $label):
             if (!in_array($key, $access)) continue;
         ?>
             <button class="dgptm-fb-tab" data-report="<?php echo esc_attr($key); ?>">

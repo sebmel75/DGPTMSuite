@@ -2,7 +2,7 @@
   "id": "finanzbericht",
   "name": "Finanzbericht",
   "description": "Finanzauswertung Jahrestagung, Sachkundekurs und Zeitschrift mit Zoho Books Integration",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "Sebastian Melzer",
   "main_file": "finanzbericht.php",
   "dependencies": [],
@@ -26,11 +26,14 @@
     "Zoho Books API Integration",
     "Historische Daten 2023/2024",
     "Dynamische Daten ab 2025",
-    "Benutzer-Berechtigungen via User Meta",
+    "ACF-basierte Berechtigungen (schatzmeister/praesident/geschaeftsstelle)",
+    "Mitgliederzahlen und Beitragslauf-Status (Zoho CRM)",
+    "Historischer Datenimport via JSON",
     "Access-Logging",
     "Transfer-JSON fuer sensible Daten"
   ],
   "changelog": {
+    "1.1.0": "ACF-Berechtigungen (schatzmeister/praesident/geschaeftsstelle), Mitgliederzahlen + Beitragslauf-Status, historischer JSON-Import",
     "1.0.0": "Initiale Version mit JT/SKK/Zeitschrift Auswertung, historische + dynamische Daten"
   }
 }

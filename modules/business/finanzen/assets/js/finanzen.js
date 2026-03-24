@@ -33,7 +33,7 @@
             $('.dgptm-fin-tab').removeClass('active');
             $('.dgptm-fin-tab[data-tab="' + name + '"]').addClass('active');
             $('.dgptm-fin-panel').hide();
-            $('#dgptm-fin-panel-' + name).show();
+            $('#panel-' + name).show();
             if (this.tabs[name] && typeof this.tabs[name].load === 'function' && !this.tabs[name]._loaded) {
                 this.tabs[name].load();
                 this.tabs[name]._loaded = true;
@@ -105,7 +105,7 @@
     DgptmFin.tabs.dashboard = {
         _loaded: false,
         load: function() {
-            var $p = $('#dgptm-fin-panel-dashboard');
+            var $p = $('#panel-dashboard');
             DgptmFin.showLoading($p);
             DgptmFin.ajax('dgptm_fin_get_dashboard').done(function(res) {
                 if (!res || !res.success) { DgptmFin.showError($p, DgptmFin.errMsg(res)); return; }
@@ -327,7 +327,7 @@
     DgptmFin.tabs.results = {
         _loaded: false,
         load: function() {
-            var $p = $('#dgptm-fin-panel-results');
+            var $p = $('#panel-results');
             DgptmFin.showLoading($p);
             DgptmFin.ajax('dgptm_fin_get_results').done(function(res) {
                 if (!res || !res.success) { DgptmFin.showError($p, DgptmFin.errMsg(res)); return; }
@@ -429,7 +429,7 @@
         _loaded: false,
         load: function() { this.loadInvoices(); },
         loadInvoices: function() {
-            var self = this, $p = $('#dgptm-fin-panel-invoices');
+            var self = this, $p = $('#panel-invoices');
             DgptmFin.showLoading($p);
             DgptmFin.ajax('dgptm_fin_get_invoices').done(function(res) {
                 if (!res || !res.success) { DgptmFin.showError($p, DgptmFin.errMsg(res)); return; }
@@ -619,7 +619,7 @@
         _loaded: false,
         load: function() { this.loadData(); },
         loadData: function() {
-            var self = this, $p = $('#dgptm-fin-panel-treasurer');
+            var self = this, $p = $('#panel-treasurer');
             DgptmFin.showLoading($p);
             DgptmFin.ajax('dgptm_fin_treasurer_crud', { action_type: 'get' }).done(function(res) {
                 if (!res || !res.success) { DgptmFin.showError($p, DgptmFin.errMsg(res)); return; }

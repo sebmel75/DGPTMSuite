@@ -19,6 +19,7 @@
   "active": false,
   "can_export": true,
   "critical": false,
+  "deprecated": true,
   "features": [
     "Jahrestagung Finanzauswertung",
     "Sachkundekurs Auswertung",

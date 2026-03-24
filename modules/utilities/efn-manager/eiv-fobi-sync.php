@@ -232,7 +232,7 @@ function dgptm_eiv_cache_lookup( $vnr ) {
     return [
         'post_id'         => $pid,
         'vnr'             => get_field( 'vnr', $pid ),
-        'title'           => get_field( 'title', $pid ),
+        'title'           => html_entity_decode( (string) get_field( 'title', $pid ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ),
         'typeCode'        => get_field( 'typeCode', $pid ),
         'date'            => get_field( 'date', $pid ),
         'endDate'         => get_field( 'endDate', $pid ),
@@ -484,7 +484,7 @@ function dgptm_eiv_find_fuzzy_matches( $user_id, $event_date, $title ) {
 
         $matches[] = [
             'post_id' => $pid,
-            'title'   => get_the_title(),
+            'title'   => html_entity_decode( get_the_title(), ENT_QUOTES | ENT_HTML5, 'UTF-8' ),
             'date'    => get_field( 'date', $pid ),
             'type'    => get_field( 'type', $pid ),
             'points'  => floatval( get_field( 'points', $pid ) ),

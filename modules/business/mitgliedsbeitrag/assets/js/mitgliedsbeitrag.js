@@ -10,16 +10,30 @@
     }
 
     function loadStatus() {
-        $.post(dgptmMB.ajaxUrl, {
-            action: 'dgptm_mb_get_status',
-            nonce: dgptmMB.nonce
-        }, function(res) {
-            $('#dgptm-mb-stats-loading').hide();
-            if (!res.success) {
-                $('#dgptm-mb-stats-content').html('<p class="dgptm-mb-error">' + esc(res.data?.message || 'Fehler') + '</p>').show();
-                return;
+        console.log('[DGPTM MB] loadStatus aufgerufen, ajaxUrl=' + dgptmMB.ajaxUrl);
+        $.ajax({
+            url: dgptmMB.ajaxUrl,
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                action: 'dgptm_mb_get_status',
+                nonce: dgptmMB.nonce
+            },
+            success: function(res) {
+                console.log('[DGPTM MB] Response:', res);
+                $('#dgptm-mb-stats-loading').hide();
+                if (!res || !res.success) {
+                    var msg = (res && res.data && res.data.message) ? res.data.message : 'Unbekannter Fehler (Response: ' + JSON.stringify(res).substring(0, 200) + ')';
+                    $('#dgptm-mb-stats-content').html('<p class="dgptm-mb-error">' + esc(msg) + '</p>').show();
+                    return;
+                }
+                renderStats(res.data);
+            },
+            error: function(xhr, status, error) {
+                console.error('[DGPTM MB] AJAX Fehler:', status, error, xhr.responseText?.substring(0, 300));
+                $('#dgptm-mb-stats-loading').hide();
+                $('#dgptm-mb-stats-content').html('<p class="dgptm-mb-error">Netzwerkfehler: ' + esc(error || status || 'Verbindung fehlgeschlagen') + '</p>').show();
             }
-            renderStats(res.data);
         });
     }
 

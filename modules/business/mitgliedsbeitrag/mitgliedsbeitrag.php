@@ -160,18 +160,47 @@ HTML;
 
         public function ajax_get_status(): void {
             check_ajax_referer(self::NONCE, 'nonce');
-            if (!$this->user_has_access()) {
-                wp_send_json_error(['message' => 'Kein Zugriff']);
+
+            $user_id = get_current_user_id();
+            error_log('[DGPTM MB] ajax_get_status aufgerufen, user_id=' . $user_id);
+
+            // Stats-Zugriff fuer alle 3 Rollen
+            if (!$this->user_can_view_stats($user_id)) {
+                error_log('[DGPTM MB] Zugriff verweigert: user_id=' . $user_id . ' hat weder schatzmeister/praesident/geschaeftsstelle');
+                wp_send_json_error(['message' => 'Kein Zugriff. Benoetigte Rolle: Schatzmeister, Praesident oder Geschaeftsstelle.']);
             }
 
             $config = DGPTM_MB_Config::load();
+            error_log('[DGPTM MB] Config geladen: valid=' . ($config->is_valid() ? 'ja' : 'NEIN') .
+                ', client_id=' . ($config->zoho_client_id() ? 'gesetzt' : 'FEHLT') .
+                ', refresh_token=' . ($config->zoho_refresh_token() ? 'gesetzt' : 'FEHLT') .
+                ', org_id=' . ($config->zoho_org_id() ?: 'FEHLT') .
+                ', gc_token=' . ($config->gc_token() ? 'gesetzt' : 'FEHLT'));
+
+            if (!$config->is_valid()) {
+                error_log('[DGPTM MB] Config ungueltig - sende leere Stats');
+                wp_send_json_success([
+                    'stats'      => ['total_active' => 0, 'by_type' => [], 'billing_status' => [], 'error' => 'Konfiguration nicht vollstaendig'],
+                    'last_run'   => [],
+                    'config_set' => false,
+                ]);
+            }
 
             // Mitgliederzahlen aus Cache oder live
             $stats = get_transient('dgptm_mb_member_stats');
-            if (false === $stats) {
-                $crm = new DGPTM_MB_Zoho_CRM($config);
-                $stats = $crm->get_member_stats();
-                set_transient('dgptm_mb_member_stats', $stats, DAY_IN_SECONDS);
+            if (false !== $stats) {
+                error_log('[DGPTM MB] Stats aus Cache geladen');
+            } else {
+                error_log('[DGPTM MB] Stats-Cache leer, lade live von Zoho CRM...');
+                try {
+                    $crm = new DGPTM_MB_Zoho_CRM($config);
+                    $stats = $crm->get_member_stats();
+                    error_log('[DGPTM MB] Stats geladen: total_active=' . ($stats['total_active'] ?? 0) . ', types=' . count($stats['by_type'] ?? []));
+                    set_transient('dgptm_mb_member_stats', $stats, DAY_IN_SECONDS);
+                } catch (\Throwable $e) {
+                    error_log('[DGPTM MB] Stats-Fehler: ' . $e->getMessage());
+                    $stats = ['total_active' => 0, 'by_type' => [], 'billing_status' => [], 'error' => $e->getMessage()];
+                }
             }
 
             $last_results = get_option(self::OPT_RESULTS, []);

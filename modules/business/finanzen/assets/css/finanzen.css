@@ -34,35 +34,48 @@
 }
 
 /* Tab Navigation */
-.dgptm-fin-tabs {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 20px;
+#dgptm-fin-app .dgptm-fin-tabs {
+    display: flex !important;
+    gap: 0 !important;
+    margin-bottom: 0 !important;
     flex-wrap: wrap;
-    border-bottom: 2px solid #e5e7eb;
-    padding-bottom: 0;
+    border-bottom: 2px solid #1a3a5c;
+    padding: 0 !important;
+    list-style: none;
+    background: transparent;
 }
-.dgptm-fin-tab {
-    padding: 10px 18px;
-    border: 2px solid transparent;
-    border-bottom: none;
-    background: #f9fafb;
-    border-radius: 6px 6px 0 0;
-    cursor: pointer;
+#dgptm-fin-app .dgptm-fin-tabs .dgptm-fin-tab {
+    /* Reset alle Button-Defaults */
+    all: unset;
+    box-sizing: border-box;
+    display: inline-block;
+    padding: 12px 22px;
+    margin: 0 2px -2px 0;
+    background: #e8ecf1;
+    color: #4a5568;
     font-size: 13px;
     font-weight: 600;
-    color: #6b7280;
-    transition: all 0.2s ease;
-    margin-bottom: -2px;
+    font-family: inherit;
+    line-height: 1.4;
+    cursor: pointer;
+    border: 2px solid transparent;
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+    user-select: none;
+    -webkit-user-select: none;
 }
-.dgptm-fin-tab:hover {
-    background: #eef2f7;
+#dgptm-fin-app .dgptm-fin-tabs .dgptm-fin-tab:hover {
+    background: #d0d8e4;
     color: #1a3a5c;
 }
-.dgptm-fin-tab.active {
+#dgptm-fin-app .dgptm-fin-tabs .dgptm-fin-tab.active {
     background: #1a3a5c;
     color: #fff;
     border-color: #1a3a5c;
+    position: relative;
+    z-index: 1;
 }
 
 /* Panels */
@@ -385,16 +398,22 @@
 }
 
 /* Sub-tabs (Reports) */
-.dgptm-fin-sub-tabs {
+#dgptm-fin-app .dgptm-fin-sub-tabs {
     display: flex;
-    gap: 6px;
+    gap: 0;
     margin-bottom: 14px;
     flex-wrap: wrap;
+    border-bottom: 1px solid #d1d5db;
 }
-.dgptm-fin-sub-tab {
-    padding: 6px 14px;
+#dgptm-fin-app .dgptm-fin-sub-tabs .dgptm-fin-sub-tab {
+    all: unset;
+    box-sizing: border-box;
+    display: inline-block;
+    padding: 8px 16px;
+    margin: 0 2px -1px 0;
     border: 1px solid #d1d5db;
-    background: #fff;
+    border-bottom: none;
+    background: #f9fafb;
     border-radius: 4px;
     cursor: pointer;
     font-size: 12px;
@@ -402,14 +421,16 @@
     color: #6b7280;
     transition: all 150ms ease;
 }
-.dgptm-fin-sub-tab:hover {
+#dgptm-fin-app .dgptm-fin-sub-tabs .dgptm-fin-sub-tab:hover {
     border-color: #1a3a5c;
     color: #1a3a5c;
+    cursor: pointer;
 }
-.dgptm-fin-sub-tab.active {
+#dgptm-fin-app .dgptm-fin-sub-tabs .dgptm-fin-sub-tab.active {
     background: #1a3a5c;
     color: #fff;
     border-color: #1a3a5c;
+    border-radius: 6px 6px 0 0;
 }
 
 /* Responsive */

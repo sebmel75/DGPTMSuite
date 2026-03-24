@@ -1455,57 +1455,60 @@ function dgptm_eiv_render_admin_page() {
                         html += '</tbody></table></div></div>';
                     });
 
-                    var $c = $('#eiv-groups-container').html(html);
-
-                    // Toggle
-                    $c.on('click', '.eiv-group-header', function(){
-                        var id = $(this).data('toggle');
-                        $('#eiv-gb-'+id).toggleClass('open');
-                    });
-
-                    // Umbenennen
-                    $c.on('click', '.eiv-grp-rename', function(){
-                        var $btn = $(this);
-                        var ids = $btn.data('ids');
-                        var newTitle = $btn.closest('.eiv-group-actions').find('.eiv-grp-title').val().trim();
-                        if (!newTitle) { alert('Bezeichnung darf nicht leer sein.'); return; }
-                        if (!confirm('Alle '+ids.length+' Einträge umbenennen zu "'+newTitle+'"?')) return;
-                        $btn.prop('disabled',true).text('Speichere…');
-                        $.post(ajaxurl, { action:'dgptm_eiv_rename_group', _wpnonce:nonce, post_ids:ids, new_title:newTitle }, function(r){
-                            $btn.prop('disabled',false).text('Umbenennen');
-                            if (r.success) { alert(r.data.updated+' Einträge umbenannt.'); $('#eiv-load-groups').click(); }
-                            else alert('Fehler: '+(r.data?.message||''));
-                        });
-                    });
-
-                    // Punkte speichern
-                    $c.on('click', '.eiv-grp-save', function(){
-                        var $btn = $(this);
-                        var ids = $btn.data('ids');
-                        var pts = $btn.closest('.eiv-group-actions').find('.eiv-grp-pts').val();
-                        if (!confirm('Punkte für alle '+ids.length+' Einträge auf '+pts+' setzen?')) return;
-                        $btn.prop('disabled',true).text('Speichere…');
-                        $.post(ajaxurl, { action:'dgptm_eiv_update_group_points', _wpnonce:nonce, post_ids:ids, new_points:pts }, function(r){
-                            $btn.prop('disabled',false).text('Punkte speichern');
-                            if (r.success) { alert(r.data.updated+' Einträge aktualisiert.'); $('#eiv-load-groups').click(); }
-                            else alert('Fehler: '+(r.data?.message||''));
-                        });
-                    });
-
-                    // Gruppe löschen
-                    $c.on('click', '.eiv-grp-delete', function(){
-                        var $btn = $(this);
-                        var ids = $btn.data('ids');
-                        if (!confirm('ACHTUNG: Alle '+ids.length+' Fortbildungseinträge dieser Veranstaltung unwiderruflich löschen?')) return;
-                        $btn.prop('disabled',true).text('Lösche…');
-                        $.post(ajaxurl, { action:'dgptm_eiv_delete_group', _wpnonce:nonce, post_ids:ids }, function(r){
-                            $btn.prop('disabled',false).text('Gelöscht');
-                            if (r.success) { alert(r.data.deleted+' Einträge gelöscht.'); $('#eiv-load-groups').click(); }
-                            else alert('Fehler: '+(r.data?.message||''));
-                        });
-                    });
+                    $('#eiv-groups-container').html(html);
 
                 }).fail(function(xhr){ $('#eiv-groups-spinner').hide(); alert('HTTP-Fehler ('+xhr.status+')'); });
+            });
+
+            // Event-Delegation auf dem festen Container (überlebt .html()-Ersetzungen)
+            var $gc = $('#eiv-groups-container');
+
+            // Toggle
+            $gc.on('click', '.eiv-group-header', function(){
+                var id = $(this).data('toggle');
+                $('#eiv-gb-'+id).toggleClass('open');
+            });
+
+            // Umbenennen
+            $gc.on('click', '.eiv-grp-rename', function(){
+                var $btn = $(this);
+                var ids = $btn.data('ids');
+                var newTitle = $btn.closest('.eiv-group-actions').find('.eiv-grp-title').val().trim();
+                if (!newTitle) { alert('Bezeichnung darf nicht leer sein.'); return; }
+                if (!confirm('Alle '+ids.length+' Einträge umbenennen zu "'+newTitle+'"?')) return;
+                $btn.prop('disabled',true).text('Speichere…');
+                $.post(ajaxurl, { action:'dgptm_eiv_rename_group', _wpnonce:nonce, post_ids:ids, new_title:newTitle }, function(r){
+                    $btn.prop('disabled',false).text('Umbenennen');
+                    if (r.success) { alert(r.data.updated+' Einträge umbenannt.'); $('#eiv-load-groups').click(); }
+                    else alert('Fehler: '+(r.data?.message||''));
+                });
+            });
+
+            // Punkte speichern
+            $gc.on('click', '.eiv-grp-save', function(){
+                var $btn = $(this);
+                var ids = $btn.data('ids');
+                var pts = $btn.closest('.eiv-group-actions').find('.eiv-grp-pts').val();
+                if (!confirm('Punkte für alle '+ids.length+' Einträge auf '+pts+' setzen?')) return;
+                $btn.prop('disabled',true).text('Speichere…');
+                $.post(ajaxurl, { action:'dgptm_eiv_update_group_points', _wpnonce:nonce, post_ids:ids, new_points:pts }, function(r){
+                    $btn.prop('disabled',false).text('Punkte speichern');
+                    if (r.success) { alert(r.data.updated+' Einträge aktualisiert.'); $('#eiv-load-groups').click(); }
+                    else alert('Fehler: '+(r.data?.message||''));
+                });
+            });
+
+            // Gruppe löschen
+            $gc.on('click', '.eiv-grp-delete', function(){
+                var $btn = $(this);
+                var ids = $btn.data('ids');
+                if (!confirm('ACHTUNG: Alle '+ids.length+' Fortbildungseinträge dieser Veranstaltung unwiderruflich löschen?')) return;
+                $btn.prop('disabled',true).text('Lösche…');
+                $.post(ajaxurl, { action:'dgptm_eiv_delete_group', _wpnonce:nonce, post_ids:ids }, function(r){
+                    $btn.prop('disabled',false).text('Gelöscht');
+                    if (r.success) { alert(r.data.deleted+' Einträge gelöscht.'); $('#eiv-load-groups').click(); }
+                    else alert('Fehler: '+(r.data?.message||''));
+                });
             });
 
             // ===== Manueller Sync =====

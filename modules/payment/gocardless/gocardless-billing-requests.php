@@ -74,7 +74,19 @@ function dgptm_gcl_br_api( $method, $endpoint, $body = null ) {
     $data = json_decode( wp_remote_retrieve_body( $res ), true );
 
     if ( $code < 200 || $code >= 300 ) {
+        // Volle Response für Diagnose loggen
+        error_log( "[GoCardless] API Error on {$endpoint} (HTTP {$code}): " . wp_remote_retrieve_body( $res ) );
         $msg = $data['error']['message'] ?? "HTTP {$code}";
+        if ( ! empty( $data['error']['errors'] ) && is_array( $data['error']['errors'] ) ) {
+            $details = [];
+            foreach ( $data['error']['errors'] as $err ) {
+                $parts = array_filter( [ $err['field'] ?? '', $err['reason'] ?? '', $err['message'] ?? '' ] );
+                $details[] = implode( ': ', $parts );
+            }
+            if ( $details ) {
+                $msg .= ' (' . implode( '; ', $details ) . ')';
+            }
+        }
         return new WP_Error( 'gcl_api_error', $msg );
     }
 
@@ -257,13 +269,14 @@ add_action( 'wp_ajax_dgptm_gcl_change_bank', function() {
     if ( ! $br_id ) wp_send_json_error( [ 'message' => 'Billing Request ID fehlt.' ] );
 
     // Schritt 4: Billing Request Flow
+    // Kein lock_customer_details — Kundendaten werden vorausgefüllt,
+    // aber GoCardless kann fehlende Pflichtfelder abfragen
     $settings = dgptm_gcl_br_get_settings();
     $flow = dgptm_gcl_br_api( 'POST', 'billing_request_flows', [
         'billing_request_flows' => [
-            'redirect_uri'          => $settings['redirect_url'],
-            'exit_uri'              => $settings['exit_url'],
-            'lock_customer_details' => true,
-            'links' => [ 'billing_request' => $br_id ],
+            'redirect_uri' => $settings['redirect_url'],
+            'exit_uri'     => $settings['exit_url'],
+            'links'        => [ 'billing_request' => $br_id ],
         ],
     ]);
 
@@ -307,10 +320,9 @@ add_action( 'wp_ajax_dgptm_gcl_new_mandate', function() {
     $settings = dgptm_gcl_br_get_settings();
     $flow = dgptm_gcl_br_api( 'POST', 'billing_request_flows', [
         'billing_request_flows' => [
-            'redirect_uri'          => $settings['redirect_url'],
-            'exit_uri'              => $settings['exit_url'],
-            'lock_customer_details' => true,
-            'links' => [ 'billing_request' => $br_id ],
+            'redirect_uri' => $settings['redirect_url'],
+            'exit_uri'     => $settings['exit_url'],
+            'links'        => [ 'billing_request' => $br_id ],
         ],
     ]);
 

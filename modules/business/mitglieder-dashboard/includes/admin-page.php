@@ -66,7 +66,19 @@ $top_tabs = array_filter($all_tabs, function($t) { return empty($t['parent']); }
                 $perm_acf = '';
                 $perm_roles = '';
                 $perm_sc = '';
+                $perm_combined_acf = '';
+                $perm_combined_role = '';
                 if ($perm === 'admin') $perm_type = 'admin';
+                elseif (strpos($perm, '+') !== false) {
+                    // Kombinierte Berechtigung: z.B. "acf:testbereich+role:administrator"
+                    $perm_type = 'combined';
+                    $parts = explode('+', $perm);
+                    foreach ($parts as $p) {
+                        $p = trim($p);
+                        if (strpos($p, 'acf:') === 0) $perm_combined_acf = substr($p, 4);
+                        elseif (strpos($p, 'role:') === 0) $perm_combined_role = substr($p, 5);
+                    }
+                }
                 elseif (strpos($perm, 'acf:') === 0) { $perm_type = 'acf_field'; $perm_acf = substr($perm, 4); }
                 elseif (strpos($perm, 'role:') === 0) { $perm_type = 'role'; $perm_roles = substr($perm, 5); }
                 elseif (strpos($perm, 'sc:') === 0) { $perm_type = 'shortcode'; $perm_sc = substr($perm, 3); }
@@ -123,6 +135,7 @@ $top_tabs = array_filter($all_tabs, function($t) { return empty($t['parent']); }
                                     <option value="always" <?php selected($perm_type, 'always'); ?>>Immer sichtbar</option>
                                     <option value="acf_field" <?php selected($perm_type, 'acf_field'); ?>>ACF-Feld</option>
                                     <option value="role" <?php selected($perm_type, 'role'); ?>>WordPress-Rolle</option>
+                                    <option value="combined" <?php selected($perm_type, 'combined'); ?>>ACF-Feld UND Rolle</option>
                                     <option value="shortcode" <?php selected($perm_type, 'shortcode'); ?>>Shortcode (gibt 1/0 zurueck)</option>
                                     <option value="admin" <?php selected($perm_type, 'admin'); ?>>Nur Admins</option>
                                 </select>
@@ -131,14 +144,18 @@ $top_tabs = array_filter($all_tabs, function($t) { return empty($t['parent']); }
                         <tr class="dt-row-acf" <?php if ($perm_type !== 'acf_field') echo 'style="display:none;"'; ?>>
                             <th>ACF-Feld(er)</th>
                             <td>
-                                <input type="text" class="dt-perm-acf regular-text" value="<?php echo esc_attr($perm_acf); ?>" placeholder="testbereich" list="dt-acf-fields-list">
-                                <p class="description">Kommagetrennt fuer mehrere (OR-Logik): <code>testbereich,umfragen,webinar</code></p>
-                                <datalist id="dt-acf-fields-list">
-                                    <?php foreach ($acf_fields as $key => $label) :
-                                        if (empty($key)) continue; ?>
-                                        <option value="<?php echo esc_attr($key); ?>">
-                                    <?php endforeach; ?>
-                                </datalist>
+                                <input type="hidden" class="dt-perm-acf" value="<?php echo esc_attr($perm_acf); ?>">
+                                <?php
+                                $selected_acf = array_map('trim', explode(',', $perm_acf));
+                                foreach ($acf_fields as $key => $label) :
+                                    if (empty($key)) continue;
+                                ?>
+                                <label style="display:inline-block;margin:2px 12px 2px 0;">
+                                    <input type="checkbox" class="dt-acf-cb" value="<?php echo esc_attr($key); ?>" <?php checked(in_array($key, $selected_acf)); ?>>
+                                    <?php echo esc_html($label); ?>
+                                </label>
+                                <?php endforeach; ?>
+                                <p class="description">OR-Logik: Mindestens ein Feld muss aktiv sein.</p>
                             </td>
                         </tr>
                         <tr class="dt-row-role" <?php if ($perm_type !== 'role') echo 'style="display:none;"'; ?>>
@@ -150,6 +167,30 @@ $top_tabs = array_filter($all_tabs, function($t) { return empty($t['parent']); }
                             <td>
                                 <input type="text" class="dt-perm-sc regular-text" value="<?php echo esc_attr($perm_sc); ?>" placeholder="umfrageberechtigung">
                                 <p class="description">Shortcode ohne Klammern. Muss <code>1</code> oder <code>true</code> zurueckgeben fuer sichtbar.</p>
+                            </td>
+                        </tr>
+                        <tr class="dt-row-combined" <?php if ($perm_type !== 'combined') echo 'style="display:none;"'; ?>>
+                            <th>ACF-Feld UND Rolle</th>
+                            <td>
+                                <div style="margin-bottom:8px;">
+                                    <strong>ACF-Feld(er):</strong><br>
+                                    <input type="hidden" class="dt-perm-combined-acf" value="<?php echo esc_attr($perm_combined_acf); ?>">
+                                    <?php
+                                    $sel_combined_acf = array_map('trim', explode(',', $perm_combined_acf));
+                                    foreach ($acf_fields as $key => $label) :
+                                        if (empty($key)) continue;
+                                    ?>
+                                    <label style="display:inline-block;margin:2px 12px 2px 0;">
+                                        <input type="checkbox" class="dt-combined-acf-cb" value="<?php echo esc_attr($key); ?>" <?php checked(in_array($key, $sel_combined_acf)); ?>>
+                                        <?php echo esc_html($label); ?>
+                                    </label>
+                                    <?php endforeach; ?>
+                                </div>
+                                <div>
+                                    <strong>UND Rolle(n):</strong><br>
+                                    <input type="text" class="dt-perm-combined-role regular-text" value="<?php echo esc_attr($perm_combined_role); ?>" placeholder="administrator,mitglied">
+                                </div>
+                                <p class="description">Beide Bedingungen muessen erfuellt sein (AND). ACF-Felder untereinander: OR-Logik. Rollen untereinander: OR-Logik.</p>
                             </td>
                         </tr>
                         <tr>

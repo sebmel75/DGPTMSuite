@@ -103,9 +103,29 @@ class DGPTM_Dashboard_Tabs {
         // "admin" permission: only admins
         if ($perm === 'admin') return $is_admin;
 
+        // Kombinierte Berechtigungen (AND-Logik mit "+")
+        // z.B. "acf:testbereich+role:administrator" → beide muessen erfuellt sein
+        if (strpos($perm, '+') !== false) {
+            if ($admin_bypass && $is_admin) return true;
+            $parts = array_map('trim', explode('+', $perm));
+            foreach ($parts as $part) {
+                $sub_tab = ['permission' => $part];
+                // Rekursiver Check ohne admin_bypass (bereits oben geprueft)
+                if (!$this->check_single_permission($user_id, $part)) return false;
+            }
+            return true;
+        }
+
+        if ($admin_bypass && $is_admin) return true;
+        return $this->check_single_permission($user_id, $perm);
+    }
+
+    /**
+     * Prueft eine einzelne Berechtigungsregel (ohne AND-Kombination).
+     */
+    private function check_single_permission($user_id, $perm) {
         // ACF field check (e.g. "acf:testbereich" or "acf:testbereich,umfragen,webinar")
         if (strpos($perm, 'acf:') === 0) {
-            if ($admin_bypass && $is_admin) return true;
             $fields = array_map('trim', explode(',', substr($perm, 4)));
             foreach ($fields as $field) {
                 if (empty($field)) continue;
@@ -119,7 +139,6 @@ class DGPTM_Dashboard_Tabs {
 
         // Role check (e.g. "role:jahrestagung,administrator")
         if (strpos($perm, 'role:') === 0) {
-            if ($admin_bypass && $is_admin) return true;
             $roles = explode(',', substr($perm, 5));
             $user = get_userdata($user_id);
             if (!$user) return false;
@@ -130,14 +149,14 @@ class DGPTM_Dashboard_Tabs {
         }
 
         // Shortcode check (e.g. "sc:umfrageberechtigung")
-        // Shortcode must return "1" or "true" for visible
         if (strpos($perm, 'sc:') === 0) {
-            if ($admin_bypass && $is_admin) return true;
             $sc_name = substr($perm, 3);
             if (!shortcode_exists($sc_name)) return false;
             $result = strtolower(trim(do_shortcode('[' . $sc_name . ']')));
             return ($result === '1' || $result === 'true');
         }
+
+        if ($perm === 'admin') return user_can($user_id, 'manage_options');
 
         return true;
     }

@@ -24,6 +24,23 @@ jQuery(function($) {
         $i.find('.dt-row-acf').toggle(v === 'acf_field');
         $i.find('.dt-row-role').toggle(v === 'role');
         $i.find('.dt-row-shortcode').toggle(v === 'shortcode');
+        $i.find('.dt-row-combined').toggle(v === 'combined');
+    });
+
+    // ─── ACF Checkboxen → Hidden-Input synchronisieren ───
+    $(document).on('change', '.dt-acf-cb', function() {
+        var $item = $(this).closest('.dgptm-tab-config-item');
+        var vals = [];
+        $item.find('.dt-acf-cb:checked').each(function(){ vals.push($(this).val()); });
+        $item.find('.dt-perm-acf').val(vals.join(','));
+    });
+
+    // Combined ACF Checkboxen
+    $(document).on('change', '.dt-combined-acf-cb', function() {
+        var $item = $(this).closest('.dgptm-tab-config-item');
+        var vals = [];
+        $item.find('.dt-combined-acf-cb:checked').each(function(){ vals.push($(this).val()); });
+        $item.find('.dt-perm-combined-acf').val(vals.join(','));
     });
 
     // ─── Label preview ───
@@ -55,6 +72,14 @@ jQuery(function($) {
         if (type === 'acf_field') return 'acf:' + $item.find('.dt-perm-acf').val();
         if (type === 'role') return 'role:' + $.trim($item.find('.dt-perm-roles').val());
         if (type === 'shortcode') return 'sc:' + $.trim($item.find('.dt-perm-sc').val());
+        if (type === 'combined') {
+            var parts = [];
+            var acf = $.trim($item.find('.dt-perm-combined-acf').val());
+            var role = $.trim($item.find('.dt-perm-combined-role').val());
+            if (acf) parts.push('acf:' + acf);
+            if (role) parts.push('role:' + role);
+            return parts.length ? parts.join('+') : 'always';
+        }
         return 'always';
     }
 
@@ -92,6 +117,10 @@ jQuery(function($) {
             data: { action: 'dgptm_dash_save', nonce: dgptmDashAdmin.nonce, tabs: JSON.stringify(collect()) }
         }).done(function(r) {
             msg(r.success ? r.data : (r.data || 'Fehler'), r.success ? 'ok' : 'error');
+            if (r.success) {
+                // Seite nach kurzem Delay neu laden damit Tab-Reihenfolge stimmt
+                setTimeout(function(){ location.reload(); }, 800);
+            }
         }).fail(function(x, s, e) {
             msg('Speichern fehlgeschlagen: ' + (e || s), 'error');
         }).always(function() {

@@ -36,11 +36,32 @@ jQuery(function($) {
         }
     });
 
-    // Deep link
+    // Deep link: #tab-name oder ?tab=name
+    var deepTab = '';
     var hash = location.hash.replace('#tab-', '');
-    if (hash) {
-        var $tab = $d.find('.dgptm-nav-item[data-tab="' + hash + '"]');
-        if ($tab.length) $tab.trigger('click');
+    if (hash) deepTab = hash;
+    // GET-Parameter ?tab=name hat Vorrang
+    var urlParams = new URLSearchParams(location.search);
+    var tabParam = urlParams.get('tab');
+    if (tabParam) deepTab = tabParam;
+
+    if (deepTab) {
+        // Erst Top-Level Tab prüfen
+        var $tab = $d.find('.dgptm-nav-item[data-tab="' + deepTab + '"]');
+        if ($tab.length) {
+            $tab.trigger('click');
+        } else {
+            // Sub-Tab: Eltern-Tab finden und öffnen, dann Sub-Tab
+            var $ftab = $d.find('.dgptm-ftab[data-ftab="' + deepTab + '"]');
+            if ($ftab.length) {
+                var $panel = $ftab.closest('.dgptm-panel');
+                var parentId = $panel.data('panel');
+                if (parentId) {
+                    $d.find('.dgptm-nav-item[data-tab="' + parentId + '"]').trigger('click');
+                    setTimeout(function(){ $ftab.trigger('click'); }, 300);
+                }
+            }
+        }
     }
 
     function loadTab(id, $target) {

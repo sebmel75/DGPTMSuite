@@ -164,22 +164,29 @@ function dgptm_gcl_br_get_active_mandate( $customer_id ) {
 }
 
 /**
- * Aktualisiert Adresse des GoCardless-Customers aus Zoho CRM.
+ * Setzt Kundendaten + Adresse auf dem Billing Request via collect_customer_details Action.
  */
-function dgptm_gcl_br_sync_customer_address( $customer_id ) {
+function dgptm_gcl_br_collect_customer_details( $br_id ) {
     $street = trim( do_shortcode( '[zoho_api_data field="Strasse"]' ) );
     $plz    = trim( do_shortcode( '[zoho_api_data field="PLZ"]' ) );
     $city   = trim( do_shortcode( '[zoho_api_data field="Ort"]' ) );
 
-    if ( ! $street && ! $plz && ! $city ) return;
+    $billing_detail = [ 'country_code' => 'DE' ];
+    if ( $street ) $billing_detail['address_line1'] = $street;
+    if ( $plz )    $billing_detail['postal_code']   = $plz;
+    if ( $city )   $billing_detail['city']          = $city;
 
-    $update = [ 'country_code' => 'DE' ];
-    if ( $street ) $update['address_line1'] = $street;
-    if ( $plz )    $update['postal_code']   = $plz;
-    if ( $city )   $update['city']          = $city;
+    $user = wp_get_current_user();
+    $customer = [];
+    if ( $user->first_name ) $customer['given_name']  = $user->first_name;
+    if ( $user->last_name )  $customer['family_name'] = $user->last_name;
+    if ( $user->user_email ) $customer['email']       = $user->user_email;
 
-    dgptm_gcl_br_api( 'PUT', "customers/{$customer_id}", [
-        'customers' => $update,
+    dgptm_gcl_br_api( 'POST', "billing_requests/{$br_id}/actions/collect_customer_details", [
+        'data' => [
+            'customer'                => $customer,
+            'customer_billing_detail' => $billing_detail,
+        ],
     ]);
 }
 
@@ -273,13 +280,10 @@ add_action( 'wp_ajax_dgptm_gcl_change_bank', function() {
         }
     }
 
-    // Adresse aus Zoho an GoCardless Customer übertragen
-    dgptm_gcl_br_sync_customer_address( $customer_id );
-
-    // Schritt 3: Billing Request erstellen
+    // Schritt 3: Billing Request erstellen (verify: minimum → kein Open Banking)
     $br = dgptm_gcl_br_api( 'POST', 'billing_requests', [
         'billing_requests' => [
-            'mandate_request' => [ 'scheme' => 'sepa_core' ],
+            'mandate_request' => [ 'scheme' => 'sepa_core', 'verify' => 'minimum' ],
             'links' => [ 'customer' => $customer_id ],
         ],
     ]);
@@ -291,9 +295,10 @@ add_action( 'wp_ajax_dgptm_gcl_change_bank', function() {
     $br_id = $br['billing_requests']['id'] ?? '';
     if ( ! $br_id ) wp_send_json_error( [ 'message' => 'Billing Request ID fehlt.' ] );
 
+    // Schritt 3b: Kundendaten + Adresse aus Zoho auf Billing Request setzen
+    dgptm_gcl_br_collect_customer_details( $br_id );
+
     // Schritt 4: Billing Request Flow
-    // Kein lock_customer_details — Kundendaten werden vorausgefüllt,
-    // aber GoCardless kann fehlende Pflichtfelder abfragen
     $settings = dgptm_gcl_br_get_settings();
     $flow = dgptm_gcl_br_api( 'POST', 'billing_request_flows', [
         'billing_request_flows' => [
@@ -326,13 +331,10 @@ add_action( 'wp_ajax_dgptm_gcl_new_mandate', function() {
     $customer_id = dgptm_gcl_br_get_customer_id();
     if ( ! $customer_id ) wp_send_json_error( [ 'message' => 'Kein GoCardless-Kundenkonto. Bitte Geschäftsstelle kontaktieren.' ] );
 
-    // Adresse aus Zoho an GoCardless Customer übertragen
-    dgptm_gcl_br_sync_customer_address( $customer_id );
-
-    // Direkt Billing Request (kein Cancel nötig)
+    // Billing Request erstellen (verify: minimum → kein Open Banking)
     $br = dgptm_gcl_br_api( 'POST', 'billing_requests', [
         'billing_requests' => [
-            'mandate_request' => [ 'scheme' => 'sepa_core' ],
+            'mandate_request' => [ 'scheme' => 'sepa_core', 'verify' => 'minimum' ],
             'links' => [ 'customer' => $customer_id ],
         ],
     ]);
@@ -343,6 +345,9 @@ add_action( 'wp_ajax_dgptm_gcl_new_mandate', function() {
 
     $br_id = $br['billing_requests']['id'] ?? '';
     if ( ! $br_id ) wp_send_json_error( [ 'message' => 'Billing Request ID fehlt.' ] );
+
+    // Kundendaten + Adresse aus Zoho auf Billing Request setzen
+    dgptm_gcl_br_collect_customer_details( $br_id );
 
     $settings = dgptm_gcl_br_get_settings();
     $flow = dgptm_gcl_br_api( 'POST', 'billing_request_flows', [

@@ -229,6 +229,49 @@ if (!defined('ABSPATH')) {
 
         <!-- Zahlung des Mitgliedsbeitrages → ausgelagert in [gcl_formidable_new] -->
 
+        <!-- Studierendenstatus -->
+        <fieldset class="form-section" id="student-status-section">
+            <legend>Studierendenstatus</legend>
+            <div class="form-row">
+                <div class="form-field frm12 frm_first">
+                    <div id="dgptm-student-status-display">
+                        <p style="color:#666;font-style:italic;">Status wird geladen...</p>
+                    </div>
+                    <div style="margin-top:10px;">
+                        <button type="button" class="btn-secondary" id="dgptm-student-open-modal">
+                            Studierendenstatus beantragen / erneuern
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+
+        <!-- Modal Studierendenstatus (außerhalb des form-Tags gerendert via JS) -->
+        <div id="dgptm-student-modal" class="dgptm-modal" style="display:none;">
+            <div class="dgptm-modal-content">
+                <span class="dgptm-close-modal">&times;</span>
+                <h3>Studienbescheinigung einreichen</h3>
+                <div class="dgptm-modal-body">
+                    <p>Laden Sie hier Ihre aktuelle Studienbescheinigung hoch, um den Studierendenstatus zu beantragen oder zu erneuern.</p>
+                    <form id="dgptm-student-upload-form">
+                        <div class="form-group" style="margin-bottom:12px;">
+                            <label for="dgptm-valid-year"><strong>Gültig bis Beitragsjahr:</strong></label>
+                            <input type="number" id="dgptm-valid-year" name="year" placeholder="z.B. 2026" min="2024" max="2030" required style="width:120px;">
+                        </div>
+                        <div class="form-group" style="margin-bottom:12px;">
+                            <label for="dgptm-certificate-file"><strong>Studienbescheinigung</strong> (PDF, JPG, PNG, max. 2MB):</label>
+                            <input type="file" id="dgptm-certificate-file" name="certificate_file" accept=".pdf,.jpg,.jpeg,.png" required>
+                        </div>
+                        <div style="display:flex;gap:8px;margin-top:12px;">
+                            <button type="submit" class="btn-submit" id="dgptm-upload-btn">Hochladen &amp; Absenden</button>
+                            <button type="button" class="btn-secondary dgptm-close-modal">Abbrechen</button>
+                        </div>
+                        <div id="dgptm-upload-response" style="margin-top:10px;"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
         <!-- Zeitschrift DIE PERFUSIOLOGIE -->
         <fieldset class="form-section">
             <legend>Wie möchten Sie die Zeitschrift DIE PERFUSIOLOGIE ab der kommenden Ausgabe erhalten?</legend>

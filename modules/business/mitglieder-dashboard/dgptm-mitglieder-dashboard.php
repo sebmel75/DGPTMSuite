@@ -90,17 +90,31 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
             }
             $html = '<div class="dgptm-dash" data-active="' . esc_attr($active) . '">';
 
-            // Main nav
+            // Mobile: Dropdown-Navigation
+            $html .= '<div class="dgptm-nav-mobile">';
+            $html .= '<select id="dgptm-nav-select" class="dgptm-nav-select">';
+            foreach ($top as $t) {
+                if (!empty($t['link'])) continue; // Link-Tabs nicht im Dropdown
+                $vis = $t['visibility'] ?? 'all';
+                if ($vis === 'desktop') continue; // Desktop-only Tabs nicht auf Mobile zeigen
+                $sel = $t['id'] === $active ? ' selected' : '';
+                $html .= '<option value="' . esc_attr($t['id']) . '"' . $sel . '>' . esc_html($t['label']) . '</option>';
+            }
+            $html .= '</select>';
+            $html .= '</div>';
+
+            // Desktop: Tab-Navigation
             $html .= '<nav class="dgptm-nav">';
             foreach ($top as $t) {
+                $vis = $t['visibility'] ?? 'all';
+                $vis_cls = $vis !== 'all' ? ' dgptm-vis-' . $vis : '';
                 if (!empty($t['link'])) {
-                    // Direct link tab - opens URL, no panel
                     $target = (strpos($t['link'], home_url()) === 0) ? '' : ' target="_blank" rel="noopener"';
-                    $html .= '<a href="' . esc_url($t['link']) . '" class="dgptm-nav-item dgptm-nav-link"' . $target . '>'
+                    $html .= '<a href="' . esc_url($t['link']) . '" class="dgptm-nav-item dgptm-nav-link' . $vis_cls . '"' . $target . '>'
                         . esc_html($t['label']) . ' <span class="dgptm-link-icon">↗</span></a>';
                 } else {
                     $cls = $t['id'] === $active ? ' dgptm-nav-active' : '';
-                    $html .= '<a href="#" class="dgptm-nav-item' . $cls . '" data-tab="' . esc_attr($t['id']) . '">' . esc_html($t['label']) . '</a>';
+                    $html .= '<a href="#" class="dgptm-nav-item' . $cls . $vis_cls . '" data-tab="' . esc_attr($t['id']) . '">' . esc_html($t['label']) . '</a>';
                 }
             }
             $html .= '</nav>';

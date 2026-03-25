@@ -194,6 +194,17 @@ $top_tabs = array_filter($all_tabs, function($t) { return empty($t['parent']); }
                             </td>
                         </tr>
                         <tr>
+                            <th>Sichtbarkeit</th>
+                            <td>
+                                <?php $vis = $tab['visibility'] ?? 'all'; ?>
+                                <select class="dt-visibility">
+                                    <option value="all" <?php selected($vis, 'all'); ?>>Alle Geraete</option>
+                                    <option value="mobile" <?php selected($vis, 'mobile'); ?>>Nur Smartphone</option>
+                                    <option value="desktop" <?php selected($vis, 'desktop'); ?>>Nur Desktop/Tablet</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
                             <th>Inhalt (HTML / Shortcodes)</th>
                             <td>
                                 <textarea class="dt-content large-text code" rows="10" style="font-family:Consolas,monospace;font-size:12px;"><?php echo esc_textarea($tab['content'] ?? ''); ?></textarea>

@@ -136,8 +136,57 @@
 }
 .dgptm-dash a.dgptm-btn--primary:hover { background: var(--dd-primary-dark) !important; color: #fff !important; }
 
+/* Mobile Navigation (Dropdown statt Tabs) */
+.dgptm-dash .dgptm-nav-mobile { display: none; }
+
+.dgptm-dash .dgptm-nav-select {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: var(--dd-font);
+    border: 1px solid var(--dd-border);
+    border-radius: var(--dd-radius);
+    background: var(--dd-card);
+    color: var(--dd-primary);
+    appearance: auto;
+}
+
+/* Visibility: mobile-only / desktop-only */
+.dgptm-vis-mobile { display: none !important; }
+
+/* Sticky-Fix: WP Admin Bar (32px logged-in) + ggf. Site-Header */
+body.admin-bar .dgptm-dash .dgptm-nav { top: 32px; }
+body.admin-bar .dgptm-dash .dgptm-nav-mobile { top: 46px; }
+
+@media (max-width: 782px) {
+    body.admin-bar .dgptm-dash .dgptm-nav { top: 46px; }
+    body.admin-bar .dgptm-dash .dgptm-nav-mobile { top: 46px; }
+}
+
 @media (max-width: 768px) {
-    .dgptm-dash .dgptm-nav { display: none; }
+    /* Desktop-Nav verstecken, Mobile-Dropdown zeigen */
+    .dgptm-dash .dgptm-nav { display: none !important; }
+    .dgptm-dash .dgptm-nav-mobile {
+        display: block;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: var(--dd-bg);
+        padding: 8px 0;
+    }
+    body.admin-bar .dgptm-dash .dgptm-nav-mobile { top: 46px; }
+
+    /* Mobile Panels */
+    .dgptm-dash .dgptm-panel { padding: 8px 0; }
+    .dgptm-dash .dgptm-fpanel { padding: 10px; }
     .dgptm-dash .dgptm-data-list { grid-template-columns: 1fr; }
     .dgptm-dash .dgptm-folder-nav { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
+    .dgptm-dash .dgptm-card { padding: 10px; }
+    .dgptm-dash .dgptm-profile-meta { gap: 4px; }
+    .dgptm-dash .dgptm-badge { font-size: 11px; padding: 2px 7px; }
+
+    /* Visibility: mobile-only sichtbar, desktop-only versteckt */
+    .dgptm-vis-mobile { display: inline-block !important; }
+    .dgptm-vis-desktop { display: none !important; }
 }

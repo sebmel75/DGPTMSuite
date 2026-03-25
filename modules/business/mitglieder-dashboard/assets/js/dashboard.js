@@ -5,19 +5,30 @@ jQuery(function($) {
     var loaded = {};
     loaded[$d.data('active')] = true;
 
-    // Main tabs (skip link tabs - they have href and no data-tab)
-    $d.on('click', '.dgptm-nav-item[data-tab]', function(e) {
-        e.preventDefault();
-        var id = $(this).data('tab');
+    // Gemeinsame Tab-Wechsel-Logik
+    function switchTab(id) {
         $d.find('.dgptm-nav-item').removeClass('dgptm-nav-active');
-        $(this).addClass('dgptm-nav-active');
+        $d.find('.dgptm-nav-item[data-tab="' + id + '"]').addClass('dgptm-nav-active');
         $d.find('.dgptm-panel').hide();
         var $p = $d.find('[data-panel="' + id + '"]').show();
+        // Mobile-Dropdown synchronisieren
+        $('#dgptm-nav-select').val(id);
 
         if (!loaded[id]) {
             loadTab(id, $p);
             loaded[id] = true;
         }
+    }
+
+    // Desktop: Tab-Klick
+    $d.on('click', '.dgptm-nav-item[data-tab]', function(e) {
+        e.preventDefault();
+        switchTab($(this).data('tab'));
+    });
+
+    // Mobile: Dropdown-Wechsel
+    $(document).on('change', '#dgptm-nav-select', function() {
+        switchTab($(this).val());
     });
 
     // Folder sub-tabs (skip link tabs)

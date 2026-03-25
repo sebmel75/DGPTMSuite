@@ -72,6 +72,8 @@ class DGPTM_Dashboard_Tabs {
     public function save($tabs) {
         $clean = [];
         foreach ($tabs as $t) {
+            $vis = sanitize_key($t['visibility'] ?? 'all');
+            if (!in_array($vis, ['all', 'mobile', 'desktop'], true)) $vis = 'all';
             $clean[] = [
                 'id'         => sanitize_key($t['id'] ?? ''),
                 'label'      => sanitize_text_field($t['label'] ?? ''),
@@ -81,6 +83,7 @@ class DGPTM_Dashboard_Tabs {
                 'permission' => sanitize_text_field($t['permission'] ?? 'always'),
                 'link'       => esc_url_raw($t['link'] ?? ''),
                 'content'    => $t['content'] ?? '',
+                'visibility' => $vis,
             ];
         }
         update_option(self::OPT, $clean, false);

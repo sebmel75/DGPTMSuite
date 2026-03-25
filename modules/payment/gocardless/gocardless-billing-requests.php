@@ -276,6 +276,7 @@ add_action( 'wp_ajax_dgptm_gcl_change_bank', function() {
         'billing_request_flows' => [
             'redirect_uri' => $settings['redirect_url'],
             'exit_uri'     => $settings['exit_url'],
+            'language'     => 'de',
             'links'        => [ 'billing_request' => $br_id ],
         ],
     ]);
@@ -322,6 +323,7 @@ add_action( 'wp_ajax_dgptm_gcl_new_mandate', function() {
         'billing_request_flows' => [
             'redirect_uri' => $settings['redirect_url'],
             'exit_uri'     => $settings['exit_url'],
+            'language'     => 'de',
             'links'        => [ 'billing_request' => $br_id ],
         ],
     ]);

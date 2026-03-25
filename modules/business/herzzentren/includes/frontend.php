@@ -70,135 +70,14 @@ add_shortcode( 'hzb_edit_form_content', function( $atts = array() ) {
 
 	hzb_enqueue_editor_assets();
 
-	// Use same wrapper structure as hzb_edit_form_link but without modal
-	// hzb-editor.js renderContent() looks for .hzb-editor-modal__content
+	// Kein Inline-Script — Initialisierung erfolgt in hzb-editor.js (Dashboard-kompatibel)
 	ob_start();
 	?>
-	<div class="hzb-editor-wrapper hzb-editor-inline" data-hzb-version="<?php echo esc_attr(DGPTM_HZ_VERSION); ?>">
+	<div class="hzb-editor-wrapper hzb-editor-inline" data-hzb-version="<?php echo esc_attr(DGPTM_HZ_VERSION); ?>" data-hzb-post-id="<?php echo intval($post_id); ?>">
 		<div class="hzb-editor-modal__content">
 			<p><?php esc_html_e('Formular wird geladen...','dgptm-hzb'); ?></p>
 		</div>
 	</div>
-	<script>
-	(function($){
-		var $wrap = $('.hzb-editor-inline').not('[data-hzb-loaded]');
-		if (!$wrap.length) return;
-		$wrap.attr('data-hzb-loaded', '1');
-
-		var postId = <?php echo intval($post_id); ?>;
-
-		$.post(HZB_EDITOR.ajaxUrl, {
-			action: 'hzb_load_herzzentrum_edit_form',
-			nonce: HZB_EDITOR.nonce,
-			post_id: postId
-		}).done(function(resp){
-			if (resp && resp.success && resp.data && resp.data.html) {
-				// Use the same renderContent from hzb-editor.js pattern
-				var $content = $wrap.find('.hzb-editor-modal__content');
-				$content.html(resp.data.html);
-
-				// Initialize WYSIWYG (same as hzb-editor.js initializeWysiwyg)
-				if (typeof wp !== 'undefined' && wp.editor) {
-					$content.find('textarea[data-wysiwyg="1"]').each(function(){
-						var id = $(this).attr('id');
-						try {
-							if (typeof tinymce !== 'undefined' && tinymce.get(id)) wp.editor.remove(id);
-							wp.editor.initialize(id, { tinymce: true, quicktags: true, mediaButtons: true });
-						} catch(e){}
-					});
-				}
-
-				// Bind select step (same as hzb-editor.js bindSelectStep)
-				$wrap.on('click', '.hzb-choose-hz', function(e){
-					e.preventDefault();
-					var pid = $wrap.find('#hzb-select-herzzentrum').val();
-					$content.html('<p>Laden...</p>');
-					$.post(HZB_EDITOR.ajaxUrl, {
-						action: 'hzb_load_herzzentrum_edit_form',
-						nonce: HZB_EDITOR.nonce,
-						post_id: pid
-					}).done(function(r){
-						if (r && r.success && r.data && r.data.html) {
-							$content.html(r.data.html);
-							// Re-init WYSIWYG
-							if (typeof wp !== 'undefined' && wp.editor) {
-								$content.find('textarea[data-wysiwyg="1"]').each(function(){
-									var id = $(this).attr('id');
-									try {
-										if (typeof tinymce !== 'undefined' && tinymce.get(id)) wp.editor.remove(id);
-										wp.editor.initialize(id, { tinymce: true, quicktags: true, mediaButtons: true });
-									} catch(e){}
-								});
-							}
-							// Re-bind form + image pickers
-							bindInlineForm($wrap);
-						}
-					});
-				});
-
-				bindInlineForm($wrap);
-			} else {
-				var err = (resp && resp.data && resp.data.message) ? resp.data.message : 'Fehler';
-				$wrap.find('.hzb-editor-modal__content').html('<p style="color:red">' + err + '</p>');
-			}
-		}).fail(function(){
-			$wrap.find('.hzb-editor-modal__content').html('<p style="color:red">Laden fehlgeschlagen</p>');
-		});
-
-		function bindInlineForm($w) {
-			// Form submit (same as hzb-editor.js bindFormSubmit)
-			$w.off('submit.hzb','#hzb-editor-form');
-			$w.on('submit.hzb','#hzb-editor-form', function(e){
-				e.preventDefault();
-				var $form = $(this);
-				if (typeof tinymce !== 'undefined') {
-					$form.find('textarea[data-wysiwyg="1"]').each(function(){
-						var id = $(this).attr('id');
-						var ed = tinymce.get(id);
-						if (ed) $(this).val(ed.getContent());
-					});
-				}
-				$form.addClass('is-saving');
-				$.post(HZB_EDITOR.ajaxUrl, $form.serialize())
-				.done(function(resp){
-					if (resp && resp.success) {
-						$form.removeClass('is-saving').addClass('is-saved');
-						setTimeout(function(){ $form.removeClass('is-saved'); }, 1200);
-					} else {
-						var err = (resp && resp.data && resp.data.message) ? resp.data.message : HZB_EDITOR.i18n.error;
-						alert(err);
-						$form.removeClass('is-saving');
-					}
-				}).fail(function(){
-					alert(HZB_EDITOR.i18n.error);
-					$form.removeClass('is-saving');
-				});
-			});
-
-			// Image pickers (same as hzb-editor.js bindImagePickers)
-			$w.off('click.hzb-img','.hzb-pick-image');
-			$w.on('click.hzb-img','.hzb-pick-image', function(e){
-				e.preventDefault();
-				var $ctrl = $(this).closest('.hzb-image-control');
-				var target = $ctrl.data('target');
-				var frame = wp.media({ title: HZB_EDITOR.i18n.upload, multiple: false });
-				frame.on('select', function(){
-					var att = frame.state().get('selection').first().toJSON();
-					$('#' + target).val(att.id);
-					$ctrl.find('.hzb-image-preview').html('<img src="'+(att.sizes && att.sizes.thumbnail ? att.sizes.thumbnail.url : att.url)+'" alt="">');
-				});
-				frame.open();
-			});
-			$w.off('click.hzb-imgrm','.hzb-remove-image');
-			$w.on('click.hzb-imgrm','.hzb-remove-image', function(e){
-				e.preventDefault();
-				var $ctrl = $(this).closest('.hzb-image-control');
-				$('#' + $ctrl.data('target')).val('');
-				$ctrl.find('.hzb-image-preview').html('<span class="hzb-noimg">Kein Bild</span>');
-			});
-		}
-	})(jQuery);
-	</script>
 	<?php
 	return ob_get_clean();
 } );

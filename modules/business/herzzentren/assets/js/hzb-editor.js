@@ -130,6 +130,7 @@
 		 });
 	}
 
+	// --- Modal-Modus (Button → Modal → Formular) ---
 	$(document).on('click','.hzb-edit-form-btn', function(e){
 		e.preventDefault();
 		var $wrap = $(this).closest('.hzb-editor-wrapper');
@@ -142,5 +143,18 @@
 		var $wrap = $(this).closest('.hzb-editor-wrapper');
 		closeModal($wrap);
 	});
+
+	// --- Inline-Modus (Dashboard-kompatibel) ---
+	function initInlineForms(){
+		$('.hzb-editor-inline').not('[data-hzb-loaded]').each(function(){
+			var $wrap = $(this);
+			$wrap.attr('data-hzb-loaded', '1');
+			var pid = $wrap.data('hzb-post-id') || 0;
+			loadForm($wrap, pid);
+		});
+	}
+
+	$(document).ready(initInlineForms);
+	$(document).on('dgptm_tab_loaded', initInlineForms);
 
 })(jQuery);

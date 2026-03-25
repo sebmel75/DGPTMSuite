@@ -109,7 +109,7 @@ function hzb_enqueue_editor_assets() {
 	}
 
 	wp_enqueue_style( 'hzb-editor', DGPTM_HZ_URL . 'assets/css/hzb-editor.css', array(), DGPTM_HZ_VERSION );
-	wp_enqueue_script( 'hzb-editor', DGPTM_HZ_URL . 'assets/js/hzb-editor.js', array('jquery','wp-util','editor','clipboard'), DGPTM_HZ_VERSION, true );
+	wp_enqueue_script( 'hzb-editor', DGPTM_HZ_URL . 'assets/js/hzb-editor.js', array('jquery'), DGPTM_HZ_VERSION, true );
 
 	wp_localize_script( 'hzb-editor', 'HZB_EDITOR', array(
 		'ajaxUrl' => admin_url('admin-ajax.php'),

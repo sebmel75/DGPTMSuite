@@ -68,16 +68,98 @@ add_shortcode( 'hzb_edit_form_content', function( $atts = array() ) {
 	$editable_ids = hzb_get_user_editable_herzzentren( $user_id );
 	if ( empty( $editable_ids ) ) return '';
 
-	hzb_enqueue_editor_assets();
-
-	// Kein Inline-Script — Initialisierung erfolgt in hzb-editor.js (Dashboard-kompatibel)
 	ob_start();
+	$ajax_url = admin_url( 'admin-ajax.php' );
+	$nonce    = wp_create_nonce( 'hzb_editor' );
+	$uid      = 'hzb-inline-' . wp_unique_id();
 	?>
-	<div class="hzb-editor-wrapper hzb-editor-inline" data-hzb-version="<?php echo esc_attr(DGPTM_HZ_VERSION); ?>" data-hzb-post-id="<?php echo intval($post_id); ?>">
-		<div class="hzb-editor-modal__content">
-			<p><?php esc_html_e('Formular wird geladen...','dgptm-hzb'); ?></p>
+	<div class="hzb-editor-wrapper hzb-editor-inline" id="<?php echo esc_attr($uid); ?>">
+		<div class="hzb-editor-content">
+			<p>Formular wird geladen…</p>
 		</div>
 	</div>
+	<script>
+	(function(){
+		var ajaxUrl = <?php echo wp_json_encode( $ajax_url ); ?>;
+		var nonce   = <?php echo wp_json_encode( $nonce ); ?>;
+		var postId  = <?php echo intval($post_id); ?>;
+		var uid     = <?php echo wp_json_encode( $uid ); ?>;
+		var $wrap   = document.getElementById(uid);
+		if (!$wrap) return;
+		var $c = $wrap.querySelector('.hzb-editor-content');
+
+		// Formular laden — HTML kommt vom Server (wp_kses-sanitized)
+		jQuery.post(ajaxUrl, {
+			action: 'hzb_load_herzzentrum_edit_form',
+			nonce: nonce,
+			post_id: postId
+		}).done(function(r) {
+			if (r && r.success && r.data && r.data.html) {
+				jQuery($c).html(r.data.html);
+				bindSave();
+				bindSelect();
+			} else {
+				$c.textContent = (r && r.data && r.data.message) || 'Fehler';
+			}
+		}).fail(function() {
+			$c.textContent = 'Laden fehlgeschlagen';
+		});
+
+		function bindSave() {
+			var form = $wrap.querySelector('#hzb-editor-form');
+			if (!form) return;
+			var btn = form.querySelector('button[type="submit"]');
+			if (!btn) return;
+
+			btn.addEventListener('click', function(e) {
+				e.preventDefault();
+				e.stopPropagation();
+				btn.disabled = true;
+				btn.textContent = 'Speichern\u2026';
+
+				jQuery.post(ajaxUrl, jQuery(form).serialize())
+				.done(function(resp) {
+					if (resp && resp.success) {
+						btn.textContent = 'Gespeichert';
+						btn.disabled = false;
+						setTimeout(function(){ btn.textContent = 'Speichern'; }, 1500);
+					} else {
+						alert((resp && resp.data && resp.data.message) || 'Fehler beim Speichern');
+						btn.textContent = 'Speichern';
+						btn.disabled = false;
+					}
+				}).fail(function() {
+					alert('Verbindungsfehler');
+					btn.textContent = 'Speichern';
+					btn.disabled = false;
+				});
+			});
+
+			form.addEventListener('submit', function(e) { e.preventDefault(); btn.click(); });
+		}
+
+		function bindSelect() {
+			var chooseBtn = $wrap.querySelector('.hzb-choose-hz');
+			if (!chooseBtn) return;
+			chooseBtn.addEventListener('click', function(e) {
+				e.preventDefault();
+				var sel = $wrap.querySelector('#hzb-select-herzzentrum');
+				if (!sel) return;
+				$c.textContent = 'Laden\u2026';
+				jQuery.post(ajaxUrl, {
+					action: 'hzb_load_herzzentrum_edit_form',
+					nonce: nonce,
+					post_id: sel.value
+				}).done(function(r) {
+					if (r && r.success && r.data && r.data.html) {
+						jQuery($c).html(r.data.html);
+						bindSave();
+					}
+				});
+			});
+		}
+	})();
+	</script>
 	<?php
 	return ob_get_clean();
 } );

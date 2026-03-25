@@ -503,12 +503,10 @@ jQuery(document).ready(function($) {
      * Load student status from CRM
      */
     function loadStudentStatus() {
-        var $studentStatusDisplay = $('#dgptm-student-status-display');
-        if (!$studentStatusDisplay.length) {
-            return; // Not on student status page
-        }
+        var $el = $('#dgptm-student-status-display');
+        if (!$el.length) return;
 
-        console.log('Loading student status...');
+        $el.html('<p style="color:#666;font-style:italic;">Status wird geladen...</p>');
 
         $.ajax({
             url: dgptmDatenBearbeiten.ajaxUrl,
@@ -517,19 +515,16 @@ jQuery(document).ready(function($) {
                 action: 'dgptm_load_student_status',
                 nonce: dgptmDatenBearbeiten.nonce
             },
+            timeout: 15000,
             success: function(response) {
-                console.log('Student status response:', response);
-
                 if (response.success && response.data) {
-                    displayStudentStatus(response.data.data, $studentStatusDisplay);
+                    displayStudentStatus(response.data.data, $el);
                 } else {
-                    $studentStatusDisplay.hide();
-                    console.log('Error loading status - hiding display:', response.data.message);
+                    $el.html('<p style="color:#666;">Studierendenstatus nicht verfügbar.</p>');
                 }
             },
-            error: function(xhr, status, error) {
-                console.error('Failed to load student status:', error);
-                $studentStatusDisplay.hide();
+            error: function() {
+                $el.html('<p style="color:#666;">Status konnte nicht geladen werden.</p>');
             }
         });
     }
@@ -537,18 +532,16 @@ jQuery(document).ready(function($) {
     /**
      * Display student status
      */
-    function displayStudentStatus(data, $studentStatusDisplay) {
-        if (!$studentStatusDisplay) $studentStatusDisplay = $('#dgptm-student-status-display');
-        const statusDisplay = data.student_status_display || 'inactive';
+    function displayStudentStatus(data, $el) {
+        if (!$el) $el = $('#dgptm-student-status-display');
+        var statusDisplay = data.student_status_display || 'inactive';
 
         if (statusDisplay === 'inactive') {
-            $studentStatusDisplay.hide();
-            console.log('Student status is INACTIVE - hiding status display (Student_Status = false)');
+            $el.html('<p style="color:#666;">Kein aktiver Studierendenstatus.</p>').show();
             return;
         }
 
-        // Status ist aktiv oder in Prüfung - Display-Bereich anzeigen
-        $studentStatusDisplay.show();
+        $el.show();
         console.log('Student status is ACTIVE or IN_REVIEW - showing status display');
 
         let statusHtml = '<div class="status-content">';
@@ -602,7 +595,7 @@ jQuery(document).ready(function($) {
 
         statusHtml += '</div>';
 
-        $studentStatusDisplay.html(statusHtml);
+        $el.html(statusHtml);
     }
 
     /**

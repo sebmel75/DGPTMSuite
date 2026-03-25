@@ -1279,52 +1279,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
                 $this->log('Status detected: INACTIVE (default)');
             }
 
-            // CRM-Daten-Bereinigung: Wenn Student_Status = false, Valid_Through löschen
             $valid_through = $contact_data['Valid_Through'] ?? '';
-
-            // Prüfe ob Student_Status explizit false ist (nicht aktiv)
-            $is_student_status_false = (
-                $student_status_raw === false ||
-                $student_status_raw === 'false' ||
-                $student_status_raw === 0 ||
-                $student_status_raw === '0' ||
-                $student_status_raw === null ||
-                $student_status_raw === ''
-            );
-
-            // Wenn Student_Status = false UND Valid_Through gesetzt ist → bereinigen
-            if ($is_student_status_false && !empty($valid_through)) {
-                $this->log('WARNING: Student_Status is FALSE but Valid_Through is set (' . $valid_through . '). Cleaning up CRM data...');
-
-                // Lösche Valid_Through aus CRM
-                $cleanup_result = $this->update_contact_in_crm($zoho_id, [
-                    'Valid_Through' => null
-                ], $token);
-
-                if ($cleanup_result) {
-                    $this->log('Valid_Through successfully cleared from CRM (Student_Status = false)');
-                    $valid_through = ''; // Auch lokal leeren für die Antwort
-                } else {
-                    $this->log('Failed to clear Valid_Through from CRM', 'error');
-                }
-            }
-
-            // Zusätzliche Prüfung: Wenn Status inaktiv (nicht in Prüfung) und Valid_Through gesetzt
-            if ($student_status_display === 'inactive' && !empty($valid_through)) {
-                $this->log('WARNING: Status display is INACTIVE but Valid_Through is still set (' . $valid_through . '). Attempting cleanup...');
-
-                // Nochmal versuchen zu löschen (falls oben nicht gegriffen hat)
-                $cleanup_result = $this->update_contact_in_crm($zoho_id, [
-                    'Valid_Through' => null
-                ], $token);
-
-                if ($cleanup_result) {
-                    $this->log('Valid_Through successfully cleared from CRM (status display = inactive)');
-                    $valid_through = '';
-                } else {
-                    $this->log('Failed to clear Valid_Through from CRM', 'error');
-                }
-            }
 
             $status_data = [
                 'student_status' => $student_status_raw,

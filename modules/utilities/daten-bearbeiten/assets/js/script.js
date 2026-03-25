@@ -595,162 +595,65 @@ jQuery(document).ready(function($) {
         $el.html(statusHtml);
     }
 
-    /**
-     * Open student modal
-     */
-    $(document).on('click', '#dgptm-student-open-modal', function() {
-        $('#dgptm-student-modal').fadeIn(300);
-        $('#dgptm-upload-response').empty();
-        var uploadForm = document.getElementById('dgptm-student-upload-form');
-        if (uploadForm) uploadForm.reset();
-        initializeYearInput();
-    });
-
-    $(document).on('click', '.dgptm-close-modal', function() {
-        $('#dgptm-student-modal').fadeOut(300);
-    });
-
-    $(document).on('click', function(e) {
-        if ($(e.target).is('#dgptm-student-modal')) {
-            $('#dgptm-student-modal').fadeOut(300);
+    // Toggle Upload-Bereich
+    $(document).on('click', '#dgptm-student-toggle-upload', function() {
+        var $area = $('#dgptm-student-upload-area');
+        $area.slideToggle(200);
+        if ($area.is(':visible')) {
+            $('#dgptm-upload-response').empty();
+            $('#dgptm-valid-year').val('');
+            $('#dgptm-certificate-file').val('');
+            // Year-Input min/max setzen
+            var now = new Date(), y = now.getFullYear(), m = now.getMonth() + 1;
+            var isQ4 = (m >= 10);
+            var minY = isQ4 ? y + 1 : y, maxY = isQ4 ? y + 3 : y + 2;
+            $('#dgptm-valid-year').attr('min', minY).attr('max', maxY).attr('placeholder', 'z.B. ' + minY);
         }
     });
 
-    /**
-     * Initialize year input with dynamic min/max based on quarter
-     */
-    function initializeYearInput() {
-        const $yearInput = $('#dgptm-valid-year');
-        if (!$yearInput.length) {
-            return;
-        }
+    $(document).on('click', '#dgptm-student-cancel-upload', function() {
+        $('#dgptm-student-upload-area').slideUp(200);
+    });
 
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth() + 1; // 1-12
-        const isQ4 = (currentMonth >= 10); // Oktober, November, Dezember
-
-        let minYear, maxYear, placeholder;
-
-        if (isQ4) {
-            // Q4: Nur Folgejahr oder später (max. 2 Jahre im Voraus)
-            minYear = currentYear + 1;
-            maxYear = currentYear + 3;
-            placeholder = 'z.B. ' + minYear;
-        } else {
-            // Q1-Q3: Aktuelles Jahr bis max. 2 Jahre im Voraus
-            minYear = currentYear;
-            maxYear = currentYear + 2;
-            placeholder = 'z.B. ' + currentYear;
-        }
-
-        $yearInput.attr('min', minYear);
-        $yearInput.attr('max', maxYear);
-        $yearInput.attr('placeholder', placeholder);
-
-        console.log('Year input initialized. Q4:', isQ4, 'Range:', minYear, '-', maxYear);
-    }
-
-    /**
-     * Handle student certificate upload
-     */
-    $(document).on('submit', '#dgptm-student-upload-form', function(e) {
+    // Upload via AJAX (kein Form-Submit, kein Modal)
+    $(document).on('click', '#dgptm-upload-btn', function(e) {
         e.preventDefault();
+        var year = parseInt($('#dgptm-valid-year').val());
+        var fileInput = document.getElementById('dgptm-certificate-file');
+        var file = fileInput ? fileInput.files[0] : null;
 
-        console.log('Uploading student certificate...');
+        if (!year || !file) { showUploadMessage('Bitte Jahr und Datei angeben.', 'error'); return; }
+        if (file.size > 2 * 1024 * 1024) { showUploadMessage('Datei max. 2MB.', 'error'); return; }
 
-        const year = parseInt($('#dgptm-valid-year').val());
-        const fileInput = document.getElementById('dgptm-certificate-file');
-        const file = fileInput.files[0];
-
-        if (!year || !file) {
-            showUploadMessage('Bitte füllen Sie alle Felder aus.', 'error');
-            return;
-        }
-
-        // Validate year with Q4 logic
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth() + 1;
-        const isQ4 = (currentMonth >= 10);
-
-        let minYear, maxYear;
-
-        if (isQ4) {
-            minYear = currentYear + 1;
-            maxYear = currentYear + 3;
-
-            if (year < minYear) {
-                showUploadMessage('Ab dem 4. Quartal (Oktober-Dezember) können nur Bescheinigungen für das Folgejahr oder später eingereicht werden. Frühestes Jahr: ' + minYear, 'error');
-                return;
-            }
-            if (year > maxYear) {
-                showUploadMessage('Das Jahr darf maximal 2 Jahre nach dem Folgejahr liegen. Spätestes Jahr: ' + maxYear, 'error');
-                return;
-            }
-        } else {
-            minYear = currentYear;
-            maxYear = currentYear + 2;
-
-            if (year < minYear) {
-                showUploadMessage('Das Jahr darf nicht in der Vergangenheit liegen. Frühestes Jahr: ' + minYear, 'error');
-                return;
-            }
-            if (year > maxYear) {
-                showUploadMessage('Das Jahr darf maximal 2 Jahre in der Zukunft liegen. Spätestes Jahr: ' + maxYear, 'error');
-                return;
-            }
-        }
-
-        // Validate file size (2MB)
-        if (file.size > 2 * 1024 * 1024) {
-            showUploadMessage('Die Datei darf maximal 2MB groß sein.', 'error');
-            return;
-        }
-
-        // Disable submit button
-        const $submitBtn = $('#dgptm-upload-btn');
-        $submitBtn.prop('disabled', true).text('Wird hochgeladen...');
+        var $btn = $(this).prop('disabled', true).text('Wird hochgeladen...');
         showUploadMessage('Datei wird hochgeladen...', 'info');
 
-        // Prepare form data
-        const formData = new FormData();
-        formData.append('action', 'dgptm_upload_student_certificate');
-        formData.append('nonce', dgptmDatenBearbeiten.nonce);
-        formData.append('year', year);
-        formData.append('certificate_file', file);
+        var fd = new FormData();
+        fd.append('action', 'dgptm_upload_student_certificate');
+        fd.append('nonce', dgptmDatenBearbeiten.nonce);
+        fd.append('year', year);
+        fd.append('certificate_file', file);
 
-        // Upload via AJAX
         $.ajax({
-            url: dgptmDatenBearbeiten.ajaxUrl,
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function(response) {
-                console.log('Upload response:', response);
-
-                if (response.success) {
-                    showUploadMessage(response.data.message || 'Erfolgreich hochgeladen!', 'success');
-
-                    // Reset form
-                    $('#dgptm-student-upload-form')[0].reset();
-
-                    // Reload status
+            url: dgptmDatenBearbeiten.ajaxUrl, type: 'POST',
+            data: fd, processData: false, contentType: false, timeout: 30000,
+            success: function(r) {
+                if (r.success) {
+                    showUploadMessage(r.data.message || 'Erfolgreich!', 'success');
+                    $('#dgptm-valid-year').val('');
+                    $('#dgptm-certificate-file').val('');
                     setTimeout(function() {
                         loadStudentStatus();
-                        $('#dgptm-student-modal').fadeOut(300);
+                        $('#dgptm-student-upload-area').slideUp(200);
                     }, 2000);
                 } else {
-                    showUploadMessage(response.data.message || 'Fehler beim Hochladen', 'error');
+                    showUploadMessage(r.data.message || 'Fehler beim Hochladen.', 'error');
                 }
-
-                $submitBtn.prop('disabled', false).text('Hochladen & Absenden');
+                $btn.prop('disabled', false).text('Hochladen');
             },
-            error: function(xhr, status, error) {
-                console.error('Upload error:', error);
-                showUploadMessage('Fehler beim Hochladen: ' + error, 'error');
-                $submitBtn.prop('disabled', false).text('Hochladen & Absenden');
+            error: function(x, s, err) {
+                showUploadMessage('Fehler: ' + err, 'error');
+                $btn.prop('disabled', false).text('Hochladen');
             }
         });
     });

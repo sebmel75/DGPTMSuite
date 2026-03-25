@@ -238,9 +238,27 @@ if (!defined('ABSPATH')) {
                         <p style="color:#666;font-style:italic;">Status wird geladen...</p>
                     </div>
                     <div style="margin-top:10px;">
-                        <button type="button" class="btn-secondary" id="dgptm-student-open-modal">
+                        <button type="button" class="btn-secondary" id="dgptm-student-toggle-upload">
                             Studierendenstatus beantragen / erneuern
                         </button>
+                    </div>
+                    <!-- Inline Upload (kein Modal) -->
+                    <div id="dgptm-student-upload-area" style="display:none;margin-top:12px;padding:14px;border:1px solid #ddd;border-radius:6px;background:#f9f9f9;">
+                        <h4 style="margin:0 0 8px;">Studienbescheinigung einreichen</h4>
+                        <p style="font-size:13px;color:#666;margin:0 0 12px;">Laden Sie Ihre aktuelle Studienbescheinigung hoch.</p>
+                        <div style="margin-bottom:10px;">
+                            <label for="dgptm-valid-year"><strong>Gültig bis Beitragsjahr:</strong></label><br>
+                            <input type="number" id="dgptm-valid-year" placeholder="z.B. 2026" min="2024" max="2030" required style="width:120px;margin-top:4px;">
+                        </div>
+                        <div style="margin-bottom:10px;">
+                            <label for="dgptm-certificate-file"><strong>Datei</strong> (PDF, JPG, PNG, max. 2MB):</label><br>
+                            <input type="file" id="dgptm-certificate-file" accept=".pdf,.jpg,.jpeg,.png" required style="margin-top:4px;">
+                        </div>
+                        <div style="display:flex;gap:8px;">
+                            <button type="button" class="btn-submit" id="dgptm-upload-btn">Hochladen</button>
+                            <button type="button" class="btn-secondary" id="dgptm-student-cancel-upload">Abbrechen</button>
+                        </div>
+                        <div id="dgptm-upload-response" style="margin-top:8px;"></div>
                     </div>
                 </div>
             </div>
@@ -278,32 +296,6 @@ if (!defined('ABSPATH')) {
 
         <div id="form-messages" class="form-messages"></div>
     </form>
-
-    <!-- Modal Studierendenstatus (MUSS außerhalb von #dgptm-daten-form sein, keine verschachtelten Forms) -->
-    <div id="dgptm-student-modal" class="dgptm-modal" style="display:none;">
-        <div class="dgptm-modal-content">
-            <span class="dgptm-close-modal">&times;</span>
-            <h3>Studienbescheinigung einreichen</h3>
-            <div class="dgptm-modal-body">
-                <p>Laden Sie hier Ihre aktuelle Studienbescheinigung hoch, um den Studierendenstatus zu beantragen oder zu erneuern.</p>
-                <form id="dgptm-student-upload-form">
-                    <div class="form-group" style="margin-bottom:12px;">
-                        <label for="dgptm-valid-year"><strong>Gültig bis Beitragsjahr:</strong></label>
-                        <input type="number" id="dgptm-valid-year" name="year" placeholder="z.B. 2026" min="2024" max="2030" required style="width:120px;">
-                    </div>
-                    <div class="form-group" style="margin-bottom:12px;">
-                        <label for="dgptm-certificate-file"><strong>Studienbescheinigung</strong> (PDF, JPG, PNG, max. 2MB):</label>
-                        <input type="file" id="dgptm-certificate-file" name="certificate_file" accept=".pdf,.jpg,.jpeg,.png" required>
-                    </div>
-                    <div style="display:flex;gap:8px;margin-top:12px;">
-                        <button type="submit" class="btn-submit" id="dgptm-upload-btn">Hochladen &amp; Absenden</button>
-                        <button type="button" class="btn-secondary dgptm-close-modal">Abbrechen</button>
-                    </div>
-                    <div id="dgptm-upload-response" style="margin-top:10px;"></div>
-                </form>
-            </div>
-        </div>
-    </div>
 
     <div id="success-message" class="success-message" style="display: none;">
         <div class="success-icon">✓</div>

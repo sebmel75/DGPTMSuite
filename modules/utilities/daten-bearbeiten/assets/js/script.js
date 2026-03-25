@@ -364,37 +364,6 @@ jQuery(document).ready(function($) {
         }
     });
 
-    $(document).on('change', '#bank_change_requested', function() {
-        if ($(this).is(':checked')) {
-            $('#bank_change_section').slideDown();
-            var fullName = $('#name').val();
-            if (fullName) {
-                var nameParts = fullName.split(' ');
-                $('#bank_vorname').val(nameParts[0] || '');
-                $('#bank_nachname').val(nameParts.slice(1).join(' ') || '');
-            }
-        } else {
-            $('#bank_change_section').slideUp();
-            $('#bank_vorname').val('');
-            $('#bank_nachname').val('');
-            $('#bank_iban').val('');
-        }
-    });
-
-    $(document).on('input', '#bank_iban', function() {
-        var iban = $(this).val().toUpperCase().replace(/\s/g, '');
-        var formatted = iban.match(/.{1,4}/g);
-        if (formatted) {
-            $(this).val(formatted.join(' '));
-        }
-    });
-
-    function validateIBAN(iban) {
-        iban = iban.replace(/\s/g, '');
-        var ibanRegex = /^[A-Z]{2}[0-9]{2}[A-Z0-9]{9,30}$/;
-        return ibanRegex.test(iban);
-    }
-
     /**
      * Handle form submission (delegated)
      */
@@ -402,23 +371,6 @@ jQuery(document).ready(function($) {
         e.preventDefault();
 
         console.log('Form submitted');
-
-        // Validate bank change if requested
-        if ($('#bank_change_requested').is(':checked')) {
-            var bankVorname = $('#bank_vorname').val().trim();
-            var bankNachname = $('#bank_nachname').val().trim();
-            var bankIBAN = $('#bank_iban').val().trim();
-
-            if (!bankVorname || !bankNachname || !bankIBAN) {
-                showError('Bitte füllen Sie alle Bankdaten-Felder aus.');
-                return;
-            }
-
-            if (!validateIBAN(bankIBAN)) {
-                showError('Bitte geben Sie eine gültige IBAN ein.');
-                return;
-            }
-        }
 
         // Disable submit button
         $submitBtn.prop('disabled', true).text(dgptmDatenBearbeiten.strings.saving);
@@ -469,13 +421,7 @@ jQuery(document).ready(function($) {
             temporary_work: $('#temporary_work').val(),
 
             journal_post: $('#journal_post').is(':checked') ? 'true' : 'false',
-            journal_mail: $('#journal_mail').is(':checked') ? 'true' : 'false',
-
-            // Bank change data
-            bank_change_requested: $('#bank_change_requested').is(':checked') ? 'true' : 'false',
-            bank_vorname: $('#bank_vorname').val(),
-            bank_nachname: $('#bank_nachname').val(),
-            bank_iban: $('#bank_iban').val().replace(/\s/g, '') // Remove spaces from IBAN
+            journal_mail: $('#journal_mail').is(':checked') ? 'true' : 'false'
         };
 
         console.log('Sending data:', formData);

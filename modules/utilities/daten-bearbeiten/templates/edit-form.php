@@ -227,61 +227,7 @@ if (!defined('ABSPATH')) {
             </div>
         </fieldset>
 
-        <!-- Zahlung des Mitgliedsbeitrages -->
-        <fieldset class="form-section" id="payment-section">
-            <legend>Zahlung des Mitgliedsbeitrages</legend>
-
-            <div class="form-row">
-                <div class="form-field frm12 frm_first">
-                    <?php
-                    // GoCardless Shortcode einbinden (wenn Modul aktiv)
-                    if (shortcode_exists('gcl_formidable')) {
-                        echo do_shortcode('[gcl_formidable]');
-                    } else {
-                        echo '<p style="color: #666;">Zahlungsinformationen werden geladen...</p>';
-                    }
-                    ?>
-                </div>
-            </div>
-
-            <!-- Bankdaten ändern Option -->
-            <div class="form-row">
-                <div class="form-field frm12">
-                    <label class="toggle-label" style="background: #fff3cd; border: 1px solid #ffc107;">
-                        <input type="checkbox" id="bank_change_requested" name="bank_change_requested">
-                        <span class="toggle-slider"></span>
-                        Ich möchte meine Bankdaten ändern
-                    </label>
-                </div>
-            </div>
-
-            <div id="bank_change_section" style="display: none;">
-                <div class="form-row">
-                    <div class="form-field frm_half frm_first">
-                        <label for="bank_vorname">Vorname (Kontoinhaber) <span class="required">*</span></label>
-                        <input type="text" id="bank_vorname" name="bank_vorname">
-                    </div>
-                    <div class="form-field frm_half">
-                        <label for="bank_nachname">Nachname (Kontoinhaber) <span class="required">*</span></label>
-                        <input type="text" id="bank_nachname" name="bank_nachname">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-field frm12">
-                        <label for="bank_iban">IBAN <span class="required">*</span></label>
-                        <input type="text" id="bank_iban" name="bank_iban" placeholder="DE00 0000 0000 0000 0000 00" maxlength="34">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-field frm12">
-                        <div class="info-box" style="background: #fff3cd; border-color: #ffc107;">
-                            <strong>Hinweis:</strong> Nach dem Absenden wird Ihr aktuelles Lastschriftmandat deaktiviert.
-                            Die Geschäftsstelle wird informiert und richtet ein neues Mandat mit den neuen Bankdaten ein.
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </fieldset>
+        <!-- Zahlung des Mitgliedsbeitrages → ausgelagert in [gcl_formidable_new] -->
 
         <!-- Zeitschrift DIE PERFUSIOLOGIE -->
         <fieldset class="form-section">

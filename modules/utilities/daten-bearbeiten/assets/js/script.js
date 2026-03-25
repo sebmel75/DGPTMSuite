@@ -372,9 +372,11 @@ jQuery(document).ready(function($) {
 
         console.log('Form submitted');
 
-        // Disable submit button
-        $submitBtn.prop('disabled', true).text(dgptmDatenBearbeiten.strings.saving);
-        $formMessages.empty();
+        // Frische DOM-Referenzen (Dashboard-AJAX-kompatibel)
+        var $btn = $('#submit-btn');
+        var $msgs = $('#form-messages');
+        $btn.prop('disabled', true).text(dgptmDatenBearbeiten.strings.saving);
+        $msgs.empty();
 
         // Determine employer value and whether it's manual
         let employerValue = '';
@@ -434,32 +436,27 @@ jQuery(document).ready(function($) {
                 console.log('Update response:', response);
 
                 if (response.success) {
-                    // Show success message
-                    $form.fadeOut(300, function() {
-                        $successMessage.fadeIn(300);
+                    $('#dgptm-daten-form').fadeOut(300, function() {
+                        $('#success-message').fadeIn(300);
                     });
 
-                    // Close Elementor accordion before redirect
                     var $accordion = $('#datenakkordeon');
                     if ($accordion.length) {
-                        console.log('Closing Elementor accordion');
-                        // Find and click the active accordion title to close it
                         $accordion.find('.elementor-tab-title.elementor-active').trigger('click');
                     }
 
-                    // Redirect after 2 seconds
                     setTimeout(function() {
                         window.location.href = dgptmDatenBearbeiten.redirectUrl;
                     }, 2000);
                 } else {
                     showError(response.data.message || dgptmDatenBearbeiten.strings.error);
-                    $submitBtn.prop('disabled', false).text('Daten ändern');
+                    $btn.prop('disabled', false).text('Daten ändern');
                 }
             },
             error: function(xhr, status, error) {
                 console.error('Update error:', error);
                 showError(dgptmDatenBearbeiten.strings.error + ': ' + error);
-                $submitBtn.prop('disabled', false).text('Daten ändern');
+                $btn.prop('disabled', false).text('Daten ändern');
             }
         });
     });

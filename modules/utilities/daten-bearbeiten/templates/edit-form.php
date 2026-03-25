@@ -246,32 +246,6 @@ if (!defined('ABSPATH')) {
             </div>
         </fieldset>
 
-        <!-- Modal Studierendenstatus (außerhalb des form-Tags gerendert via JS) -->
-        <div id="dgptm-student-modal" class="dgptm-modal" style="display:none;">
-            <div class="dgptm-modal-content">
-                <span class="dgptm-close-modal">&times;</span>
-                <h3>Studienbescheinigung einreichen</h3>
-                <div class="dgptm-modal-body">
-                    <p>Laden Sie hier Ihre aktuelle Studienbescheinigung hoch, um den Studierendenstatus zu beantragen oder zu erneuern.</p>
-                    <form id="dgptm-student-upload-form">
-                        <div class="form-group" style="margin-bottom:12px;">
-                            <label for="dgptm-valid-year"><strong>Gültig bis Beitragsjahr:</strong></label>
-                            <input type="number" id="dgptm-valid-year" name="year" placeholder="z.B. 2026" min="2024" max="2030" required style="width:120px;">
-                        </div>
-                        <div class="form-group" style="margin-bottom:12px;">
-                            <label for="dgptm-certificate-file"><strong>Studienbescheinigung</strong> (PDF, JPG, PNG, max. 2MB):</label>
-                            <input type="file" id="dgptm-certificate-file" name="certificate_file" accept=".pdf,.jpg,.jpeg,.png" required>
-                        </div>
-                        <div style="display:flex;gap:8px;margin-top:12px;">
-                            <button type="submit" class="btn-submit" id="dgptm-upload-btn">Hochladen &amp; Absenden</button>
-                            <button type="button" class="btn-secondary dgptm-close-modal">Abbrechen</button>
-                        </div>
-                        <div id="dgptm-upload-response" style="margin-top:10px;"></div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
         <!-- Zeitschrift DIE PERFUSIOLOGIE -->
         <fieldset class="form-section">
             <legend>Wie möchten Sie die Zeitschrift DIE PERFUSIOLOGIE ab der kommenden Ausgabe erhalten?</legend>
@@ -304,6 +278,32 @@ if (!defined('ABSPATH')) {
 
         <div id="form-messages" class="form-messages"></div>
     </form>
+
+    <!-- Modal Studierendenstatus (MUSS außerhalb von #dgptm-daten-form sein, keine verschachtelten Forms) -->
+    <div id="dgptm-student-modal" class="dgptm-modal" style="display:none;">
+        <div class="dgptm-modal-content">
+            <span class="dgptm-close-modal">&times;</span>
+            <h3>Studienbescheinigung einreichen</h3>
+            <div class="dgptm-modal-body">
+                <p>Laden Sie hier Ihre aktuelle Studienbescheinigung hoch, um den Studierendenstatus zu beantragen oder zu erneuern.</p>
+                <form id="dgptm-student-upload-form">
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <label for="dgptm-valid-year"><strong>Gültig bis Beitragsjahr:</strong></label>
+                        <input type="number" id="dgptm-valid-year" name="year" placeholder="z.B. 2026" min="2024" max="2030" required style="width:120px;">
+                    </div>
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <label for="dgptm-certificate-file"><strong>Studienbescheinigung</strong> (PDF, JPG, PNG, max. 2MB):</label>
+                        <input type="file" id="dgptm-certificate-file" name="certificate_file" accept=".pdf,.jpg,.jpeg,.png" required>
+                    </div>
+                    <div style="display:flex;gap:8px;margin-top:12px;">
+                        <button type="submit" class="btn-submit" id="dgptm-upload-btn">Hochladen &amp; Absenden</button>
+                        <button type="button" class="btn-secondary dgptm-close-modal">Abbrechen</button>
+                    </div>
+                    <div id="dgptm-upload-response" style="margin-top:10px;"></div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <div id="success-message" class="success-message" style="display: none;">
         <div class="success-icon">✓</div>

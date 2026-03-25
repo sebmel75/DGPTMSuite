@@ -152,8 +152,8 @@
     appearance: auto;
 }
 
-/* Visibility: mobile-only / desktop-only */
-.dgptm-vis-mobile { display: none !important; }
+/* Content: Desktop vs Mobile */
+.dgptm-content-mobile { display: none; }
 
 /* Sticky-Fix: WP Admin Bar (32px logged-in) + ggf. Site-Header */
 body.admin-bar .dgptm-dash .dgptm-nav { top: 32px; }
@@ -186,7 +186,7 @@ body.admin-bar .dgptm-dash .dgptm-nav-mobile { top: 46px; }
     .dgptm-dash .dgptm-profile-meta { gap: 4px; }
     .dgptm-dash .dgptm-badge { font-size: 11px; padding: 2px 7px; }
 
-    /* Visibility: mobile-only sichtbar, desktop-only versteckt */
-    .dgptm-vis-mobile { display: inline-block !important; }
-    .dgptm-vis-desktop { display: none !important; }
+    /* Mobile: Alternativer Content anzeigen */
+    .dgptm-content-desktop { display: none !important; }
+    .dgptm-content-mobile { display: block !important; }
 }

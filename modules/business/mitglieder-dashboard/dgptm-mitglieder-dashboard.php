@@ -94,11 +94,9 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
             $html .= '<div class="dgptm-nav-mobile">';
             $html .= '<select id="dgptm-nav-select" class="dgptm-nav-select">';
             foreach ($top as $t) {
-                if (!empty($t['link'])) continue; // Link-Tabs nicht im Dropdown
-                $vis = $t['visibility'] ?? 'all';
-                if ($vis === 'desktop') continue; // Desktop-only Tabs nicht auf Mobile zeigen
+                if (!empty($t['link'])) continue;
                 $sel = $t['id'] === $active ? ' selected' : '';
-                $html .= '<option value="' . esc_attr($t['id']) . '"' . $sel . '>' . esc_html($t['label']) . '</option>';
+                $html .= '<option value="' . esc_attr($t['id']) . '"' . $sel . '>Menü: ' . esc_html($t['label']) . '</option>';
             }
             $html .= '</select>';
             $html .= '</div>';
@@ -152,8 +150,7 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
                         $f = $fc['tab'];
                         $html .= '<div class="dgptm-fpanel' . ($fc['first'] ? ' dgptm-fpanel-active' : '') . '" data-fpanel="' . esc_attr($f['id']) . '"' . ($fc['first'] ? '' : ' style="display:none"') . '>';
                         if ($fc['first']) {
-                            // Always render first folder tab content (will be visible when parent tab is shown)
-                            $html .= do_shortcode($f['content']);
+                            $html .= self::render_content_with_mobile($f);
                         } else {
                             $html .= '<div class="dgptm-loading">Wird geladen...</div>';
                         }
@@ -163,7 +160,7 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
                 } else {
                     // Simple tab
                     if ($is_active) {
-                        $html .= do_shortcode($t['content']);
+                        $html .= self::render_content_with_mobile($t);
                     } else {
                         $html .= '<div class="dgptm-loading">Wird geladen...</div>';
                     }
@@ -176,6 +173,25 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
             return $html;
         }
 
+        /**
+         * Rendert Content mit optionalem Mobile-Alternativinhalt.
+         * Desktop-Content in .dgptm-content-desktop, Mobile in .dgptm-content-mobile.
+         * Falls kein Mobile-Content: nur normaler Content ohne Wrapper.
+         */
+        public static function render_content_with_mobile($tab) {
+            $content = $tab['content'] ?? '';
+            $mobile  = $tab['content_mobile'] ?? '';
+
+            if (empty(trim($mobile))) {
+                // Kein mobiler Inhalt → normaler Content für alle Geräte
+                return do_shortcode($content);
+            }
+
+            // Desktop + Mobile Content in separaten Containern
+            return '<div class="dgptm-content-desktop">' . do_shortcode($content) . '</div>'
+                 . '<div class="dgptm-content-mobile">' . do_shortcode($mobile) . '</div>';
+        }
+
         // ─── AJAX: Load tab content ───
 
         public function ajax_load_tab() {
@@ -186,7 +202,6 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
 
             if (!$tab) wp_send_json_error('Tab nicht gefunden');
 
-            // Check if this tab has children - if so, build folder structure
             $user_id = get_current_user_id();
             $all_visible = $tabs_mgr->get_visible_tabs($user_id);
             $kids = [];
@@ -195,7 +210,6 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
             }
 
             if (!empty($kids)) {
-                // Build folder HTML - include parent only if it has own content
                 $parent_has_content = !empty(trim($tab['content'] ?? ''));
                 $folder = $parent_has_content ? array_merge([$tab], $kids) : $kids;
                 $html = '<div class="dgptm-folder"><div class="dgptm-folder-nav">';
@@ -218,7 +232,7 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
                     $f = $fc['tab'];
                     $html .= '<div class="dgptm-fpanel' . ($fc['first'] ? ' dgptm-fpanel-active' : '') . '" data-fpanel="' . esc_attr($f['id']) . '"' . ($fc['first'] ? '' : ' style="display:none"') . '>';
                     if ($fc['first']) {
-                        $html .= do_shortcode($f['content']);
+                        $html .= self::render_content_with_mobile($f);
                     } else {
                         $html .= '<div class="dgptm-loading">Wird geladen...</div>';
                     }
@@ -228,8 +242,8 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
                 wp_send_json_success(['html' => $html]);
             }
 
-            // Simple tab - just render content
-            wp_send_json_success(['html' => do_shortcode($tab['content'])]);
+            // Simple tab
+            wp_send_json_success(['html' => self::render_content_with_mobile($tab)]);
         }
 
         // ─── ADMIN ───

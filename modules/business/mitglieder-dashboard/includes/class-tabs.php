@@ -82,8 +82,9 @@ class DGPTM_Dashboard_Tabs {
                 'order'      => absint($t['order'] ?? 99),
                 'permission' => sanitize_text_field($t['permission'] ?? 'always'),
                 'link'       => esc_url_raw($t['link'] ?? ''),
-                'content'    => $t['content'] ?? '',
-                'visibility' => $vis,
+                'content'        => $t['content'] ?? '',
+                'content_mobile' => $t['content_mobile'] ?? '',
+                'visibility'     => $vis,
             ];
         }
         update_option(self::OPT, $clean, false);

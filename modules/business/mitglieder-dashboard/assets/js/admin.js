@@ -96,8 +96,8 @@ jQuery(function($) {
                 link:       $.trim($t.find('.dt-link').val()) || '',
                 active:     $t.find('.dt-active').is(':checked'),
                 order:      (i + 1) * 10,
-                content:    $t.find('.dt-content').val(),
-                visibility: $t.find('.dt-visibility').val() || 'all'
+                content:        $t.find('.dt-content').val(),
+                content_mobile: $t.find('.dt-content-mobile').val() || ''
             });
         });
         return tabs;

@@ -163,6 +163,26 @@ function dgptm_gcl_br_get_active_mandate( $customer_id ) {
     ];
 }
 
+/**
+ * Aktualisiert Adresse des GoCardless-Customers aus Zoho CRM.
+ */
+function dgptm_gcl_br_sync_customer_address( $customer_id ) {
+    $street = trim( do_shortcode( '[zoho_api_data field="Strasse"]' ) );
+    $plz    = trim( do_shortcode( '[zoho_api_data field="PLZ"]' ) );
+    $city   = trim( do_shortcode( '[zoho_api_data field="Ort"]' ) );
+
+    if ( ! $street && ! $plz && ! $city ) return;
+
+    $update = [ 'country_code' => 'DE' ];
+    if ( $street ) $update['address_line1'] = $street;
+    if ( $plz )    $update['postal_code']   = $plz;
+    if ( $city )   $update['city']          = $city;
+
+    dgptm_gcl_br_api( 'PUT', "customers/{$customer_id}", [
+        'customers' => $update,
+    ]);
+}
+
 /* ============================================================
  * AJAX-Handler
  * ============================================================ */
@@ -253,6 +273,9 @@ add_action( 'wp_ajax_dgptm_gcl_change_bank', function() {
         }
     }
 
+    // Adresse aus Zoho an GoCardless Customer übertragen
+    dgptm_gcl_br_sync_customer_address( $customer_id );
+
     // Schritt 3: Billing Request erstellen
     $br = dgptm_gcl_br_api( 'POST', 'billing_requests', [
         'billing_requests' => [
@@ -302,6 +325,9 @@ add_action( 'wp_ajax_dgptm_gcl_new_mandate', function() {
 
     $customer_id = dgptm_gcl_br_get_customer_id();
     if ( ! $customer_id ) wp_send_json_error( [ 'message' => 'Kein GoCardless-Kundenkonto. Bitte Geschäftsstelle kontaktieren.' ] );
+
+    // Adresse aus Zoho an GoCardless Customer übertragen
+    dgptm_gcl_br_sync_customer_address( $customer_id );
 
     // Direkt Billing Request (kein Cancel nötig)
     $br = dgptm_gcl_br_api( 'POST', 'billing_requests', [

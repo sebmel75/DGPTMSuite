@@ -735,7 +735,11 @@ function dgptm_eiv_find_user_via_crm( $efn, $log = null ) {
  * @param string|null $since_override  Optionales Override-Datum (ISO 8601). Null = automatisch.
  * @return array  Ergebnis-Array mit 'logs', 'imported', 'skipped', 'errors', 'results'
  */
-function dgptm_eiv_run_sync( $since_override = null ) {
+/**
+ * @param string|null $since_override  Optionales Override-Datum (ISO 8601). Null = automatisch.
+ * @param bool        $update_last_call Ob last_call aktualisiert werden soll (false bei manuellem Abruf)
+ */
+function dgptm_eiv_run_sync( $since_override = null, $update_last_call = true ) {
     $result = [
         'logs'     => [],
         'imported' => 0,
@@ -793,10 +797,13 @@ function dgptm_eiv_run_sync( $since_override = null ) {
     $log( "{$count} Teilnahme-Datensätze abgerufen." );
 
     if ( $count === 0 ) {
-        // Auch bei 0 Ergebnissen lastCall aktualisieren
-        $settings['last_call'] = wp_date( 'c' );
-        update_option( DGPTM_EIV_OPTION_KEY, $settings );
-        $log( 'Keine neuen Teilnahmen. lastCall aktualisiert.' );
+        if ( $update_last_call ) {
+            $settings['last_call'] = wp_date( 'c' );
+            update_option( DGPTM_EIV_OPTION_KEY, $settings );
+            $log( 'Keine neuen Teilnahmen. lastCall aktualisiert.' );
+        } else {
+            $log( 'Keine neuen Teilnahmen. Manueller Abruf – lastCall nicht verändert.' );
+        }
         return $result;
     }
 
@@ -936,13 +943,15 @@ function dgptm_eiv_run_sync( $since_override = null ) {
         ];
     }
 
-    // 4) lastCall aktualisieren (nur wenn KEINE Fehler aufgetreten)
-    if ( $result['errors'] === 0 ) {
+    // 4) lastCall aktualisieren (nur bei Cron, nicht bei manuellem Abruf)
+    if ( $update_last_call && $result['errors'] === 0 ) {
         $settings['last_call'] = wp_date( 'c' );
         update_option( DGPTM_EIV_OPTION_KEY, $settings );
         $log( 'lastCall aktualisiert.' );
+    } elseif ( ! $update_last_call ) {
+        $log( 'Manueller Abruf – lastCall nicht verändert.' );
     } else {
-        $log( sprintf( 'lastCall NICHT aktualisiert wegen %d Fehler – nächster Lauf wiederholt ab gleichem Zeitpunkt.', $result['errors'] ) );
+        $log( sprintf( 'lastCall NICHT aktualisiert wegen %d Fehler.', $result['errors'] ) );
     }
 
     $log( sprintf(
@@ -968,7 +977,15 @@ function dgptm_eiv_reschedule_cron( $settings = null ) {
 
     if ( $settings['batch_enabled'] !== '1' ) return;
 
-    wp_schedule_event( time() + 60, 'daily', DGPTM_EIV_CRON_HOOK );
+    // Nächster 2:00 Uhr in WordPress-Zeitzone (UTC-Timestamp für wp_schedule_event)
+    $tz = wp_timezone();
+    $now = new DateTimeImmutable( 'now', $tz );
+    $next_2am = new DateTimeImmutable( 'today 02:00', $tz );
+    if ( $next_2am <= $now ) {
+        $next_2am = $next_2am->modify( '+1 day' );
+    }
+
+    wp_schedule_event( $next_2am->getTimestamp(), 'daily', DGPTM_EIV_CRON_HOOK );
 }
 
 // Cron-Handler
@@ -991,7 +1008,7 @@ add_action( DGPTM_EIV_CRON_HOOK, function() {
 add_action( 'init', function() {
     $settings = dgptm_eiv_get_settings();
     if ( $settings['batch_enabled'] === '1' && ! wp_next_scheduled( DGPTM_EIV_CRON_HOOK ) ) {
-        wp_schedule_event( time() + 60, 'daily', DGPTM_EIV_CRON_HOOK );
+        dgptm_eiv_reschedule_cron( $settings ); // Plant auf nächsten 2:00 Uhr
     }
 });
 
@@ -1026,7 +1043,7 @@ add_action( 'wp_ajax_dgptm_eiv_manual_sync', function() {
         $since = null;
     }
 
-    $result = dgptm_eiv_run_sync( $since );
+    $result = dgptm_eiv_run_sync( $since, false ); // false = lastCall nicht ändern
     wp_send_json_success( $result );
 });
 

@@ -210,7 +210,7 @@ add_action( 'wp_ajax_dgptm_gcl_load_status', function() {
           . '</div>'
           . '<p style="margin-top:12px;">'
           . '<button class="button button-secondary" id="dgptm-gcl-change-btn">Bankverbindung ändern</button> '
-          . '<button class="button" id="dgptm-gcl-cancel-btn" style="color:#d63638;">Mandat kündigen</button>'
+          . '<button class="button" id="dgptm-gcl-cancel-btn" style="background:#d63638;border-color:#d63638;color:#fff;">Mandat kündigen</button>'
           . '</p>';
 
     wp_send_json_success( [ 'status' => 'active', 'html' => $html ] );

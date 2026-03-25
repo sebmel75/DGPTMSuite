@@ -545,21 +545,19 @@ jQuery(document).ready(function($) {
     // Re-init when dashboard loads this tab via AJAX
     $(document).on('dgptm_tab_loaded', function() {
         initDatenBearbeiten();
+        loadStudentStatus(); // Studistatus auch bei AJAX-Tab-Wechsel laden
     });
 
     // ============================================
     // Student Status Form Functionality
+    // (Alle DOM-Referenzen dynamisch, für Dashboard-AJAX-Kompatibilität)
     // ============================================
-
-    const $studentModal = $('#dgptm-student-modal');
-    const $studentStatusDisplay = $('#dgptm-student-status-display');
-    const $studentUploadForm = $('#dgptm-student-upload-form');
-    const $uploadResponse = $('#dgptm-upload-response');
 
     /**
      * Load student status from CRM
      */
     function loadStudentStatus() {
+        var $studentStatusDisplay = $('#dgptm-student-status-display');
         if (!$studentStatusDisplay.length) {
             return; // Not on student status page
         }
@@ -577,15 +575,13 @@ jQuery(document).ready(function($) {
                 console.log('Student status response:', response);
 
                 if (response.success && response.data) {
-                    displayStudentStatus(response.data.data);
+                    displayStudentStatus(response.data.data, $studentStatusDisplay);
                 } else {
-                    // Bei Fehler: Display ausblenden statt Fehlermeldung anzeigen
                     $studentStatusDisplay.hide();
                     console.log('Error loading status - hiding display:', response.data.message);
                 }
             },
             error: function(xhr, status, error) {
-                // Bei Netzwerkfehler: Display ausblenden statt Fehlermeldung anzeigen
                 console.error('Failed to load student status:', error);
                 $studentStatusDisplay.hide();
             }
@@ -595,14 +591,11 @@ jQuery(document).ready(function($) {
     /**
      * Display student status
      */
-    function displayStudentStatus(data) {
-        // Prüfe ob Student_Status = true ist
+    function displayStudentStatus(data, $studentStatusDisplay) {
+        if (!$studentStatusDisplay) $studentStatusDisplay = $('#dgptm-student-status-display');
         const statusDisplay = data.student_status_display || 'inactive';
 
-        // WICHTIG: Nur anzeigen, wenn Student_Status aktiv oder in Prüfung ist
-        // Bei 'inactive' ausblenden, auch wenn alte Bescheinigung/Jahr vorhanden ist
         if (statusDisplay === 'inactive') {
-            // Student_Status = false - Display-Bereich komplett ausblenden
             $studentStatusDisplay.hide();
             console.log('Student status is INACTIVE - hiding status display (Student_Status = false)');
             return;
@@ -670,23 +663,20 @@ jQuery(document).ready(function($) {
      * Open student modal
      */
     $(document).on('click', '#dgptm-student-open-modal', function() {
-        $studentModal.fadeIn(300);
-        $uploadResponse.empty();
-        $studentUploadForm[0].reset();
-        initializeYearInput(); // Setze min/max basierend auf aktuellem Quartal
+        $('#dgptm-student-modal').fadeIn(300);
+        $('#dgptm-upload-response').empty();
+        var uploadForm = document.getElementById('dgptm-student-upload-form');
+        if (uploadForm) uploadForm.reset();
+        initializeYearInput();
     });
 
-    /**
-     * Close student modal
-     */
     $(document).on('click', '.dgptm-close-modal', function() {
-        $studentModal.fadeOut(300);
+        $('#dgptm-student-modal').fadeOut(300);
     });
 
-    // Close modal when clicking outside
     $(document).on('click', function(e) {
         if ($(e.target).is('#dgptm-student-modal')) {
-            $studentModal.fadeOut(300);
+            $('#dgptm-student-modal').fadeOut(300);
         }
     });
 
@@ -728,7 +718,7 @@ jQuery(document).ready(function($) {
     /**
      * Handle student certificate upload
      */
-    $studentUploadForm.on('submit', function(e) {
+    $(document).on('submit', '#dgptm-student-upload-form', function(e) {
         e.preventDefault();
 
         console.log('Uploading student certificate...');
@@ -808,12 +798,12 @@ jQuery(document).ready(function($) {
                     showUploadMessage(response.data.message || 'Erfolgreich hochgeladen!', 'success');
 
                     // Reset form
-                    $studentUploadForm[0].reset();
+                    $('#dgptm-student-upload-form')[0].reset();
 
                     // Reload status
                     setTimeout(function() {
                         loadStudentStatus();
-                        $studentModal.fadeOut(300);
+                        $('#dgptm-student-modal').fadeOut(300);
                     }, 2000);
                 } else {
                     showUploadMessage(response.data.message || 'Fehler beim Hochladen', 'error');
@@ -838,7 +828,7 @@ jQuery(document).ready(function($) {
         if (type === 'success') className += ' success';
         if (type === 'info') className += ' info';
 
-        $uploadResponse.html('<div class="' + className + '">' + message + '</div>').fadeIn();
+        $('#dgptm-upload-response').html('<div class="' + className + '">' + message + '</div>').fadeIn();
     }
 
     // Load student status on page load (if element exists)

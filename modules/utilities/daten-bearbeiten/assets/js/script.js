@@ -332,26 +332,21 @@ jQuery(document).ready(function($) {
     }
 
     /**
-     * Handle "Change" button click
+     * Event-Delegation auf document für Dashboard-Kompatibilität
+     * (DOM-Elemente werden ggf. erst via AJAX geladen)
      */
-    $('#employer_change_btn').on('click', function() {
+    $(document).on('click', '#employer_change_btn', function() {
         $('#employer_current_row').hide();
         $('#employer_search_section').show();
         $('#employer_search').focus();
     });
 
-    /**
-     * Handle search button click
-     */
-    $('#employer_search_btn').on('click', function() {
+    $(document).on('click', '#employer_search_btn', function() {
         const searchTerm = $('#employer_search').val().trim();
         searchAccounts(searchTerm);
     });
 
-    /**
-     * Handle Enter key in search field
-     */
-    $('#employer_search').on('keypress', function(e) {
+    $(document).on('keypress', '#employer_search', function(e) {
         if (e.which === 13) {
             e.preventDefault();
             const searchTerm = $(this).val().trim();
@@ -359,10 +354,7 @@ jQuery(document).ready(function($) {
         }
     });
 
-    /**
-     * Handle "not in list" checkbox
-     */
-    $('#employer_not_in_list').on('change', function() {
+    $(document).on('change', '#employer_not_in_list', function() {
         if ($(this).is(':checked')) {
             $('#employer_manual_row').show();
             $('#employer_results_row').hide();
@@ -372,13 +364,9 @@ jQuery(document).ready(function($) {
         }
     });
 
-    /**
-     * Handle bank change request toggle
-     */
-    $('#bank_change_requested').on('change', function() {
+    $(document).on('change', '#bank_change_requested', function() {
         if ($(this).is(':checked')) {
             $('#bank_change_section').slideDown();
-            // Felder mit Mitgliedsdaten vorausfüllen
             var fullName = $('#name').val();
             if (fullName) {
                 var nameParts = fullName.split(' ');
@@ -387,40 +375,30 @@ jQuery(document).ready(function($) {
             }
         } else {
             $('#bank_change_section').slideUp();
-            // Felder leeren
             $('#bank_vorname').val('');
             $('#bank_nachname').val('');
             $('#bank_iban').val('');
         }
     });
 
-    /**
-     * IBAN validation and formatting
-     */
-    $('#bank_iban').on('input', function() {
+    $(document).on('input', '#bank_iban', function() {
         var iban = $(this).val().toUpperCase().replace(/\s/g, '');
-        // Format IBAN with spaces every 4 characters
         var formatted = iban.match(/.{1,4}/g);
         if (formatted) {
             $(this).val(formatted.join(' '));
         }
     });
 
-    /**
-     * Validate IBAN format (basic check)
-     */
     function validateIBAN(iban) {
-        // Remove spaces
         iban = iban.replace(/\s/g, '');
-        // Basic format check: 2 letters, 2 digits, then alphanumeric
         var ibanRegex = /^[A-Z]{2}[0-9]{2}[A-Z0-9]{9,30}$/;
         return ibanRegex.test(iban);
     }
 
     /**
-     * Handle form submission
+     * Handle form submission (delegated)
      */
-    $form.on('submit', function(e) {
+    $(document).on('submit', '#dgptm-daten-form', function(e) {
         e.preventDefault();
 
         console.log('Form submitted');

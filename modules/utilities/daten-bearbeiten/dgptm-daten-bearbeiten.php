@@ -220,7 +220,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
          * Enqueue frontend assets
          */
         public function enqueue_frontend_assets() {
-            // Only enqueue on pages with shortcode (including dashboard which lazy-loads these)
+            // Enqueue on pages with shortcode OR dashboard (lazy-loads tabs via AJAX)
             global $post;
             if (!is_a($post, 'WP_Post')) return;
             $content = $post->post_content;
@@ -229,7 +229,14 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
                    || has_shortcode($content, 'dgptm-studistatus-banner')
                    || has_shortcode($content, 'dgptm_dashboard');
             if (!$needed) return;
+            $this->do_enqueue();
 
+        }
+
+        /**
+         * Actually enqueue CSS/JS + localize
+         */
+        private function do_enqueue() {
             wp_enqueue_style(
                 'dgptm-daten-bearbeiten',
                 $this->plugin_url . 'assets/css/style.css',

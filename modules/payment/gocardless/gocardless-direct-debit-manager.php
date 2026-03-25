@@ -346,4 +346,10 @@ class GCL_Formidable_Integration {
     }
 }
 
+// Billing Requests Modul laden (neuer Shortcode [gcl_formidable_new])
+$gcl_br_file = __DIR__ . '/gocardless-billing-requests.php';
+if ( file_exists( $gcl_br_file ) ) {
+    require_once $gcl_br_file;
+}
+
 new GCL_Formidable_Integration();

@@ -254,6 +254,7 @@ add_action('after_setup_theme','cnp_setup_thumbnail_support');
  * ---------------------------------------------------------- */
 require_once plugin_dir_path(__FILE__) . 'includes/news_shortcodes.php';
 require_once plugin_dir_path(__FILE__) . 'includes/news_basis_shortcodes.php';
+require_once plugin_dir_path(__FILE__) . 'includes/news_ajax_handlers.php';
 
 
 
@@ -340,12 +341,15 @@ add_action('admin_enqueue_scripts', 'cnp_admin_enqueue_media_for_news');
  * ---------------------------------------------------------- */
 function cnp_enqueue_scripts(){
     if(!is_admin()){
-        wp_enqueue_style('cnp-style', plugin_dir_url(__FILE__).'css/style.css', array(), '3.0');
+        wp_enqueue_style('cnp-style', plugin_dir_url(__FILE__).'css/style.css', array(), '3.2');
 
-        // Ensure modal overlay is hidden by default and can be shown when active (fallback if no theme CSS is present)
-        wp_add_inline_style('cnp-style', '.cnp-modal-overlay{display:none;position:fixed;z-index:9999;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);align-items:center;justify-content:center;padding:20px;}.cnp-modal-overlay.active{display:flex;}.cnp-modal-content{background:#fff;max-width:900px;width:100%;padding:20px;position:relative;}.cnp-close-modal{position:absolute;top:8px;right:8px;border:0;background:transparent;font-size:28px;line-height:1;cursor:pointer;}');
+        wp_add_inline_style('cnp-style', '.cnp-modal-overlay{display:none;position:fixed;z-index:9999;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);align-items:center;justify-content:center;padding:20px;overflow-y:auto;}.cnp-modal-content{background:#fff;max-width:900px;width:100%;padding:20px;position:relative;border-radius:5px;margin:40px auto;}.cnp-close-modal{position:absolute;top:8px;right:8px;border:0;background:transparent;font-size:28px;line-height:1;cursor:pointer;}');
 
-        wp_enqueue_script('cnp-modal-script', plugin_dir_url(__FILE__).'js/modal.js', array('jquery'), '3.0', true);
+        wp_enqueue_script('cnp-modal-script', plugin_dir_url(__FILE__).'js/modal.js', array('jquery'), '3.2', true);
+        wp_localize_script('cnp-modal-script', 'cnpNews', array(
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce'   => wp_create_nonce('cnp_news_nonce'),
+        ));
     }
 }
 add_action('wp_enqueue_scripts','cnp_enqueue_scripts');

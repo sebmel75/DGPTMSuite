@@ -7,7 +7,7 @@
  */
 if (!defined('ABSPATH')) exit;
 
-define('DGPTM_FORUM_VERSION', '1.0.0');
+define('DGPTM_FORUM_VERSION', '1.1.0');
 define('DGPTM_FORUM_PATH', plugin_dir_path(__FILE__));
 define('DGPTM_FORUM_URL', plugin_dir_url(__FILE__));
 

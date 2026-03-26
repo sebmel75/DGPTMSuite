@@ -105,16 +105,58 @@ if (!class_exists('DGPTM_Forum')) {
 
         public function shortcode_forum($atts = []) {
             if (!is_user_logged_in()) {
-                return 'Bitte anmelden.';
+                return '<p>Bitte anmelden.</p>';
             }
 
             $this->enqueue_assets();
+            $ajax_url = admin_url('admin-ajax.php');
+            $nonce    = wp_create_nonce('dgptm_forum');
+            $is_admin = DGPTM_Forum_Permissions::is_forum_admin() ? 1 : 0;
 
-            return '<div class="dgptm-forum-wrap">'
-                . '<div class="dgptm-forum-content">'
-                . '<p>Forum wird geladen...</p>'
-                . '</div>'
-                . '</div>';
+            ob_start();
+            ?>
+            <div class="dgptm-forum-wrap">
+                <div class="dgptm-forum-breadcrumb"></div>
+                <div class="dgptm-forum-content"><p>Forum wird geladen…</p></div>
+            </div>
+            <script>
+            (function(){
+                if (typeof window.dgptmForum === 'undefined') {
+                    window.dgptmForum = {
+                        ajaxUrl: <?php echo wp_json_encode($ajax_url); ?>,
+                        nonce: <?php echo wp_json_encode($nonce); ?>,
+                        isAdmin: <?php echo $is_admin; ?>
+                    };
+                }
+                var $w = jQuery('.dgptm-forum-wrap');
+                if (!$w.length) return;
+                jQuery.post(dgptmForum.ajaxUrl, {
+                    action: 'dgptm_forum_load_view',
+                    nonce: dgptmForum.nonce,
+                    view: 'ags',
+                    id: 0
+                }).done(function(r) {
+                    if (r && r.success) {
+                        $w.find('.dgptm-forum-content').html(r.data.html);
+                        if (r.data.breadcrumb) {
+                            var bc = '', crumbs = r.data.breadcrumb;
+                            for (var i = 0; i < crumbs.length; i++) {
+                                if (i > 0) bc += '<span class="sep">&rsaquo;</span>';
+                                if (crumbs[i].link) bc += '<a href="#" data-view="' + crumbs[i].view + '" data-id="' + (crumbs[i].id||0) + '">' + crumbs[i].label + '</a>';
+                                else bc += '<span>' + crumbs[i].label + '</span>';
+                            }
+                            $w.find('.dgptm-forum-breadcrumb').html(bc);
+                        }
+                    } else {
+                        $w.find('.dgptm-forum-content').html('<p style="color:red">' + ((r&&r.data&&r.data.message)||'Fehler') + '</p>');
+                    }
+                }).fail(function() {
+                    $w.find('.dgptm-forum-content').html('<p style="color:red">Verbindungsfehler</p>');
+                });
+            })();
+            </script>
+            <?php
+            return ob_get_clean();
         }
 
         public function shortcode_forum_admin($atts = []) {
@@ -127,18 +169,57 @@ if (!class_exists('DGPTM_Forum')) {
             }
 
             $this->enqueue_assets();
+            $ajax_url = admin_url('admin-ajax.php');
+            $nonce    = wp_create_nonce('dgptm_forum');
 
-            $html = '<div class="dgptm-forum-admin-wrap">';
-            $html .= '<nav class="dgptm-forum-admin-tabs">';
-            $html .= '<a href="#" class="dgptm-forum-admin-tab active" data-tab="ags">AGs verwalten</a>';
-            $html .= '<a href="#" class="dgptm-forum-admin-tab" data-tab="themen">Themen</a>';
-            $html .= '<a href="#" class="dgptm-forum-admin-tab" data-tab="admins">Forum-Admins</a>';
-            $html .= '<a href="#" class="dgptm-forum-admin-tab" data-tab="moderation">Moderation</a>';
-            $html .= '</nav>';
-            $html .= '<div class="dgptm-forum-admin-content"></div>';
-            $html .= '</div>';
-
-            return $html;
+            ob_start();
+            ?>
+            <div class="dgptm-forum-admin-wrap">
+                <nav class="dgptm-forum-admin-tabs">
+                    <a href="#" class="active" data-tab="ags">AGs verwalten</a>
+                    <a href="#" data-tab="topics">Themen</a>
+                    <a href="#" data-tab="admins">Forum-Admins</a>
+                    <a href="#" data-tab="moderation">Moderation</a>
+                </nav>
+                <div class="dgptm-forum-admin-content"><p>Wird geladen…</p></div>
+            </div>
+            <script>
+            (function(){
+                if (typeof window.dgptmForum === 'undefined') {
+                    window.dgptmForum = {
+                        ajaxUrl: <?php echo wp_json_encode($ajax_url); ?>,
+                        nonce: <?php echo wp_json_encode($nonce); ?>,
+                        isAdmin: 1
+                    };
+                }
+                function loadAdminTab(tab) {
+                    var $c = jQuery('.dgptm-forum-admin-content');
+                    if (!$c.length) return;
+                    $c.html('<p>Wird geladen\u2026</p>');
+                    jQuery.post(dgptmForum.ajaxUrl, {
+                        action: 'dgptm_forum_admin_load_tab',
+                        nonce: dgptmForum.nonce,
+                        tab: tab
+                    }).done(function(r) {
+                        if (r && r.success) $c.html(r.data.html);
+                        else $c.html('<p style="color:red">' + ((r && r.data && r.data.message) || 'Fehler') + '</p>');
+                    }).fail(function() {
+                        $c.html('<p style="color:red">Verbindungsfehler</p>');
+                    });
+                }
+                // Tab-Klick
+                jQuery(document).off('click.forumadmin').on('click.forumadmin', '.dgptm-forum-admin-tabs a', function(e) {
+                    e.preventDefault();
+                    jQuery('.dgptm-forum-admin-tabs a').removeClass('active');
+                    jQuery(this).addClass('active');
+                    loadAdminTab(jQuery(this).data('tab'));
+                });
+                // Initial load
+                loadAdminTab('ags');
+            })();
+            </script>
+            <?php
+            return ob_get_clean();
         }
 
         public function shortcode_is_forum_admin($atts = []) {

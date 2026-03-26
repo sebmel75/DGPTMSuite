@@ -160,7 +160,8 @@
     font-size: 13px;
     text-decoration: none;
 }
-.dgptm-forum-btn:hover { background: #005d8c; }
+.dgptm-forum-btn:hover { background: #005d8c; color: #fff; }
+.dgptm-forum-btn, .dgptm-forum-btn:visited, .dgptm-forum-btn:focus { color: #fff !important; }
 .dgptm-forum-btn.secondary { background: #fff; color: #0073aa; }
 .dgptm-forum-btn.secondary:hover { background: #f0f6fc; }
 .dgptm-forum-btn.danger { background: #dc3232; border-color: #dc3232; }

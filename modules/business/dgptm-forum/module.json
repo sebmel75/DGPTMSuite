@@ -1,0 +1,21 @@
+{
+    "id": "dgptm-forum",
+    "name": "DGPTM - Forum",
+    "description": "Diskussionsforum mit Arbeitsgemeinschaften, Themen-Hierarchie, verschachtelten Antworten und E-Mail-Benachrichtigungen",
+    "version": "1.0.0",
+    "author": "Sebastian Melzer",
+    "main_file": "dgptm-forum.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": []
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "business",
+    "icon": "dashicons-format-chat",
+    "active": false,
+    "can_export": true,
+    "critical": false,
+    "flags": ["development"]
+}

@@ -1,0 +1,200 @@
+/* DGPTM Forum v1.0.0 */
+
+/* === Layout === */
+.dgptm-forum-wrap,
+.dgptm-forum-admin-wrap { max-width: 100%; }
+
+.dgptm-forum-content { min-height: 200px; }
+
+/* === Breadcrumb === */
+.dgptm-forum-breadcrumb { margin-bottom: 1em; font-size: 0.9em; color: #666; }
+.dgptm-forum-breadcrumb a { color: #0073aa; text-decoration: none; }
+.dgptm-forum-breadcrumb a:hover { text-decoration: underline; }
+.dgptm-forum-breadcrumb .sep { margin: 0 0.4em; }
+
+/* === Lists === */
+.dgptm-forum-list { list-style: none; margin: 0; padding: 0; }
+.dgptm-forum-list li {
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.dgptm-forum-list li:hover { background: #f8f9fa; }
+
+.dgptm-forum-list .item-title { font-weight: 600; color: #1d2327; }
+.dgptm-forum-list .item-meta { font-size: 0.85em; color: #888; margin-top: 2px; }
+.dgptm-forum-list .item-stats { text-align: right; white-space: nowrap; font-size: 0.85em; color: #666; }
+
+/* === Thread View === */
+.dgptm-forum-thread-header { margin-bottom: 1.5em; }
+.dgptm-forum-thread-header h2 { margin: 0 0 0.3em; }
+
+.dgptm-forum-post {
+    padding: 15px;
+    margin-bottom: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    background: #fff;
+}
+.dgptm-forum-post.pinned { border-left: 3px solid #2196F3; }
+.dgptm-forum-post .post-author { font-weight: 600; margin-right: 10px; }
+.dgptm-forum-post .post-date { font-size: 0.85em; color: #888; }
+.dgptm-forum-post .post-content { margin: 10px 0; line-height: 1.6; }
+.dgptm-forum-post .post-actions { font-size: 0.85em; }
+.dgptm-forum-post .post-actions a { color: #0073aa; margin-right: 10px; cursor: pointer; }
+
+/* === Nested Replies === */
+.dgptm-forum-reply { margin-left: 30px; }
+.dgptm-forum-reply.depth-2 { margin-left: 60px; }
+.dgptm-forum-reply.depth-3 { margin-left: 90px; }
+
+/* === Compose Form === */
+.dgptm-forum-compose { margin-top: 1.5em; }
+.dgptm-forum-compose textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 14px;
+}
+.dgptm-forum-compose input[type="text"] {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+.dgptm-forum-compose .compose-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+
+/* === Admin Tabs === */
+.dgptm-forum-admin-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid #0073aa;
+    margin-bottom: 1.5em;
+}
+.dgptm-forum-admin-tabs a {
+    padding: 8px 16px;
+    text-decoration: none;
+    color: #555;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    margin-bottom: -2px;
+}
+.dgptm-forum-admin-tabs a.active {
+    background: #fff;
+    color: #0073aa;
+    border-color: #0073aa;
+    border-bottom-color: #fff;
+    font-weight: 600;
+}
+
+.dgptm-forum-admin-content { min-height: 200px; }
+
+/* === Admin Forms === */
+.dgptm-forum-admin-form label { display: block; margin-bottom: 4px; font-weight: 500; }
+.dgptm-forum-admin-form input[type="text"],
+.dgptm-forum-admin-form textarea,
+.dgptm-forum-admin-form select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-bottom: 12px;
+}
+
+/* === User Picker === */
+.dgptm-forum-user-search-wrap { position: relative; }
+.dgptm-forum-user-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-top: none;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 100;
+    display: none;
+}
+.dgptm-forum-user-results .user-item {
+    padding: 8px 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+}
+.dgptm-forum-user-results .user-item:hover { background: #f0f6fc; }
+
+/* === Member List === */
+.dgptm-forum-member-list { margin-top: 10px; }
+.dgptm-forum-member-list .member-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+.dgptm-forum-member-list .member-role { font-size: 0.85em; color: #666; margin-left: 8px; }
+
+/* === Buttons === */
+.dgptm-forum-btn {
+    display: inline-block;
+    padding: 6px 14px;
+    border: 1px solid #0073aa;
+    border-radius: 3px;
+    background: #0073aa;
+    color: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    text-decoration: none;
+}
+.dgptm-forum-btn:hover { background: #005d8c; }
+.dgptm-forum-btn.secondary { background: #fff; color: #0073aa; }
+.dgptm-forum-btn.secondary:hover { background: #f0f6fc; }
+.dgptm-forum-btn.danger { background: #dc3232; border-color: #dc3232; }
+.dgptm-forum-btn.danger:hover { background: #b02828; }
+.dgptm-forum-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* === Subscribe Toggle === */
+.dgptm-forum-subscribe-btn { cursor: pointer; font-size: 0.9em; }
+.dgptm-forum-subscribe-btn.subscribed { color: #0073aa; font-weight: 600; }
+
+/* === Attachments === */
+.dgptm-forum-attachments { margin-top: 10px; padding-top: 8px; border-top: 1px solid #eee; }
+.dgptm-forum-attachments a { display: inline-block; margin-right: 12px; font-size: 0.9em; }
+
+/* === Loading === */
+.dgptm-forum-loading { text-align: center; padding: 30px; color: #888; }
+
+/* === Badge === */
+.dgptm-forum-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75em;
+    font-weight: 600;
+}
+.dgptm-forum-badge.open { background: #e7f5e7; color: #2e7d32; }
+.dgptm-forum-badge.closed { background: #fce4ec; color: #c62828; }
+.dgptm-forum-badge.ag { background: #e3f2fd; color: #1565c0; }
+
+/* === Responsive === */
+@media (max-width: 600px) {
+    .dgptm-forum-reply { margin-left: 15px; }
+    .dgptm-forum-reply.depth-2 { margin-left: 30px; }
+    .dgptm-forum-reply.depth-3 { margin-left: 45px; }
+    .dgptm-forum-admin-tabs { flex-wrap: wrap; }
+    .dgptm-forum-admin-tabs a { flex: 1 0 auto; text-align: center; font-size: 0.85em; }
+}

@@ -612,26 +612,26 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
 
             ob_start();
             ?>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-                <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0">
+            <div style="margin-bottom:10px">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
                     <?php if ($ag_id > 0) : ?>
-                        <a href="#" class="dgptm-forum-back-btn" data-view="threads" data-id="<?php echo esc_attr($ag_id); ?>" style="display:inline-flex;align-items:center;gap:3px;font-size:12px;color:#0073aa;text-decoration:none;flex-shrink:0">&larr; <?php echo esc_html($ag_name); ?></a>
-                        <span style="color:#ccc;flex-shrink:0">|</span>
+                        <a href="#" class="dgptm-forum-back-btn" data-view="threads" data-id="<?php echo esc_attr($ag_id); ?>" style="font-size:12px;color:#0073aa;text-decoration:none">&larr; <?php echo esc_html($ag_name); ?></a>
+                        <span style="color:#ddd">|</span>
                     <?php else : ?>
-                        <a href="#" class="dgptm-forum-back-btn" data-view="ags" data-id="0" style="display:inline-flex;align-items:center;gap:3px;font-size:12px;color:#0073aa;text-decoration:none;flex-shrink:0">&larr; Forum</a>
-                        <span style="color:#ccc;flex-shrink:0">|</span>
+                        <a href="#" class="dgptm-forum-back-btn" data-view="ags" data-id="0" style="font-size:12px;color:#0073aa;text-decoration:none">&larr; Forum</a>
+                        <span style="color:#ddd">|</span>
                     <?php endif; ?>
-                    <span style="font-size:15px;font-weight:600;color:#1d2327;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?php echo esc_html($thread->title); ?></span>
-                    <?php if ($thread->is_pinned) : ?><span style="font-size:10px;color:#2e86c1;margin-left:4px">&#128204; Angepinnt</span><?php endif; ?>
-                    <?php if ($thread->status === 'closed') : ?><span style="display:inline-block;padding:1px 5px;border-radius:6px;font-size:9px;font-weight:600;background:#fce4ec;color:#c62828;margin-left:4px;vertical-align:middle">geschlossen</span><?php endif; ?>
-                </h3>
-                <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+                    <span style="font-size:14px;font-weight:600;color:#1d2327"><?php echo esc_html($thread->title); ?></span>
+                    <?php if ($thread->is_pinned) : ?><span style="font-size:10px;color:#2e86c1">&#128204;</span><?php endif; ?>
+                    <?php if ($thread->status === 'closed') : ?><span style="display:inline-block;padding:1px 5px;border-radius:6px;font-size:9px;font-weight:600;background:#fce4ec;color:#c62828">geschlossen</span><?php endif; ?>
+                </div>
+                <div style="display:flex;gap:6px;align-items:center">
                     <?php
                         $is_thread_subscribed = class_exists('DGPTM_Forum_Notifications')
                             ? DGPTM_Forum_Notifications::is_subscribed($user_id, 'thread', $thread_id)
                             : false;
                     ?>
-                    <a href="#" class="dgptm-forum-subscribe-btn <?php echo $is_thread_subscribed ? 'subscribed' : ''; ?>" data-scope="thread" data-scope-id="<?php echo esc_attr($thread_id); ?>" style="font-size:11px;color:<?php echo $is_thread_subscribed ? '#0073aa' : '#999'; ?>;text-decoration:none" title="Neue Antworten per E-Mail erhalten"><?php echo $is_thread_subscribed ? '&#128276; Abonniert' : '&#128277; Abonnieren'; ?></a>
+                    <a href="#" class="dgptm-forum-subscribe-btn <?php echo $is_thread_subscribed ? 'subscribed' : ''; ?>" data-scope="thread" data-scope-id="<?php echo esc_attr($thread_id); ?>" style="font-size:11px;color:<?php echo $is_thread_subscribed ? '#0073aa' : '#999'; ?>;text-decoration:none"><?php echo $is_thread_subscribed ? '&#128276; Abonniert' : '&#128277; Abonnieren'; ?></a>
                     <?php if ($can_moderate) : ?>
                         <button type="button" class="dgptm-forum-btn dgptm-forum-btn-sm dgptm-forum-toggle-pin-btn" data-thread-id="<?php echo esc_attr($thread->id); ?>" style="background:#5b6b7a !important;border-color:#5b6b7a !important"><?php echo $thread->is_pinned ? 'Losl&ouml;sen' : 'Anpinnen'; ?></button>
                         <button type="button" class="dgptm-forum-btn dgptm-forum-btn-sm dgptm-forum-close-thread-btn" data-thread-id="<?php echo esc_attr($thread->id); ?>" style="background:#5b6b7a !important;border-color:#5b6b7a !important"><?php echo $thread->status === 'closed' ? '&Ouml;ffnen' : 'Schlie&szlig;en'; ?></button>

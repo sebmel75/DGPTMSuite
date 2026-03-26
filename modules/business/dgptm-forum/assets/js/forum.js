@@ -88,8 +88,8 @@
         F.loadView('thread', $(this).data('thread-id'));
     });
 
-    // Breadcrumb-Navigation
-    $(document).on('click', '.dgptm-forum-breadcrumb a', function(e) {
+    // Breadcrumb + Zurück-Navigation
+    $(document).on('click', '.dgptm-forum-breadcrumb a, .dgptm-forum-back-btn', function(e) {
         e.preventDefault();
         F.loadView($(this).data('view'), $(this).data('id'));
     });

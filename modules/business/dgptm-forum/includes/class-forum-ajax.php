@@ -435,15 +435,19 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
 
             ob_start();
             ?>
-            <nav class="dgptm-forum-breadcrumb">
-                <a href="#" class="dgptm-forum-breadcrumb-item dgptm-forum-nav" data-view="ags" data-id="0">Forum</a>
-                <span class="dgptm-forum-breadcrumb-sep">&rsaquo;</span>
-                <span class="dgptm-forum-breadcrumb-item active"><?php echo esc_html($ag->name); ?></span>
-            </nav>
-
-            <?php if ($can_post) : ?>
-                <div class="dgptm-forum-actions">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <div style="display:flex;align-items:center;gap:8px">
+                    <a href="#" class="dgptm-forum-breadcrumb a dgptm-forum-back-btn" data-view="ags" data-id="0" style="display:inline-flex;align-items:center;gap:4px;font-size:12px;color:#0073aa;text-decoration:none">&larr; Zur&uuml;ck</a>
+                    <span style="color:#ccc">|</span>
+                    <span style="font-size:14px;font-weight:600;color:#1d2327"><?php echo esc_html($ag->name); ?></span>
+                </div>
+                <?php if ($can_post) : ?>
                     <button type="button" class="dgptm-forum-btn dgptm-forum-btn-sm dgptm-forum-new-thread-btn" data-ag-id="<?php echo esc_attr($ag_id); ?>">+ Neuer Thread</button>
+                <?php endif; ?>
+            </div>
+
+            <?php if (false) : // placeholder to keep structure ?>
+                <div class="dgptm-forum-actions">
                 </div>
                 <div class="dgptm-forum-compose-area" id="dgptm-forum-compose-thread" style="display:none;">
                     <form class="dgptm-forum-thread-form" enctype="multipart/form-data">
@@ -600,20 +604,16 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
 
             ob_start();
             ?>
-            <nav class="dgptm-forum-breadcrumb">
-                <a href="#" class="dgptm-forum-breadcrumb-item dgptm-forum-nav" data-view="ags" data-id="0">Forum</a>
-                <span class="dgptm-forum-breadcrumb-sep">&rsaquo;</span>
-                <?php if ($ag_id > 0) : ?>
-                    <a href="#" class="dgptm-forum-breadcrumb-item dgptm-forum-nav" data-view="threads" data-id="<?php echo esc_attr($ag_id); ?>">
-                        <?php echo esc_html($ag_name); ?>
-                    </a>
-                    <span class="dgptm-forum-breadcrumb-sep">&rsaquo;</span>
-                <?php endif; ?>
-                <span class="dgptm-forum-breadcrumb-item active"><?php echo esc_html($thread->title); ?></span>
-            </nav>
-
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-                <h3 style="margin:0;font-size:16px;font-weight:600;color:#1d2327"><?php echo esc_html($thread->title); ?>
+                <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0">
+                    <?php if ($ag_id > 0) : ?>
+                        <a href="#" class="dgptm-forum-back-btn" data-view="threads" data-id="<?php echo esc_attr($ag_id); ?>" style="display:inline-flex;align-items:center;gap:3px;font-size:12px;color:#0073aa;text-decoration:none;flex-shrink:0">&larr; <?php echo esc_html($ag_name); ?></a>
+                        <span style="color:#ccc;flex-shrink:0">|</span>
+                    <?php else : ?>
+                        <a href="#" class="dgptm-forum-back-btn" data-view="ags" data-id="0" style="display:inline-flex;align-items:center;gap:3px;font-size:12px;color:#0073aa;text-decoration:none;flex-shrink:0">&larr; Forum</a>
+                        <span style="color:#ccc;flex-shrink:0">|</span>
+                    <?php endif; ?>
+                    <span style="font-size:15px;font-weight:600;color:#1d2327;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?php echo esc_html($thread->title); ?></span>
                     <?php if ($thread->is_pinned) : ?><span style="font-size:10px;color:#2e86c1;margin-left:4px">&#128204; Angepinnt</span><?php endif; ?>
                     <?php if ($thread->status === 'closed') : ?><span style="display:inline-block;padding:1px 5px;border-radius:6px;font-size:9px;font-weight:600;background:#fce4ec;color:#c62828;margin-left:4px;vertical-align:middle">geschlossen</span><?php endif; ?>
                 </h3>

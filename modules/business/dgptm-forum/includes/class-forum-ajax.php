@@ -476,41 +476,36 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
 
             <div class="dgptm-forum-thread-list">
                 <?php if (empty($threads)) : ?>
-                    <p class="dgptm-forum-empty">Noch keine Threads in dieser Hauptgruppe.</p>
+                    <p style="color:#999;font-size:13px;padding:20px 0">Noch keine Diskussionen in dieser Gruppe.</p>
                 <?php else : ?>
                     <?php foreach ($threads as $thread) :
                         $author = get_userdata($thread->author_id);
                         $author_name = $author ? $author->display_name : 'Unbekannt';
-
                         $last_reply = $thread->last_reply_at
                             ? date_i18n('d.m.Y H:i', strtotime($thread->last_reply_at))
                             : date_i18n('d.m.Y H:i', strtotime($thread->created_at));
+                        $pinned = $thread->is_pinned;
+                        $closed = ($thread->status === 'closed');
                     ?>
-                        <div class="dgptm-forum-thread-card dgptm-forum-thread-link <?php echo $thread->is_pinned ? 'dgptm-forum-thread-pinned' : ''; ?> <?php echo $thread->status === 'closed' ? 'dgptm-forum-thread-closed' : ''; ?>"
-                             data-thread-id="<?php echo esc_attr($thread->id); ?>">
-                            <div class="dgptm-forum-thread-header">
-                                <h4 class="dgptm-forum-thread-title">
-                                    <?php if ($thread->is_pinned) : ?>
-                                        <span class="dgptm-forum-badge dgptm-forum-badge-pinned" title="Angepinnt">&#128204;</span>
+                        <div class="dgptm-forum-thread-link" data-thread-id="<?php echo esc_attr($thread->id); ?>"
+                             style="border:1px solid <?php echo $pinned ? '#d4e6f1' : '#e4e8ec'; ?>;border-radius:6px;padding:12px 14px;margin-bottom:8px;background:<?php echo $pinned ? '#f8fbfe' : '#fff'; ?>;cursor:pointer;transition:box-shadow .15s;<?php echo $pinned ? 'border-left:3px solid #2e86c1;' : ''; ?>">
+                            <div style="display:flex;justify-content:space-between;align-items:center">
+                                <div style="flex:1;min-width:0">
+                                    <span style="font-size:14px;font-weight:500;color:#1d2327"><?php echo esc_html($thread->title); ?></span>
+                                    <?php if ($pinned) : ?>
+                                        <span style="font-size:10px;color:#2e86c1;margin-left:6px" title="Angepinnt">&#128204;</span>
                                     <?php endif; ?>
-                                    <?php if ($thread->status === 'closed') : ?>
-                                        <span class="dgptm-forum-badge dgptm-forum-badge-closed" title="Geschlossen">&#128274;</span>
+                                    <?php if ($closed) : ?>
+                                        <span style="display:inline-block;padding:1px 5px;border-radius:6px;font-size:9px;font-weight:600;background:#fce4ec;color:#c62828;margin-left:4px;vertical-align:middle">geschlossen</span>
                                     <?php endif; ?>
-                                    <a href="#" class="dgptm-forum-nav" data-view="thread" data-id="<?php echo esc_attr($thread->id); ?>">
-                                        <?php echo esc_html($thread->title); ?>
-                                    </a>
-                                </h4>
-                            </div>
-                            <div class="dgptm-forum-thread-meta">
-                                <span class="dgptm-forum-meta-item">
-                                    Von: <strong><?php echo esc_html($author_name); ?></strong>
-                                </span>
-                                <span class="dgptm-forum-meta-item">
-                                    <strong><?php echo esc_html((int) $thread->reply_count); ?></strong> <?php echo (int) $thread->reply_count === 1 ? 'Antwort' : 'Antworten'; ?>
-                                </span>
-                                <span class="dgptm-forum-meta-item">
-                                    Letzte Aktivit&auml;t: <?php echo esc_html($last_reply); ?>
-                                </span>
+                                    <div style="font-size:11px;color:#999;margin-top:2px">
+                                        <?php echo esc_html($author_name); ?> &middot; <?php echo esc_html($last_reply); ?>
+                                    </div>
+                                </div>
+                                <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+                                    <span style="font-size:11px;color:#888"><?php echo (int)$thread->reply_count; ?> Antw.</span>
+                                    <span style="color:#ccc;font-size:16px">&rsaquo;</span>
+                                </div>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -619,54 +614,40 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                 <span class="dgptm-forum-breadcrumb-item active"><?php echo esc_html($thread->title); ?></span>
             </nav>
 
-            <?php // ---- Moderator Actions ---- ?>
-            <?php if ($can_moderate) : ?>
-                <div class="dgptm-forum-moderator-actions">
-                    <button type="button" class="dgptm-forum-btn dgptm-forum-btn-sm dgptm-forum-toggle-pin-btn"
-                            data-thread-id="<?php echo esc_attr($thread->id); ?>">
-                        <?php echo $thread->is_pinned ? 'Loslösen' : 'Anpinnen'; ?>
-                    </button>
-                    <button type="button" class="dgptm-forum-btn dgptm-forum-btn-sm dgptm-forum-close-thread-btn"
-                            data-thread-id="<?php echo esc_attr($thread->id); ?>">
-                        <?php echo $thread->status === 'closed' ? 'Wieder öffnen' : 'Schließen'; ?>
-                    </button>
-                </div>
-            <?php endif; ?>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <h3 style="margin:0;font-size:16px;font-weight:600;color:#1d2327"><?php echo esc_html($thread->title); ?>
+                    <?php if ($thread->is_pinned) : ?><span style="font-size:10px;color:#2e86c1;margin-left:4px">&#128204; Angepinnt</span><?php endif; ?>
+                    <?php if ($thread->status === 'closed') : ?><span style="display:inline-block;padding:1px 5px;border-radius:6px;font-size:9px;font-weight:600;background:#fce4ec;color:#c62828;margin-left:4px;vertical-align:middle">geschlossen</span><?php endif; ?>
+                </h3>
+                <?php if ($can_moderate) : ?>
+                    <div style="display:flex;gap:4px;flex-shrink:0">
+                        <button type="button" class="dgptm-forum-btn dgptm-forum-btn-sm dgptm-forum-toggle-pin-btn" data-thread-id="<?php echo esc_attr($thread->id); ?>" style="background:#5b6b7a;border-color:#5b6b7a"><?php echo $thread->is_pinned ? 'Losl&ouml;sen' : 'Anpinnen'; ?></button>
+                        <button type="button" class="dgptm-forum-btn dgptm-forum-btn-sm dgptm-forum-close-thread-btn" data-thread-id="<?php echo esc_attr($thread->id); ?>" style="background:#5b6b7a;border-color:#5b6b7a"><?php echo $thread->status === 'closed' ? '&Ouml;ffnen' : 'Schlie&szlig;en'; ?></button>
+                    </div>
+                <?php endif; ?>
+            </div>
 
-            <?php // ---- Thread as first post ---- ?>
             <div class="dgptm-forum-thread-detail">
-                <div class="dgptm-forum-post dgptm-forum-post-thread" data-post-id="<?php echo esc_attr($thread->id); ?>" data-post-type="thread">
-                    <div class="dgptm-forum-post-header">
-                        <strong class="dgptm-forum-post-author"><?php echo esc_html($thread_author_name); ?></strong>
-                        <span class="dgptm-forum-post-date"><?php echo esc_html($thread_date); ?></span>
-                        <?php if ($thread->is_pinned) : ?>
-                            <span class="dgptm-forum-badge dgptm-forum-badge-pinned">Angepinnt</span>
-                        <?php endif; ?>
-                        <?php if ($thread->status === 'closed') : ?>
-                            <span class="dgptm-forum-badge dgptm-forum-badge-closed">Geschlossen</span>
-                        <?php endif; ?>
+                <div style="border:1px solid #e4e8ec;border-radius:6px;padding:14px;margin-bottom:10px;background:#f8fbfe" data-post-id="<?php echo esc_attr($thread->id); ?>" data-post-type="thread">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                        <div>
+                            <strong style="font-size:13px;color:#1d2327"><?php echo esc_html($thread_author_name); ?></strong>
+                            <span style="font-size:11px;color:#999;margin-left:8px"><?php echo esc_html($thread_date); ?></span>
+                        </div>
+                        <div style="display:flex;gap:4px">
+                            <?php if ($can_post && $thread->status !== 'closed') : ?>
+                                <button type="button" class="dgptm-forum-btn dgptm-forum-btn-sm dgptm-forum-reply-btn" data-thread-id="<?php echo esc_attr($thread->id); ?>" data-parent-id="0" data-depth="1">Antworten</button>
+                            <?php endif; ?>
+                            <?php if ((int)$thread->author_id === $user_id || $can_moderate) : ?>
+                                <button type="button" class="dgptm-forum-btn dgptm-forum-btn-sm secondary dgptm-forum-edit-btn" data-post-id="<?php echo esc_attr($thread->id); ?>" data-post-type="thread">Bearbeiten</button>
+                            <?php endif; ?>
+                            <?php if ($can_moderate) : ?>
+                                <button type="button" class="dgptm-forum-btn dgptm-forum-btn-sm danger dgptm-forum-delete-btn" data-post-id="<?php echo esc_attr($thread->id); ?>" data-post-type="thread">L&ouml;schen</button>
+                            <?php endif; ?>
+                        </div>
                     </div>
-                    <div class="dgptm-forum-post-content">
-                        <?php echo wp_kses_post($thread->content); ?>
-                    </div>
+                    <div class="post-content" style="font-size:14px;line-height:1.6;color:#333"><?php echo wp_kses_post($thread->content); ?></div>
                     <?php $this->render_attachments($thread_attachments); ?>
-                    <div class="dgptm-forum-post-actions">
-                        <?php if ($can_post && $thread->status !== 'closed') : ?>
-                            <button type="button" class="dgptm-forum-btn dgptm-forum-btn-sm dgptm-forum-reply-btn"
-                                    data-thread-id="<?php echo esc_attr($thread->id); ?>"
-                                    data-parent-id="0" data-depth="1">Antworten</button>
-                        <?php endif; ?>
-                        <?php if ((int) $thread->author_id === $user_id || $can_moderate) : ?>
-                            <button type="button" class="dgptm-forum-btn dgptm-forum-btn-sm dgptm-forum-edit-btn"
-                                    data-post-id="<?php echo esc_attr($thread->id); ?>"
-                                    data-post-type="thread">Bearbeiten</button>
-                        <?php endif; ?>
-                        <?php if ($can_moderate) : ?>
-                            <button type="button" class="dgptm-forum-btn dgptm-forum-btn-sm dgptm-forum-btn-danger dgptm-forum-delete-btn"
-                                    data-post-id="<?php echo esc_attr($thread->id); ?>"
-                                    data-post-type="thread">L&ouml;schen</button>
-                        <?php endif; ?>
-                    </div>
                 </div>
 
                 <?php // ---- Replies ---- ?>
@@ -676,22 +657,21 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
 
                 <?php // ---- Compose reply form at bottom ---- ?>
                 <?php if ($can_post && $thread->status !== 'closed') : ?>
-                    <div class="dgptm-forum-compose-area dgptm-forum-compose-reply-bottom">
-                        <h4>Antwort verfassen</h4>
-                        <div class="dgptm-forum-form-group">
-                            <textarea id="dgptm-forum-reply-content-bottom" class="dgptm-forum-textarea" rows="4" placeholder="Ihre Antwort..."></textarea>
-                        </div>
-                        <div class="dgptm-forum-form-group">
-                            <input type="file" id="dgptm-forum-reply-files-bottom" multiple />
-                        </div>
-                        <div class="dgptm-forum-form-actions">
-                            <button type="button" class="dgptm-forum-btn dgptm-forum-btn-primary dgptm-forum-submit-reply"
-                                    data-thread-id="<?php echo esc_attr($thread->id); ?>"
-                                    data-parent-id="0" data-depth="1">Antwort absenden</button>
-                        </div>
+                    <div style="margin-top:16px;padding:14px;background:#f8f9fa;border-radius:6px;border:1px solid #e4e8ec">
+                        <form class="dgptm-forum-reply-form" enctype="multipart/form-data">
+                            <input type="hidden" name="thread_id" value="<?php echo esc_attr($thread->id); ?>">
+                            <input type="hidden" name="parent_id" value="0">
+                            <input type="hidden" name="depth" value="1">
+                            <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:6px">Antwort verfassen</div>
+                            <textarea name="content" rows="3" placeholder="Ihre Antwort…" required style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:13px;margin-bottom:6px"></textarea>
+                            <div style="display:flex;justify-content:space-between;align-items:center">
+                                <input type="file" name="attachments[]" multiple accept=".pdf,.jpg,.jpeg,.png,.docx" style="font-size:11px">
+                                <button type="submit" class="dgptm-forum-btn dgptm-forum-btn-sm">Absenden</button>
+                            </div>
+                        </form>
                     </div>
                 <?php elseif ($thread->status === 'closed') : ?>
-                    <p class="dgptm-forum-info">Dieser Thread ist geschlossen. Es können keine neuen Antworten verfasst werden.</p>
+                    <p style="font-size:12px;color:#999;margin-top:12px;font-style:italic">Dieser Thread ist geschlossen.</p>
                 <?php endif; ?>
             </div>
             <?php
@@ -752,34 +732,28 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                 $atts = isset($reply_attachments[(int) $reply->id]) ? $reply_attachments[(int) $reply->id] : [];
                 $next_depth = $depth + 1;
                 ?>
-                <div class="dgptm-forum-post dgptm-forum-post-reply dgptm-forum-depth-<?php echo esc_attr($depth); ?>"
-                     data-post-id="<?php echo esc_attr($reply->id); ?>" data-post-type="reply">
-                    <div class="dgptm-forum-post-header">
-                        <strong class="dgptm-forum-post-author"><?php echo esc_html($author_name); ?></strong>
-                        <span class="dgptm-forum-post-date"><?php echo esc_html($date); ?></span>
+                <?php $indent = min($depth * 20, 60); ?>
+                <div class="dgptm-forum-post" data-post-id="<?php echo esc_attr($reply->id); ?>" data-post-type="reply"
+                     style="border:1px solid #eee;border-radius:5px;padding:10px 12px;margin:6px 0 6px <?php echo $indent; ?>px;background:#fff;<?php echo $depth > 1 ? 'border-left:2px solid #d4e6f1;' : ''; ?>">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                        <div>
+                            <strong style="font-size:12px;color:#1d2327"><?php echo esc_html($author_name); ?></strong>
+                            <span style="font-size:10px;color:#aaa;margin-left:6px"><?php echo esc_html($date); ?></span>
+                        </div>
+                        <div style="display:flex;gap:3px">
+                            <?php if ($can_post && $thread->status !== 'closed' && $next_depth <= 3) : ?>
+                                <button type="button" class="dgptm-forum-btn dgptm-forum-btn-sm dgptm-forum-reply-btn" data-thread-id="<?php echo esc_attr($thread->id); ?>" data-parent-id="<?php echo esc_attr($reply->id); ?>" data-depth="<?php echo esc_attr($next_depth); ?>">Antworten</button>
+                            <?php endif; ?>
+                            <?php if ((int)$reply->author_id === $user_id || $can_moderate) : ?>
+                                <button type="button" class="dgptm-forum-btn dgptm-forum-btn-sm secondary dgptm-forum-edit-btn" data-post-id="<?php echo esc_attr($reply->id); ?>" data-post-type="reply">Bearbeiten</button>
+                            <?php endif; ?>
+                            <?php if ($can_moderate) : ?>
+                                <button type="button" class="dgptm-forum-btn dgptm-forum-btn-sm danger dgptm-forum-delete-btn" data-post-id="<?php echo esc_attr($reply->id); ?>" data-post-type="reply">L&ouml;schen</button>
+                            <?php endif; ?>
+                        </div>
                     </div>
-                    <div class="dgptm-forum-post-content">
-                        <?php echo wp_kses_post($reply->content); ?>
-                    </div>
+                    <div class="post-content" style="font-size:13px;line-height:1.5;color:#444"><?php echo wp_kses_post($reply->content); ?></div>
                     <?php $this->render_attachments($atts); ?>
-                    <div class="dgptm-forum-post-actions">
-                        <?php if ($can_post && $thread->status !== 'closed' && $next_depth <= 3) : ?>
-                            <button type="button" class="dgptm-forum-btn dgptm-forum-btn-sm dgptm-forum-reply-btn"
-                                    data-thread-id="<?php echo esc_attr($thread->id); ?>"
-                                    data-parent-id="<?php echo esc_attr($reply->id); ?>"
-                                    data-depth="<?php echo esc_attr($next_depth); ?>">Antworten</button>
-                        <?php endif; ?>
-                        <?php if ((int) $reply->author_id === $user_id || $can_moderate) : ?>
-                            <button type="button" class="dgptm-forum-btn dgptm-forum-btn-sm dgptm-forum-edit-btn"
-                                    data-post-id="<?php echo esc_attr($reply->id); ?>"
-                                    data-post-type="reply">Bearbeiten</button>
-                        <?php endif; ?>
-                        <?php if ($can_moderate) : ?>
-                            <button type="button" class="dgptm-forum-btn dgptm-forum-btn-sm dgptm-forum-btn-danger dgptm-forum-delete-btn"
-                                    data-post-id="<?php echo esc_attr($reply->id); ?>"
-                                    data-post-type="reply">L&ouml;schen</button>
-                        <?php endif; ?>
-                    </div>
                     <?php
                     // Render children.
                     if (!empty($node['children'])) {

@@ -119,16 +119,13 @@ if (!class_exists('DGPTM_Forum')) {
                 <div class="dgptm-forum-breadcrumb"></div>
                 <div class="dgptm-forum-content"><p>Forum wird geladen…</p></div>
             </div>
-            <script src="<?php echo esc_url( DGPTM_FORUM_URL . 'assets/js/forum.js?ver=' . DGPTM_FORUM_VERSION ); ?>"></script>
             <script>
             (function(){
-                if (typeof window.dgptmForum === 'undefined') {
-                    window.dgptmForum = {
-                        ajaxUrl: <?php echo wp_json_encode($ajax_url); ?>,
-                        nonce: <?php echo wp_json_encode($nonce); ?>,
-                        isAdmin: <?php echo $is_admin; ?>
-                    };
-                }
+                window.dgptmForum = {
+                    ajaxUrl: <?php echo wp_json_encode($ajax_url); ?>,
+                    nonce: <?php echo wp_json_encode($nonce); ?>,
+                    isAdmin: <?php echo $is_admin; ?>
+                };
                 var $w = jQuery('.dgptm-forum-wrap');
                 if (!$w.length) return;
                 jQuery.post(dgptmForum.ajaxUrl, {

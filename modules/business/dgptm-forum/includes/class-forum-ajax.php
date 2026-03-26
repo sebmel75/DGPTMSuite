@@ -326,42 +326,57 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                             }
                         }
 
-                        // Group type badge text.
-                        $type_badge = ($ag->group_type === 'closed') ? 'Geschlossen' : 'Offen';
-                        $type_class = ($ag->group_type === 'closed') ? 'dgptm-forum-badge-closed' : 'dgptm-forum-badge-open';
                         $is_member = DGPTM_Forum_Permissions::is_ag_member($user_id, $ag->id);
                         $is_closed = ($ag->group_type === 'closed');
+                        $can_enter = !$is_closed || $is_member || $is_admin;
+
+                        // 3 neueste Threads
+                        $recent_threads = $wpdb->get_results($wpdb->prepare(
+                            "SELECT th.id, th.title, th.author_id, th.reply_count, th.created_at
+                             FROM {$prefix}threads th
+                             JOIN {$prefix}topics t ON t.id = th.topic_id
+                             WHERE t.ag_id = %d AND th.status != 'deleted'
+                             ORDER BY COALESCE(th.last_reply_at, th.created_at) DESC
+                             LIMIT 3",
+                            $ag->id
+                        ));
                     ?>
-                        <div class="dgptm-forum-ag-card <?php echo $is_closed && !$is_member && !$is_admin ? 'dgptm-forum-ag-locked' : 'dgptm-forum-ag-link'; ?>" data-ag-id="<?php echo esc_attr($ag->id); ?>" style="border:1px solid <?php echo $is_closed ? '#e0c8c8' : '#d4e6f1'; ?>;border-radius:8px;padding:16px;margin-bottom:12px;background:#fff;cursor:pointer;transition:box-shadow .15s">
-                            <div style="display:flex;justify-content:space-between;align-items:flex-start">
-                                <div style="flex:1">
-                                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-                                        <span style="font-size:16px;font-weight:600;color:#1d2327"><?php echo esc_html($ag->name); ?></span>
-                                        <?php if ($is_closed) : ?>
-                                            <span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fce4ec;color:#c62828">Geschlossen</span>
-                                        <?php else : ?>
-                                            <span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#e8f5e9;color:#2e7d32">Offen</span>
-                                        <?php endif; ?>
-                                    </div>
-                                    <?php if ($ag->description) : ?>
-                                        <div style="font-size:13px;color:#666;margin-bottom:6px"><?php echo esc_html($ag->description); ?></div>
+                        <div class="dgptm-forum-ag-card <?php echo $can_enter ? 'dgptm-forum-ag-link' : 'dgptm-forum-ag-locked'; ?>" data-ag-id="<?php echo esc_attr($ag->id); ?>" style="border:1px solid #e4e8ec;border-radius:6px;padding:14px 16px;margin-bottom:10px;background:#fff;<?php echo $can_enter ? 'cursor:pointer;' : ''; ?>transition:box-shadow .15s">
+                            <div style="display:flex;justify-content:space-between;align-items:center">
+                                <div style="flex:1;min-width:0">
+                                    <span style="font-size:15px;font-weight:600;color:#1d2327"><?php echo esc_html($ag->name); ?></span>
+                                    <?php if ($is_closed) : ?>
+                                        <span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600;background:#fce4ec;color:#c62828;margin-left:6px;vertical-align:middle">geschlossen</span>
+                                    <?php else : ?>
+                                        <span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600;background:#e8f5e9;color:#2e7d32;margin-left:6px;vertical-align:middle">offen</span>
                                     <?php endif; ?>
-                                    <div style="display:flex;gap:16px;font-size:12px;color:#888">
-                                        <span><?php echo esc_html($thread_count); ?> <?php echo $thread_count === 1 ? 'Diskussion' : 'Diskussionen'; ?></span>
-                                        <?php if ($last_activity_display !== '-') : ?>
-                                            <span>Letzte Aktivit&auml;t: <?php echo esc_html($last_activity_display); ?></span>
-                                        <?php endif; ?>
-                                        <?php if ($moderator_name) : ?>
-                                            <span>Moderator: <?php echo esc_html($moderator_name); ?></span>
-                                        <?php endif; ?>
-                                    </div>
+                                    <?php if ($ag->description) : ?>
+                                        <div style="font-size:12px;color:#777;margin-top:3px"><?php echo esc_html(mb_strimwidth($ag->description, 0, 120, '…')); ?></div>
+                                    <?php endif; ?>
                                 </div>
-                                <?php if ($is_closed && !$is_member && !$is_admin) : ?>
-                                    <button type="button" class="dgptm-forum-btn dgptm-forum-request-membership" data-ag-id="<?php echo esc_attr($ag->id); ?>" style="flex-shrink:0;font-size:12px;padding:6px 14px" onclick="event.stopPropagation()">Aufnahme beantragen</button>
-                                <?php else : ?>
-                                    <span style="color:#0073aa;font-size:20px;flex-shrink:0">&rsaquo;</span>
-                                <?php endif; ?>
+                                <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+                                    <span style="font-size:11px;color:#999"><?php echo $thread_count; ?> Threads</span>
+                                    <?php if ($is_closed && !$is_member && !$is_admin) : ?>
+                                        <button type="button" class="dgptm-forum-btn dgptm-forum-request-membership" data-ag-id="<?php echo esc_attr($ag->id); ?>" style="font-size:11px;padding:3px 10px" onclick="event.stopPropagation()">Aufnahme beantragen</button>
+                                    <?php else : ?>
+                                        <span style="color:#aaa;font-size:18px">&rsaquo;</span>
+                                    <?php endif; ?>
+                                </div>
                             </div>
+                            <?php if (!empty($recent_threads)) : ?>
+                                <div style="margin-top:8px;padding-top:8px;border-top:1px solid #f0f0f0">
+                                    <?php foreach ($recent_threads as $rt) :
+                                        $rt_author = get_userdata($rt->author_id);
+                                        $rt_name = $rt_author ? $rt_author->display_name : 'Unbekannt';
+                                        $rt_date = date_i18n('d.m.Y', strtotime($rt->created_at));
+                                    ?>
+                                        <div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:12px;color:#666">
+                                            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%"><?php echo esc_html($rt->title); ?></span>
+                                            <span style="flex-shrink:0;color:#999"><?php echo esc_html($rt_name); ?> &middot; <?php echo $rt_date; ?> &middot; <?php echo (int)$rt->reply_count; ?> Antw.</span>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
                 <?php endif; ?>

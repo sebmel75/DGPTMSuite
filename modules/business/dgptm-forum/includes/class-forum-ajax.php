@@ -640,11 +640,11 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
             </div>
 
             <div class="dgptm-forum-thread-detail">
-                <div style="border:1px solid #e4e8ec;border-radius:6px;padding:14px;margin-bottom:10px;background:#f8fbfe" data-post-id="<?php echo esc_attr($thread->id); ?>" data-post-type="thread">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <div style="border:1px solid #e4e8ec;border-radius:5px;padding:10px 12px;margin-bottom:6px;background:#f8fbfe" data-post-id="<?php echo esc_attr($thread->id); ?>" data-post-type="thread">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
                         <div>
-                            <strong style="font-size:13px;color:#1d2327"><?php echo esc_html($thread_author_name); ?></strong>
-                            <span style="font-size:11px;color:#999;margin-left:8px"><?php echo esc_html($thread_date); ?></span>
+                            <strong style="font-size:12px;color:#1d2327"><?php echo esc_html($thread_author_name); ?></strong>
+                            <span style="font-size:10px;color:#aaa;margin-left:6px"><?php echo esc_html($thread_date); ?></span>
                         </div>
                         <div style="display:flex;gap:4px">
                             <?php if ($can_post && $thread->status !== 'closed') : ?>
@@ -658,7 +658,7 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                             <?php endif; ?>
                         </div>
                     </div>
-                    <div class="post-content" style="font-size:14px;line-height:1.6;color:#333"><?php echo wp_kses_post($thread->content); ?></div>
+                    <div class="post-content" style="font-size:13px;line-height:1.5;color:#333"><?php echo wp_kses_post($thread->content); ?></div>
                     <?php $this->render_attachments($thread_attachments); ?>
                 </div>
 
@@ -669,16 +669,15 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
 
                 <?php // ---- Compose reply form at bottom ---- ?>
                 <?php if ($can_post && $thread->status !== 'closed') : ?>
-                    <div style="margin-top:16px;padding:14px;background:#f8f9fa;border-radius:6px;border:1px solid #e4e8ec">
+                    <div style="margin-top:10px;padding:8px 10px;background:#f8f9fa;border-radius:4px;border:1px solid #eee">
                         <form class="dgptm-forum-reply-form" enctype="multipart/form-data">
                             <input type="hidden" name="thread_id" value="<?php echo esc_attr($thread->id); ?>">
                             <input type="hidden" name="parent_id" value="0">
                             <input type="hidden" name="depth" value="1">
-                            <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:6px">Antwort verfassen</div>
-                            <textarea name="content" rows="3" placeholder="Ihre Antwort…" required style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:13px;margin-bottom:6px"></textarea>
+                            <textarea name="content" rows="2" placeholder="Antwort schreiben…" required style="width:100%;padding:6px;border:1px solid #ddd;border-radius:3px;font-size:12px;margin-bottom:4px"></textarea>
                             <div style="display:flex;justify-content:space-between;align-items:center">
-                                <input type="file" name="attachments[]" multiple accept=".pdf,.jpg,.jpeg,.png,.docx" style="font-size:11px">
-                                <button type="submit" class="dgptm-forum-btn dgptm-forum-btn-sm">Absenden</button>
+                                <input type="file" name="attachments[]" multiple accept=".pdf,.jpg,.jpeg,.png,.docx" style="font-size:10px">
+                                <button type="submit" class="dgptm-forum-btn dgptm-forum-btn-sm">Antworten</button>
                             </div>
                         </form>
                     </div>
@@ -745,12 +744,13 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                 $next_depth = $depth + 1;
                 ?>
                 <?php $indent = min($depth * 20, 60); ?>
+                <?php $indent = min($depth * 16, 48); ?>
                 <div class="dgptm-forum-post" data-post-id="<?php echo esc_attr($reply->id); ?>" data-post-type="reply"
-                     style="border:1px solid #eee;border-radius:5px;padding:10px 12px;margin:6px 0 6px <?php echo $indent; ?>px;background:#fff;<?php echo $depth > 1 ? 'border-left:2px solid #d4e6f1;' : ''; ?>">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                     style="border:1px solid #eee;border-radius:4px;padding:8px 10px;margin:3px 0 3px <?php echo $indent; ?>px;background:#fff;<?php echo $depth > 1 ? 'border-left:2px solid #d4e6f1;' : ''; ?>">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
                         <div>
-                            <strong style="font-size:12px;color:#1d2327"><?php echo esc_html($author_name); ?></strong>
-                            <span style="font-size:10px;color:#aaa;margin-left:6px"><?php echo esc_html($date); ?></span>
+                            <strong style="font-size:11px;color:#1d2327"><?php echo esc_html($author_name); ?></strong>
+                            <span style="font-size:10px;color:#aaa;margin-left:4px"><?php echo esc_html($date); ?></span>
                         </div>
                         <div style="display:flex;gap:3px">
                             <?php if ($can_post && $thread->status !== 'closed' && $next_depth <= 3) : ?>

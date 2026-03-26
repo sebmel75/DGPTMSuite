@@ -139,19 +139,21 @@
         e.preventDefault();
         var parentId = $(this).data('parent-id') || 0;
         var depth = parseInt($(this).data('depth') || 0) + 1;
-        if (depth > 3) { F.notify('Maximale Verschachtelungstiefe erreicht.', 'error'); return; }
+        // Bei max Tiefe: flach unter dem Thread antworten
+        if (depth > 3) { depth = 3; }
         var threadId = $(this).data('thread-id');
         $('.dgptm-forum-reply-form-inline').remove();
-        var indent = Math.min(depth * 25, 75);
-        var html = '<div class="dgptm-forum-reply-form-inline" style="margin:8px 0 8px ' + indent + 'px">';
-        html += '<form class="dgptm-forum-reply-form">';
+        var indent = Math.min(depth * 20, 60);
+        var html = '<div class="dgptm-forum-reply-form-inline" style="margin:4px 0 4px ' + indent + 'px">';
+        html += '<form class="dgptm-forum-reply-form" style="background:#f8f9fa;padding:8px 10px;border-radius:4px;border:1px solid #eee">';
         html += '<input type="hidden" name="thread_id" value="' + threadId + '">';
         html += '<input type="hidden" name="parent_id" value="' + parentId + '">';
         html += '<input type="hidden" name="depth" value="' + depth + '">';
-        html += '<textarea name="content" rows="3" placeholder="Antwort schreiben\u2026" style="width:100%;margin-bottom:6px;padding:8px;font-size:13px;border:1px solid #ccc;border-radius:4px"></textarea>';
-        html += '<input type="file" name="attachments[]" multiple accept=".pdf,.jpg,.jpeg,.png,.docx" style="margin-bottom:6px;font-size:12px">';
-        html += '<div><button type="submit" class="dgptm-forum-btn" style="font-size:12px;padding:4px 12px">Antworten</button> ';
-        html += '<a href="#" class="dgptm-forum-cancel-reply" style="font-size:12px;color:#666">Abbrechen</a></div>';
+        html += '<textarea name="content" rows="2" placeholder="Antwort\u2026" style="width:100%;margin-bottom:4px;padding:6px;font-size:12px;border:1px solid #ddd;border-radius:3px"></textarea>';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center">';
+        html += '<input type="file" name="attachments[]" multiple accept=".pdf,.jpg,.jpeg,.png,.docx" style="font-size:10px">';
+        html += '<div><button type="submit" class="dgptm-forum-btn dgptm-forum-btn-sm">Senden</button> ';
+        html += '<a href="#" class="dgptm-forum-cancel-reply" style="font-size:10px;color:#999">Abbrechen</a></div></div>';
         html += '</form></div>';
         $(this).closest('.dgptm-forum-post').after(html);
     });

@@ -271,3 +271,12 @@ if (!isset($GLOBALS['dgptm_forum_initialized'])) {
     $GLOBALS['dgptm_forum_initialized'] = true;
     DGPTM_Forum::get_instance();
 }
+
+// Shortcode sofort registrieren (nicht auf init warten) — Dashboard-Permission braucht ihn früh
+if ( ! shortcode_exists( 'is-forum-admin' ) ) {
+    add_shortcode( 'is-forum-admin', function() {
+        if ( ! is_user_logged_in() ) return '0';
+        if ( current_user_can( 'manage_options' ) ) return '1';
+        return (string) get_user_meta( get_current_user_id(), 'dgptm_forum_admin', true ) === '1' ? '1' : '0';
+    });
+}

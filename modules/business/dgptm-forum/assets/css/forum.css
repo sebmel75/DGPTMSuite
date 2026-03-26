@@ -148,28 +148,42 @@
 }
 .dgptm-forum-member-list .member-role { font-size: 0.85em; color: #666; margin-left: 8px; }
 
-/* === Buttons (filigran) === */
-.dgptm-forum-btn {
-    display: inline-block;
-    padding: 4px 10px;
-    border: 1px solid #0073aa;
-    border-radius: 4px;
-    background: #0073aa;
-    color: #fff;
-    cursor: pointer;
-    font-size: 12px;
-    line-height: 1.4;
-    text-decoration: none;
+/* === Buttons (filigran, !important gegen Theme-Overrides) === */
+.dgptm-forum-wrap .dgptm-forum-btn,
+.dgptm-forum-admin-wrap .dgptm-forum-btn,
+.dgptm-forum-admin-content .dgptm-forum-btn,
+button.dgptm-forum-btn,
+a.dgptm-forum-btn {
+    display: inline-block !important;
+    padding: 4px 10px !important;
+    border: 1px solid #0073aa !important;
+    border-radius: 4px !important;
+    background: #0073aa !important;
+    color: #fff !important;
+    cursor: pointer !important;
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+    text-decoration: none !important;
+    font-weight: 400 !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+    min-height: 0 !important;
+    height: auto !important;
     transition: background .15s, box-shadow .15s;
 }
-.dgptm-forum-btn:hover { background: #005d8c; color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
-.dgptm-forum-btn, .dgptm-forum-btn:visited, .dgptm-forum-btn:focus { color: #fff !important; }
-.dgptm-forum-btn.secondary { background: #2e86c1 !important; color: #fff !important; border-color: #2e86c1; }
+.dgptm-forum-btn:hover { background: #005d8c !important; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+.dgptm-forum-btn.secondary { background: #2e86c1 !important; border-color: #2e86c1 !important; }
 .dgptm-forum-btn.secondary:hover { background: #2471a3 !important; }
-.dgptm-forum-btn.danger { background: #dc3232; border-color: #dc3232; }
-.dgptm-forum-btn.danger:hover { background: #b02828; }
-.dgptm-forum-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.dgptm-forum-btn-sm { padding: 2px 8px; font-size: 11px; }
+.dgptm-forum-btn.danger { background: #dc3232 !important; border-color: #dc3232 !important; }
+.dgptm-forum-btn.danger:hover { background: #b02828 !important; }
+.dgptm-forum-btn:disabled { opacity: 0.5 !important; cursor: not-allowed !important; }
+button.dgptm-forum-btn-sm,
+a.dgptm-forum-btn-sm,
+.dgptm-forum-btn-sm,
+.dgptm-forum-btn.dgptm-forum-btn-sm {
+    padding: 2px 8px !important;
+    font-size: 11px !important;
+}
 .dgptm-forum-moderator-actions { display: flex; gap: 6px; margin-bottom: 12px; }
 .dgptm-forum-moderator-actions .dgptm-forum-btn { background: #5b6b7a; border-color: #5b6b7a; }
 .dgptm-forum-moderator-actions .dgptm-forum-btn:hover { background: #4a5866; }

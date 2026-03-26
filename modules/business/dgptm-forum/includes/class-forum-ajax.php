@@ -370,7 +370,7 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                                         $rt_name = $rt_author ? $rt_author->display_name : 'Unbekannt';
                                         $rt_date = date_i18n('d.m.Y', strtotime($rt->created_at));
                                     ?>
-                                        <div class="dgptm-forum-thread-link" data-thread-id="<?php echo esc_attr($rt->id); ?>" style="display:flex;justify-content:space-between;align-items:center;padding:3px 4px;font-size:12px;color:#666;cursor:pointer;border-radius:3px" onmouseover="this.style.background='#f0f6fc'" onmouseout="this.style.background=''" onclick="event.stopPropagation()">
+                                        <div class="dgptm-forum-thread-preview" data-thread-id="<?php echo esc_attr($rt->id); ?>" style="display:flex;justify-content:space-between;align-items:center;padding:3px 4px;font-size:12px;color:#666;cursor:pointer;border-radius:3px" onmouseover="this.style.background='#f0f6fc'" onmouseout="this.style.background=''">
                                             <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%"><?php echo esc_html($rt->title); ?></span>
                                             <span style="flex-shrink:0;color:#999"><?php echo esc_html($rt_name); ?> &middot; <?php echo $rt_date; ?> &middot; <?php echo (int)$rt->reply_count; ?> Antw.</span>
                                         </div>

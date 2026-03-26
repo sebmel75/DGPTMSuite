@@ -88,6 +88,13 @@
         F.loadView('thread', $(this).data('thread-id'));
     });
 
+    // Klick auf Thread-Vorschau in Hauptgruppen-Karte → direkt Thread öffnen
+    $(document).on('click', '.dgptm-forum-thread-preview', function(e) {
+        e.preventDefault();
+        e.stopPropagation(); // Verhindert Klick auf AG-Karte
+        F.loadView('thread', $(this).data('thread-id'));
+    });
+
     // Breadcrumb + Zurück-Navigation
     $(document).on('click', '.dgptm-forum-breadcrumb a, .dgptm-forum-back-btn', function(e) {
         e.preventDefault();

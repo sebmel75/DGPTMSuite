@@ -183,16 +183,13 @@ if (!class_exists('DGPTM_Forum')) {
                 </nav>
                 <div class="dgptm-forum-admin-content"><p>Wird geladen…</p></div>
             </div>
-            <script src="<?php echo esc_url( DGPTM_FORUM_URL . 'assets/js/forum.js?ver=' . DGPTM_FORUM_VERSION ); ?>"></script>
             <script>
             (function(){
-                if (typeof window.dgptmForum === 'undefined') {
-                    window.dgptmForum = {
-                        ajaxUrl: <?php echo wp_json_encode($ajax_url); ?>,
-                        nonce: <?php echo wp_json_encode($nonce); ?>,
-                        isAdmin: 1
-                    };
-                }
+                window.dgptmForum = {
+                    ajaxUrl: <?php echo wp_json_encode($ajax_url); ?>,
+                    nonce: <?php echo wp_json_encode($nonce); ?>,
+                    isAdmin: 1
+                };
                 function loadAdminTab(tab) {
                     var $c = jQuery('.dgptm-forum-admin-content');
                     if (!$c.length) return;

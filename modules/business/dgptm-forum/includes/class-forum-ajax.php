@@ -3,9 +3,10 @@
  * DGPTM Forum – AJAX Dispatcher
  *
  * Central AJAX handler for all forum frontend and admin actions.
+ * Simplified hierarchy: Hauptgruppe → Thread → Antworten (nested, max 3 levels).
  *
  * @package DGPTM_Forum
- * @since   1.0.0
+ * @since   2.0.0
  */
 if (!defined('ABSPATH')) exit;
 
@@ -58,13 +59,173 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
         }
 
         // =============================================================
+        //  Helper: Default Topic Bridge
+        // =============================================================
+
+        /**
+         * Get or create a default topic for an AG.
+         *
+         * Bridges the old schema (topics table still exists) without exposing
+         * topics to the user. Each AG gets exactly one default topic.
+         *
+         * @param int $ag_id
+         * @return int Topic ID
+         */
+        private function get_or_create_default_topic($ag_id) {
+            global $wpdb;
+            $prefix = $wpdb->prefix . 'dgptm_forum_';
+
+            $topic = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM {$prefix}topics WHERE ag_id = %d LIMIT 1",
+                $ag_id
+            ));
+
+            if ($topic) {
+                return (int) $topic->id;
+            }
+
+            // Auto-create default topic for this AG.
+            $ag = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM {$prefix}ags WHERE id = %d",
+                $ag_id
+            ));
+
+            $wpdb->insert("{$prefix}topics", [
+                'ag_id'       => $ag_id,
+                'title'       => $ag ? $ag->name : 'Standard',
+                'slug'        => $ag ? $ag->slug : 'standard',
+                'access_mode' => 'open',
+                'status'      => 'active',
+                'created_at'  => current_time('mysql'),
+                'created_by'  => get_current_user_id(),
+            ]);
+
+            return (int) $wpdb->insert_id;
+        }
+
+        // =============================================================
+        //  Permission Helpers
+        // =============================================================
+
+        /**
+         * Check if user can access (view) a Hauptgruppe.
+         *
+         * Open groups: everyone.
+         * Closed groups: members, forum admins, moderators only.
+         *
+         * @param int    $user_id
+         * @param object $ag  AG row object.
+         * @return bool
+         */
+        private function can_access_group($user_id, $ag) {
+            if ($ag->group_type === 'open') {
+                return true;
+            }
+
+            // Closed group: admin, moderator, or member.
+            if (DGPTM_Forum_Permissions::is_forum_admin($user_id)) {
+                return true;
+            }
+            if ((int) $ag->moderator_id === (int) $user_id) {
+                return true;
+            }
+            if (DGPTM_Forum_Permissions::is_ag_member($user_id, $ag->id)) {
+                return true;
+            }
+
+            return false;
+        }
+
+        /**
+         * Check if user can post in a Hauptgruppe.
+         *
+         * Same logic as can_access_group — if you can see it, you can post.
+         *
+         * @param int    $user_id
+         * @param object $ag  AG row object.
+         * @return bool
+         */
+        private function can_post_in_group($user_id, $ag) {
+            return $this->can_access_group($user_id, $ag);
+        }
+
+        /**
+         * Check if user is moderator of a Hauptgruppe.
+         *
+         * Forum admin, AG moderator_id, or AG Leiter.
+         *
+         * @param int    $user_id
+         * @param object $ag  AG row object.
+         * @return bool
+         */
+        private function is_group_moderator($user_id, $ag) {
+            if (DGPTM_Forum_Permissions::is_forum_admin($user_id)) {
+                return true;
+            }
+            if ((int) $ag->moderator_id === (int) $user_id) {
+                return true;
+            }
+            if (DGPTM_Forum_Permissions::is_ag_leiter($user_id, $ag->id)) {
+                return true;
+            }
+            return false;
+        }
+
+        /**
+         * Verify admin access. Returns true if current user is forum admin
+         * or AG leader for the relevant AG context.
+         *
+         * @return bool
+         */
+        private function require_admin() {
+            $user_id = get_current_user_id();
+
+            if (DGPTM_Forum_Permissions::is_forum_admin($user_id)) {
+                return true;
+            }
+
+            // Check if user is AG leader for the AG in context.
+            $ag_id = isset($_POST['ag_id']) ? absint($_POST['ag_id']) : 0;
+            if ($ag_id > 0 && DGPTM_Forum_Permissions::is_ag_leiter($user_id, $ag_id)) {
+                return true;
+            }
+
+            return false;
+        }
+
+        /**
+         * Resolve AG object from a thread ID.
+         *
+         * @param int $thread_id
+         * @return object|null AG row or null.
+         */
+        private function get_ag_for_thread($thread_id) {
+            global $wpdb;
+            $prefix = $wpdb->prefix . 'dgptm_forum_';
+
+            $row = $wpdb->get_row($wpdb->prepare(
+                "SELECT t.ag_id
+                 FROM {$prefix}threads th
+                 JOIN {$prefix}topics t ON t.id = th.topic_id
+                 WHERE th.id = %d",
+                $thread_id
+            ));
+
+            if (!$row || empty($row->ag_id)) {
+                return null;
+            }
+
+            return DGPTM_Forum_AG_Manager::get_ag($row->ag_id);
+        }
+
+        // =============================================================
         //  Forum View Methods
         // =============================================================
 
         /**
          * Central view loader.
          *
-         * POST params: view (ags|topics|threads|thread), id
+         * POST params: view (ags|threads|thread), id
          */
         private function load_view() {
             $view = isset($_POST['view']) ? sanitize_text_field($_POST['view']) : '';
@@ -73,9 +234,6 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
             switch ($view) {
                 case 'ags':
                     $html = $this->render_ags_view();
-                    break;
-                case 'topics':
-                    $html = $this->render_topics_view($id);
                     break;
                 case 'threads':
                     $html = $this->render_threads_view($id);
@@ -91,19 +249,24 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
             wp_send_json_success(['html' => $html]);
         }
 
-        // ----- AG List View ------------------------------------------
+        // ----- AG List View (Hauptgruppen-Übersicht) --------------------
 
         /**
-         * Render the list of all AGs the current user can see,
-         * plus an "Offene Themen" section.
+         * Render the list of all Hauptgruppen the current user can see.
+         *
+         * Open groups: visible to all.
+         * Closed groups: visible to all (unless is_hidden).
+         * Hidden closed groups: only visible to members.
          *
          * Breadcrumb: [Forum]
+         *
+         * @return string HTML
          */
         private function render_ags_view() {
             global $wpdb;
 
-            $user_id = get_current_user_id();
-            $prefix  = $wpdb->prefix . 'dgptm_forum_';
+            $user_id  = get_current_user_id();
+            $prefix   = $wpdb->prefix . 'dgptm_forum_';
             $is_admin = DGPTM_Forum_Permissions::is_forum_admin($user_id);
 
             $ags = DGPTM_Forum_AG_Manager::get_all_ags('active');
@@ -116,103 +279,108 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
 
             <div class="dgptm-forum-ag-list">
                 <?php if (empty($ags)) : ?>
-                    <p class="dgptm-forum-empty">Keine Arbeitsgemeinschaften vorhanden.</p>
+                    <p class="dgptm-forum-empty">Keine Hauptgruppen vorhanden.</p>
                 <?php else : ?>
                     <?php foreach ($ags as $ag) :
-                        // Only show AGs where user is a member or is admin.
-                        if (!$is_admin && !DGPTM_Forum_Permissions::is_ag_member($user_id, $ag->id)) {
-                            continue;
+                        // Visibility logic:
+                        // Open groups: visible to all
+                        // Closed groups (not hidden): visible to all
+                        // Hidden closed groups: only members/admins
+                        if ($ag->group_type === 'closed' && $ag->is_hidden) {
+                            if (!$is_admin && !DGPTM_Forum_Permissions::is_ag_member($user_id, $ag->id)) {
+                                continue;
+                            }
                         }
 
-                        // Topic count for this AG.
-                        $topic_count = (int) $wpdb->get_var($wpdb->prepare(
-                            "SELECT COUNT(*) FROM {$prefix}topics WHERE ag_id = %d AND status = 'active'",
+                        // Thread count: count threads from all topics belonging to this AG.
+                        $thread_count = (int) $wpdb->get_var($wpdb->prepare(
+                            "SELECT COUNT(*)
+                             FROM {$prefix}threads th
+                             JOIN {$prefix}topics t ON t.id = th.topic_id
+                             WHERE t.ag_id = %d AND th.status != 'deleted'",
                             $ag->id
                         ));
 
-                        // Member count.
-                        $member_count = (int) $wpdb->get_var($wpdb->prepare(
-                            "SELECT COUNT(*) FROM {$prefix}ag_members WHERE ag_id = %d",
+                        // Last activity: latest last_reply_at or created_at from threads.
+                        $last_activity = $wpdb->get_var($wpdb->prepare(
+                            "SELECT GREATEST(
+                                COALESCE(MAX(th.last_reply_at), '1970-01-01'),
+                                COALESCE(MAX(th.created_at), '1970-01-01')
+                             )
+                             FROM {$prefix}threads th
+                             JOIN {$prefix}topics t ON t.id = th.topic_id
+                             WHERE t.ag_id = %d AND th.status != 'deleted'",
                             $ag->id
                         ));
+
+                        $last_activity_display = ($last_activity && $last_activity !== '1970-01-01')
+                            ? date_i18n('d.m.Y H:i', strtotime($last_activity))
+                            : '-';
+
+                        // Moderator name.
+                        $moderator_name = '';
+                        if (!empty($ag->moderator_id)) {
+                            $mod_user = get_userdata($ag->moderator_id);
+                            if ($mod_user) {
+                                $moderator_name = $mod_user->display_name;
+                            }
+                        }
+
+                        // Group type badge text.
+                        $type_badge = ($ag->group_type === 'closed') ? 'Geschlossen' : 'Offen';
+                        $type_class = ($ag->group_type === 'closed') ? 'dgptm-forum-badge-closed' : 'dgptm-forum-badge-open';
                     ?>
-                        <div class="dgptm-forum-ag-card" data-ag-id="<?php echo esc_attr($ag->id); ?>">
+                        <div class="dgptm-forum-ag-card dgptm-forum-ag-link" data-ag-id="<?php echo esc_attr($ag->id); ?>">
                             <div class="dgptm-forum-ag-header">
                                 <h3 class="dgptm-forum-ag-name">
-                                    <a href="#" class="dgptm-forum-nav" data-view="topics" data-id="<?php echo esc_attr($ag->id); ?>">
+                                    <a href="#" class="dgptm-forum-nav" data-view="threads" data-id="<?php echo esc_attr($ag->id); ?>">
                                         <?php echo esc_html($ag->name); ?>
                                     </a>
                                 </h3>
+                                <span class="dgptm-forum-badge <?php echo esc_attr($type_class); ?>"><?php echo esc_html($type_badge); ?></span>
                             </div>
                             <?php if (!empty($ag->description)) : ?>
                                 <p class="dgptm-forum-ag-desc"><?php echo esc_html($ag->description); ?></p>
                             <?php endif; ?>
                             <div class="dgptm-forum-ag-meta">
                                 <span class="dgptm-forum-meta-item">
-                                    <strong><?php echo esc_html($topic_count); ?></strong> <?php echo $topic_count === 1 ? 'Thema' : 'Themen'; ?>
+                                    <strong><?php echo esc_html($thread_count); ?></strong> <?php echo $thread_count === 1 ? 'Thread' : 'Threads'; ?>
                                 </span>
                                 <span class="dgptm-forum-meta-item">
-                                    <strong><?php echo esc_html($member_count); ?></strong> <?php echo $member_count === 1 ? 'Mitglied' : 'Mitglieder'; ?>
+                                    Letzte Aktivit&auml;t: <?php echo esc_html($last_activity_display); ?>
                                 </span>
+                                <?php if (!empty($moderator_name)) : ?>
+                                    <span class="dgptm-forum-meta-item">
+                                        Moderator: <strong><?php echo esc_html($moderator_name); ?></strong>
+                                    </span>
+                                <?php endif; ?>
                             </div>
                         </div>
                     <?php endforeach; ?>
                 <?php endif; ?>
             </div>
-
-            <?php
-            // "Offene Themen" section: topics with ag_id=NULL and access_mode='open'.
-            $open_topics = $wpdb->get_results(
-                "SELECT * FROM {$prefix}topics
-                 WHERE ag_id IS NULL AND access_mode = 'open' AND status = 'active'
-                 ORDER BY sort_order ASC, title ASC"
-            );
-
-            if (!empty($open_topics)) :
-            ?>
-                <div class="dgptm-forum-open-topics">
-                    <h3 class="dgptm-forum-section-title">Offene Themen</h3>
-                    <div class="dgptm-forum-topic-list">
-                        <?php foreach ($open_topics as $topic) :
-                            $thread_count = (int) $topic->thread_count;
-                        ?>
-                            <div class="dgptm-forum-topic-card" data-topic-id="<?php echo esc_attr($topic->id); ?>">
-                                <div class="dgptm-forum-topic-header">
-                                    <h4 class="dgptm-forum-topic-name">
-                                        <a href="#" class="dgptm-forum-nav" data-view="threads" data-id="<?php echo esc_attr($topic->id); ?>">
-                                            <?php echo esc_html($topic->title); ?>
-                                        </a>
-                                    </h4>
-                                </div>
-                                <?php if (!empty($topic->description)) : ?>
-                                    <p class="dgptm-forum-topic-desc"><?php echo esc_html($topic->description); ?></p>
-                                <?php endif; ?>
-                                <div class="dgptm-forum-topic-meta">
-                                    <span class="dgptm-forum-meta-item">
-                                        <strong><?php echo esc_html($thread_count); ?></strong> <?php echo $thread_count === 1 ? 'Thread' : 'Threads'; ?>
-                                    </span>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-            <?php endif; ?>
             <?php
 
             return ob_get_clean();
         }
 
-        // ----- Topics View -------------------------------------------
+        // ----- Threads View (Thread-Liste einer Hauptgruppe) ------------
 
         /**
-         * Render topics for a given AG.
+         * Render threads for a given Hauptgruppe.
          *
-         * Breadcrumb: [Forum > AG-Name]
+         * For a given ag_id:
+         * - Check user can access this group
+         * - Get all threads from all topics of this AG
+         * - Pinned first, then by last_reply_at DESC
+         * - "Neuer Thread" button with compose form (or "Aufnahme beantragen" for non-members of closed groups)
+         *
+         * Breadcrumb: [Forum > Hauptgruppe-Name]
          *
          * @param int $ag_id
-         * @return string
+         * @return string HTML
          */
-        private function render_topics_view($ag_id) {
+        private function render_threads_view($ag_id) {
             global $wpdb;
 
             $user_id = get_current_user_id();
@@ -220,13 +388,28 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
 
             $ag = DGPTM_Forum_AG_Manager::get_ag($ag_id);
             if (!$ag) {
-                return '<p class="dgptm-forum-error">Arbeitsgemeinschaft nicht gefunden.</p>';
+                return '<p class="dgptm-forum-error">Hauptgruppe nicht gefunden.</p>';
             }
 
-            $topics = $wpdb->get_results($wpdb->prepare(
-                "SELECT * FROM {$prefix}topics WHERE ag_id = %d AND status = 'active' ORDER BY sort_order ASC, title ASC",
+            // Access check.
+            if (!$this->can_access_group($user_id, $ag)) {
+                return '<p class="dgptm-forum-error">Kein Zugriff auf diese Hauptgruppe.</p>';
+            }
+
+            // Get all threads from all topics of this AG.
+            $threads = $wpdb->get_results($wpdb->prepare(
+                "SELECT th.*
+                 FROM {$prefix}threads th
+                 JOIN {$prefix}topics t ON t.id = th.topic_id
+                 WHERE t.ag_id = %d AND th.status != 'deleted'
+                 ORDER BY th.is_pinned DESC, th.last_reply_at DESC, th.created_at DESC",
                 $ag_id
             ));
+
+            $can_post    = $this->can_post_in_group($user_id, $ag);
+            $is_member   = DGPTM_Forum_Permissions::is_ag_member($user_id, $ag_id);
+            $is_admin    = DGPTM_Forum_Permissions::is_forum_admin($user_id);
+            $is_moderator = $this->is_group_moderator($user_id, $ag);
 
             ob_start();
             ?>
@@ -236,128 +419,9 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                 <span class="dgptm-forum-breadcrumb-item active"><?php echo esc_html($ag->name); ?></span>
             </nav>
 
-            <div class="dgptm-forum-topic-list">
-                <?php if (empty($topics)) : ?>
-                    <p class="dgptm-forum-empty">Keine Themen in dieser Arbeitsgemeinschaft.</p>
-                <?php else : ?>
-                    <?php foreach ($topics as $topic) :
-                        if (!DGPTM_Forum_Permissions::can_view_topic($user_id, $topic->id)) {
-                            continue;
-                        }
-
-                        $thread_count = (int) $topic->thread_count;
-                        $responsible_name = '';
-                        if (!empty($topic->responsible_id)) {
-                            $resp_user = get_userdata($topic->responsible_id);
-                            if ($resp_user) {
-                                $responsible_name = $resp_user->display_name;
-                            }
-                        }
-
-                        $last_activity = $topic->last_activity
-                            ? date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($topic->last_activity))
-                            : '-';
-                    ?>
-                        <div class="dgptm-forum-topic-card" data-topic-id="<?php echo esc_attr($topic->id); ?>">
-                            <div class="dgptm-forum-topic-header">
-                                <h4 class="dgptm-forum-topic-name">
-                                    <a href="#" class="dgptm-forum-nav" data-view="threads" data-id="<?php echo esc_attr($topic->id); ?>">
-                                        <?php echo esc_html($topic->title); ?>
-                                    </a>
-                                </h4>
-                            </div>
-                            <?php if (!empty($topic->description)) : ?>
-                                <p class="dgptm-forum-topic-desc"><?php echo esc_html($topic->description); ?></p>
-                            <?php endif; ?>
-                            <div class="dgptm-forum-topic-meta">
-                                <?php if (!empty($responsible_name)) : ?>
-                                    <span class="dgptm-forum-meta-item">
-                                        Verantwortlich: <strong><?php echo esc_html($responsible_name); ?></strong>
-                                    </span>
-                                <?php endif; ?>
-                                <span class="dgptm-forum-meta-item">
-                                    <strong><?php echo esc_html($thread_count); ?></strong> <?php echo $thread_count === 1 ? 'Thread' : 'Threads'; ?>
-                                </span>
-                                <span class="dgptm-forum-meta-item">
-                                    Letzte Aktivit&auml;t: <?php echo esc_html($last_activity); ?>
-                                </span>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-            <?php
-
-            return ob_get_clean();
-        }
-
-        // ----- Threads View ------------------------------------------
-
-        /**
-         * Render threads for a given topic.
-         *
-         * Breadcrumb: [Forum > AG-Name > Topic-Name]
-         *
-         * @param int $topic_id
-         * @return string
-         */
-        private function render_threads_view($topic_id) {
-            global $wpdb;
-
-            $user_id = get_current_user_id();
-            $prefix  = $wpdb->prefix . 'dgptm_forum_';
-
-            if (!DGPTM_Forum_Permissions::can_view_topic($user_id, $topic_id)) {
-                return '<p class="dgptm-forum-error">Kein Zugriff auf dieses Thema.</p>';
-            }
-
-            $topic = $wpdb->get_row($wpdb->prepare(
-                "SELECT * FROM {$prefix}topics WHERE id = %d",
-                $topic_id
-            ));
-
-            if (!$topic) {
-                return '<p class="dgptm-forum-error">Thema nicht gefunden.</p>';
-            }
-
-            // AG info for breadcrumb.
-            $ag_name = 'Forum';
-            $ag_id   = 0;
-            if (!empty($topic->ag_id)) {
-                $ag = DGPTM_Forum_AG_Manager::get_ag($topic->ag_id);
-                if ($ag) {
-                    $ag_name = $ag->name;
-                    $ag_id   = $ag->id;
-                }
-            }
-
-            // Threads: pinned first, then by last_reply_at DESC.
-            $threads = $wpdb->get_results($wpdb->prepare(
-                "SELECT * FROM {$prefix}threads
-                 WHERE topic_id = %d AND status != 'deleted'
-                 ORDER BY is_pinned DESC, last_reply_at DESC, created_at DESC",
-                $topic_id
-            ));
-
-            $can_post = DGPTM_Forum_Permissions::can_post_in_topic($user_id, $topic_id);
-
-            ob_start();
-            ?>
-            <nav class="dgptm-forum-breadcrumb">
-                <a href="#" class="dgptm-forum-breadcrumb-item dgptm-forum-nav" data-view="ags" data-id="0">Forum</a>
-                <span class="dgptm-forum-breadcrumb-sep">&rsaquo;</span>
-                <?php if ($ag_id > 0) : ?>
-                    <a href="#" class="dgptm-forum-breadcrumb-item dgptm-forum-nav" data-view="topics" data-id="<?php echo esc_attr($ag_id); ?>">
-                        <?php echo esc_html($ag_name); ?>
-                    </a>
-                    <span class="dgptm-forum-breadcrumb-sep">&rsaquo;</span>
-                <?php endif; ?>
-                <span class="dgptm-forum-breadcrumb-item active"><?php echo esc_html($topic->title); ?></span>
-            </nav>
-
             <?php if ($can_post) : ?>
                 <div class="dgptm-forum-actions">
-                    <button type="button" class="dgptm-forum-btn dgptm-forum-btn-primary dgptm-forum-new-thread-btn" data-topic-id="<?php echo esc_attr($topic_id); ?>">
+                    <button type="button" class="dgptm-forum-btn dgptm-forum-btn-primary dgptm-forum-new-thread-btn" data-ag-id="<?php echo esc_attr($ag_id); ?>">
                         Neuer Thread
                     </button>
                 </div>
@@ -376,27 +440,33 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                         <input type="file" id="dgptm-forum-thread-files" multiple />
                     </div>
                     <div class="dgptm-forum-form-actions">
-                        <button type="button" class="dgptm-forum-btn dgptm-forum-btn-primary dgptm-forum-submit-thread" data-topic-id="<?php echo esc_attr($topic_id); ?>">
+                        <button type="button" class="dgptm-forum-btn dgptm-forum-btn-primary dgptm-forum-submit-thread" data-ag-id="<?php echo esc_attr($ag_id); ?>">
                             Absenden
                         </button>
                         <button type="button" class="dgptm-forum-btn dgptm-forum-cancel-compose">Abbrechen</button>
                     </div>
                 </div>
+            <?php elseif ($ag->group_type === 'closed' && !$is_member && !$is_admin) : ?>
+                <div class="dgptm-forum-actions">
+                    <button type="button" class="dgptm-forum-btn dgptm-forum-btn-secondary dgptm-forum-request-membership-btn" data-ag-id="<?php echo esc_attr($ag_id); ?>">
+                        Aufnahme beantragen
+                    </button>
+                </div>
             <?php endif; ?>
 
             <div class="dgptm-forum-thread-list">
                 <?php if (empty($threads)) : ?>
-                    <p class="dgptm-forum-empty">Noch keine Threads in diesem Thema.</p>
+                    <p class="dgptm-forum-empty">Noch keine Threads in dieser Hauptgruppe.</p>
                 <?php else : ?>
                     <?php foreach ($threads as $thread) :
                         $author = get_userdata($thread->author_id);
                         $author_name = $author ? $author->display_name : 'Unbekannt';
 
                         $last_reply = $thread->last_reply_at
-                            ? date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($thread->last_reply_at))
-                            : date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($thread->created_at));
+                            ? date_i18n('d.m.Y H:i', strtotime($thread->last_reply_at))
+                            : date_i18n('d.m.Y H:i', strtotime($thread->created_at));
                     ?>
-                        <div class="dgptm-forum-thread-card <?php echo $thread->is_pinned ? 'dgptm-forum-thread-pinned' : ''; ?> <?php echo $thread->status === 'closed' ? 'dgptm-forum-thread-closed' : ''; ?>"
+                        <div class="dgptm-forum-thread-card dgptm-forum-thread-link <?php echo $thread->is_pinned ? 'dgptm-forum-thread-pinned' : ''; ?> <?php echo $thread->status === 'closed' ? 'dgptm-forum-thread-closed' : ''; ?>"
                              data-thread-id="<?php echo esc_attr($thread->id); ?>">
                             <div class="dgptm-forum-thread-header">
                                 <h4 class="dgptm-forum-thread-title">
@@ -431,15 +501,15 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
             return ob_get_clean();
         }
 
-        // ----- Single Thread View ------------------------------------
+        // ----- Single Thread View ----------------------------------------
 
         /**
          * Render a single thread with all replies (nested).
          *
-         * Breadcrumb: [Forum > AG > Topic > Thread-Title]
+         * Breadcrumb: [Forum > Hauptgruppe-Name > Thread-Titel]
          *
          * @param int $thread_id
-         * @return string
+         * @return string HTML
          */
         private function render_thread_view($thread_id) {
             global $wpdb;
@@ -456,35 +526,34 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                 return '<p class="dgptm-forum-error">Thread nicht gefunden.</p>';
             }
 
-            if (!DGPTM_Forum_Permissions::can_view_topic($user_id, $thread->topic_id)) {
-                return '<p class="dgptm-forum-error">Kein Zugriff auf diesen Thread.</p>';
-            }
-
-            // Topic info.
+            // Resolve AG via topic.
             $topic = $wpdb->get_row($wpdb->prepare(
                 "SELECT * FROM {$prefix}topics WHERE id = %d",
                 $thread->topic_id
             ));
 
-            // AG info for breadcrumb.
+            $ag      = null;
             $ag_name = '';
             $ag_id   = 0;
             if ($topic && !empty($topic->ag_id)) {
                 $ag = DGPTM_Forum_AG_Manager::get_ag($topic->ag_id);
                 if ($ag) {
                     $ag_name = $ag->name;
-                    $ag_id   = $ag->id;
+                    $ag_id   = (int) $ag->id;
                 }
             }
 
-            $can_post      = DGPTM_Forum_Permissions::can_post_in_topic($user_id, $thread->topic_id);
-            $can_moderate  = DGPTM_Forum_Permissions::can_moderate_topic($user_id, $thread->topic_id);
-            $thread_author = get_userdata($thread->author_id);
+            // Access check via AG.
+            if ($ag && !$this->can_access_group($user_id, $ag)) {
+                return '<p class="dgptm-forum-error">Kein Zugriff auf diesen Thread.</p>';
+            }
+
+            $can_post     = $ag ? $this->can_post_in_group($user_id, $ag) : false;
+            $can_moderate = $ag ? $this->is_group_moderator($user_id, $ag) : DGPTM_Forum_Permissions::is_forum_admin($user_id);
+
+            $thread_author      = get_userdata($thread->author_id);
             $thread_author_name = $thread_author ? $thread_author->display_name : 'Unbekannt';
-            $thread_date   = date_i18n(
-                get_option('date_format') . ' ' . get_option('time_format'),
-                strtotime($thread->created_at)
-            );
+            $thread_date        = date_i18n('d.m.Y H:i', strtotime($thread->created_at));
 
             // Load all replies for this thread.
             $replies = $wpdb->get_results($wpdb->prepare(
@@ -522,19 +591,27 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                 <a href="#" class="dgptm-forum-breadcrumb-item dgptm-forum-nav" data-view="ags" data-id="0">Forum</a>
                 <span class="dgptm-forum-breadcrumb-sep">&rsaquo;</span>
                 <?php if ($ag_id > 0) : ?>
-                    <a href="#" class="dgptm-forum-breadcrumb-item dgptm-forum-nav" data-view="topics" data-id="<?php echo esc_attr($ag_id); ?>">
+                    <a href="#" class="dgptm-forum-breadcrumb-item dgptm-forum-nav" data-view="threads" data-id="<?php echo esc_attr($ag_id); ?>">
                         <?php echo esc_html($ag_name); ?>
-                    </a>
-                    <span class="dgptm-forum-breadcrumb-sep">&rsaquo;</span>
-                <?php endif; ?>
-                <?php if ($topic) : ?>
-                    <a href="#" class="dgptm-forum-breadcrumb-item dgptm-forum-nav" data-view="threads" data-id="<?php echo esc_attr($topic->id); ?>">
-                        <?php echo esc_html($topic->title); ?>
                     </a>
                     <span class="dgptm-forum-breadcrumb-sep">&rsaquo;</span>
                 <?php endif; ?>
                 <span class="dgptm-forum-breadcrumb-item active"><?php echo esc_html($thread->title); ?></span>
             </nav>
+
+            <?php // ---- Moderator Actions ---- ?>
+            <?php if ($can_moderate) : ?>
+                <div class="dgptm-forum-moderator-actions">
+                    <button type="button" class="dgptm-forum-btn dgptm-forum-btn-sm dgptm-forum-toggle-pin-btn"
+                            data-thread-id="<?php echo esc_attr($thread->id); ?>">
+                        <?php echo $thread->is_pinned ? 'Loslösen' : 'Anpinnen'; ?>
+                    </button>
+                    <button type="button" class="dgptm-forum-btn dgptm-forum-btn-sm dgptm-forum-close-thread-btn"
+                            data-thread-id="<?php echo esc_attr($thread->id); ?>">
+                        <?php echo $thread->status === 'closed' ? 'Wieder öffnen' : 'Schließen'; ?>
+                    </button>
+                </div>
+            <?php endif; ?>
 
             <?php // ---- Thread as first post ---- ?>
             <div class="dgptm-forum-thread-detail">
@@ -593,6 +670,8 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                                     data-parent-id="0" data-depth="1">Antwort absenden</button>
                         </div>
                     </div>
+                <?php elseif ($thread->status === 'closed') : ?>
+                    <p class="dgptm-forum-info">Dieser Thread ist geschlossen. Es können keine neuen Antworten verfasst werden.</p>
                 <?php endif; ?>
             </div>
             <?php
@@ -600,7 +679,9 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
             return ob_get_clean();
         }
 
-        // ----- Reply Tree Helpers ------------------------------------
+        // =============================================================
+        //  Reply Tree Helpers
+        // =============================================================
 
         /**
          * Build a nested tree structure from flat reply rows.
@@ -647,10 +728,7 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                 $depth = (int) $reply->depth;
                 $author = get_userdata($reply->author_id);
                 $author_name = $author ? $author->display_name : 'Unbekannt';
-                $date = date_i18n(
-                    get_option('date_format') . ' ' . get_option('time_format'),
-                    strtotime($reply->created_at)
-                );
+                $date = date_i18n('d.m.Y H:i', strtotime($reply->created_at));
                 $atts = isset($reply_attachments[(int) $reply->id]) ? $reply_attachments[(int) $reply->id] : [];
                 $next_depth = $depth + 1;
                 ?>
@@ -733,39 +811,51 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
         /**
          * Create a new thread.
          *
-         * POST: topic_id, title, content, files (optional)
+         * POST: ag_id, title, content, files (optional)
          */
         private function create_thread() {
             global $wpdb;
 
-            $user_id  = get_current_user_id();
-            $prefix   = $wpdb->prefix . 'dgptm_forum_';
-            $topic_id = isset($_POST['topic_id']) ? absint($_POST['topic_id']) : 0;
-            $title    = isset($_POST['title']) ? sanitize_text_field($_POST['title']) : '';
-            $content  = isset($_POST['content']) ? wp_kses_post($_POST['content']) : '';
+            $user_id = get_current_user_id();
+            $prefix  = $wpdb->prefix . 'dgptm_forum_';
+            $ag_id   = isset($_POST['ag_id']) ? absint($_POST['ag_id']) : 0;
+            $title   = isset($_POST['title']) ? sanitize_text_field($_POST['title']) : '';
+            $content = isset($_POST['content']) ? wp_kses_post($_POST['content']) : '';
 
-            if (empty($topic_id) || empty($title) || empty($content)) {
-                wp_send_json_error(['message' => 'Titel, Inhalt und Thema sind erforderlich.']);
+            if (empty($ag_id) || empty($title) || empty($content)) {
+                wp_send_json_error(['message' => 'Hauptgruppe, Titel und Inhalt sind erforderlich.']);
             }
 
-            if (!DGPTM_Forum_Permissions::can_post_in_topic($user_id, $topic_id)) {
-                wp_send_json_error(['message' => 'Keine Berechtigung in diesem Thema zu posten.']);
+            // Load AG and check permission.
+            $ag = DGPTM_Forum_AG_Manager::get_ag($ag_id);
+            if (!$ag) {
+                wp_send_json_error(['message' => 'Hauptgruppe nicht gefunden.']);
+            }
+
+            if (!$this->can_post_in_group($user_id, $ag)) {
+                wp_send_json_error(['message' => 'Keine Berechtigung in dieser Hauptgruppe zu posten.']);
+            }
+
+            // Get or create default topic for this AG.
+            $topic_id = $this->get_or_create_default_topic($ag_id);
+            if (!$topic_id) {
+                wp_send_json_error(['message' => 'Interner Fehler: Standard-Thema konnte nicht erstellt werden.']);
             }
 
             $now = current_time('mysql');
 
             $inserted = $wpdb->insert("{$prefix}threads", [
-                'topic_id'     => $topic_id,
-                'title'        => $title,
-                'content'      => $content,
-                'author_id'    => $user_id,
-                'status'       => 'open',
-                'is_pinned'    => 0,
-                'reply_count'  => 0,
+                'topic_id'      => $topic_id,
+                'title'         => $title,
+                'content'       => $content,
+                'author_id'     => $user_id,
+                'status'        => 'open',
+                'is_pinned'     => 0,
+                'reply_count'   => 0,
                 'last_reply_at' => $now,
                 'last_reply_by' => $user_id,
-                'created_at'   => $now,
-                'updated_at'   => $now,
+                'created_at'    => $now,
+                'updated_at'    => $now,
             ], ['%d', '%s', '%s', '%d', '%s', '%d', '%d', '%s', '%d', '%s', '%s']);
 
             if (false === $inserted) {
@@ -798,7 +888,7 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
         /**
          * Create a reply.
          *
-         * POST: thread_id, content, parent_id (0 for direct), depth
+         * POST: thread_id, content, parent_id (0 for direct), depth, files (optional)
          */
         private function create_reply() {
             global $wpdb;
@@ -818,7 +908,7 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                 wp_send_json_error(['message' => 'Maximale Verschachtelungstiefe erreicht.']);
             }
 
-            // Get thread to find topic_id.
+            // Get thread.
             $thread = $wpdb->get_row($wpdb->prepare(
                 "SELECT * FROM {$prefix}threads WHERE id = %d",
                 $thread_id
@@ -829,11 +919,17 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
             }
 
             if ($thread->status === 'closed') {
-                wp_send_json_error(['message' => 'Dieser Thread ist geschlossen.']);
+                // Allow moderators to post in closed threads.
+                $ag = $this->get_ag_for_thread($thread_id);
+                if (!$ag || !$this->is_group_moderator($user_id, $ag)) {
+                    wp_send_json_error(['message' => 'Dieser Thread ist geschlossen.']);
+                }
             }
 
-            if (!DGPTM_Forum_Permissions::can_post_in_topic($user_id, $thread->topic_id)) {
-                wp_send_json_error(['message' => 'Keine Berechtigung in diesem Thema zu posten.']);
+            // Check posting permission via AG.
+            $ag = $this->get_ag_for_thread($thread_id);
+            if ($ag && !$this->can_post_in_group($user_id, $ag)) {
+                wp_send_json_error(['message' => 'Keine Berechtigung in dieser Hauptgruppe zu posten.']);
             }
 
             $now = current_time('mysql');
@@ -903,12 +999,12 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
             }
 
             if (!in_array($post_type, ['thread', 'reply'], true)) {
-                wp_send_json_error(['message' => 'Ung&uuml;ltiger Beitragstyp.']);
+                wp_send_json_error(['message' => 'Ungültiger Beitragstyp.']);
             }
 
-            // Determine table suffix (plural).
             $table_suffix = $post_type === 'thread' ? 'threads' : 'replies';
 
+            // Permission: own post OR moderator of the AG.
             if (!$this->check_edit_permission($user_id, $table_suffix, $post_id)) {
                 wp_send_json_error(['message' => 'Keine Berechtigung diesen Beitrag zu bearbeiten.']);
             }
@@ -935,6 +1031,7 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
          * Delete a thread or reply (soft delete).
          *
          * POST: post_id, post_type
+         * Only moderators can delete.
          */
         private function delete_post() {
             global $wpdb;
@@ -949,13 +1046,14 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
             }
 
             if (!in_array($post_type, ['thread', 'reply'], true)) {
-                wp_send_json_error(['message' => 'Ung&uuml;ltiger Beitragstyp.']);
+                wp_send_json_error(['message' => 'Ungültiger Beitragstyp.']);
             }
 
             $table_suffix = $post_type === 'thread' ? 'threads' : 'replies';
 
+            // Only moderators can delete.
             if (!$this->check_delete_permission($user_id, $table_suffix, $post_id)) {
-                wp_send_json_error(['message' => 'Keine Berechtigung diesen Beitrag zu l&ouml;schen.']);
+                wp_send_json_error(['message' => 'Keine Berechtigung diesen Beitrag zu löschen.']);
             }
 
             $table = $prefix . $table_suffix;
@@ -969,7 +1067,7 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
             );
 
             if (false === $updated) {
-                wp_send_json_error(['message' => 'Beitrag konnte nicht gel&ouml;scht werden.']);
+                wp_send_json_error(['message' => 'Beitrag konnte nicht gelöscht werden.']);
             }
 
             // If thread deleted, decrement topic thread_count.
@@ -1000,11 +1098,11 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                 }
             }
 
-            wp_send_json_success(['message' => 'Beitrag gel&ouml;scht.']);
+            wp_send_json_success(['message' => 'Beitrag gelöscht.']);
         }
 
         /**
-         * Check edit permission, handling the replies-have-no-topic_id issue.
+         * Check edit permission: own post OR moderator of the AG.
          *
          * @param int    $user_id
          * @param string $table_suffix 'threads' or 'replies'
@@ -1016,14 +1114,26 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
             $prefix = $wpdb->prefix . 'dgptm_forum_';
 
             if ($table_suffix === 'threads') {
-                return DGPTM_Forum_Permissions::can_edit_post($user_id, 'threads', $post_id);
+                $thread = $wpdb->get_row($wpdb->prepare(
+                    "SELECT author_id FROM {$prefix}threads WHERE id = %d",
+                    $post_id
+                ));
+                if (!$thread) {
+                    return false;
+                }
+                // Own post?
+                if ((int) $thread->author_id === (int) $user_id) {
+                    return true;
+                }
+                // Moderator?
+                $ag = $this->get_ag_for_thread($post_id);
+                return $ag ? $this->is_group_moderator($user_id, $ag) : DGPTM_Forum_Permissions::is_forum_admin($user_id);
             }
 
-            // For replies: get author_id and resolve topic_id via thread.
+            // For replies: get author_id and resolve AG via thread.
             $reply = $wpdb->get_row($wpdb->prepare(
-                "SELECT r.author_id, t.topic_id
+                "SELECT r.author_id, r.thread_id
                  FROM {$prefix}replies r
-                 JOIN {$prefix}threads t ON t.id = r.thread_id
                  WHERE r.id = %d",
                 $post_id
             ));
@@ -1036,11 +1146,12 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                 return true;
             }
 
-            return DGPTM_Forum_Permissions::can_moderate_topic($user_id, (int) $reply->topic_id);
+            $ag = $this->get_ag_for_thread($reply->thread_id);
+            return $ag ? $this->is_group_moderator($user_id, $ag) : DGPTM_Forum_Permissions::is_forum_admin($user_id);
         }
 
         /**
-         * Check delete permission, handling replies-have-no-topic_id issue.
+         * Check delete permission: moderator only.
          *
          * @param int    $user_id
          * @param string $table_suffix 'threads' or 'replies'
@@ -1052,15 +1163,13 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
             $prefix = $wpdb->prefix . 'dgptm_forum_';
 
             if ($table_suffix === 'threads') {
-                return DGPTM_Forum_Permissions::can_delete_post($user_id, 'threads', $post_id);
+                $ag = $this->get_ag_for_thread($post_id);
+                return $ag ? $this->is_group_moderator($user_id, $ag) : DGPTM_Forum_Permissions::is_forum_admin($user_id);
             }
 
-            // For replies: resolve topic_id via thread.
+            // For replies: resolve AG via thread.
             $reply = $wpdb->get_row($wpdb->prepare(
-                "SELECT t.topic_id
-                 FROM {$prefix}replies r
-                 JOIN {$prefix}threads t ON t.id = r.thread_id
-                 WHERE r.id = %d",
+                "SELECT thread_id FROM {$prefix}replies WHERE id = %d",
                 $post_id
             ));
 
@@ -1068,7 +1177,8 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                 return false;
             }
 
-            return DGPTM_Forum_Permissions::can_moderate_topic($user_id, (int) $reply->topic_id);
+            $ag = $this->get_ag_for_thread($reply->thread_id);
+            return $ag ? $this->is_group_moderator($user_id, $ag) : DGPTM_Forum_Permissions::is_forum_admin($user_id);
         }
 
         // =============================================================
@@ -1180,7 +1290,7 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
         /**
          * Subscribe to a scope.
          *
-         * POST: scope, scope_id
+         * POST: scope (forum|ag|thread), scope_id
          */
         private function subscribe() {
             $scope    = isset($_POST['scope']) ? sanitize_text_field($_POST['scope']) : '';
@@ -1200,7 +1310,7 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
         /**
          * Unsubscribe from a scope.
          *
-         * POST: scope, scope_id
+         * POST: scope (forum|ag|thread), scope_id
          */
         private function unsubscribe() {
             $scope    = isset($_POST['scope']) ? sanitize_text_field($_POST['scope']) : '';
@@ -1218,35 +1328,68 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
         }
 
         // =============================================================
+        //  Membership Request
+        // =============================================================
+
+        /**
+         * Request membership in a closed Hauptgruppe.
+         *
+         * POST: ag_id
+         */
+        private function request_membership() {
+            global $wpdb;
+
+            $user_id = get_current_user_id();
+            $prefix  = $wpdb->prefix . 'dgptm_forum_';
+            $ag_id   = isset($_POST['ag_id']) ? absint($_POST['ag_id']) : 0;
+
+            if (empty($ag_id)) {
+                wp_send_json_error(['message' => 'Hauptgruppen-ID ist erforderlich.']);
+            }
+
+            $ag = DGPTM_Forum_AG_Manager::get_ag($ag_id);
+            if (!$ag) {
+                wp_send_json_error(['message' => 'Hauptgruppe nicht gefunden.']);
+            }
+
+            // Check if already a member.
+            if (DGPTM_Forum_Permissions::is_ag_member($user_id, $ag_id)) {
+                wp_send_json_error(['message' => 'Sie sind bereits Mitglied dieser Hauptgruppe.']);
+            }
+
+            // Check if already pending.
+            $existing = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM {$prefix}ag_members WHERE ag_id = %d AND user_id = %d AND role = 'pending'",
+                $ag_id,
+                $user_id
+            ));
+
+            if ((int) $existing > 0) {
+                wp_send_json_error(['message' => 'Ihre Anfrage wurde bereits gestellt und wird bearbeitet.']);
+            }
+
+            $wpdb->insert("{$prefix}ag_members", [
+                'ag_id'     => $ag_id,
+                'user_id'   => $user_id,
+                'role'      => 'pending',
+                'joined_at' => current_time('mysql'),
+            ], ['%d', '%d', '%s', '%s']);
+
+            if ($wpdb->insert_id) {
+                wp_send_json_success(['message' => 'Aufnahmeantrag gestellt. Ein Moderator wird Ihren Antrag prüfen.']);
+            }
+
+            wp_send_json_error(['message' => 'Fehler beim Erstellen des Aufnahmeantrags.']);
+        }
+
+        // =============================================================
         //  Admin Methods
         // =============================================================
 
         /**
-         * Verify admin access. Returns true if current user is forum admin
-         * or AG leader for the relevant AG context.
-         *
-         * @return bool
-         */
-        private function require_admin() {
-            $user_id = get_current_user_id();
-
-            if (DGPTM_Forum_Permissions::is_forum_admin($user_id)) {
-                return true;
-            }
-
-            // Check if user is AG leader for the AG in context.
-            $ag_id = isset($_POST['ag_id']) ? absint($_POST['ag_id']) : 0;
-            if ($ag_id > 0 && DGPTM_Forum_Permissions::is_ag_leiter($user_id, $ag_id)) {
-                return true;
-            }
-
-            return false;
-        }
-
-        /**
          * Load admin tab content.
          *
-         * POST: tab (ags|topics|admins|moderation)
+         * POST: tab (ags|admins)
          */
         private function admin_load_tab() {
             if (!DGPTM_Forum_Permissions::is_forum_admin()) {
@@ -1260,15 +1403,8 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                     case 'ags':
                         $html = DGPTM_Forum_Admin_Renderer::render_tab_ags();
                         break;
-                    case 'topics':
-                    case 'themen':
-                        $html = DGPTM_Forum_Admin_Renderer::render_tab_topics();
-                        break;
                     case 'admins':
                         $html = DGPTM_Forum_Admin_Renderer::render_tab_admins();
-                        break;
-                    case 'moderation':
-                        $html = DGPTM_Forum_Admin_Renderer::render_tab_moderation();
                         break;
                     default:
                         wp_send_json_error(['message' => 'Unbekannter Tab.']);
@@ -1278,13 +1414,13 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
             }
 
             // Fallback if renderer class not yet available.
-            wp_send_json_error(['message' => 'Admin-Renderer nicht verf&uuml;gbar.']);
+            wp_send_json_error(['message' => 'Admin-Renderer nicht verfügbar.']);
         }
 
         /**
          * Create or update an AG.
          *
-         * POST: ag_id (0=create), name, description, leader_user_id
+         * POST: ag_id (0=create), name, description, group_type, is_hidden, moderator_id, leader_user_id
          */
         private function admin_save_ag() {
             if (!$this->require_admin()) {
@@ -1340,7 +1476,7 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
 
             DGPTM_Forum_AG_Manager::delete_ag($ag_id);
 
-            wp_send_json_success(['message' => 'AG gel&ouml;scht.']);
+            wp_send_json_success(['message' => 'AG gelöscht.']);
         }
 
         /**
@@ -1362,7 +1498,7 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
 
             DGPTM_Forum_AG_Manager::add_member($ag_id, $user_id);
 
-            wp_send_json_success(['message' => 'Mitglied hinzugef&uuml;gt.']);
+            wp_send_json_success(['message' => 'Mitglied hinzugefügt.']);
         }
 
         /**
@@ -1388,184 +1524,10 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
         }
 
         /**
-         * Create or update a topic.
-         *
-         * POST: topic_id (0=create), ag_id, title, description, access_mode, responsible_id
-         */
-        private function admin_save_topic() {
-            if (!$this->require_admin()) {
-                wp_send_json_error(['message' => 'Keine Berechtigung.']);
-            }
-
-            global $wpdb;
-            $prefix = $wpdb->prefix . 'dgptm_forum_';
-
-            $topic_id       = isset($_POST['topic_id']) ? absint($_POST['topic_id']) : 0;
-            $ag_id          = isset($_POST['ag_id']) ? absint($_POST['ag_id']) : 0;
-            $title          = isset($_POST['title']) ? sanitize_text_field($_POST['title']) : '';
-            $description    = isset($_POST['description']) ? sanitize_textarea_field($_POST['description']) : '';
-            $access_mode    = isset($_POST['access_mode']) ? sanitize_text_field($_POST['access_mode']) : 'open';
-            $responsible_id = isset($_POST['responsible_id']) ? absint($_POST['responsible_id']) : 0;
-
-            if (empty($title)) {
-                wp_send_json_error(['message' => 'Titel ist erforderlich.']);
-            }
-
-            $valid_modes = ['open', 'ag_only', 'ag_plus'];
-            if (!in_array($access_mode, $valid_modes, true)) {
-                $access_mode = 'open';
-            }
-
-            $now  = current_time('mysql');
-            $slug = sanitize_title($title);
-
-            if ($topic_id === 0) {
-                // Create.
-                $inserted = $wpdb->insert("{$prefix}topics", [
-                    'ag_id'          => $ag_id > 0 ? $ag_id : null,
-                    'title'          => $title,
-                    'slug'           => $slug,
-                    'description'    => $description,
-                    'access_mode'    => $access_mode,
-                    'responsible_id' => $responsible_id,
-                    'status'         => 'active',
-                    'sort_order'     => 0,
-                    'thread_count'   => 0,
-                    'last_activity'  => null,
-                    'created_at'     => $now,
-                    'created_by'     => get_current_user_id(),
-                ]);
-
-                if (false === $inserted) {
-                    wp_send_json_error(['message' => 'Thema konnte nicht erstellt werden.']);
-                }
-
-                $new_id = $wpdb->insert_id;
-
-                wp_send_json_success([
-                    'message'  => 'Thema erstellt.',
-                    'topic_id' => $new_id,
-                ]);
-            } else {
-                // Update.
-                $updated = $wpdb->update(
-                    "{$prefix}topics",
-                    [
-                        'ag_id'          => $ag_id > 0 ? $ag_id : null,
-                        'title'          => $title,
-                        'slug'           => $slug,
-                        'description'    => $description,
-                        'access_mode'    => $access_mode,
-                        'responsible_id' => $responsible_id,
-                    ],
-                    ['id' => $topic_id]
-                );
-
-                if (false === $updated) {
-                    wp_send_json_error(['message' => 'Thema konnte nicht aktualisiert werden.']);
-                }
-
-                wp_send_json_success([
-                    'message'  => 'Thema aktualisiert.',
-                    'topic_id' => $topic_id,
-                ]);
-            }
-        }
-
-        /**
-         * Delete a topic.
-         *
-         * POST: topic_id
-         */
-        private function admin_delete_topic() {
-            if (!$this->require_admin()) {
-                wp_send_json_error(['message' => 'Keine Berechtigung.']);
-            }
-
-            global $wpdb;
-            $prefix   = $wpdb->prefix . 'dgptm_forum_';
-            $topic_id = isset($_POST['topic_id']) ? absint($_POST['topic_id']) : 0;
-
-            if (empty($topic_id)) {
-                wp_send_json_error(['message' => 'Themen-ID ist erforderlich.']);
-            }
-
-            // Soft-delete: set status to deleted.
-            $wpdb->update(
-                "{$prefix}topics",
-                ['status' => 'deleted'],
-                ['id' => $topic_id],
-                ['%s'],
-                ['%d']
-            );
-
-            // Also remove topic access entries.
-            $wpdb->delete("{$prefix}topic_access", ['topic_id' => $topic_id], ['%d']);
-
-            wp_send_json_success(['message' => 'Thema gel&ouml;scht.']);
-        }
-
-        /**
-         * Grant individual topic access to a user.
-         *
-         * POST: topic_id, user_id
-         */
-        private function admin_grant_access() {
-            if (!$this->require_admin()) {
-                wp_send_json_error(['message' => 'Keine Berechtigung.']);
-            }
-
-            global $wpdb;
-            $prefix   = $wpdb->prefix . 'dgptm_forum_';
-            $topic_id = isset($_POST['topic_id']) ? absint($_POST['topic_id']) : 0;
-            $user_id  = isset($_POST['user_id']) ? absint($_POST['user_id']) : 0;
-
-            if (empty($topic_id) || empty($user_id)) {
-                wp_send_json_error(['message' => 'Themen-ID und Benutzer-ID sind erforderlich.']);
-            }
-
-            $wpdb->query($wpdb->prepare(
-                "INSERT IGNORE INTO {$prefix}topic_access (topic_id, user_id, granted_at, granted_by) VALUES (%d, %d, %s, %d)",
-                $topic_id,
-                $user_id,
-                current_time('mysql'),
-                get_current_user_id()
-            ));
-
-            wp_send_json_success(['message' => 'Zugriff gew&auml;hrt.']);
-        }
-
-        /**
-         * Revoke individual topic access.
-         *
-         * POST: topic_id, user_id
-         */
-        private function admin_revoke_access() {
-            if (!$this->require_admin()) {
-                wp_send_json_error(['message' => 'Keine Berechtigung.']);
-            }
-
-            global $wpdb;
-            $prefix   = $wpdb->prefix . 'dgptm_forum_';
-            $topic_id = isset($_POST['topic_id']) ? absint($_POST['topic_id']) : 0;
-            $user_id  = isset($_POST['user_id']) ? absint($_POST['user_id']) : 0;
-
-            if (empty($topic_id) || empty($user_id)) {
-                wp_send_json_error(['message' => 'Themen-ID und Benutzer-ID sind erforderlich.']);
-            }
-
-            $wpdb->delete("{$prefix}topic_access", [
-                'topic_id' => $topic_id,
-                'user_id'  => $user_id,
-            ], ['%d', '%d']);
-
-            wp_send_json_success(['message' => 'Zugriff entzogen.']);
-        }
-
-        /**
          * Search users for autocomplete.
          *
          * POST: term
+         * Returns: name (display_name or user_login) + email
          */
         private function admin_search_users() {
             if (!$this->require_admin()) {
@@ -1600,16 +1562,21 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
          * POST: thread_id
          */
         private function admin_toggle_pin() {
-            if (!DGPTM_Forum_Permissions::is_forum_admin()) {
-                wp_send_json_error(['message' => 'Keine Berechtigung.']);
-            }
-
             global $wpdb;
             $prefix    = $wpdb->prefix . 'dgptm_forum_';
             $thread_id = isset($_POST['thread_id']) ? absint($_POST['thread_id']) : 0;
+            $user_id   = get_current_user_id();
 
             if (empty($thread_id)) {
                 wp_send_json_error(['message' => 'Thread-ID ist erforderlich.']);
+            }
+
+            // Check moderator permission via AG.
+            $ag = $this->get_ag_for_thread($thread_id);
+            if (!$ag || !$this->is_group_moderator($user_id, $ag)) {
+                if (!DGPTM_Forum_Permissions::is_forum_admin($user_id)) {
+                    wp_send_json_error(['message' => 'Keine Berechtigung.']);
+                }
             }
 
             $thread = $wpdb->get_row($wpdb->prepare(
@@ -1643,16 +1610,21 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
          * POST: thread_id
          */
         private function admin_close_thread() {
-            if (!DGPTM_Forum_Permissions::is_forum_admin()) {
-                wp_send_json_error(['message' => 'Keine Berechtigung.']);
-            }
-
             global $wpdb;
             $prefix    = $wpdb->prefix . 'dgptm_forum_';
             $thread_id = isset($_POST['thread_id']) ? absint($_POST['thread_id']) : 0;
+            $user_id   = get_current_user_id();
 
             if (empty($thread_id)) {
                 wp_send_json_error(['message' => 'Thread-ID ist erforderlich.']);
+            }
+
+            // Check moderator permission via AG.
+            $ag = $this->get_ag_for_thread($thread_id);
+            if (!$ag || !$this->is_group_moderator($user_id, $ag)) {
+                if (!DGPTM_Forum_Permissions::is_forum_admin($user_id)) {
+                    wp_send_json_error(['message' => 'Keine Berechtigung.']);
+                }
             }
 
             $thread = $wpdb->get_row($wpdb->prepare(
@@ -1675,7 +1647,7 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
             );
 
             wp_send_json_success([
-                'message' => $new_status === 'closed' ? 'Thread geschlossen.' : 'Thread wieder ge&ouml;ffnet.',
+                'message' => $new_status === 'closed' ? 'Thread geschlossen.' : 'Thread wieder geöffnet.',
                 'status'  => $new_status,
             ]);
         }

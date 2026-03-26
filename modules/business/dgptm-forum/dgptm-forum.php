@@ -7,7 +7,7 @@
  */
 if (!defined('ABSPATH')) exit;
 
-define('DGPTM_FORUM_VERSION', '1.2.0');
+define('DGPTM_FORUM_VERSION', '2.0.0');
 define('DGPTM_FORUM_PATH', plugin_dir_path(__FILE__));
 define('DGPTM_FORUM_URL', plugin_dir_url(__FILE__));
 
@@ -178,7 +178,6 @@ if (!class_exists('DGPTM_Forum')) {
             <div class="dgptm-forum-admin-wrap">
                 <nav class="dgptm-forum-admin-tabs">
                     <a href="#" class="active" data-tab="ags">Hauptgruppen</a>
-                    <a href="#" data-tab="topics">Themen</a>
                     <a href="#" data-tab="admins">Forum-Admins</a>
                 </nav>
                 <div class="dgptm-forum-admin-content"><p>Wird geladen…</p></div>

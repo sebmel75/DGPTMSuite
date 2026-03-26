@@ -229,11 +229,18 @@ if (!class_exists('DGPTM_Forum')) {
                 $(document).off('submit.forumag').on('submit.forumag', '.dgptm-forum-admin-ag-form', function(e) {
                     e.preventDefault();
                     var $f = $(this), $btn = $f.find('button[type="submit"]').prop('disabled', true);
-                    $.post(dgptmForum.ajaxUrl, $f.serialize() + '&action=dgptm_forum_admin_save_ag&nonce=' + dgptmForum.nonce)
-                    .done(function(r) {
+                    $.ajax({
+                        url: dgptmForum.ajaxUrl,
+                        type: 'POST',
+                        data: $f.serialize() + '&action=dgptm_forum_admin_save_ag&nonce=' + dgptmForum.nonce,
+                        dataType: 'json'
+                    }).done(function(r) {
                         if (r && r.success) { loadAdminTab('ags'); }
-                        else { alert((r&&r.data&&r.data.message)||'Fehler'); $btn.prop('disabled',false); }
-                    }).fail(function(){ alert('Verbindungsfehler'); $btn.prop('disabled',false); });
+                        else { alert((r && r.data && r.data.message) ? r.data.message : 'Fehler'); $btn.prop('disabled',false); }
+                    }).fail(function(xhr) {
+                        alert('Fehler: ' + (xhr.responseText || 'Verbindungsfehler').substring(0, 300));
+                        $btn.prop('disabled',false);
+                    });
                 });
 
                 // Hauptgruppe löschen
@@ -248,11 +255,18 @@ if (!class_exists('DGPTM_Forum')) {
                 $(document).off('submit.forumtopic').on('submit.forumtopic', '.dgptm-forum-admin-topic-form', function(e) {
                     e.preventDefault();
                     var $f = $(this), $btn = $f.find('button[type="submit"]').prop('disabled', true);
-                    $.post(dgptmForum.ajaxUrl, $f.serialize() + '&action=dgptm_forum_admin_save_topic&nonce=' + dgptmForum.nonce)
-                    .done(function(r) {
+                    $.ajax({
+                        url: dgptmForum.ajaxUrl,
+                        type: 'POST',
+                        data: $f.serialize() + '&action=dgptm_forum_admin_save_topic&nonce=' + dgptmForum.nonce,
+                        dataType: 'json'
+                    }).done(function(r) {
                         if (r && r.success) { loadAdminTab('topics'); }
-                        else { alert((r&&r.data&&r.data.message)||'Fehler'); $btn.prop('disabled',false); }
-                    }).fail(function(){ alert('Verbindungsfehler'); $btn.prop('disabled',false); });
+                        else { alert((r && r.data && r.data.message) ? r.data.message : 'Fehler'); $btn.prop('disabled',false); }
+                    }).fail(function(xhr) {
+                        alert('Fehler: ' + (xhr.responseText || 'Verbindungsfehler').substring(0, 300));
+                        $btn.prop('disabled',false);
+                    });
                 });
 
                 // User-Suche (Debounced)

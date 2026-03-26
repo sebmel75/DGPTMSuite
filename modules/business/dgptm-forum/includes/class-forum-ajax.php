@@ -1256,20 +1256,19 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
             $tab = isset($_POST['tab']) ? sanitize_text_field($_POST['tab']) : '';
 
             if (class_exists('DGPTM_Forum_Admin_Renderer')) {
-                $renderer = DGPTM_Forum_Admin_Renderer::get_instance();
                 switch ($tab) {
                     case 'ags':
-                        $html = $renderer->render_ags_tab();
+                        $html = DGPTM_Forum_Admin_Renderer::render_tab_ags();
                         break;
                     case 'topics':
                     case 'themen':
-                        $html = $renderer->render_topics_tab();
+                        $html = DGPTM_Forum_Admin_Renderer::render_tab_topics();
                         break;
                     case 'admins':
-                        $html = $renderer->render_admins_tab();
+                        $html = DGPTM_Forum_Admin_Renderer::render_tab_admins();
                         break;
                     case 'moderation':
-                        $html = $renderer->render_moderation_tab();
+                        $html = DGPTM_Forum_Admin_Renderer::render_tab_moderation();
                         break;
                     default:
                         wp_send_json_error(['message' => 'Unbekannter Tab.']);

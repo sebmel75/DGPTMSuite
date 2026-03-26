@@ -236,7 +236,15 @@
         var $btn = $(this);
         var subscribed = $btn.hasClass('subscribed');
         F.ajax(subscribed ? 'unsubscribe' : 'subscribe', { scope: $btn.data('scope'), scope_id: $btn.data('scope-id') }, function(r) {
-            if (r && r.success) { $btn.toggleClass('subscribed'); $btn.text(subscribed ? 'Abonnieren' : 'Abonniert \u2713'); }
+            if (r && r.success) {
+                $btn.toggleClass('subscribed');
+                if (subscribed) {
+                    $btn.html('\uD83D\uDD15 Abonnieren').css('color', '#999');
+                } else {
+                    $btn.html('\uD83D\uDD14 Abonniert').css('color', '#0073aa');
+                    F.notify('E-Mail-Benachrichtigung aktiviert', 'success');
+                }
+            }
         });
     });
 

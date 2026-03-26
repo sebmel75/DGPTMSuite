@@ -88,7 +88,7 @@ class DGPTM_Forum_Notifications {
         if ( ! $thread || ! $ag ) return;
 
         $author = get_userdata( $thread->author_id );
-        $author_name = $author ? $author->display_name : 'Unbekannt';
+        $author_name = function_exists('dgptm_forum_fullname') ? dgptm_forum_fullname($author) : ($author ? $author->display_name : 'Unbekannt');
         $tpl = self::get_templates();
         $link = self::get_forum_url();
 
@@ -108,7 +108,7 @@ class DGPTM_Forum_Notifications {
         foreach ( $subscribers as $uid ) {
             $user = get_userdata( $uid );
             if ( ! $user || ! $user->user_email ) continue;
-            $vars['empfaenger'] = $user->display_name ?: $user->user_login;
+            $vars['empfaenger'] = function_exists('dgptm_forum_fullname') ? dgptm_forum_fullname($user) : $user->display_name;
             $body = self::replace_placeholders( $tpl['new_thread_body'], $vars );
             wp_mail( $user->user_email, $subject, $body, self::mail_headers() );
         }
@@ -131,7 +131,7 @@ class DGPTM_Forum_Notifications {
         ) );
 
         $author = get_userdata( $reply->author_id );
-        $author_name = $author ? $author->display_name : 'Unbekannt';
+        $author_name = function_exists('dgptm_forum_fullname') ? dgptm_forum_fullname($author) : ($author ? $author->display_name : 'Unbekannt');
         $tpl = self::get_templates();
         $link = self::get_forum_url();
 
@@ -153,7 +153,7 @@ class DGPTM_Forum_Notifications {
         foreach ( $subscribers as $uid ) {
             $user = get_userdata( $uid );
             if ( ! $user || ! $user->user_email ) continue;
-            $vars['empfaenger'] = $user->display_name ?: $user->user_login;
+            $vars['empfaenger'] = function_exists('dgptm_forum_fullname') ? dgptm_forum_fullname($user) : $user->display_name;
             $body = self::replace_placeholders( $tpl['new_reply_body'], $vars );
             wp_mail( $user->user_email, $subject, $body, self::mail_headers() );
         }
@@ -178,8 +178,8 @@ class DGPTM_Forum_Notifications {
         $link = self::get_forum_url();
 
         $vars = [
-            'empfaenger' => $moderator->display_name,
-            'autor'      => $requester ? $requester->display_name : 'Unbekannt',
+            'empfaenger' => function_exists('dgptm_forum_fullname') ? dgptm_forum_fullname($moderator) : $moderator->display_name,
+            'autor'      => function_exists('dgptm_forum_fullname') ? dgptm_forum_fullname($requester) : ($requester ? $requester->display_name : 'Unbekannt'),
             'email'      => $requester ? $requester->user_email : '',
             'gruppe'     => $ag->name,
             'link'       => $link,

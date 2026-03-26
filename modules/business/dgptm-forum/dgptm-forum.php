@@ -7,9 +7,24 @@
  */
 if (!defined('ABSPATH')) exit;
 
-define('DGPTM_FORUM_VERSION', '2.0.0');
+define('DGPTM_FORUM_VERSION', '2.1.0');
 define('DGPTM_FORUM_PATH', plugin_dir_path(__FILE__));
 define('DGPTM_FORUM_URL', plugin_dir_url(__FILE__));
+
+if ( ! function_exists( 'dgptm_forum_fullname' ) ) {
+    /**
+     * Gibt "Vorname Nachname" zurück. Fallback: display_name → user_login.
+     * @param WP_User|object|null $user  User-Objekt oder null
+     * @return string
+     */
+    function dgptm_forum_fullname( $user ) {
+        if ( ! $user ) return 'Unbekannt';
+        $first = $user->first_name ?? '';
+        $last  = $user->last_name ?? '';
+        $full  = trim( $first . ' ' . $last );
+        return $full ?: ( $user->display_name ?: ( $user->user_login ?? 'Unbekannt' ) );
+    }
+}
 
 if (!class_exists('DGPTM_Forum')) {
 

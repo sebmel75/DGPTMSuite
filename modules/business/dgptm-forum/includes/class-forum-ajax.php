@@ -27,6 +27,10 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
 
         private function __construct() {}
 
+        private function get_user_fullname( $user ) {
+            return dgptm_forum_fullname( $user );
+        }
+
         // =============================================================
         //  Dispatcher
         // =============================================================
@@ -322,7 +326,7 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                         if (!empty($ag->moderator_id)) {
                             $mod_user = get_userdata($ag->moderator_id);
                             if ($mod_user) {
-                                $moderator_name = $mod_user->display_name;
+                                $moderator_name = $this->get_user_fullname($mod_user);
                             }
                         }
 
@@ -367,7 +371,7 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                                 <div style="margin-top:8px;padding-top:8px;border-top:1px solid #f0f0f0">
                                     <?php foreach ($recent_threads as $rt) :
                                         $rt_author = get_userdata($rt->author_id);
-                                        $rt_name = $rt_author ? $rt_author->display_name : 'Unbekannt';
+                                        $rt_name = $this->get_user_fullname($rt_author);
                                         $rt_date = date_i18n('d.m.Y', strtotime($rt->created_at));
                                     ?>
                                         <div class="dgptm-forum-thread-preview" data-thread-id="<?php echo esc_attr($rt->id); ?>" style="display:flex;justify-content:space-between;align-items:center;padding:3px 4px;font-size:12px;color:#666;cursor:pointer;border-radius:3px" onmouseover="this.style.background='#f0f6fc'" onmouseout="this.style.background=''">
@@ -490,7 +494,7 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                 <?php else : ?>
                     <?php foreach ($threads as $thread) :
                         $author = get_userdata($thread->author_id);
-                        $author_name = $author ? $author->display_name : 'Unbekannt';
+                        $author_name = $this->get_user_fullname($author);
                         $last_reply = $thread->last_reply_at
                             ? date_i18n('d.m.Y H:i', strtotime($thread->last_reply_at))
                             : date_i18n('d.m.Y H:i', strtotime($thread->created_at));
@@ -577,7 +581,7 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
             $can_moderate = $ag ? $this->is_group_moderator($user_id, $ag) : DGPTM_Forum_Permissions::is_forum_admin($user_id);
 
             $thread_author      = get_userdata($thread->author_id);
-            $thread_author_name = $thread_author ? $thread_author->display_name : 'Unbekannt';
+            $thread_author_name = $this->get_user_fullname($thread_author);
             $thread_date        = date_i18n('d.m.Y H:i', strtotime($thread->created_at));
 
             // Load all replies for this thread.
@@ -738,7 +742,7 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                 $reply = $node['reply'];
                 $depth = (int) $reply->depth;
                 $author = get_userdata($reply->author_id);
-                $author_name = $author ? $author->display_name : 'Unbekannt';
+                $author_name = $this->get_user_fullname($author);
                 $date = date_i18n('d.m.Y H:i', strtotime($reply->created_at));
                 $atts = isset($reply_attachments[(int) $reply->id]) ? $reply_attachments[(int) $reply->id] : [];
                 $next_depth = $depth + 1;
@@ -1567,7 +1571,8 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
 
             $result = [];
             foreach ($users as $user) {
-                $name = $user->display_name ?: $user->user_login;
+                $u = get_userdata($user->id);
+                $name = dgptm_forum_fullname($u);
                 $result[] = [
                     'id'    => (int) $user->id,
                     'name'  => $name,

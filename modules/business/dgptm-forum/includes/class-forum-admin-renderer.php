@@ -59,7 +59,7 @@ class DGPTM_Forum_Admin_Renderer {
                     $member_count = count($members);
                     $mod_name = '';
                     $mod_id = intval($ag->moderator_id ?? 0);
-                    if ($mod_id) { $mu = get_userdata($mod_id); if ($mu) $mod_name = $mu->display_name; }
+                    if ($mod_id) { $mu = get_userdata($mod_id); if ($mu) $mod_name = dgptm_forum_fullname($mu); }
                     $is_open = ($ag->group_type ?? 'open') === 'open';
                     $is_hidden = !empty($ag->is_hidden);
                     $type_label = $is_open ? 'Offen' : 'Geschlossen';
@@ -121,7 +121,7 @@ class DGPTM_Forum_Admin_Renderer {
                             <div style="display:flex;flex-wrap:wrap;gap:6px">
                             <?php foreach ($members as $member) : ?>
                                 <span style="display:inline-flex;align-items:center;gap:4px;background:#f0f0f0;padding:3px 8px;border-radius:12px;font-size:12px">
-                                    <?php echo esc_html($member->display_name); ?>
+                                    <?php $mu = get_userdata($member->user_id); echo esc_html(dgptm_forum_fullname($mu)); ?>
                                     <a href="#" class="dgptm-forum-admin-remove-member" data-ag-id="<?php echo esc_attr($ag->id); ?>" data-user-id="<?php echo esc_attr($member->user_id); ?>" style="color:#c00;text-decoration:none;font-weight:bold" title="Entfernen">&times;</a>
                                 </span>
                             <?php endforeach; ?>
@@ -258,7 +258,7 @@ class DGPTM_Forum_Admin_Renderer {
             if (!empty($topic->responsible_id)) {
                 $resp_user = get_userdata($topic->responsible_id);
                 if ($resp_user) {
-                    $responsible_name = $resp_user->display_name;
+                    $responsible_name = dgptm_forum_fullname($resp_user);
                 }
             }
 
@@ -355,7 +355,7 @@ class DGPTM_Forum_Admin_Renderer {
                         <div class="dgptm-forum-member-list">
                             <?php foreach ($access_users as $au) : ?>
                                 <div class="member-item">
-                                    <span><?php echo esc_html($au->display_name); ?> (<?php echo esc_html($au->user_email); ?>)</span>
+                                    <span><?php echo esc_html(dgptm_forum_fullname(get_userdata($au->user_id))); ?> (<?php echo esc_html($au->user_email); ?>)</span>
                                     <a href="#" class="dgptm-forum-btn danger dgptm-forum-admin-revoke-access"
                                        data-topic-id="<?php echo esc_attr($topic->id); ?>"
                                        data-user-id="<?php echo esc_attr($au->user_id); ?>"
@@ -410,7 +410,7 @@ class DGPTM_Forum_Admin_Renderer {
                     <?php foreach ($admins as $admin) : ?>
                         <div class="member-item">
                             <span>
-                                <?php echo esc_html($admin->display_name); ?>
+                                <?php echo esc_html(dgptm_forum_fullname($admin)); ?>
                                 <span class="member-role">(<?php echo esc_html($admin->user_email); ?>)</span>
                             </span>
                             <a href="#" class="dgptm-forum-btn danger dgptm-forum-admin-remove-admin"
@@ -476,7 +476,7 @@ class DGPTM_Forum_Admin_Renderer {
                     <tbody>
                         <?php foreach ($threads as $thread) :
                             $author = get_userdata($thread->author_id);
-                            $author_name = $author ? $author->display_name : 'Unbekannt';
+                            $author_name = dgptm_forum_fullname($author);
 
                             $is_pinned = !empty($thread->is_pinned);
                             $is_closed = ($thread->status === 'closed');

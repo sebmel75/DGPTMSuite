@@ -14,123 +14,128 @@ if (!defined('ABSPATH')) exit;
 class DGPTM_Forum_Admin_Renderer {
 
     // ==================================================================
-    //  Tab: AGs verwalten
+    //  Tab: Hauptgruppen verwalten
     // ==================================================================
 
-    /**
-     * Renders the AG management tab.
-     *
-     * @return string HTML output.
-     */
     public static function render_tab_ags() {
         ob_start();
-
         $ags = DGPTM_Forum_AG_Manager::get_all_ags('active');
         ?>
         <div class="dgptm-forum-admin-section">
+            <a href="#" class="dgptm-forum-btn dgptm-forum-admin-toggle" data-target="dgptm-forum-new-ag-form" style="margin-bottom:12px;display:inline-block">+ Neue Hauptgruppe</a>
 
-            <!-- Neue AG erstellen (collapsed) -->
-            <div class="dgptm-forum-admin-collapsible">
-                <h3>
-                    <a href="#" class="dgptm-forum-admin-toggle" data-target="dgptm-forum-new-ag-form">
-                        + Neue Hauptgruppe erstellen
-                    </a>
-                </h3>
-                <div id="dgptm-forum-new-ag-form" style="display:none;">
-                    <form class="dgptm-forum-admin-ag-form dgptm-forum-admin-form">
-                        <input type="hidden" name="ag_id" value="0">
-
-                        <label for="new-ag-name">Name</label>
-                        <input type="text" id="new-ag-name" name="name" required placeholder="Name der Hauptgruppe">
-
-                        <label for="new-ag-description">Beschreibung</label>
-                        <textarea id="new-ag-description" name="description" rows="3" placeholder="Beschreibung der Hauptgruppe"></textarea>
-
-                        <button type="submit" class="dgptm-forum-btn">Hauptgruppe erstellen</button>
-                    </form>
-                </div>
+            <div id="dgptm-forum-new-ag-form" style="display:none;background:#f8f9fa;padding:16px;border-radius:6px;margin-bottom:16px">
+                <form class="dgptm-forum-admin-ag-form dgptm-forum-admin-form">
+                    <input type="hidden" name="ag_id" value="0">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                        <div>
+                            <label>Name *</label>
+                            <input type="text" name="name" required placeholder="z.B. Kardiotechnik">
+                        </div>
+                        <div>
+                            <label>Typ</label>
+                            <select name="group_type">
+                                <option value="open">Offen (jeder kann lesen &amp; schreiben)</option>
+                                <option value="closed">Geschlossen (nur Mitglieder)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <label style="margin-top:8px">Beschreibung</label>
+                    <textarea name="description" rows="2" placeholder="Kurzbeschreibung der Gruppe"></textarea>
+                    <div style="display:flex;gap:16px;align-items:center;margin-top:8px">
+                        <label style="margin:0;display:flex;align-items:center;gap:6px;font-weight:normal">
+                            <input type="checkbox" name="is_hidden" value="1"> Ausblenden (nur f&uuml;r Mitglieder sichtbar)
+                        </label>
+                    </div>
+                    <button type="submit" class="dgptm-forum-btn" style="margin-top:12px">Erstellen</button>
+                </form>
             </div>
 
-            <hr>
-
-            <!-- AG-Liste -->
             <?php if (empty($ags)) : ?>
-                <p>Keine Hauptgruppen vorhanden.</p>
+                <p style="color:#666">Noch keine Hauptgruppen angelegt.</p>
             <?php else : ?>
                 <?php foreach ($ags as $ag) :
-                    $members      = DGPTM_Forum_AG_Manager::get_ag_members($ag->id);
+                    $members = DGPTM_Forum_AG_Manager::get_ag_members($ag->id);
                     $member_count = count($members);
-                    $leader_name  = '';
-
-                    if (!empty($ag->leader_user_id)) {
-                        $leader_user = get_userdata($ag->leader_user_id);
-                        if ($leader_user) {
-                            $leader_name = $leader_user->display_name;
-                        }
-                    }
+                    $mod_name = '';
+                    $mod_id = intval($ag->moderator_id ?? 0);
+                    if ($mod_id) { $mu = get_userdata($mod_id); if ($mu) $mod_name = $mu->display_name; }
+                    $is_open = ($ag->group_type ?? 'open') === 'open';
+                    $is_hidden = !empty($ag->is_hidden);
+                    $type_label = $is_open ? 'Offen' : 'Geschlossen';
+                    $type_cls = $is_open ? 'open' : 'closed';
                 ?>
-                <div class="dgptm-forum-admin-ag-item" data-ag-id="<?php echo esc_attr($ag->id); ?>">
-                    <div class="dgptm-forum-admin-ag-header">
-                        <div class="dgptm-forum-admin-ag-info">
-                            <strong><?php echo esc_html($ag->name); ?></strong>
-                            <span class="dgptm-forum-admin-ag-meta">
-                                <?php echo esc_html($member_count); ?> Mitglied<?php echo $member_count !== 1 ? 'er' : ''; ?>
-                                <?php if ($leader_name) : ?>
-                                    &middot; Leiter: <?php echo esc_html($leader_name); ?>
-                                <?php endif; ?>
-                                &middot; Status: <?php echo esc_html($ag->status); ?>
-                            </span>
+                <div class="dgptm-forum-admin-ag-item" style="border:1px solid #e0e0e0;border-radius:6px;padding:14px;margin-bottom:12px;background:#fff">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                        <div>
+                            <strong style="font-size:15px"><?php echo esc_html($ag->name); ?></strong>
+                            <span class="dgptm-forum-badge <?php echo $type_cls; ?>" style="margin-left:8px"><?php echo $type_label; ?></span>
+                            <?php if ($is_hidden) : ?><span class="dgptm-forum-badge closed" style="margin-left:4px">Ausgeblendet</span><?php endif; ?>
+                            <div style="font-size:13px;color:#666;margin-top:4px">
+                                <?php if ($mod_name) : ?>Moderator: <?php echo esc_html($mod_name); ?> &middot; <?php endif; ?>
+                                <?php echo $member_count; ?> Mitglied<?php echo $member_count !== 1 ? 'er' : ''; ?>
+                                <?php if ($ag->description) : ?> &middot; <?php echo esc_html(mb_strimwidth($ag->description, 0, 80, '...')); ?><?php endif; ?>
+                            </div>
                         </div>
-                        <div class="dgptm-forum-admin-ag-actions">
-                            <a href="#" class="dgptm-forum-btn secondary dgptm-forum-admin-toggle" data-target="dgptm-forum-edit-ag-<?php echo esc_attr($ag->id); ?>">Bearbeiten</a>
-                            <a href="#" class="dgptm-forum-btn danger dgptm-forum-admin-delete-ag" data-ag-id="<?php echo esc_attr($ag->id); ?>">Löschen</a>
+                        <div style="display:flex;gap:6px;flex-shrink:0">
+                            <a href="#" class="dgptm-forum-btn secondary dgptm-forum-admin-toggle" data-target="dgptm-forum-edit-ag-<?php echo esc_attr($ag->id); ?>" style="font-size:12px;padding:4px 10px">Bearbeiten</a>
+                            <a href="#" class="dgptm-forum-btn danger dgptm-forum-admin-delete-ag" data-ag-id="<?php echo esc_attr($ag->id); ?>" style="font-size:12px;padding:4px 10px">L&ouml;schen</a>
                         </div>
                     </div>
 
-                    <!-- Inline Edit Form (hidden) -->
-                    <div id="dgptm-forum-edit-ag-<?php echo esc_attr($ag->id); ?>" style="display:none;" class="dgptm-forum-admin-edit-form">
+                    <div id="dgptm-forum-edit-ag-<?php echo esc_attr($ag->id); ?>" style="display:none;margin-top:12px;padding:12px;background:#f8f9fa;border-radius:4px">
                         <form class="dgptm-forum-admin-ag-form dgptm-forum-admin-form">
                             <input type="hidden" name="ag_id" value="<?php echo esc_attr($ag->id); ?>">
-
-                            <label>Name</label>
-                            <input type="text" name="name" value="<?php echo esc_attr($ag->name); ?>" required>
-
-                            <label>Beschreibung</label>
-                            <textarea name="description" rows="3"><?php echo esc_html($ag->description); ?></textarea>
-
-                            <button type="submit" class="dgptm-forum-btn">Speichern</button>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                                <div><label>Name *</label><input type="text" name="name" value="<?php echo esc_attr($ag->name); ?>" required></div>
+                                <div><label>Typ</label>
+                                    <select name="group_type">
+                                        <option value="open" <?php selected($ag->group_type ?? 'open', 'open'); ?>>Offen</option>
+                                        <option value="closed" <?php selected($ag->group_type ?? 'open', 'closed'); ?>>Geschlossen</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <label style="margin-top:8px">Beschreibung</label>
+                            <textarea name="description" rows="2"><?php echo esc_html($ag->description); ?></textarea>
+                            <div style="display:flex;gap:16px;align-items:center;margin-top:8px">
+                                <label style="margin:0;display:flex;align-items:center;gap:6px;font-weight:normal">
+                                    <input type="checkbox" name="is_hidden" value="1" <?php checked($is_hidden); ?>> Ausblenden
+                                </label>
+                            </div>
+                            <div style="margin-top:8px">
+                                <label>Moderator</label>
+                                <div class="dgptm-forum-user-search-wrap" data-context="set-moderator" data-target-id="<?php echo esc_attr($ag->id); ?>">
+                                    <input type="text" class="dgptm-forum-user-search" placeholder="Moderator suchen..." value="<?php echo esc_attr($mod_name); ?>" style="font-size:13px">
+                                    <input type="hidden" name="moderator_id" value="<?php echo esc_attr($mod_id); ?>">
+                                    <div class="dgptm-forum-user-results"></div>
+                                </div>
+                            </div>
+                            <button type="submit" class="dgptm-forum-btn" style="margin-top:10px">Speichern</button>
                         </form>
                     </div>
 
-                    <!-- Member List -->
-                    <div class="dgptm-forum-member-list">
-                        <?php if (empty($members)) : ?>
-                            <p class="dgptm-forum-admin-no-members">Keine Mitglieder.</p>
-                        <?php else : ?>
+                    <?php if (!$is_open) : ?>
+                    <div style="margin-top:10px;padding-top:8px;border-top:1px solid #eee">
+                        <div style="font-size:12px;color:#888;margin-bottom:6px">Mitglieder</div>
+                        <?php if (!empty($members)) : ?>
+                            <div style="display:flex;flex-wrap:wrap;gap:6px">
                             <?php foreach ($members as $member) : ?>
-                                <div class="member-item">
-                                    <span>
-                                        <?php echo esc_html($member->display_name); ?>
-                                        <span class="member-role">(<?php echo esc_html($member->role); ?>)</span>
-                                    </span>
-                                    <a href="#" class="dgptm-forum-btn danger dgptm-forum-admin-remove-member"
-                                       data-ag-id="<?php echo esc_attr($ag->id); ?>"
-                                       data-user-id="<?php echo esc_attr($member->user_id); ?>"
-                                       title="Mitglied entfernen">&times;</a>
-                                </div>
+                                <span style="display:inline-flex;align-items:center;gap:4px;background:#f0f0f0;padding:3px 8px;border-radius:12px;font-size:12px">
+                                    <?php echo esc_html($member->display_name); ?>
+                                    <a href="#" class="dgptm-forum-admin-remove-member" data-ag-id="<?php echo esc_attr($ag->id); ?>" data-user-id="<?php echo esc_attr($member->user_id); ?>" style="color:#c00;text-decoration:none;font-weight:bold" title="Entfernen">&times;</a>
+                                </span>
                             <?php endforeach; ?>
+                            </div>
                         <?php endif; ?>
+                        <div class="dgptm-forum-user-search-wrap" data-context="ag-member" data-target-id="<?php echo esc_attr($ag->id); ?>" style="margin-top:6px">
+                            <input type="text" class="dgptm-forum-user-search" placeholder="Mitglied hinzuf&uuml;gen..." style="font-size:12px;padding:4px 8px;width:250px">
+                            <div class="dgptm-forum-user-results"></div>
+                        </div>
                     </div>
-
-                    <!-- Add Member (User Search) -->
-                    <div class="dgptm-forum-user-search-wrap" data-context="ag-member" data-target-id="<?php echo esc_attr($ag->id); ?>">
-                        <input type="text" class="dgptm-forum-user-search" placeholder="Mitglied suchen...">
-                        <div class="dgptm-forum-user-results"></div>
-                    </div>
+                    <?php endif; ?>
                 </div>
                 <?php endforeach; ?>
             <?php endif; ?>
-
         </div>
         <?php
         return ob_get_clean();

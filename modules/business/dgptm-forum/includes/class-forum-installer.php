@@ -27,12 +27,15 @@ class DGPTM_Forum_Installer {
 
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
-        // 1. Arbeitsgemeinschaften
+        // 1. Hauptgruppen
         $sql_ags = "CREATE TABLE {$prefix}ags (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
             name VARCHAR(255) NOT NULL,
             slug VARCHAR(100) NOT NULL,
             description TEXT,
+            group_type VARCHAR(20) DEFAULT 'open',
+            is_hidden TINYINT(1) DEFAULT 0,
+            moderator_id BIGINT UNSIGNED DEFAULT 0,
             leader_user_id BIGINT UNSIGNED DEFAULT 0,
             status VARCHAR(20) DEFAULT 'active',
             sort_order INT DEFAULT 0,
@@ -40,7 +43,8 @@ class DGPTM_Forum_Installer {
             created_by BIGINT UNSIGNED NOT NULL,
             PRIMARY KEY  (id),
             UNIQUE KEY unique_slug (slug),
-            KEY idx_status (status)
+            KEY idx_status (status),
+            KEY idx_group_type (group_type)
         ) $charset_collate;";
 
         // 2. AG Membership junction

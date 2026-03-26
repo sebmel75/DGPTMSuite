@@ -1295,6 +1295,9 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
             $data  = [
                 'name'           => isset($_POST['name']) ? $_POST['name'] : '',
                 'description'    => isset($_POST['description']) ? $_POST['description'] : '',
+                'group_type'     => isset($_POST['group_type']) ? sanitize_text_field($_POST['group_type']) : 'open',
+                'is_hidden'      => !empty($_POST['is_hidden']) ? 1 : 0,
+                'moderator_id'   => isset($_POST['moderator_id']) ? absint($_POST['moderator_id']) : 0,
                 'leader_user_id' => isset($_POST['leader_user_id']) ? absint($_POST['leader_user_id']) : 0,
             ];
 

@@ -46,13 +46,16 @@ class DGPTM_Forum_AG_Manager {
             'name'           => $name,
             'slug'           => sanitize_title($name),
             'description'    => isset($data['description']) ? sanitize_textarea_field($data['description']) : '',
+            'group_type'     => isset($data['group_type']) ? sanitize_text_field($data['group_type']) : 'open',
+            'is_hidden'      => !empty($data['is_hidden']) ? 1 : 0,
+            'moderator_id'   => isset($data['moderator_id']) ? absint($data['moderator_id']) : 0,
             'leader_user_id' => isset($data['leader_user_id']) ? absint($data['leader_user_id']) : 0,
             'created_at'     => current_time('mysql'),
             'created_by'     => get_current_user_id(),
-        ], ['%s', '%s', '%s', '%d', '%s', '%d']);
+        ], ['%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%d']);
 
         if (false === $result) {
-            return new WP_Error('db_error', 'AG konnte nicht erstellt werden: ' . $wpdb->last_error);
+            return new WP_Error('db_error', 'Hauptgruppe konnte nicht erstellt werden: ' . $wpdb->last_error);
         }
 
         return $wpdb->insert_id;
@@ -77,6 +80,18 @@ class DGPTM_Forum_AG_Manager {
         if (isset($data['description'])) {
             $update['description'] = sanitize_textarea_field($data['description']);
             $format[] = '%s';
+        }
+        if (isset($data['group_type'])) {
+            $update['group_type'] = sanitize_text_field($data['group_type']);
+            $format[] = '%s';
+        }
+        if (array_key_exists('is_hidden', $data)) {
+            $update['is_hidden'] = !empty($data['is_hidden']) ? 1 : 0;
+            $format[] = '%d';
+        }
+        if (isset($data['moderator_id'])) {
+            $update['moderator_id'] = absint($data['moderator_id']);
+            $format[] = '%d';
         }
         if (isset($data['leader_user_id'])) {
             $update['leader_user_id'] = absint($data['leader_user_id']);

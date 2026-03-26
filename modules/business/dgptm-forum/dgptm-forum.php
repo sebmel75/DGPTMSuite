@@ -7,7 +7,7 @@
  */
 if (!defined('ABSPATH')) exit;
 
-define('DGPTM_FORUM_VERSION', '1.1.0');
+define('DGPTM_FORUM_VERSION', '1.2.0');
 define('DGPTM_FORUM_PATH', plugin_dir_path(__FILE__));
 define('DGPTM_FORUM_URL', plugin_dir_url(__FILE__));
 
@@ -293,7 +293,13 @@ if (!class_exists('DGPTM_Forum')) {
                     if (!userId) return;
                     var $wrap = $(this).closest('.dgptm-forum-user-search-wrap');
                     var ctx = $wrap.data('context'), targetId = $wrap.data('target-id');
-                    if (ctx === 'ag-member') {
+                    if (ctx === 'set-moderator') {
+                        // Moderator in das hidden-Feld des Edit-Formulars schreiben
+                        $wrap.find('input[name="moderator_id"]').val(userId);
+                        $wrap.find('.dgptm-forum-user-search').val($(this).text().split('(')[0].trim());
+                        $wrap.find('.dgptm-forum-user-results').hide();
+                        return;
+                    } else if (ctx === 'ag-member') {
                         $.post(dgptmForum.ajaxUrl, { action:'dgptm_forum_admin_add_member', nonce:dgptmForum.nonce, ag_id:targetId, user_id:userId })
                         .done(function(r) { if (r.success) loadAdminTab('ags'); });
                     } else if (ctx === 'forum-admin') {

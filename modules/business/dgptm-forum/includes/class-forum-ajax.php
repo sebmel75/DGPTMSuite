@@ -426,25 +426,23 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                     </button>
                 </div>
                 <div class="dgptm-forum-compose-area" id="dgptm-forum-compose-thread" style="display:none;">
-                    <h4>Neuen Thread erstellen</h4>
-                    <div class="dgptm-forum-form-group">
-                        <label for="dgptm-forum-thread-title">Titel</label>
-                        <input type="text" id="dgptm-forum-thread-title" class="dgptm-forum-input" placeholder="Thread-Titel" />
-                    </div>
-                    <div class="dgptm-forum-form-group">
-                        <label for="dgptm-forum-thread-content">Inhalt</label>
-                        <textarea id="dgptm-forum-thread-content" class="dgptm-forum-textarea" rows="6" placeholder="Schreiben Sie Ihren Beitrag..."></textarea>
-                    </div>
-                    <div class="dgptm-forum-form-group">
-                        <label for="dgptm-forum-thread-files">Dateien anh&auml;ngen</label>
-                        <input type="file" id="dgptm-forum-thread-files" multiple />
-                    </div>
-                    <div class="dgptm-forum-form-actions">
-                        <button type="button" class="dgptm-forum-btn dgptm-forum-btn-primary dgptm-forum-submit-thread" data-ag-id="<?php echo esc_attr($ag_id); ?>">
-                            Absenden
-                        </button>
-                        <button type="button" class="dgptm-forum-btn dgptm-forum-cancel-compose">Abbrechen</button>
-                    </div>
+                    <form class="dgptm-forum-thread-form" enctype="multipart/form-data">
+                        <input type="hidden" name="ag_id" value="<?php echo esc_attr($ag_id); ?>">
+                        <h4>Neuen Thread erstellen</h4>
+                        <div style="margin-bottom:10px">
+                            <input type="text" name="title" placeholder="Titel" required style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:14px">
+                        </div>
+                        <div style="margin-bottom:10px">
+                            <textarea name="content" rows="5" placeholder="Ihr Beitrag…" required style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:13px"></textarea>
+                        </div>
+                        <div style="margin-bottom:10px">
+                            <input type="file" name="attachments[]" multiple accept=".pdf,.jpg,.jpeg,.png,.docx" style="font-size:12px">
+                        </div>
+                        <div>
+                            <button type="submit" class="dgptm-forum-btn">Absenden</button>
+                            <a href="#" class="dgptm-forum-cancel-compose" style="margin-left:10px;font-size:13px;color:#666">Abbrechen</a>
+                        </div>
+                    </form>
                 </div>
             <?php elseif ($ag->group_type === 'closed' && !$is_member && !$is_admin) : ?>
                 <div class="dgptm-forum-actions">

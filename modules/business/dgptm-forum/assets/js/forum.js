@@ -100,10 +100,14 @@
 
     $(document).on('click', '.dgptm-forum-new-thread-btn', function(e) {
         e.preventDefault();
-        var $area = $(this).closest('.dgptm-forum-threads-header').find('.dgptm-forum-compose-area');
-        if (!$area.length) $area = F.$content().find('.dgptm-forum-compose-area');
+        var $area = $('#dgptm-forum-compose-thread');
         if ($area.is(':visible')) { $area.slideUp(); return; }
         $area.slideDown();
+    });
+
+    $(document).on('click', '.dgptm-forum-cancel-compose', function(e) {
+        e.preventDefault();
+        $('#dgptm-forum-compose-thread').slideUp();
     });
 
     $(document).on('submit', '.dgptm-forum-thread-form', function(e) {

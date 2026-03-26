@@ -33,7 +33,7 @@ class DGPTM_Forum_Admin_Renderer {
             <div class="dgptm-forum-admin-collapsible">
                 <h3>
                     <a href="#" class="dgptm-forum-admin-toggle" data-target="dgptm-forum-new-ag-form">
-                        + Neue AG erstellen
+                        + Neue Hauptgruppe erstellen
                     </a>
                 </h3>
                 <div id="dgptm-forum-new-ag-form" style="display:none;">
@@ -41,12 +41,12 @@ class DGPTM_Forum_Admin_Renderer {
                         <input type="hidden" name="ag_id" value="0">
 
                         <label for="new-ag-name">Name</label>
-                        <input type="text" id="new-ag-name" name="name" required placeholder="AG-Name">
+                        <input type="text" id="new-ag-name" name="name" required placeholder="Name der Hauptgruppe">
 
                         <label for="new-ag-description">Beschreibung</label>
-                        <textarea id="new-ag-description" name="description" rows="3" placeholder="Beschreibung der AG"></textarea>
+                        <textarea id="new-ag-description" name="description" rows="3" placeholder="Beschreibung der Hauptgruppe"></textarea>
 
-                        <button type="submit" class="dgptm-forum-btn">AG erstellen</button>
+                        <button type="submit" class="dgptm-forum-btn">Hauptgruppe erstellen</button>
                     </form>
                 </div>
             </div>
@@ -55,7 +55,7 @@ class DGPTM_Forum_Admin_Renderer {
 
             <!-- AG-Liste -->
             <?php if (empty($ags)) : ?>
-                <p>Keine Arbeitsgemeinschaften vorhanden.</p>
+                <p>Keine Hauptgruppen vorhanden.</p>
             <?php else : ?>
                 <?php foreach ($ags as $ag) :
                     $members      = DGPTM_Forum_AG_Manager::get_ag_members($ag->id);
@@ -185,9 +185,9 @@ class DGPTM_Forum_Admin_Renderer {
                         <label for="new-topic-description">Beschreibung</label>
                         <textarea id="new-topic-description" name="description" rows="3" placeholder="Beschreibung des Themas"></textarea>
 
-                        <label for="new-topic-ag">Arbeitsgemeinschaft</label>
+                        <label for="new-topic-ag">Hauptgruppe</label>
                         <select id="new-topic-ag" name="ag_id">
-                            <option value="0">Kein AG (offen)</option>
+                            <option value="0">Keine Hauptgruppe (offen)</option>
                             <?php foreach ($ags as $ag) : ?>
                                 <option value="<?php echo esc_attr($ag->id); ?>"><?php echo esc_html($ag->name); ?></option>
                             <?php endforeach; ?>
@@ -196,8 +196,8 @@ class DGPTM_Forum_Admin_Renderer {
                         <label for="new-topic-access">Zugangsmodus</label>
                         <select id="new-topic-access" name="access_mode">
                             <option value="open">Offen (open)</option>
-                            <option value="ag_only">Nur AG-Mitglieder (ag_only)</option>
-                            <option value="ag_plus">AG + Einzelzugriff (ag_plus)</option>
+                            <option value="ag_only">Nur Gruppenmitglieder (ag_only)</option>
+                            <option value="ag_plus">Gruppe + Einzelzugriff (ag_plus)</option>
                         </select>
 
                         <label>Verantwortliche/r</label>
@@ -259,8 +259,8 @@ class DGPTM_Forum_Admin_Renderer {
 
             $access_mode_labels = [
                 'open'    => 'Offen',
-                'ag_only' => 'Nur AG',
-                'ag_plus' => 'AG + Einzel',
+                'ag_only' => 'Nur Gruppe',
+                'ag_plus' => 'Gruppe + Einzel',
             ];
             $badge_label = isset($access_mode_labels[$topic->access_mode])
                 ? $access_mode_labels[$topic->access_mode]
@@ -302,9 +302,9 @@ class DGPTM_Forum_Admin_Renderer {
                     <label>Beschreibung</label>
                     <textarea name="description" rows="3"><?php echo esc_html($topic->description); ?></textarea>
 
-                    <label>Arbeitsgemeinschaft</label>
+                    <label>Hauptgruppe</label>
                     <select name="ag_id">
-                        <option value="0" <?php selected(empty($topic->ag_id)); ?>>Kein AG (offen)</option>
+                        <option value="0" <?php selected(empty($topic->ag_id)); ?>>Keine Hauptgruppe (offen)</option>
                         <?php foreach ($ags as $ag) : ?>
                             <option value="<?php echo esc_attr($ag->id); ?>" <?php selected((int) $topic->ag_id, (int) $ag->id); ?>>
                                 <?php echo esc_html($ag->name); ?>
@@ -315,8 +315,8 @@ class DGPTM_Forum_Admin_Renderer {
                     <label>Zugangsmodus</label>
                     <select name="access_mode">
                         <option value="open" <?php selected($topic->access_mode, 'open'); ?>>Offen (open)</option>
-                        <option value="ag_only" <?php selected($topic->access_mode, 'ag_only'); ?>>Nur AG-Mitglieder (ag_only)</option>
-                        <option value="ag_plus" <?php selected($topic->access_mode, 'ag_plus'); ?>>AG + Einzelzugriff (ag_plus)</option>
+                        <option value="ag_only" <?php selected($topic->access_mode, 'ag_only'); ?>>Nur Gruppenmitglieder (ag_only)</option>
+                        <option value="ag_plus" <?php selected($topic->access_mode, 'ag_plus'); ?>>Gruppe + Einzelzugriff (ag_plus)</option>
                     </select>
 
                     <label>Verantwortliche/r</label>

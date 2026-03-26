@@ -119,6 +119,7 @@ if (!class_exists('DGPTM_Forum')) {
                 <div class="dgptm-forum-breadcrumb"></div>
                 <div class="dgptm-forum-content"><p>Forum wird geladen…</p></div>
             </div>
+            <script src="<?php echo esc_url( DGPTM_FORUM_URL . 'assets/js/forum.js?ver=' . DGPTM_FORUM_VERSION ); ?>"></script>
             <script>
             (function(){
                 if (typeof window.dgptmForum === 'undefined') {
@@ -176,13 +177,13 @@ if (!class_exists('DGPTM_Forum')) {
             ?>
             <div class="dgptm-forum-admin-wrap">
                 <nav class="dgptm-forum-admin-tabs">
-                    <a href="#" class="active" data-tab="ags">AGs verwalten</a>
+                    <a href="#" class="active" data-tab="ags">Hauptgruppen</a>
                     <a href="#" data-tab="topics">Themen</a>
                     <a href="#" data-tab="admins">Forum-Admins</a>
-                    <a href="#" data-tab="moderation">Moderation</a>
                 </nav>
                 <div class="dgptm-forum-admin-content"><p>Wird geladen…</p></div>
             </div>
+            <script src="<?php echo esc_url( DGPTM_FORUM_URL . 'assets/js/forum.js?ver=' . DGPTM_FORUM_VERSION ); ?>"></script>
             <script>
             (function(){
                 if (typeof window.dgptmForum === 'undefined') {

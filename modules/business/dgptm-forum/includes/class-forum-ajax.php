@@ -1314,7 +1314,7 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
             }
 
             wp_send_json_success([
-                'message' => $ag_id === 0 ? 'AG erstellt.' : 'AG aktualisiert.',
+                'message' => $ag_id === 0 ? 'Hauptgruppe erstellt.' : 'Hauptgruppe aktualisiert.',
                 'ag_id'   => $ag_id === 0 ? $result : $ag_id,
             ]);
         }
@@ -1580,10 +1580,11 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
 
             $result = [];
             foreach ($users as $user) {
+                $name = $user->display_name ?: $user->user_login;
                 $result[] = [
-                    'id'           => (int) $user->id,
-                    'display_name' => $user->display_name,
-                    'email'        => $user->user_email,
+                    'id'    => (int) $user->id,
+                    'name'  => $name,
+                    'email' => $user->user_email,
                 ];
             }
 

@@ -39,7 +39,7 @@ class DGPTM_Forum_AG_Manager {
 
         $name = isset($data['name']) ? sanitize_text_field($data['name']) : '';
         if (empty($name)) {
-            return new WP_Error('missing_name', 'AG-Name ist erforderlich.');
+            return new WP_Error('missing_name', 'Name der Hauptgruppe ist erforderlich.');
         }
 
         $result = $wpdb->insert($table, [
@@ -215,11 +215,12 @@ class DGPTM_Forum_AG_Manager {
         $like = '%' . $wpdb->esc_like(sanitize_text_field($search_term)) . '%';
 
         return $wpdb->get_results($wpdb->prepare(
-            "SELECT ID AS id, display_name, user_email
+            "SELECT ID AS id, user_login, display_name, user_email
              FROM {$wpdb->users}
-             WHERE display_name LIKE %s OR user_email LIKE %s
+             WHERE display_name LIKE %s OR user_email LIKE %s OR user_login LIKE %s
              ORDER BY display_name ASC
              LIMIT %d",
+            $like,
             $like,
             $like,
             absint($limit)

@@ -155,9 +155,13 @@ class DGPTM_Dashboard_Tabs {
         // Shortcode check (e.g. "sc:umfrageberechtigung")
         if (strpos($perm, 'sc:') === 0) {
             $sc_name = substr($perm, 3);
-            if (!shortcode_exists($sc_name)) return false;
-            $result = strtolower(trim(do_shortcode('[' . $sc_name . ']')));
-            return ($result === '1' || $result === 'true');
+            $exists = shortcode_exists($sc_name);
+            $raw = $exists ? do_shortcode('[' . $sc_name . ']') : '(not registered)';
+            $result = strtolower(trim($raw));
+            $pass = ($result === '1' || $result === 'true');
+            error_log("[Dashboard] sc:{$sc_name} exists={$exists} raw='{$raw}' result='{$result}' pass={$pass}");
+            if (!$exists) return false;
+            return $pass;
         }
 
         if ($perm === 'admin') return user_can($user_id, 'manage_options');

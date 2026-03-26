@@ -51,7 +51,6 @@ if (!class_exists('DGPTM_Forum')) {
         private function init_hooks() {
             add_action('init', [$this, 'ensure_tables'], 1);
             add_action('init', [$this, 'register_shortcodes']);
-            add_action('init', [$this, 'ensure_dashboard_tabs'], 20);
 
             // Forum view AJAX actions
             $forum_actions = [

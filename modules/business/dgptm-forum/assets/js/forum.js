@@ -240,14 +240,14 @@
         });
     });
 
-    $(document).on('click', '.dgptm-forum-pin-btn', function(e) {
+    $(document).on('click', '.dgptm-forum-toggle-pin-btn', function(e) {
         e.preventDefault();
         F.ajax('admin_toggle_pin', { thread_id: $(this).data('thread-id') }, function(r) {
             if (r && r.success) F.loadView('thread', F.currentThreadId);
         });
     });
 
-    $(document).on('click', '.dgptm-forum-close-btn', function(e) {
+    $(document).on('click', '.dgptm-forum-close-thread-btn', function(e) {
         e.preventDefault();
         F.ajax('admin_close_thread', { thread_id: $(this).data('thread-id') }, function(r) {
             if (r && r.success) F.loadView('thread', F.currentThreadId);

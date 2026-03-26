@@ -329,30 +329,37 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                         // Group type badge text.
                         $type_badge = ($ag->group_type === 'closed') ? 'Geschlossen' : 'Offen';
                         $type_class = ($ag->group_type === 'closed') ? 'dgptm-forum-badge-closed' : 'dgptm-forum-badge-open';
+                        $is_member = DGPTM_Forum_Permissions::is_ag_member($user_id, $ag->id);
+                        $is_closed = ($ag->group_type === 'closed');
                     ?>
-                        <div class="dgptm-forum-ag-card dgptm-forum-ag-link" data-ag-id="<?php echo esc_attr($ag->id); ?>">
-                            <div class="dgptm-forum-ag-header">
-                                <h3 class="dgptm-forum-ag-name">
-                                    <a href="#" class="dgptm-forum-nav" data-view="threads" data-id="<?php echo esc_attr($ag->id); ?>">
-                                        <?php echo esc_html($ag->name); ?>
-                                    </a>
-                                </h3>
-                                <span class="dgptm-forum-badge <?php echo esc_attr($type_class); ?>"><?php echo esc_html($type_badge); ?></span>
-                            </div>
-                            <?php if (!empty($ag->description)) : ?>
-                                <p class="dgptm-forum-ag-desc"><?php echo esc_html($ag->description); ?></p>
-                            <?php endif; ?>
-                            <div class="dgptm-forum-ag-meta">
-                                <span class="dgptm-forum-meta-item">
-                                    <strong><?php echo esc_html($thread_count); ?></strong> <?php echo $thread_count === 1 ? 'Thread' : 'Threads'; ?>
-                                </span>
-                                <span class="dgptm-forum-meta-item">
-                                    Letzte Aktivit&auml;t: <?php echo esc_html($last_activity_display); ?>
-                                </span>
-                                <?php if (!empty($moderator_name)) : ?>
-                                    <span class="dgptm-forum-meta-item">
-                                        Moderator: <strong><?php echo esc_html($moderator_name); ?></strong>
-                                    </span>
+                        <div class="dgptm-forum-ag-card <?php echo $is_closed && !$is_member && !$is_admin ? 'dgptm-forum-ag-locked' : 'dgptm-forum-ag-link'; ?>" data-ag-id="<?php echo esc_attr($ag->id); ?>" style="border:1px solid <?php echo $is_closed ? '#e0c8c8' : '#d4e6f1'; ?>;border-radius:8px;padding:16px;margin-bottom:12px;background:#fff;cursor:pointer;transition:box-shadow .15s">
+                            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                                <div style="flex:1">
+                                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                                        <span style="font-size:16px;font-weight:600;color:#1d2327"><?php echo esc_html($ag->name); ?></span>
+                                        <?php if ($is_closed) : ?>
+                                            <span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fce4ec;color:#c62828">Geschlossen</span>
+                                        <?php else : ?>
+                                            <span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#e8f5e9;color:#2e7d32">Offen</span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <?php if ($ag->description) : ?>
+                                        <div style="font-size:13px;color:#666;margin-bottom:6px"><?php echo esc_html($ag->description); ?></div>
+                                    <?php endif; ?>
+                                    <div style="display:flex;gap:16px;font-size:12px;color:#888">
+                                        <span><?php echo esc_html($thread_count); ?> <?php echo $thread_count === 1 ? 'Diskussion' : 'Diskussionen'; ?></span>
+                                        <?php if ($last_activity_display !== '-') : ?>
+                                            <span>Letzte Aktivit&auml;t: <?php echo esc_html($last_activity_display); ?></span>
+                                        <?php endif; ?>
+                                        <?php if ($moderator_name) : ?>
+                                            <span>Moderator: <?php echo esc_html($moderator_name); ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                                <?php if ($is_closed && !$is_member && !$is_admin) : ?>
+                                    <button type="button" class="dgptm-forum-btn dgptm-forum-request-membership" data-ag-id="<?php echo esc_attr($ag->id); ?>" style="flex-shrink:0;font-size:12px;padding:6px 14px" onclick="event.stopPropagation()">Aufnahme beantragen</button>
+                                <?php else : ?>
+                                    <span style="color:#0073aa;font-size:20px;flex-shrink:0">&rsaquo;</span>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -877,6 +884,11 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                 DGPTM_Forum_Notifications::notify_new_post('thread', $thread_id, $thread_id, $topic_id);
             }
 
+            // E-Mail-Benachrichtigung an AG-Abonnenten
+            if ( class_exists( 'DGPTM_Forum_Notifications' ) ) {
+                DGPTM_Forum_Notifications::notify_new_thread( $thread_id, $ag_id );
+            }
+
             wp_send_json_success([
                 'message'   => 'Thread erstellt.',
                 'thread_id' => $thread_id,
@@ -970,6 +982,11 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
             // Trigger notifications.
             if (class_exists('DGPTM_Forum_Notifications')) {
                 DGPTM_Forum_Notifications::notify_new_post('reply', $reply_id, $thread_id, $thread->topic_id);
+            }
+
+            // E-Mail-Benachrichtigung an Thread-/AG-Abonnenten
+            if ( class_exists( 'DGPTM_Forum_Notifications' ) ) {
+                DGPTM_Forum_Notifications::notify_new_reply( $reply_id, $thread_id );
             }
 
             wp_send_json_success([
@@ -1374,7 +1391,11 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
             ], ['%d', '%d', '%s', '%s']);
 
             if ($wpdb->insert_id) {
-                wp_send_json_success(['message' => 'Aufnahmeantrag gestellt. Ein Moderator wird Ihren Antrag prüfen.']);
+                // E-Mail an Moderator
+                if ( class_exists( 'DGPTM_Forum_Notifications' ) ) {
+                    DGPTM_Forum_Notifications::notify_membership_request( $ag_id, $user_id );
+                }
+                wp_send_json_success(['message' => 'Aufnahmeantrag gestellt. Ein Moderator wird Ihren Antrag pr\xC3\xBCfen.']);
             }
 
             wp_send_json_error(['message' => 'Fehler beim Erstellen des Aufnahmeantrags.']);
@@ -1450,9 +1471,16 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                 DGPTM_Forum_AG_Manager::add_member($result, $data['leader_user_id'], 'leiter');
             }
 
+            // Moderator automatisch abonnieren
+            $mod_id = absint( $data['moderator_id'] ?? 0 );
+            $new_ag_id = $ag_id === 0 ? $result : $ag_id;
+            if ( $mod_id && class_exists( 'DGPTM_Forum_Notifications' ) ) {
+                DGPTM_Forum_Notifications::auto_subscribe_moderator( $new_ag_id, $mod_id );
+            }
+
             wp_send_json_success([
                 'message' => $ag_id === 0 ? 'Hauptgruppe erstellt.' : 'Hauptgruppe aktualisiert.',
-                'ag_id'   => $ag_id === 0 ? $result : $ag_id,
+                'ag_id'   => $new_ag_id,
             ]);
         }
 

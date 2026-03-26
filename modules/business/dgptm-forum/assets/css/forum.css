@@ -148,25 +148,31 @@
 }
 .dgptm-forum-member-list .member-role { font-size: 0.85em; color: #666; margin-left: 8px; }
 
-/* === Buttons === */
+/* === Buttons (filigran) === */
 .dgptm-forum-btn {
     display: inline-block;
-    padding: 6px 14px;
+    padding: 4px 10px;
     border: 1px solid #0073aa;
-    border-radius: 3px;
+    border-radius: 4px;
     background: #0073aa;
     color: #fff;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 12px;
+    line-height: 1.4;
     text-decoration: none;
+    transition: background .15s, box-shadow .15s;
 }
-.dgptm-forum-btn:hover { background: #005d8c; color: #fff; }
+.dgptm-forum-btn:hover { background: #005d8c; color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
 .dgptm-forum-btn, .dgptm-forum-btn:visited, .dgptm-forum-btn:focus { color: #fff !important; }
 .dgptm-forum-btn.secondary { background: #2e86c1 !important; color: #fff !important; border-color: #2e86c1; }
 .dgptm-forum-btn.secondary:hover { background: #2471a3 !important; }
 .dgptm-forum-btn.danger { background: #dc3232; border-color: #dc3232; }
 .dgptm-forum-btn.danger:hover { background: #b02828; }
 .dgptm-forum-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.dgptm-forum-btn-sm { padding: 2px 8px; font-size: 11px; }
+.dgptm-forum-moderator-actions { display: flex; gap: 6px; margin-bottom: 12px; }
+.dgptm-forum-moderator-actions .dgptm-forum-btn { background: #5b6b7a; border-color: #5b6b7a; }
+.dgptm-forum-moderator-actions .dgptm-forum-btn:hover { background: #4a5866; }
 
 /* === Subscribe Toggle === */
 .dgptm-forum-subscribe-btn { cursor: pointer; font-size: 0.9em; }

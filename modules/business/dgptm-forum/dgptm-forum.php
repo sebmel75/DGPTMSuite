@@ -51,6 +51,7 @@ if (!class_exists('DGPTM_Forum')) {
         private function init_hooks() {
             add_action('init', [$this, 'ensure_tables'], 1);
             add_action('init', [$this, 'register_shortcodes']);
+            add_action('init', [$this, 'ensure_dashboard_tabs'], 20);
 
             // Forum view AJAX actions
             $forum_actions = [
@@ -351,6 +352,50 @@ if (!class_exists('DGPTM_Forum')) {
                 'nonce'   => wp_create_nonce('dgptm_forum'),
                 'isAdmin' => DGPTM_Forum_Permissions::is_forum_admin() ? 1 : 0,
             ]);
+        }
+
+        /**
+         * Registriert Forum-Tabs im Mitglieder-Dashboard (einmalig).
+         */
+        public function ensure_dashboard_tabs() {
+            if ( get_option( 'dgptm_forum_tabs_registered' ) ) return;
+
+            $tabs = get_option( 'dgptm_dash_tabs_v3', [] );
+            if ( ! is_array( $tabs ) ) return;
+
+            $has_forum = false;
+            $has_admin = false;
+            foreach ( $tabs as $t ) {
+                if ( ( $t['id'] ?? '' ) === 'forum' ) $has_forum = true;
+                if ( ( $t['id'] ?? '' ) === 'forum-admin' ) $has_admin = true;
+            }
+
+            if ( ! $has_forum ) {
+                $tabs[] = [
+                    'id'         => 'forum',
+                    'label'      => 'Forum',
+                    'parent'     => '',
+                    'active'     => true,
+                    'order'      => 50,
+                    'permission' => 'always',
+                    'content'    => '[dgptm-forum]',
+                ];
+            }
+
+            if ( ! $has_admin ) {
+                $tabs[] = [
+                    'id'         => 'forum-admin',
+                    'label'      => 'Forum-Verwaltung',
+                    'parent'     => '',
+                    'active'     => true,
+                    'order'      => 51,
+                    'permission' => 'sc:is-forum-admin',
+                    'content'    => '[dgptm-forum-admin]',
+                ];
+            }
+
+            update_option( 'dgptm_dash_tabs_v3', $tabs, false );
+            update_option( 'dgptm_forum_tabs_registered', 1 );
         }
 
         public function maybe_enqueue_assets() {

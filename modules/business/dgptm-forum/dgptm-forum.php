@@ -208,13 +208,108 @@ if (!class_exists('DGPTM_Forum')) {
                         $c.html('<p style="color:red">Verbindungsfehler</p>');
                     });
                 }
+                var $ = jQuery;
+
                 // Tab-Klick
-                jQuery(document).off('click.forumadmin').on('click.forumadmin', '.dgptm-forum-admin-tabs a', function(e) {
+                $(document).off('click.forumadmin').on('click.forumadmin', '.dgptm-forum-admin-tabs a', function(e) {
                     e.preventDefault();
-                    jQuery('.dgptm-forum-admin-tabs a').removeClass('active');
-                    jQuery(this).addClass('active');
-                    loadAdminTab(jQuery(this).data('tab'));
+                    $('.dgptm-forum-admin-tabs a').removeClass('active');
+                    $(this).addClass('active');
+                    loadAdminTab($(this).data('tab'));
                 });
+
+                // Toggle eingeklappte Formulare
+                $(document).off('click.forumtoggle').on('click.forumtoggle', '.dgptm-forum-admin-toggle', function(e) {
+                    e.preventDefault();
+                    var target = $(this).data('target');
+                    $('#' + target).slideToggle(200);
+                });
+
+                // Hauptgruppe erstellen/bearbeiten
+                $(document).off('submit.forumag').on('submit.forumag', '.dgptm-forum-admin-ag-form', function(e) {
+                    e.preventDefault();
+                    var $f = $(this), $btn = $f.find('button[type="submit"]').prop('disabled', true);
+                    $.post(dgptmForum.ajaxUrl, $f.serialize() + '&action=dgptm_forum_admin_save_ag&nonce=' + dgptmForum.nonce)
+                    .done(function(r) {
+                        if (r && r.success) { loadAdminTab('ags'); }
+                        else { alert((r&&r.data&&r.data.message)||'Fehler'); $btn.prop('disabled',false); }
+                    }).fail(function(){ alert('Verbindungsfehler'); $btn.prop('disabled',false); });
+                });
+
+                // Hauptgruppe löschen
+                $(document).off('click.forumagdel').on('click.forumagdel', '.dgptm-forum-admin-delete-ag', function(e) {
+                    e.preventDefault();
+                    if (!confirm('Hauptgruppe wirklich löschen?')) return;
+                    $.post(dgptmForum.ajaxUrl, { action:'dgptm_forum_admin_delete_ag', nonce:dgptmForum.nonce, ag_id:$(this).data('ag-id') })
+                    .done(function(r) { if (r&&r.success) loadAdminTab('ags'); else alert((r&&r.data&&r.data.message)||'Fehler'); });
+                });
+
+                // Thema erstellen/bearbeiten
+                $(document).off('submit.forumtopic').on('submit.forumtopic', '.dgptm-forum-admin-topic-form', function(e) {
+                    e.preventDefault();
+                    var $f = $(this), $btn = $f.find('button[type="submit"]').prop('disabled', true);
+                    $.post(dgptmForum.ajaxUrl, $f.serialize() + '&action=dgptm_forum_admin_save_topic&nonce=' + dgptmForum.nonce)
+                    .done(function(r) {
+                        if (r && r.success) { loadAdminTab('topics'); }
+                        else { alert((r&&r.data&&r.data.message)||'Fehler'); $btn.prop('disabled',false); }
+                    }).fail(function(){ alert('Verbindungsfehler'); $btn.prop('disabled',false); });
+                });
+
+                // User-Suche (Debounced)
+                var searchTimer;
+                $(document).off('input.forumsearch').on('input.forumsearch', '.dgptm-forum-user-search', function() {
+                    var $input = $(this), term = $input.val();
+                    var $results = $input.closest('.dgptm-forum-user-search-wrap').find('.dgptm-forum-user-results');
+                    clearTimeout(searchTimer);
+                    if (term.length < 2) { $results.hide(); return; }
+                    searchTimer = setTimeout(function() {
+                        $.post(dgptmForum.ajaxUrl, { action:'dgptm_forum_admin_search_users', nonce:dgptmForum.nonce, term:term })
+                        .done(function(r) {
+                            if (r.success && r.data.users && r.data.users.length) {
+                                var html = '';
+                                r.data.users.forEach(function(u) {
+                                    html += '<div class="user-item" data-user-id="'+u.id+'">'+u.name+' ('+u.email+')</div>';
+                                });
+                                $results.html(html).show();
+                            } else { $results.html('<div class="user-item">Keine Ergebnisse</div>').show(); }
+                        });
+                    }, 300);
+                });
+
+                // User aus Suchergebnis auswählen
+                $(document).off('click.forumusersel').on('click.forumusersel', '.dgptm-forum-user-results .user-item', function() {
+                    var userId = $(this).data('user-id');
+                    if (!userId) return;
+                    var $wrap = $(this).closest('.dgptm-forum-user-search-wrap');
+                    var ctx = $wrap.data('context'), targetId = $wrap.data('target-id');
+                    if (ctx === 'ag-member') {
+                        $.post(dgptmForum.ajaxUrl, { action:'dgptm_forum_admin_add_member', nonce:dgptmForum.nonce, ag_id:targetId, user_id:userId })
+                        .done(function(r) { if (r.success) loadAdminTab('ags'); });
+                    } else if (ctx === 'forum-admin') {
+                        $.post(dgptmForum.ajaxUrl, { action:'dgptm_forum_admin_set_forum_admin', nonce:dgptmForum.nonce, user_id:userId, is_admin:1 })
+                        .done(function(r) { if (r.success) loadAdminTab('admins'); });
+                    } else if (ctx === 'topic-access') {
+                        $.post(dgptmForum.ajaxUrl, { action:'dgptm_forum_admin_grant_access', nonce:dgptmForum.nonce, topic_id:targetId, user_id:userId })
+                        .done(function(r) { if (r.success) loadAdminTab('topics'); });
+                    }
+                    $wrap.find('.dgptm-forum-user-results').hide();
+                    $wrap.find('.dgptm-forum-user-search').val('');
+                });
+
+                // Mitglied entfernen
+                $(document).off('click.forummemrem').on('click.forummemrem', '.dgptm-forum-admin-remove-member', function(e) {
+                    e.preventDefault();
+                    $.post(dgptmForum.ajaxUrl, { action:'dgptm_forum_admin_remove_member', nonce:dgptmForum.nonce, ag_id:$(this).data('ag-id'), user_id:$(this).data('user-id') })
+                    .done(function(r) { if (r.success) loadAdminTab('ags'); });
+                });
+
+                // Forum-Admin entfernen
+                $(document).off('click.forumadmrem').on('click.forumadmrem', '.dgptm-forum-admin-remove-admin', function(e) {
+                    e.preventDefault();
+                    $.post(dgptmForum.ajaxUrl, { action:'dgptm_forum_admin_set_forum_admin', nonce:dgptmForum.nonce, user_id:$(this).data('user-id'), is_admin:0 })
+                    .done(function(r) { if (r.success) loadAdminTab('admins'); });
+                });
+
                 // Initial load
                 loadAdminTab('ags');
             })();

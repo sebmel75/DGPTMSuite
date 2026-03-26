@@ -880,11 +880,6 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
             // Handle file attachments.
             $this->handle_attachments('thread', $thread_id);
 
-            // Trigger notifications.
-            if (class_exists('DGPTM_Forum_Notifications')) {
-                DGPTM_Forum_Notifications::notify_new_post('thread', $thread_id, $thread_id, $topic_id);
-            }
-
             // E-Mail-Benachrichtigung an AG-Abonnenten
             if ( class_exists( 'DGPTM_Forum_Notifications' ) ) {
                 DGPTM_Forum_Notifications::notify_new_thread( $thread_id, $ag_id );
@@ -979,11 +974,6 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
 
             // Handle file attachments.
             $this->handle_attachments('reply', $reply_id);
-
-            // Trigger notifications.
-            if (class_exists('DGPTM_Forum_Notifications')) {
-                DGPTM_Forum_Notifications::notify_new_post('reply', $reply_id, $thread_id, $thread->topic_id);
-            }
 
             // E-Mail-Benachrichtigung an Thread-/AG-Abonnenten
             if ( class_exists( 'DGPTM_Forum_Notifications' ) ) {
@@ -1426,6 +1416,11 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                     case 'admins':
                         $html = DGPTM_Forum_Admin_Renderer::render_tab_admins();
                         break;
+                    case 'mails':
+                        $html = class_exists('DGPTM_Forum_Notifications')
+                            ? DGPTM_Forum_Notifications::render_mail_settings()
+                            : '<p>Notifications-Klasse nicht verfügbar.</p>';
+                        break;
                     default:
                         wp_send_json_error(['message' => 'Unbekannter Tab.']);
                         return;
@@ -1701,6 +1696,24 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
             wp_send_json_success([
                 'message' => $is_admin ? 'Forum-Admin gesetzt.' : 'Forum-Admin entfernt.',
             ]);
+        }
+
+        /**
+         * Save mail templates.
+         */
+        private function admin_save_mail_templates() {
+            if ( ! DGPTM_Forum_Permissions::is_forum_admin() ) {
+                wp_send_json_error( [ 'message' => 'Keine Berechtigung.' ] );
+            }
+
+            $fields = [ 'new_thread_subject', 'new_thread_body', 'new_reply_subject', 'new_reply_body', 'membership_subject', 'membership_body' ];
+            $tpl = [];
+            foreach ( $fields as $f ) {
+                $tpl[ $f ] = isset( $_POST[ $f ] ) ? sanitize_textarea_field( $_POST[ $f ] ) : '';
+            }
+
+            DGPTM_Forum_Notifications::save_templates( $tpl );
+            wp_send_json_success( [ 'message' => 'E-Mail-Vorlagen gespeichert.' ] );
         }
     }
 }

@@ -79,6 +79,7 @@ if (!class_exists('DGPTM_Forum')) {
                 'dgptm_forum_admin_toggle_pin',
                 'dgptm_forum_admin_close_thread',
                 'dgptm_forum_admin_set_forum_admin',
+                'dgptm_forum_admin_save_mail_templates',
                 'dgptm_forum_admin_load_tab',
             ];
 
@@ -176,6 +177,7 @@ if (!class_exists('DGPTM_Forum')) {
                 <nav class="dgptm-forum-admin-tabs">
                     <a href="#" class="active" data-tab="ags">Hauptgruppen</a>
                     <a href="#" data-tab="admins">Forum-Admins</a>
+                    <a href="#" data-tab="mails">E-Mail-Vorlagen</a>
                 </nav>
                 <div class="dgptm-forum-admin-content"><p>Wird geladen…</p></div>
             </div>
@@ -321,6 +323,19 @@ if (!class_exists('DGPTM_Forum')) {
                     e.preventDefault();
                     $.post(dgptmForum.ajaxUrl, { action:'dgptm_forum_admin_set_forum_admin', nonce:dgptmForum.nonce, user_id:$(this).data('user-id'), is_admin:0 })
                     .done(function(r) { if (r.success) loadAdminTab('admins'); });
+                });
+
+                // Mail-Vorlagen speichern
+                $(document).off('submit.forummail').on('submit.forummail', '.dgptm-forum-admin-mail-form', function(e) {
+                    e.preventDefault();
+                    var $f = $(this), $btn = $f.find('button[type="submit"]').prop('disabled', true);
+                    $.ajax({
+                        url: dgptmForum.ajaxUrl, type: 'POST', dataType: 'json',
+                        data: $f.serialize() + '&action=dgptm_forum_admin_save_mail_templates&nonce=' + dgptmForum.nonce
+                    }).done(function(r) {
+                        if (r && r.success) { $btn.text('Gespeichert!'); setTimeout(function(){ $btn.text('Vorlagen speichern').prop('disabled',false); }, 1500); }
+                        else { alert((r&&r.data&&r.data.message)||'Fehler'); $btn.prop('disabled',false); }
+                    }).fail(function(xhr) { alert('Fehler: '+(xhr.responseText||'').substring(0,200)); $btn.prop('disabled',false); });
                 });
 
                 // Initial load

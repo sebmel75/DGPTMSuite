@@ -204,6 +204,30 @@ if (!class_exists('DGPTM_Forum')) {
                         $w.find('.dgptm-forum-content').html('<p style="color:red">Verbindungsfehler</p>');
                     });
                 }
+
+                // SPA-Navigation Handler (falls forum.js nicht lädt)
+                var $ = jQuery;
+                function forumNav(view, id) {
+                    $w.find('.dgptm-forum-content').html('<p>Wird geladen\u2026</p>');
+                    $.post(dgptmForum.ajaxUrl, {
+                        action: 'dgptm_forum_load_view', nonce: dgptmForum.nonce,
+                        view: view, id: id || 0
+                    }).done(function(r) {
+                        if (r && r.success) $w.find('.dgptm-forum-content').html(r.data.html);
+                        else $w.find('.dgptm-forum-content').html('<p style="color:red">Fehler</p>');
+                    });
+                }
+                $(document).off('click.forumnav').on('click.forumnav', '.dgptm-forum-back-btn, .dgptm-forum-ag-link, .dgptm-forum-thread-link, .dgptm-forum-thread-preview', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var view = $(this).data('view');
+                    var id = $(this).data('id') || $(this).data('ag-id') || $(this).data('thread-id') || 0;
+                    if (!view) {
+                        if ($(this).hasClass('dgptm-forum-ag-link')) view = 'threads';
+                        else if ($(this).hasClass('dgptm-forum-thread-link') || $(this).hasClass('dgptm-forum-thread-preview')) view = 'thread';
+                    }
+                    if (view) forumNav(view, id);
+                });
             })();
             </script>
             <?php

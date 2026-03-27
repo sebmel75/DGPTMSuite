@@ -391,11 +391,11 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                 // Feature 4: Blacklist toggle link for current user
                 $is_bl = get_user_meta($user_id, 'dgptm_forum_blacklisted', true);
             ?>
-            <div style="margin-top:12px;font-size:11px;color:#999">
+            <div style="margin-top:12px;text-align:right">
                 <?php if ($is_bl) : ?>
-                    Forum-Benachrichtigungen sind deaktiviert. <a href="#" class="dgptm-forum-toggle-blacklist" data-action="enable" style="color:#0073aa">Wieder aktivieren</a>
+                    <a href="#" class="dgptm-forum-toggle-blacklist" data-action="enable" style="font-size:10px;color:#0073aa;text-decoration:none">&#128276; Benachrichtigungen aktivieren</a>
                 <?php else : ?>
-                    <a href="#" class="dgptm-forum-toggle-blacklist" data-action="disable" style="color:#999">Alle Forum-Benachrichtigungen deaktivieren</a>
+                    <a href="#" class="dgptm-forum-toggle-blacklist" data-action="disable" style="font-size:10px;color:#bbb;text-decoration:none">&#128277; Benachrichtigungen deaktivieren</a>
                 <?php endif; ?>
             </div>
             <?php

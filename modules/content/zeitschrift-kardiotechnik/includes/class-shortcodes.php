@@ -14,6 +14,7 @@ if (!class_exists('ZK_Shortcodes')) {
     class ZK_Shortcodes {
 
         private static $instance = null;
+        private static $shared_rendered = false;
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -27,6 +28,10 @@ if (!class_exists('ZK_Shortcodes')) {
             add_shortcode('zeitschrift_detail', [$this, 'render_detail']);
             add_shortcode('zeitschrift_verwaltung', [$this, 'render_admin']);
             add_shortcode('zeitschrift_aktuell', [$this, 'render_current']);
+            add_shortcode('zk_ausgaben', [$this, 'render_issues_section']);
+            add_shortcode('zk_artikel', [$this, 'render_articles_section']);
+            add_shortcode('zk_einreichungen', [$this, 'render_accepted_section']);
+            add_shortcode('zk_pdfimport', [$this, 'render_pdfimport_section']);
         }
 
         /**
@@ -245,6 +250,117 @@ if (!class_exists('ZK_Shortcodes')) {
                 <?php endif; ?>
             </div>
             <?php
+            return ob_get_clean();
+        }
+
+        /**
+         * Shared elements (Toast-Container) — nur einmal pro Seite rendern
+         */
+        private static function render_shared_elements() {
+            if (self::$shared_rendered) return '';
+            self::$shared_rendered = true;
+            return '<div class="zk-toast-container" id="zk-toast-container"></div>';
+        }
+
+        /**
+         * Shortcode: [zk_ausgaben]
+         * Ausgaben-Verwaltung (Dashboard-Sektion)
+         */
+        public function render_issues_section($atts) {
+            if (!self::user_can_manage()) {
+                return '<p class="zk-error">Sie haben keine Berechtigung für diesen Bereich.</p>';
+            }
+
+            wp_enqueue_style('zk-admin');
+            wp_enqueue_script('zk-admin');
+            wp_enqueue_editor();
+
+            wp_localize_script('zk-admin', 'zkAdmin', [
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'adminUrl' => admin_url(),
+                'nonce' => wp_create_nonce('zk_admin_nonce')
+            ]);
+
+            ob_start();
+            include ZK_PLUGIN_DIR . 'templates/partials/_partial-issues.php';
+            include ZK_PLUGIN_DIR . 'templates/partials/_partial-modals-issues.php';
+            echo self::render_shared_elements();
+            return ob_get_clean();
+        }
+
+        /**
+         * Shortcode: [zk_artikel]
+         * Artikel-Verwaltung (Dashboard-Sektion)
+         */
+        public function render_articles_section($atts) {
+            if (!self::user_can_manage()) {
+                return '<p class="zk-error">Sie haben keine Berechtigung für diesen Bereich.</p>';
+            }
+
+            wp_enqueue_style('zk-admin');
+            wp_enqueue_script('zk-admin');
+            wp_enqueue_editor();
+
+            wp_localize_script('zk-admin', 'zkAdmin', [
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'adminUrl' => admin_url(),
+                'nonce' => wp_create_nonce('zk_admin_nonce')
+            ]);
+
+            ob_start();
+            include ZK_PLUGIN_DIR . 'templates/partials/_partial-articles.php';
+            include ZK_PLUGIN_DIR . 'templates/partials/_partial-modals-articles.php';
+            echo self::render_shared_elements();
+            return ob_get_clean();
+        }
+
+        /**
+         * Shortcode: [zk_einreichungen]
+         * Angenommene Einreichungen (Dashboard-Sektion)
+         */
+        public function render_accepted_section($atts) {
+            if (!self::user_can_manage()) {
+                return '<p class="zk-error">Sie haben keine Berechtigung für diesen Bereich.</p>';
+            }
+
+            wp_enqueue_style('zk-admin');
+            wp_enqueue_script('zk-admin');
+
+            wp_localize_script('zk-admin', 'zkAdmin', [
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'adminUrl' => admin_url(),
+                'nonce' => wp_create_nonce('zk_admin_nonce')
+            ]);
+
+            ob_start();
+            include ZK_PLUGIN_DIR . 'templates/partials/_partial-accepted.php';
+            echo self::render_shared_elements();
+            return ob_get_clean();
+        }
+
+        /**
+         * Shortcode: [zk_pdfimport]
+         * PDF-Import (Dashboard-Sektion)
+         */
+        public function render_pdfimport_section($atts) {
+            if (!self::user_can_manage()) {
+                return '<p class="zk-error">Sie haben keine Berechtigung für diesen Bereich.</p>';
+            }
+
+            wp_enqueue_style('zk-admin');
+            wp_enqueue_script('zk-admin');
+            wp_enqueue_editor();
+
+            wp_localize_script('zk-admin', 'zkAdmin', [
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'adminUrl' => admin_url(),
+                'nonce' => wp_create_nonce('zk_admin_nonce')
+            ]);
+
+            ob_start();
+            include ZK_PLUGIN_DIR . 'templates/partials/_partial-pdf-import.php';
+            include ZK_PLUGIN_DIR . 'templates/partials/_partial-modals-pdf.php';
+            echo self::render_shared_elements();
             return ob_get_clean();
         }
 

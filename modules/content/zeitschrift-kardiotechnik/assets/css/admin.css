@@ -1855,3 +1855,177 @@
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
+/* ========================================
+   Dashboard-Integration (Forum-Vorbild)
+   Filigran, minimal, kein Shadow
+   ======================================== */
+
+/* Header und internes Tab-System ausblenden */
+.dgptm-dash .zk-manager-header,
+.dgptm-dash .zk-manager-tabs { display: none !important; }
+
+/* Container-Reset */
+.dgptm-dash .zk-manager,
+.dgptm-dash .zk-section-wrap { max-width: 100%; padding: 0; }
+
+/* Buttons: Forum-Stil */
+.dgptm-dash .zk-btn,
+.dgptm-dash button.zk-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 4px 10px !important;
+    border: 1px solid #0073aa !important;
+    border-radius: 4px !important;
+    background: #0073aa !important;
+    color: #fff !important;
+    font-size: 12px !important;
+    font-weight: 400 !important;
+    line-height: 1.4 !important;
+    text-decoration: none !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    box-shadow: none !important;
+    transition: background .15s, box-shadow .15s;
+}
+.dgptm-dash .zk-btn:hover { background: #005d8c !important; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+.dgptm-dash .zk-btn:disabled { opacity: 0.5 !important; cursor: not-allowed !important; }
+
+.dgptm-dash .zk-btn-secondary,
+.dgptm-dash button.zk-btn-secondary {
+    background: #f0f0f0 !important;
+    border-color: #ccc !important;
+    color: #555 !important;
+}
+.dgptm-dash .zk-btn-secondary:hover { background: #e0e0e0 !important; }
+
+.dgptm-dash .zk-btn-danger,
+.dgptm-dash button.zk-btn-danger { background: #dc3232 !important; border-color: #dc3232 !important; }
+.dgptm-dash .zk-btn-danger:hover { background: #b02828 !important; }
+
+.dgptm-dash .zk-btn-success,
+.dgptm-dash button.zk-btn-success { background: #46b450 !important; border-color: #46b450 !important; }
+.dgptm-dash .zk-btn-success:hover { background: #389e3e !important; }
+
+.dgptm-dash .zk-btn-small,
+.dgptm-dash .zk-btn-mini {
+    padding: 2px 8px !important;
+    font-size: 11px !important;
+}
+
+.dgptm-dash .zk-btn svg { width: 14px; height: 14px; }
+
+/* Inputs: Forum-Stil */
+.dgptm-dash .zk-input,
+.dgptm-dash .zk-select,
+.dgptm-dash .zk-section-wrap input[type="text"],
+.dgptm-dash .zk-section-wrap input[type="number"],
+.dgptm-dash .zk-section-wrap input[type="date"],
+.dgptm-dash .zk-section-wrap input[type="password"],
+.dgptm-dash .zk-section-wrap textarea,
+.dgptm-dash .zk-section-wrap select {
+    padding: 8px !important;
+    border: 1px solid #ccc !important;
+    border-radius: 4px !important;
+    font-size: 14px !important;
+    box-shadow: none !important;
+}
+
+/* Labels */
+.dgptm-dash .zk-form-group label {
+    font-weight: 500;
+    margin-bottom: 4px;
+    font-size: 13px;
+}
+
+/* Listen: Forum-Stil — flach, kein Shadow */
+.dgptm-dash .zk-issue-item,
+.dgptm-dash .zk-article-item-row {
+    padding: 12px 15px !important;
+    border: none !important;
+    border-bottom: 1px solid #eee !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: none !important;
+    transition: background 0.15s;
+}
+.dgptm-dash .zk-issue-item:hover,
+.dgptm-dash .zk-article-item-row:hover { background: #f8f9fa !important; }
+
+/* Text-Farben */
+.dgptm-dash .zk-issue-title { font-weight: 600; color: #1d2327; }
+.dgptm-dash .zk-issue-meta { font-size: 0.85em; color: #888; }
+
+/* Status-Badges */
+.dgptm-dash .zk-status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75em;
+    font-weight: 600;
+}
+.dgptm-dash .zk-status-online { background: #e7f5e7; color: #2e7d32; }
+.dgptm-dash .zk-status-scheduled { background: #fff3e0; color: #e65100; }
+
+/* Filter-Leiste kompakter */
+.dgptm-dash .zk-issues-filters,
+.dgptm-dash .zk-articles-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.dgptm-dash .zk-articles-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    flex: 1;
+}
+
+/* Loading */
+.dgptm-dash .zk-loading {
+    text-align: center;
+    padding: 30px;
+    color: #888;
+}
+.dgptm-dash .zk-spinner {
+    border-color: #0073aa;
+    border-top-color: transparent;
+}
+
+/* Form Sections kompakter */
+.dgptm-dash .zk-form-section { margin-bottom: 16px; }
+.dgptm-dash .zk-form-section-title {
+    font-size: 0.9em;
+    margin-bottom: 1em;
+    color: #1d2327;
+}
+.dgptm-dash .zk-form-group { margin-bottom: 10px; }
+
+/* Modals: etwas filigraner */
+.dgptm-dash .zk-modal-header h3 { font-size: 15px; }
+.dgptm-dash .zk-modal-body { padding: 16px; }
+.dgptm-dash .zk-modal-footer { padding: 12px 16px; }
+
+/* Upload-Zone kompakter */
+.dgptm-dash .zk-upload-zone { padding: 24px; }
+.dgptm-dash .zk-upload-zone svg { width: 36px; height: 36px; }
+.dgptm-dash .zk-upload-text { font-size: 13px; }
+.dgptm-dash .zk-upload-hint { font-size: 12px; }
+
+/* Import Steps */
+.dgptm-dash .zk-import-step { padding: 16px; }
+.dgptm-dash .zk-step-header h3 { font-size: 14px; }
+.dgptm-dash .zk-step-number { width: 24px; height: 24px; font-size: 12px; line-height: 24px; }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .dgptm-dash .zk-issues-filters,
+    .dgptm-dash .zk-articles-header { flex-direction: column; align-items: stretch; }
+}

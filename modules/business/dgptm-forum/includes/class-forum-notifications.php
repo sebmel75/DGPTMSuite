@@ -15,13 +15,13 @@ class DGPTM_Forum_Notifications {
     public static function default_templates() {
         return [
             'new_thread_subject' => '[DGPTM Forum] Neuer Thread in "{gruppe}"',
-            'new_thread_body'    => "Hallo {empfaenger},\n\n{autor} hat einen neuen Thread erstellt:\n\n\"{titel}\"\n\n---\n{auszug}\n---\n\nZum Forum: {link}\n\nSie erhalten diese Mail, weil Sie die Hauptgruppe \"{gruppe}\" abonniert haben.\n\n{unsubscribe}\n\n-- DGPTM Forum",
+            'new_thread_body'    => '<p>Hallo <strong>{empfaenger}</strong>,</p><p>{autor} hat einen neuen Thread erstellt:</p><p><strong>&bdquo;{titel}&ldquo;</strong></p><blockquote style="border-left:3px solid #0073aa;padding:8px 12px;margin:12px 0;color:#555">{auszug}</blockquote><p><a href="{link}">Zum Forum</a></p><p style="font-size:12px;color:#888">Sie erhalten diese Mail, weil Sie die Hauptgruppe &bdquo;{gruppe}&ldquo; abonniert haben.<br>{unsubscribe}</p>',
             'new_reply_subject'  => '[DGPTM Forum] Neue Antwort in "{titel}"',
-            'new_reply_body'     => "Hallo {empfaenger},\n\n{autor} hat eine neue Antwort geschrieben:\n\nThread: \"{titel}\"\n\n---\n{auszug}\n---\n\nZum Forum: {link}\n\nSie erhalten diese Mail, weil Sie den Thread \"{titel}\" abonniert haben.\n\n{unsubscribe}\n\n-- DGPTM Forum",
+            'new_reply_body'     => '<p>Hallo <strong>{empfaenger}</strong>,</p><p>{autor} hat eine neue Antwort geschrieben:</p><p>Thread: <strong>&bdquo;{titel}&ldquo;</strong></p><blockquote style="border-left:3px solid #0073aa;padding:8px 12px;margin:12px 0;color:#555">{auszug}</blockquote><p><a href="{link}">Zum Forum</a></p><p style="font-size:12px;color:#888">Sie erhalten diese Mail, weil Sie den Thread &bdquo;{titel}&ldquo; abonniert haben.<br>{unsubscribe}</p>',
             'membership_subject' => '[DGPTM Forum] Aufnahmeantrag für "{gruppe}"',
-            'membership_body'    => "Hallo {empfaenger},\n\n{autor} ({email}) möchte der Hauptgruppe \"{gruppe}\" beitreten.\n\nBitte prüfen Sie den Antrag im Forum-Verwaltungsbereich.\n\n{link}\n\n{unsubscribe}\n\n-- DGPTM Forum",
-            'mention_subject'    => '[DGPTM Forum] {autor} hat Sie erwähnt',
-            'mention_body'       => "Hallo {empfaenger},\n\n{autor} hat Sie in einem Beitrag erwähnt:\n\n\"{titel}\"\n\n---\n{auszug}\n---\n\nZum Forum: {link}\n\n{unsubscribe}\n\n-- DGPTM Forum",
+            'membership_body'    => '<p>Hallo <strong>{empfaenger}</strong>,</p><p>{autor} ({email}) m&ouml;chte der Hauptgruppe &bdquo;{gruppe}&ldquo; beitreten.</p><p>Bitte pr&uuml;fen Sie den Antrag im <a href="{link}">Forum-Verwaltungsbereich</a>.</p><p style="font-size:12px;color:#888">{unsubscribe}</p>',
+            'mention_subject'    => '[DGPTM Forum] {autor} hat Sie erw&auml;hnt',
+            'mention_body'       => '<p>Hallo <strong>{empfaenger}</strong>,</p><p>{autor} hat Sie in einem Beitrag erw&auml;hnt:</p><p><strong>&bdquo;{titel}&ldquo;</strong></p><blockquote style="border-left:3px solid #0073aa;padding:8px 12px;margin:12px 0;color:#555">{auszug}</blockquote><p><a href="{link}">Zum Forum</a></p><p style="font-size:12px;color:#888">{unsubscribe}</p>',
         ];
     }
 
@@ -114,7 +114,7 @@ class DGPTM_Forum_Notifications {
             $vars['empfaenger']  = function_exists('dgptm_forum_fullname') ? dgptm_forum_fullname($user) : $user->display_name;
             $vars['unsubscribe'] = 'Benachrichtigungen deaktivieren: ' . self::get_unsubscribe_url( $uid );
             $body = self::replace_placeholders( $tpl['new_thread_body'], $vars );
-            wp_mail( $user->user_email, $subject, $body, self::mail_headers() );
+            wp_mail( $user->user_email, $subject, self::wrap_html( $body ), self::mail_headers() );
         }
     }
 
@@ -161,7 +161,7 @@ class DGPTM_Forum_Notifications {
             $vars['empfaenger']  = function_exists('dgptm_forum_fullname') ? dgptm_forum_fullname($user) : $user->display_name;
             $vars['unsubscribe'] = 'Benachrichtigungen deaktivieren: ' . self::get_unsubscribe_url( $uid );
             $body = self::replace_placeholders( $tpl['new_reply_body'], $vars );
-            wp_mail( $user->user_email, $subject, $body, self::mail_headers() );
+            wp_mail( $user->user_email, $subject, self::wrap_html( $body ), self::mail_headers() );
         }
     }
 
@@ -196,7 +196,7 @@ class DGPTM_Forum_Notifications {
 
         $subject = self::replace_placeholders( $tpl['membership_subject'], $vars );
         $body    = self::replace_placeholders( $tpl['membership_body'], $vars );
-        wp_mail( $moderator->user_email, $subject, $body, self::mail_headers() );
+        wp_mail( $moderator->user_email, $subject, self::wrap_html( $body ), self::mail_headers() );
     }
 
     /* ============================================================
@@ -205,45 +205,45 @@ class DGPTM_Forum_Notifications {
 
     public static function render_mail_settings() {
         $tpl = self::get_templates();
-        $placeholders = '<div style="font-size:11px;color:#888;margin-bottom:12px">Platzhalter: <code>{empfaenger}</code> <code>{autor}</code> <code>{titel}</code> <code>{gruppe}</code> <code>{auszug}</code> <code>{link}</code> <code>{email}</code> <code>{unsubscribe}</code></div>';
+        $ph = '{empfaenger} {autor} {titel} {gruppe} {auszug} {link} {email} {unsubscribe}';
+        $toolbar = '<div class="dgptm-forum-rte-toolbar" style="display:flex;gap:2px;margin-bottom:4px;padding:4px;background:#f0f0f0;border-radius:3px">'
+            . '<button type="button" onclick="document.execCommand(\'bold\')" style="border:none;background:none;cursor:pointer;font-weight:bold;padding:2px 6px" title="Fett">B</button>'
+            . '<button type="button" onclick="document.execCommand(\'italic\')" style="border:none;background:none;cursor:pointer;font-style:italic;padding:2px 6px" title="Kursiv">I</button>'
+            . '<button type="button" onclick="document.execCommand(\'underline\')" style="border:none;background:none;cursor:pointer;text-decoration:underline;padding:2px 6px" title="Unterstrichen">U</button>'
+            . '<button type="button" onclick="var u=prompt(\'URL:\');if(u)document.execCommand(\'createLink\',false,u)" style="border:none;background:none;cursor:pointer;padding:2px 6px;color:#0073aa" title="Link">&#128279;</button>'
+            . '<button type="button" onclick="document.execCommand(\'insertUnorderedList\')" style="border:none;background:none;cursor:pointer;padding:2px 6px" title="Liste">&#8226;</button>'
+            . '</div>';
         ob_start();
         ?>
         <div class="dgptm-forum-admin-section">
-            <h3 style="margin-top:0">E-Mail-Vorlagen</h3>
-            <?php echo $placeholders; ?>
+            <h3 style="margin-top:0">E-Mail-Vorlagen <span style="font-size:11px;font-weight:400;color:#888">(HTML)</span></h3>
+            <div style="font-size:10px;color:#999;margin-bottom:10px">Platzhalter: <?php
+                foreach (explode(' ', $ph) as $p) echo '<code style="background:#f0f0f0;padding:1px 4px;border-radius:2px;margin:0 2px">' . esc_html($p) . '</code>';
+            ?></div>
 
             <form class="dgptm-forum-admin-mail-form dgptm-forum-admin-form">
-                <fieldset style="border:1px solid #e4e8ec;border-radius:6px;padding:12px;margin-bottom:14px">
-                    <legend style="font-size:13px;font-weight:600;padding:0 6px">Neuer Thread</legend>
-                    <label style="font-size:12px">Betreff</label>
-                    <input type="text" name="new_thread_subject" value="<?php echo esc_attr($tpl['new_thread_subject']); ?>" style="font-size:12px">
-                    <label style="font-size:12px">Text</label>
-                    <textarea name="new_thread_body" rows="6" style="font-size:12px"><?php echo esc_textarea($tpl['new_thread_body']); ?></textarea>
+                <?php
+                $fields = [
+                    ['key' => 'new_thread', 'label' => 'Neuer Thread'],
+                    ['key' => 'new_reply', 'label' => 'Neue Antwort'],
+                    ['key' => 'membership', 'label' => 'Aufnahmeantrag'],
+                    ['key' => 'mention', 'label' => '@Erw&auml;hnung'],
+                ];
+                foreach ($fields as $f) :
+                    $subj_key = $f['key'] . '_subject';
+                    $body_key = $f['key'] . '_body';
+                ?>
+                <fieldset style="border:1px solid #e4e8ec;border-radius:6px;padding:10px 12px;margin-bottom:10px">
+                    <legend style="font-size:12px;font-weight:600;padding:0 4px"><?php echo $f['label']; ?></legend>
+                    <label style="font-size:11px;color:#666">Betreff</label>
+                    <input type="text" name="<?php echo $subj_key; ?>" value="<?php echo esc_attr($tpl[$subj_key]); ?>" style="font-size:12px;margin-bottom:6px">
+                    <label style="font-size:11px;color:#666">Inhalt</label>
+                    <?php echo $toolbar; ?>
+                    <div class="dgptm-forum-rte" contenteditable="true" data-field="<?php echo $body_key; ?>"
+                         style="border:1px solid #ddd;border-radius:3px;padding:8px;min-height:80px;font-size:12px;line-height:1.5;background:#fff"><?php echo wp_kses_post($tpl[$body_key]); ?></div>
+                    <input type="hidden" name="<?php echo $body_key; ?>" value="">
                 </fieldset>
-
-                <fieldset style="border:1px solid #e4e8ec;border-radius:6px;padding:12px;margin-bottom:14px">
-                    <legend style="font-size:13px;font-weight:600;padding:0 6px">Neue Antwort</legend>
-                    <label style="font-size:12px">Betreff</label>
-                    <input type="text" name="new_reply_subject" value="<?php echo esc_attr($tpl['new_reply_subject']); ?>" style="font-size:12px">
-                    <label style="font-size:12px">Text</label>
-                    <textarea name="new_reply_body" rows="6" style="font-size:12px"><?php echo esc_textarea($tpl['new_reply_body']); ?></textarea>
-                </fieldset>
-
-                <fieldset style="border:1px solid #e4e8ec;border-radius:6px;padding:12px;margin-bottom:14px">
-                    <legend style="font-size:13px;font-weight:600;padding:0 6px">Aufnahmeantrag</legend>
-                    <label style="font-size:12px">Betreff</label>
-                    <input type="text" name="membership_subject" value="<?php echo esc_attr($tpl['membership_subject']); ?>" style="font-size:12px">
-                    <label style="font-size:12px">Text</label>
-                    <textarea name="membership_body" rows="5" style="font-size:12px"><?php echo esc_textarea($tpl['membership_body']); ?></textarea>
-                </fieldset>
-
-                <fieldset style="border:1px solid #e4e8ec;border-radius:6px;padding:12px;margin-bottom:14px">
-                    <legend style="font-size:13px;font-weight:600;padding:0 6px">@Erw&auml;hnung</legend>
-                    <label style="font-size:12px">Betreff</label>
-                    <input type="text" name="mention_subject" value="<?php echo esc_attr($tpl['mention_subject']); ?>" style="font-size:12px">
-                    <label style="font-size:12px">Text</label>
-                    <textarea name="mention_body" rows="6" style="font-size:12px"><?php echo esc_textarea($tpl['mention_body']); ?></textarea>
-                </fieldset>
+                <?php endforeach; ?>
 
                 <button type="submit" class="dgptm-forum-btn dgptm-forum-btn-sm">Vorlagen speichern</button>
             </form>
@@ -389,7 +389,7 @@ class DGPTM_Forum_Notifications {
 
             $subject = self::replace_placeholders( $tpl['mention_subject'], $vars );
             $body    = self::replace_placeholders( $tpl['mention_body'], $vars );
-            wp_mail( $mentioned_user->user_email, $subject, $body, self::mail_headers() );
+            wp_mail( $mentioned_user->user_email, $subject, self::wrap_html( $body ), self::mail_headers() );
         }
 
         return $blacklisted_names;
@@ -417,7 +417,20 @@ class DGPTM_Forum_Notifications {
     }
 
     private static function mail_headers() {
-        return [ 'Content-Type: text/plain; charset=UTF-8' ];
+        return [ 'Content-Type: text/html; charset=UTF-8' ];
+    }
+
+    /**
+     * Wraps mail body in a minimal HTML template.
+     */
+    private static function wrap_html( $body ) {
+        // Konvertiere Zeilenumbrüche in <br> falls kein HTML-Tag vorhanden
+        if ( strip_tags( $body ) === $body ) {
+            $body = nl2br( esc_html( $body ) );
+        }
+        return '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="font-family:Arial,sans-serif;font-size:14px;color:#333;line-height:1.6;max-width:600px;margin:0 auto;padding:20px">'
+            . $body
+            . '</body></html>';
     }
 
     private static function get_forum_url() {

@@ -1759,10 +1759,15 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                 wp_send_json_error( [ 'message' => 'Keine Berechtigung.' ] );
             }
 
-            $fields = [ 'new_thread_subject', 'new_thread_body', 'new_reply_subject', 'new_reply_body', 'membership_subject', 'membership_body', 'mention_subject', 'mention_body' ];
+            $subject_fields = [ 'new_thread_subject', 'new_reply_subject', 'membership_subject', 'mention_subject' ];
+            $body_fields    = [ 'new_thread_body', 'new_reply_body', 'membership_body', 'mention_body' ];
             $tpl = [];
-            foreach ( $fields as $f ) {
-                $tpl[ $f ] = isset( $_POST[ $f ] ) ? sanitize_textarea_field( $_POST[ $f ] ) : '';
+            foreach ( $subject_fields as $f ) {
+                $tpl[ $f ] = isset( $_POST[ $f ] ) ? sanitize_text_field( $_POST[ $f ] ) : '';
+            }
+            foreach ( $body_fields as $f ) {
+                // HTML erlauben (WYSIWYG), aber sicher sanitizen
+                $tpl[ $f ] = isset( $_POST[ $f ] ) ? wp_kses_post( wp_unslash( $_POST[ $f ] ) ) : '';
             }
 
             DGPTM_Forum_Notifications::save_templates( $tpl );

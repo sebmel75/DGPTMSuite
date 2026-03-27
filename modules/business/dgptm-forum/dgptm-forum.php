@@ -402,10 +402,15 @@ if (!class_exists('DGPTM_Forum')) {
                     .done(function(r) { if (r.success) loadAdminTab('admins'); });
                 });
 
-                // Mail-Vorlagen speichern
+                // Mail-Vorlagen speichern (WYSIWYG → hidden inputs synchen)
                 $(document).off('submit.forummail').on('submit.forummail', '.dgptm-forum-admin-mail-form', function(e) {
                     e.preventDefault();
                     var $f = $(this), $btn = $f.find('button[type="submit"]').prop('disabled', true);
+                    // Sync contenteditable → hidden inputs
+                    $f.find('.dgptm-forum-rte').each(function() {
+                        var field = $(this).data('field');
+                        $f.find('input[name="' + field + '"]').val($(this).html());
+                    });
                     $.ajax({
                         url: dgptmForum.ajaxUrl, type: 'POST', dataType: 'json',
                         data: $f.serialize() + '&action=dgptm_forum_admin_save_mail_templates&nonce=' + dgptmForum.nonce

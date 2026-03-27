@@ -175,10 +175,20 @@ function fobi_ebcp_get_settings() {
  * Admin-Seite: Einstellungen
  * ============================================================ */
 add_action('admin_menu', function(){
+    // Unter Fortbildungen CPT
     add_submenu_page(
         'edit.php?post_type=fortbildung',
-        'EBCP-Upload (KI) – Einstellungen',
-        'EBCP-Upload (KI)',
+        'Fortbildungsnachweis-Upload Einstellungen',
+        'Upload-Einstellungen',
+        'manage_options',
+        'fobi-ebcp-settings',
+        'fobi_ebcp_settings_page_render'
+    );
+    // Zusaetzlich unter DGPTM Suite (besser auffindbar)
+    add_submenu_page(
+        'dgptm-suite',
+        'Fortbildungsnachweis-Upload Einstellungen',
+        'Fobi-Upload (KI)',
         'manage_options',
         'fobi-ebcp-settings',
         'fobi_ebcp_settings_page_render'
@@ -1100,13 +1110,41 @@ function fobi_ebcp_claude_analyze($filepath, $mime, $expected_name, $s){
     $categories_desc = fobi_ebcp_get_categories_description();
     $intl_list = fobi_ebcp_get_international_list($s);
     
-    $prompt = "Analysiere dieses Fortbildungsnachweis-Dokument und extrahiere die Daten als JSON.
+    $prompt = "Analysiere dieses Dokument und bestimme zunaechst den DOKUMENTTYP, dann extrahiere die Daten als JSON.
 
-WICHTIG - TEILNEHMER-VALIDIERUNG:
-- Gib NUR einen participant-Wert zurück, wenn eindeutig ein PERSÖNLICHER TEILNEHMERNAME auf dem Dokument steht
-- Bei Veranstaltungsflyern oder Ankündigungen OHNE Teilnehmernamen: participant = \"\" (leer)
-- Der Teilnehmername muss auf dem Dokument als Person identifizierbar sein
-- NICHT verwechseln: Veranstalter, Referenten oder allgemeine Namen sind KEINE Teilnehmer
+SCHRITT 1 - DOKUMENTTYP BESTIMMEN (KRITISCH!):
+Pruefe ZUERST, ob es sich um eine GUELTIGE TEILNAHMEBESTAETIGUNG handelt.
+GUELTIGE Dokumente sind NUR:
+- Teilnahmebescheinigungen / Teilnahmebestaetigungen
+- Zertifikate / Certificates
+- CME-Bescheinigungen mit Fortbildungspunkten
+- Dokumente mit VNR-Nummern (Veranstaltungsnummern der Aerztekammer)
+- Dokumente mit Unterschrift der wissenschaftlichen Leitung
+
+UNGUELTIGE Dokumente (MUESSEN abgelehnt werden mit doc_type und confidence < 0.1):
+- Rechnungen, Zahlungsinformationen, Zahlungsbelege, Invoices
+- Anmeldebestaetigungen, Buchungsbestaetigungen, Registration Confirmations
+- Flyer, Programme, Ankuendigungen, Call for Papers
+- Abstracts, Einreichungsbestaetigungen
+- Hotelbuchungen, Reisebestaetigungen
+
+ERKENNUNGSMERKMALE fuer RECHNUNGEN/ZAHLUNGSBELEGE (IMMER ablehnen!):
+- Woerter wie: Zahlungsinformation, Rechnung, Invoice, Anmeldegebuehr, Betrag, IBAN, BIC, Kontoinhaber, ueberweisen, ausstehender Betrag, Buchung, bezahlt
+- Enthaelt Geldbetraege mit Waehrungssymbol oder USt.
+- Enthaelt Bankdaten (IBAN, BIC, Kontonummer)
+- Enthaelt Zahlungsfristen
+
+ERKENNUNGSMERKMALE fuer GUELTIGE BESCHEINIGUNGEN:
+- Woerter wie: Teilnahmebescheinigung, Zertifikat, Certificate, bescheinigt, bestaetigt hiermit, hat teilgenommen
+- Enthaelt VNR-Nummern oder CME-Punkte
+- Enthaelt Unterschriften der wissenschaftlichen Leitung
+- Enthaelt Anwesenheitserfassung oder Punktekategorien
+
+SCHRITT 2 - TEILNEHMER-VALIDIERUNG:
+- Gib NUR einen participant-Wert zurueck, wenn eindeutig ein PERSOENLICHER TEILNEHMERNAME auf dem Dokument steht
+- Bei ungueltigen Dokumenttypen: participant = \"\" (leer)
+- NICHT verwechseln: Veranstalter, Referenten oder Rechnungsempfaenger sind KEINE Teilnehmer
+- Ein Name auf einer RECHNUNG ist der RECHNUNGSEMPFAENGER, nicht der Teilnehmer!
 
 ERWARTETER TEILNEHMER: {$expected_name}
 
@@ -1117,7 +1155,8 @@ INTERNATIONALE MEETINGS: {$intl_list}
 
 Antworte NUR mit JSON in diesem Format:
 {
-  \"participant\": \"Vollständiger Name des TEILNEHMERS (leer wenn kein Teilnehmer erkennbar)\",
+  \"doc_type\": \"certificate|invoice|registration|flyer|other\",
+  \"participant\": \"Vollstaendiger Name des TEILNEHMERS (leer wenn ungueltig)\",
   \"title\": \"Veranstaltungstitel\",
   \"location\": \"Stadt, Land\",
   \"start_date\": \"YYYY-MM-DD\",
@@ -1125,20 +1164,32 @@ Antworte NUR mit JSON in diesem Format:
   \"subtype\": \"\",
   \"active_role\": \"no\",
   \"ects\": 0,
+  \"cme_points\": 0,
   \"confidence\": 0.95
 }
 
-WICHTIG für category-Werte: 
+WICHTIG fuer doc_type:
+- \"certificate\": Teilnahmebescheinigung, Zertifikat, CME-Nachweis
+- \"invoice\": Rechnung, Zahlungsinformation, Zahlungsbeleg
+- \"registration\": Anmeldebestaetigung, Buchungsbestaetigung
+- \"flyer\": Flyer, Programm, Ankuendigung
+- \"other\": Alles andere
+
+WICHTIG fuer category-Werte:
 Verwende DIREKT die Keys aus der Kategorieliste oben (z.B. 'passive_workshop_national', 'passive_kongress_international', 'passive_dgptm_jahrestagung')
-Für DGPTM oder DGfK Jahrestagung verwende IMMER: \"category\": \"passive_dgptm_jahrestagung\"
+Fuer DGPTM oder DGfK Jahrestagung verwende IMMER: \"category\": \"passive_dgptm_jahrestagung\"
+
+WICHTIG fuer cme_points:
+Falls das Dokument explizit CME/Fortbildungspunkte ausweist (z.B. '4 Punkte (A) 6 Punkte (B)'), gib die SUMME der Punkte zurueck.
 
 Konfidenz-Bewertung:
-- 0.9-1.0: Vollständige, klare Teilnahmebestätigung mit allen Daten
-- 0.7-0.9: Gute Qualität, kleine Unschärfen
+- 0.9-1.0: Gueltige Teilnahmebescheinigung mit allen Daten
+- 0.7-0.9: Gueltige Bescheinigung, kleine Unschaerfen
 - 0.5-0.7: Teilweise lesbar, wichtige Infos fehlen
-- 0.0-0.5: Unleserlich oder kein persönlicher Nachweis (z.B. nur Flyer)
+- 0.1-0.5: Fragwuerdiges Dokument, koennte ungueltig sein
+- 0.0-0.1: UNGUELTIG - Rechnung, Anmeldung, Flyer oder kein Nachweis
 
-WICHTIG: Bei Veranstaltungsflyern ohne persönlichen Teilnehmer -> participant=\"\" UND confidence < 0.5";
+KRITISCH: Bei Rechnungen/Zahlungsbelegen -> doc_type=\"invoice\", participant=\"\", confidence=0.0";
 
     // Content abhängig vom Dateityp
     if( $mime === 'application/pdf' ){
@@ -1242,6 +1293,23 @@ WICHTIG: Bei Veranstaltungsflyern ohne persönlichen Teilnehmer -> participant=\
         return array('ok'=>false, 'error'=>'Dokument konnte nicht vollständig analysiert werden. Bitte prüfen Sie die Lesbarkeit.');
     }
     
+    $doc_type = strtolower(trim($data['doc_type'] ?? 'other'));
+
+    // Ungueltige Dokumenttypen sofort ablehnen
+    if( in_array($doc_type, array('invoice', 'registration', 'flyer')) ){
+        $type_labels = array(
+            'invoice' => 'eine Rechnung oder Zahlungsinformation',
+            'registration' => 'eine Anmelde- oder Buchungsbestaetigung',
+            'flyer' => 'ein Veranstaltungsflyer oder Programm'
+        );
+        $label = $type_labels[$doc_type] ?? 'kein gueltiger Fortbildungsnachweis';
+        return array(
+            'ok' => false,
+            'error' => 'Dieses Dokument ist ' . $label . '.',
+            'error_detail' => 'Bitte laden Sie Ihre persoenliche Teilnahmebescheinigung oder Ihr Zertifikat hoch.'
+        );
+    }
+
     $parsed = array(
         'participant' => trim($data['participant'] ?? ''),
         'title' => trim($data['title'] ?? ''),
@@ -1250,9 +1318,11 @@ WICHTIG: Bei Veranstaltungsflyern ohne persönlichen Teilnehmer -> participant=\
         'category' => trim($data['category'] ?? ''),
         'subtype' => trim($data['subtype'] ?? ''),
         'active_role' => strtolower(trim($data['active_role'] ?? 'no')),
-        'ects' => intval($data['ects'] ?? 0)
+        'ects' => intval($data['ects'] ?? 0),
+        'cme_points' => intval($data['cme_points'] ?? 0),
+        'doc_type' => $doc_type
     );
-    
+
     return array(
         'ok' => true,
         'data' => $parsed,

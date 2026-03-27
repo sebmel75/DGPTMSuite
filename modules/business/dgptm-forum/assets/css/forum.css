@@ -1,4 +1,4 @@
-/* DGPTM Forum v1.0.0 */
+/* DGPTM Forum v2.2.0 */
 
 /* === Layout === */
 .dgptm-forum-wrap,
@@ -210,6 +210,21 @@ a.dgptm-forum-btn-sm,
 .dgptm-forum-badge.open { background: #e7f5e7; color: #2e7d32; }
 .dgptm-forum-badge.closed { background: #fce4ec; color: #c62828; }
 .dgptm-forum-badge.ag { background: #e3f2fd; color: #1565c0; }
+
+/* === Unread Dot === */
+.dgptm-forum-unread-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #2196F3;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+
+/* === Blacklist Toggle === */
+.dgptm-forum-toggle-blacklist { text-decoration: none; }
+.dgptm-forum-toggle-blacklist:hover { text-decoration: underline; }
 
 /* === Responsive === */
 @media (max-width: 600px) {

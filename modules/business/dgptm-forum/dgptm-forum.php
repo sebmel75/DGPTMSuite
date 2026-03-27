@@ -2,12 +2,12 @@
 /**
  * Plugin Name: DGPTM - Forum
  * Description: Diskussionsforum mit Arbeitsgemeinschaften, Themen und verschachtelten Antworten
- * Version: 1.0.0
+ * Version: 2.2.0
  * Author: Sebastian Melzer
  */
 if (!defined('ABSPATH')) exit;
 
-define('DGPTM_FORUM_VERSION', '2.1.0');
+define('DGPTM_FORUM_VERSION', '2.2.0');
 define('DGPTM_FORUM_PATH', plugin_dir_path(__FILE__));
 define('DGPTM_FORUM_URL', plugin_dir_url(__FILE__));
 
@@ -96,6 +96,9 @@ if (!class_exists('DGPTM_Forum')) {
                 'dgptm_forum_admin_set_forum_admin',
                 'dgptm_forum_admin_save_mail_templates',
                 'dgptm_forum_admin_load_tab',
+                'dgptm_forum_admin_bulk_subscribe_ag',
+                'dgptm_forum_admin_unblacklist_user',
+                'dgptm_forum_toggle_blacklist',
             ];
 
             foreach (array_merge($forum_actions, $admin_actions) as $action) {
@@ -103,6 +106,21 @@ if (!class_exists('DGPTM_Forum')) {
             }
 
             add_action('wp_enqueue_scripts', [$this, 'maybe_enqueue_assets']);
+
+            // Unsubscribe link handler (Feature 4: Blacklist)
+            add_action('init', function() {
+                if (isset($_GET['dgptm_forum_unsubscribe']) && isset($_GET['user']) && isset($_GET['token'])) {
+                    $uid   = absint($_GET['user']);
+                    $token = sanitize_text_field($_GET['token']);
+                    if (wp_hash($uid . 'forum_unsub') === $token) {
+                        update_user_meta($uid, 'dgptm_forum_blacklisted', 1);
+                        wp_die(
+                            'Sie erhalten keine Forum-Benachrichtigungen mehr. Diese Einstellung kann im Mitgliederbereich r&uuml;ckg&auml;ngig gemacht werden.',
+                            'Forum-Benachrichtigungen deaktiviert'
+                        );
+                    }
+                }
+            });
         }
 
         public function ensure_tables() {
@@ -125,13 +143,14 @@ if (!class_exists('DGPTM_Forum')) {
             }
 
             $this->enqueue_assets();
-            $ajax_url = admin_url('admin-ajax.php');
-            $nonce    = wp_create_nonce('dgptm_forum');
-            $is_admin = DGPTM_Forum_Permissions::is_forum_admin() ? 1 : 0;
+            $ajax_url     = admin_url('admin-ajax.php');
+            $nonce        = wp_create_nonce('dgptm_forum');
+            $is_admin     = DGPTM_Forum_Permissions::is_forum_admin() ? 1 : 0;
+            $deep_thread  = isset($_GET['thread']) ? absint($_GET['thread']) : 0;
 
             ob_start();
             ?>
-            <div class="dgptm-forum-wrap">
+            <div class="dgptm-forum-wrap" data-deep-thread="<?php echo $deep_thread; ?>">
                 <div class="dgptm-forum-breadcrumb"></div>
                 <div class="dgptm-forum-content"><p>Forum wird geladen…</p></div>
             </div>
@@ -144,29 +163,47 @@ if (!class_exists('DGPTM_Forum')) {
                 };
                 var $w = jQuery('.dgptm-forum-wrap');
                 if (!$w.length) return;
-                jQuery.post(dgptmForum.ajaxUrl, {
-                    action: 'dgptm_forum_load_view',
-                    nonce: dgptmForum.nonce,
-                    view: 'ags',
-                    id: 0
-                }).done(function(r) {
-                    if (r && r.success) {
-                        $w.find('.dgptm-forum-content').html(r.data.html);
-                        if (r.data.breadcrumb) {
-                            var bc = '', crumbs = r.data.breadcrumb;
-                            for (var i = 0; i < crumbs.length; i++) {
-                                if (i > 0) bc += '<span class="sep">&rsaquo;</span>';
-                                if (crumbs[i].link) bc += '<a href="#" data-view="' + crumbs[i].view + '" data-id="' + (crumbs[i].id||0) + '">' + crumbs[i].label + '</a>';
-                                else bc += '<span>' + crumbs[i].label + '</span>';
-                            }
-                            $w.find('.dgptm-forum-breadcrumb').html(bc);
+                var deepThread = parseInt($w.data('deep-thread') || 0);
+                if (deepThread > 0) {
+                    jQuery.post(dgptmForum.ajaxUrl, {
+                        action: 'dgptm_forum_load_view',
+                        nonce: dgptmForum.nonce,
+                        view: 'thread',
+                        id: deepThread
+                    }).done(function(r) {
+                        if (r && r.success) {
+                            $w.find('.dgptm-forum-content').html(r.data.html);
+                        } else {
+                            $w.find('.dgptm-forum-content').html('<p style="color:red">' + ((r&&r.data&&r.data.message)||'Fehler') + '</p>');
                         }
-                    } else {
-                        $w.find('.dgptm-forum-content').html('<p style="color:red">' + ((r&&r.data&&r.data.message)||'Fehler') + '</p>');
-                    }
-                }).fail(function() {
-                    $w.find('.dgptm-forum-content').html('<p style="color:red">Verbindungsfehler</p>');
-                });
+                    }).fail(function() {
+                        $w.find('.dgptm-forum-content').html('<p style="color:red">Verbindungsfehler</p>');
+                    });
+                } else {
+                    jQuery.post(dgptmForum.ajaxUrl, {
+                        action: 'dgptm_forum_load_view',
+                        nonce: dgptmForum.nonce,
+                        view: 'ags',
+                        id: 0
+                    }).done(function(r) {
+                        if (r && r.success) {
+                            $w.find('.dgptm-forum-content').html(r.data.html);
+                            if (r.data.breadcrumb) {
+                                var bc = '', crumbs = r.data.breadcrumb;
+                                for (var i = 0; i < crumbs.length; i++) {
+                                    if (i > 0) bc += '<span class="sep">&rsaquo;</span>';
+                                    if (crumbs[i].link) bc += '<a href="#" data-view="' + crumbs[i].view + '" data-id="' + (crumbs[i].id||0) + '">' + crumbs[i].label + '</a>';
+                                    else bc += '<span>' + crumbs[i].label + '</span>';
+                                }
+                                $w.find('.dgptm-forum-breadcrumb').html(bc);
+                            }
+                        } else {
+                            $w.find('.dgptm-forum-content').html('<p style="color:red">' + ((r&&r.data&&r.data.message)||'Fehler') + '</p>');
+                        }
+                    }).fail(function() {
+                        $w.find('.dgptm-forum-content').html('<p style="color:red">Verbindungsfehler</p>');
+                    });
+                }
             })();
             </script>
             <?php
@@ -351,6 +388,40 @@ if (!class_exists('DGPTM_Forum')) {
                         if (r && r.success) { $btn.text('Gespeichert!'); setTimeout(function(){ $btn.text('Vorlagen speichern').prop('disabled',false); }, 1500); }
                         else { alert((r&&r.data&&r.data.message)||'Fehler'); $btn.prop('disabled',false); }
                     }).fail(function(xhr) { alert('Fehler: '+(xhr.responseText||'').substring(0,200)); $btn.prop('disabled',false); });
+                });
+
+                // Bulk subscribe all AG members (Feature 2)
+                $(document).off('click.forumbulksub').on('click.forumbulksub', '.dgptm-forum-admin-bulk-subscribe', function(e) {
+                    e.preventDefault();
+                    var $btn = $(this).prop('disabled', true);
+                    var agId = $btn.data('ag-id');
+                    $.post(dgptmForum.ajaxUrl, {
+                        action: 'dgptm_forum_admin_bulk_subscribe_ag',
+                        nonce: dgptmForum.nonce,
+                        ag_id: agId
+                    }).done(function(r) {
+                        if (r && r.success) {
+                            $btn.text(r.data.count + ' Mitglieder abonniert!');
+                            setTimeout(function(){ $btn.text('Alle Mitglieder abonnieren').prop('disabled', false); }, 2000);
+                        } else {
+                            alert((r && r.data && r.data.message) || 'Fehler');
+                            $btn.prop('disabled', false);
+                        }
+                    }).fail(function() { alert('Verbindungsfehler'); $btn.prop('disabled', false); });
+                });
+
+                // Unblacklist user (Feature 4)
+                $(document).off('click.forumunbl').on('click.forumunbl', '.dgptm-forum-admin-unblacklist', function(e) {
+                    e.preventDefault();
+                    var userId = $(this).data('user-id');
+                    $.post(dgptmForum.ajaxUrl, {
+                        action: 'dgptm_forum_admin_unblacklist_user',
+                        nonce: dgptmForum.nonce,
+                        user_id: userId
+                    }).done(function(r) {
+                        if (r && r.success) loadAdminTab('admins');
+                        else alert((r && r.data && r.data.message) || 'Fehler');
+                    });
                 });
 
                 // Initial load

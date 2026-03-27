@@ -29,7 +29,12 @@
         $content: function() { return $('.dgptm-forum-content'); },
 
         init: function() {
-            if ($('.dgptm-forum-wrap').length) {
+            var $w = $('.dgptm-forum-wrap');
+            if (!$w.length) return;
+            var deepThread = parseInt($w.data('deep-thread') || 0);
+            if (deepThread > 0) {
+                F.loadView('thread', deepThread);
+            } else {
                 F.loadView('ags');
             }
         },
@@ -131,6 +136,12 @@
             if (r && r.success) {
                 F.loadView('thread', r.data.thread_id);
                 F.notify('Thread erstellt', 'success');
+                // Feature 3: Show mention warnings
+                if (r.data.warnings && r.data.warnings.length) {
+                    for (var i = 0; i < r.data.warnings.length; i++) {
+                        F.notify(r.data.warnings[i], 'info');
+                    }
+                }
             } else {
                 F.notify((r && r.data && r.data.message) || 'Fehler', 'error');
                 $btn.prop('disabled', false);
@@ -184,6 +195,12 @@
             if (r && r.success) {
                 F.loadView('thread', F.currentThreadId);
                 F.notify('Antwort gesendet', 'success');
+                // Feature 3: Show mention warnings
+                if (r.data.warnings && r.data.warnings.length) {
+                    for (var i = 0; i < r.data.warnings.length; i++) {
+                        F.notify(r.data.warnings[i], 'info');
+                    }
+                }
             } else {
                 F.notify((r && r.data && r.data.message) || 'Fehler', 'error');
                 $btn.prop('disabled', false);
@@ -278,6 +295,24 @@
         F.ajax('request_membership', { ag_id: $btn.data('ag-id') }, function(r) {
             if (r && r.success) { $btn.text('Anfrage gesendet').removeClass('dgptm-forum-btn'); }
             else { F.notify((r && r.data && r.data.message) || 'Fehler', 'error'); $btn.prop('disabled', false); }
+        });
+    });
+
+    // ===========================================================
+    // Feature 4: Blacklist Toggle (Frontend)
+    // ===========================================================
+
+    $(document).on('click', '.dgptm-forum-toggle-blacklist', function(e) {
+        e.preventDefault();
+        var action = $(this).data('action'); // 'enable' or 'disable'
+        F.ajax('toggle_blacklist', { blacklist_action: action }, function(r) {
+            if (r && r.success) {
+                F.notify(r.data.message, 'success');
+                // Reload ags view to update the toggle link
+                F.loadView('ags');
+            } else {
+                F.notify((r && r.data && r.data.message) || 'Fehler', 'error');
+            }
         });
     });
 

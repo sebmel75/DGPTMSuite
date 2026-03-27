@@ -373,9 +373,10 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                                         $rt_author = get_userdata($rt->author_id);
                                         $rt_name = $this->get_user_fullname($rt_author);
                                         $rt_date = date_i18n('d.m.Y', strtotime($rt->created_at));
+                                        $rt_unread = $this->is_thread_unread($user_id, $rt);
                                     ?>
                                         <div class="dgptm-forum-thread-preview" data-thread-id="<?php echo esc_attr($rt->id); ?>" style="display:flex;justify-content:space-between;align-items:center;padding:3px 4px;font-size:12px;color:#666;cursor:pointer;border-radius:3px" onmouseover="this.style.background='#f0f6fc'" onmouseout="this.style.background=''">
-                                            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%"><?php echo esc_html($rt->title); ?></span>
+                                            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%"><?php if ($rt_unread) : ?><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2196F3;margin-right:4px;vertical-align:middle" title="Neu"></span><?php endif; ?><?php echo esc_html($rt->title); ?></span>
                                             <span style="flex-shrink:0;color:#999"><?php echo esc_html($rt_name); ?> &middot; <?php echo $rt_date; ?> &middot; <?php echo (int)$rt->reply_count; ?> Antw.</span>
                                         </div>
                                     <?php endforeach; ?>
@@ -383,6 +384,18 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                             <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+
+            <?php
+                // Feature 4: Blacklist toggle link for current user
+                $is_bl = get_user_meta($user_id, 'dgptm_forum_blacklisted', true);
+            ?>
+            <div style="margin-top:12px;font-size:11px;color:#999">
+                <?php if ($is_bl) : ?>
+                    Forum-Benachrichtigungen sind deaktiviert. <a href="#" class="dgptm-forum-toggle-blacklist" data-action="enable" style="color:#0073aa">Wieder aktivieren</a>
+                <?php else : ?>
+                    <a href="#" class="dgptm-forum-toggle-blacklist" data-action="disable" style="color:#999">Alle Forum-Benachrichtigungen deaktivieren</a>
                 <?php endif; ?>
             </div>
             <?php
@@ -497,12 +510,19 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                             : date_i18n('d.m.Y H:i', strtotime($thread->created_at));
                         $pinned = $thread->is_pinned;
                         $closed = ($thread->status === 'closed');
+                        $unread = $this->is_thread_unread($user_id, $thread);
                     ?>
                         <div class="dgptm-forum-thread-link" data-thread-id="<?php echo esc_attr($thread->id); ?>"
                              style="border:1px solid <?php echo $pinned ? '#d4e6f1' : '#e4e8ec'; ?>;border-radius:6px;padding:12px 14px;margin-bottom:8px;background:<?php echo $pinned ? '#f8fbfe' : '#fff'; ?>;cursor:pointer;transition:box-shadow .15s;<?php echo $pinned ? 'border-left:3px solid #2e86c1;' : ''; ?>">
                             <div style="display:flex;justify-content:space-between;align-items:center">
                                 <div style="flex:1;min-width:0">
-                                    <span style="font-size:14px;font-weight:500;color:#1d2327"><?php echo esc_html($thread->title); ?></span>
+                                    <?php if ($unread) : ?>
+                                        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2196F3;margin-right:4px;vertical-align:middle" title="Neu"></span>
+                                    <?php endif; ?>
+                                    <span style="font-size:14px;font-weight:<?php echo $unread ? '700' : '500'; ?>;color:#1d2327"><?php echo esc_html($thread->title); ?></span>
+                                    <?php if ($unread) : ?>
+                                        <span style="display:inline-block;padding:1px 5px;border-radius:6px;font-size:9px;font-weight:600;background:#e3f2fd;color:#1565c0;margin-left:4px;vertical-align:middle">Neu</span>
+                                    <?php endif; ?>
                                     <?php if ($pinned) : ?>
                                         <span style="font-size:10px;color:#2e86c1;margin-left:6px" title="Angepinnt">&#128204;</span>
                                     <?php endif; ?>
@@ -573,6 +593,9 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
             if ($ag && !$this->can_access_group($user_id, $ag)) {
                 return '<p class="dgptm-forum-error">Kein Zugriff auf diesen Thread.</p>';
             }
+
+            // Feature 1: Mark thread as read
+            $this->mark_thread_read($user_id, $thread_id);
 
             $can_post     = $ag ? $this->can_post_in_group($user_id, $ag) : false;
             $can_moderate = $ag ? $this->is_group_moderator($user_id, $ag) : DGPTM_Forum_Permissions::is_forum_admin($user_id);
@@ -886,10 +909,24 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                 DGPTM_Forum_Notifications::notify_new_thread( $thread_id, $ag_id );
             }
 
-            wp_send_json_success([
+            // Feature 3: Process @mentions
+            $warnings = [];
+            if ( class_exists( 'DGPTM_Forum_Notifications' ) ) {
+                $blacklisted = DGPTM_Forum_Notifications::process_mentions( $content, 'thread', $thread_id, $thread_id, $user_id );
+                foreach ( $blacklisted as $bl_name ) {
+                    $warnings[] = $bl_name . ' wird nicht benachrichtigt (Benachrichtigungen deaktiviert)';
+                }
+            }
+
+            $response = [
                 'message'   => 'Thread erstellt.',
                 'thread_id' => $thread_id,
-            ]);
+            ];
+            if ( ! empty( $warnings ) ) {
+                $response['warnings'] = $warnings;
+            }
+
+            wp_send_json_success( $response );
         }
 
         /**
@@ -981,10 +1018,24 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                 DGPTM_Forum_Notifications::notify_new_reply( $reply_id, $thread_id );
             }
 
-            wp_send_json_success([
+            // Feature 3: Process @mentions
+            $warnings = [];
+            if ( class_exists( 'DGPTM_Forum_Notifications' ) ) {
+                $blacklisted = DGPTM_Forum_Notifications::process_mentions( $content, 'reply', $reply_id, $thread_id, $user_id );
+                foreach ( $blacklisted as $bl_name ) {
+                    $warnings[] = $bl_name . ' wird nicht benachrichtigt (Benachrichtigungen deaktiviert)';
+                }
+            }
+
+            $response = [
                 'message'  => 'Antwort erstellt.',
                 'reply_id' => $reply_id,
-            ]);
+            ];
+            if ( ! empty( $warnings ) ) {
+                $response['warnings'] = $warnings;
+            }
+
+            wp_send_json_success( $response );
         }
 
         /**
@@ -1708,7 +1759,7 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                 wp_send_json_error( [ 'message' => 'Keine Berechtigung.' ] );
             }
 
-            $fields = [ 'new_thread_subject', 'new_thread_body', 'new_reply_subject', 'new_reply_body', 'membership_subject', 'membership_body' ];
+            $fields = [ 'new_thread_subject', 'new_thread_body', 'new_reply_subject', 'new_reply_body', 'membership_subject', 'membership_body', 'mention_subject', 'mention_body' ];
             $tpl = [];
             foreach ( $fields as $f ) {
                 $tpl[ $f ] = isset( $_POST[ $f ] ) ? sanitize_textarea_field( $_POST[ $f ] ) : '';
@@ -1716,6 +1767,136 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
 
             DGPTM_Forum_Notifications::save_templates( $tpl );
             wp_send_json_success( [ 'message' => 'E-Mail-Vorlagen gespeichert.' ] );
+        }
+
+        // =============================================================
+        //  Feature 1: Unread/New Thread Marking
+        // =============================================================
+
+        /**
+         * Mark a thread as read for a user.
+         *
+         * @param int $user_id
+         * @param int $thread_id
+         */
+        private function mark_thread_read( $user_id, $thread_id ) {
+            global $wpdb;
+            $table = $wpdb->prefix . 'dgptm_forum_read_status';
+            $now   = current_time( 'mysql' );
+
+            $wpdb->query( $wpdb->prepare(
+                "INSERT INTO {$table} (user_id, thread_id, read_at)
+                 VALUES (%d, %d, %s)
+                 ON DUPLICATE KEY UPDATE read_at = %s",
+                $user_id, $thread_id, $now, $now
+            ) );
+        }
+
+        /**
+         * Check if a thread is unread for a user.
+         *
+         * @param int    $user_id
+         * @param object $thread  Thread row with last_reply_at and created_at.
+         * @return bool
+         */
+        private function is_thread_unread( $user_id, $thread ) {
+            global $wpdb;
+            $table = $wpdb->prefix . 'dgptm_forum_read_status';
+
+            $read_at = $wpdb->get_var( $wpdb->prepare(
+                "SELECT read_at FROM {$table} WHERE user_id = %d AND thread_id = %d",
+                $user_id, $thread->id
+            ) );
+
+            // Never read = unread
+            if ( ! $read_at ) return true;
+
+            // Compare with last activity on thread
+            $last_activity = $thread->last_reply_at ?: $thread->created_at;
+            return strtotime( $last_activity ) > strtotime( $read_at );
+        }
+
+        // =============================================================
+        //  Feature 2: Bulk Subscribe AG Members
+        // =============================================================
+
+        /**
+         * Subscribe all members of an AG to that AG's notifications.
+         *
+         * POST: ag_id
+         */
+        private function admin_bulk_subscribe_ag() {
+            if ( ! DGPTM_Forum_Permissions::is_forum_admin() ) {
+                wp_send_json_error( [ 'message' => 'Keine Berechtigung.' ] );
+            }
+
+            $ag_id = isset( $_POST['ag_id'] ) ? absint( $_POST['ag_id'] ) : 0;
+            if ( empty( $ag_id ) ) {
+                wp_send_json_error( [ 'message' => 'AG-ID ist erforderlich.' ] );
+            }
+
+            $members = DGPTM_Forum_AG_Manager::get_ag_members( $ag_id );
+            $count   = 0;
+
+            if ( class_exists( 'DGPTM_Forum_Notifications' ) ) {
+                foreach ( $members as $member ) {
+                    DGPTM_Forum_Notifications::subscribe( $member->user_id, 'ag', $ag_id );
+                    $count++;
+                }
+            }
+
+            wp_send_json_success( [
+                'message' => $count . ' Mitglieder abonniert.',
+                'count'   => $count,
+            ] );
+        }
+
+        // =============================================================
+        //  Feature 4: Blacklist / Unsubscribe
+        // =============================================================
+
+        /**
+         * Admin: Remove blacklist from a user.
+         *
+         * POST: user_id
+         */
+        private function admin_unblacklist_user() {
+            if ( ! DGPTM_Forum_Permissions::is_forum_admin() ) {
+                wp_send_json_error( [ 'message' => 'Keine Berechtigung.' ] );
+            }
+
+            $user_id = isset( $_POST['user_id'] ) ? absint( $_POST['user_id'] ) : 0;
+            if ( empty( $user_id ) ) {
+                wp_send_json_error( [ 'message' => 'Benutzer-ID ist erforderlich.' ] );
+            }
+
+            if ( class_exists( 'DGPTM_Forum_Notifications' ) ) {
+                DGPTM_Forum_Notifications::set_blacklisted( $user_id, false );
+            }
+
+            wp_send_json_success( [ 'message' => 'Blacklist-Status entfernt.' ] );
+        }
+
+        /**
+         * Toggle blacklist status for current user (frontend).
+         *
+         * POST: blacklist_action ('enable' or 'disable')
+         */
+        private function toggle_blacklist() {
+            $user_id = get_current_user_id();
+            $bl_action = isset( $_POST['blacklist_action'] ) ? sanitize_text_field( $_POST['blacklist_action'] ) : '';
+
+            if ( class_exists( 'DGPTM_Forum_Notifications' ) ) {
+                if ( $bl_action === 'disable' ) {
+                    DGPTM_Forum_Notifications::set_blacklisted( $user_id, true );
+                    wp_send_json_success( [ 'message' => 'Forum-Benachrichtigungen deaktiviert.', 'blacklisted' => true ] );
+                } else {
+                    DGPTM_Forum_Notifications::set_blacklisted( $user_id, false );
+                    wp_send_json_success( [ 'message' => 'Forum-Benachrichtigungen aktiviert.', 'blacklisted' => false ] );
+                }
+            }
+
+            wp_send_json_error( [ 'message' => 'Notifications-Klasse nicht verfügbar.' ] );
         }
     }
 }

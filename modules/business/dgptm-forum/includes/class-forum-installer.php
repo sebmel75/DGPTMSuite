@@ -160,6 +160,16 @@ class DGPTM_Forum_Installer {
             KEY idx_user_id (user_id)
         ) $charset_collate;";
 
+        // 9. Read status for unread thread marking
+        $sql_read_status = "CREATE TABLE {$prefix}read_status (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            user_id BIGINT UNSIGNED NOT NULL,
+            thread_id BIGINT UNSIGNED NOT NULL,
+            read_at DATETIME NOT NULL,
+            PRIMARY KEY  (id),
+            UNIQUE KEY unique_read (user_id, thread_id)
+        ) $charset_collate;";
+
         dbDelta($sql_ags);
         dbDelta($sql_ag_members);
         dbDelta($sql_topics);
@@ -168,6 +178,7 @@ class DGPTM_Forum_Installer {
         dbDelta($sql_replies);
         dbDelta($sql_attachments);
         dbDelta($sql_subscriptions);
+        dbDelta($sql_read_status);
     }
 
     /**

@@ -825,15 +825,44 @@ function fobi_ebcp_ajax_upload(){
     }
     
     // ============================================================
-    
+    // Duplikaterkennung: Gleiche Veranstaltung schon eingereicht?
+    // ============================================================
+    $date_for_check = '';
+    if( !empty($data['start_date']) ){
+        $ts = strtotime($data['start_date']);
+        if( $ts !== false ) $date_for_check = date('Y-m-d', $ts);
+    }
+
+    $duplicate = fobi_ebcp_check_duplicate($u->ID, $data['title'], $date_for_check);
+    if( $duplicate ){
+        wp_send_json_error(sprintf(
+            '⚠️ Diese Veranstaltung wurde bereits eingereicht: „%s" (ID %d). Duplikate sind nicht erlaubt.',
+            esc_html($duplicate->post_title),
+            $duplicate->ID
+        ));
+    }
+
+    // ============================================================
+    // Validierung + KI-Nachfrage bei Namensmismatch
+    // ============================================================
     $auto_approve = $confidence >= $s['auto_approve_min_conf'];
-    
+
     $participant_valid = fobi_ebcp_verify_participant($data['participant'], $expected_fullname);
+
+    // Bei Namensmismatch: KI nochmal befragen (z.B. Titel, Umlaute, OCR-Fehler)
+    $name_ai_override = false;
+    if( !$participant_valid && !empty($data['participant']) ){
+        $ai_says_same = fobi_ebcp_ai_verify_name($data['participant'], $expected_fullname, $s);
+        if( $ai_says_same ){
+            $participant_valid = true;
+            $name_ai_override = true;
+        }
+    }
+
     $event_valid = fobi_ebcp_verify_event($data['title'], $data['location'], $data['start_date'], $s);
     $points = fobi_ebcp_calc_points($data, $s);
-    
+
     $is_valid = $participant_valid && $event_valid && $points > 0;
-    // Schwellenwert von 60% auf 70% erhöht für bessere Qualität
     $is_suspicious = !$participant_valid || !$event_valid || $confidence < 0.7;
     
     if( $is_suspicious ){
@@ -860,6 +889,13 @@ function fobi_ebcp_ajax_upload(){
         wp_send_json_error('Fehler beim Erstellen: '.$post_id->get_error_message());
     }
     
+    // KI-Namens-Override loggen
+    if( $name_ai_override ){
+        update_post_meta($post_id, '_fobi_name_ai_override', sprintf(
+            'KI bestaetigte: "%s" = "%s"', $data['participant'], $expected_fullname
+        ));
+    }
+
     // Notification NACH Post-Insert senden, damit post_id verfügbar ist
     if( $is_suspicious && $s['notify_on_suspicious'] === '1' ){
         fobi_ebcp_send_notification($u, $data, $confidence, $expected_fullname, $s, $post_id);
@@ -1373,6 +1409,117 @@ WICHTIG - Unterscheidung Workshop vs. Kongress:
 function fobi_ebcp_get_international_list($s){
     $intl = json_decode($s['ebcp_international_list'], true);
     return is_array($intl) ? implode(', ', $intl) : '';
+}
+
+/* ============================================================
+ * Duplikaterkennung: Wurde diese Veranstaltung schon eingereicht?
+ * Prueft Titel-Aehnlichkeit + Datum fuer den aktuellen User
+ * ============================================================ */
+function fobi_ebcp_check_duplicate($user_id, $title, $date){
+    if( empty($title) ) return false;
+
+    $args = array(
+        'post_type' => 'fortbildung',
+        'posts_per_page' => -1,
+        'post_status' => array('publish', 'draft', 'pending'),
+        'author' => $user_id,
+    );
+
+    // Datum-Filter wenn vorhanden
+    if( !empty($date) ){
+        $args['meta_query'] = array(
+            array(
+                'key' => 'date',
+                'value' => $date,
+                'compare' => '='
+            )
+        );
+    }
+
+    $existing = get_posts($args);
+    if( empty($existing) ) return false;
+
+    $title_norm = mb_strtolower(trim($title), 'UTF-8');
+
+    foreach( $existing as $post ){
+        $existing_title = mb_strtolower(trim($post->post_title), 'UTF-8');
+
+        // Exakte Uebereinstimmung
+        if( $title_norm === $existing_title ){
+            return $post;
+        }
+
+        // Aehnlichkeitspruefung (80%)
+        similar_text($title_norm, $existing_title, $pct);
+        if( $pct >= 80 ){
+            return $post;
+        }
+    }
+
+    return false;
+}
+
+/* ============================================================
+ * KI-Nachfrage bei Namensabweichung
+ * Befragt Claude erneut, ob es sich um dieselbe Person handelt
+ * ============================================================ */
+function fobi_ebcp_ai_verify_name($doc_name, $expected_name, $s){
+    $api_key = $s['claude_api_key'];
+    if( empty($api_key) ) return false;
+
+    $model = $s['claude_model'] ?? 'claude-sonnet-4-6-20250514';
+
+    $prompt = sprintf(
+        'Auf einem Fortbildungsnachweis steht der Teilnehmername "%s". ' .
+        'Der erwartete Name des Benutzers ist "%s". ' .
+        'Koennte es sich um dieselbe Person handeln? Beruecksichtige: ' .
+        'Titel (Dr., Prof.), Schreibvarianten, Umlaute, OCR-Fehler, ' .
+        'abgekuerzte Vornamen, Doppelnamen, Geburtsname vs. Ehename. ' .
+        'Antworte NUR mit JSON: {"same_person": true/false, "reason": "kurze Begruendung"}',
+        $doc_name,
+        $expected_name
+    );
+
+    $body = array(
+        'model' => $model,
+        'max_tokens' => 200,
+        'messages' => array(
+            array(
+                'role' => 'user',
+                'content' => $prompt
+            )
+        )
+    );
+
+    $response = wp_remote_post('https://api.anthropic.com/v1/messages', array(
+        'headers' => array(
+            'Content-Type' => 'application/json',
+            'x-api-key' => $api_key,
+            'anthropic-version' => '2023-06-01'
+        ),
+        'body' => json_encode($body),
+        'timeout' => 15
+    ));
+
+    if( is_wp_error($response) ) return false;
+
+    $code = wp_remote_retrieve_response_code($response);
+    if( $code !== 200 ) return false;
+
+    $body_str = wp_remote_retrieve_body($response);
+    $result = json_decode($body_str, true);
+
+    if( empty($result['content'][0]['text']) ) return false;
+
+    $text = $result['content'][0]['text'];
+    if( preg_match('/\{[\s\S]*\}/s', $text, $matches) ){
+        $data = json_decode($matches[0], true);
+        if( isset($data['same_person']) ){
+            return (bool) $data['same_person'];
+        }
+    }
+
+    return false;
 }
 
 function fobi_ebcp_verify_participant($doc_name, $expected_name){

@@ -317,6 +317,92 @@
     });
 
     // ===========================================================
+    // @Mention Autocomplete
+    // ===========================================================
+
+    var mentionTimer, $mentionDropdown = null;
+
+    $(document).on('input', '.dgptm-forum-thread-form textarea, .dgptm-forum-reply-form textarea', function() {
+        var $ta = $(this);
+        var val = $ta.val();
+        var pos = $ta[0].selectionStart;
+        // Text vor dem Cursor
+        var before = val.substring(0, pos);
+        // Letztes @ finden
+        var atIdx = before.lastIndexOf('@');
+        if (atIdx === -1) { removeMentionDropdown(); return; }
+        var query = before.substring(atIdx + 1);
+        // Kein Leerzeichen vor @ (außer am Anfang) → nur echte Mentions
+        if (atIdx > 0 && before[atIdx - 1] !== ' ' && before[atIdx - 1] !== '\n') { removeMentionDropdown(); return; }
+        // Mind. 3 Zeichen nach @
+        if (query.length < 3) { removeMentionDropdown(); return; }
+        // Kein Zeilenumbruch in der Query
+        if (query.indexOf('\n') !== -1) { removeMentionDropdown(); return; }
+
+        clearTimeout(mentionTimer);
+        mentionTimer = setTimeout(function() {
+            F.ajax('search_mentions', { term: query }, function(r) {
+                if (r && r.success && r.data.users && r.data.users.length) {
+                    showMentionDropdown($ta, r.data.users, atIdx);
+                } else {
+                    removeMentionDropdown();
+                }
+            });
+        }, 250);
+    });
+
+    function showMentionDropdown($ta, users, atIdx) {
+        removeMentionDropdown();
+        var html = '<div class="dgptm-forum-mention-dropdown" style="position:absolute;background:#fff;border:1px solid #ddd;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,.12);z-index:200;max-height:150px;overflow-y:auto;font-size:12px">';
+        for (var i = 0; i < users.length; i++) {
+            var u = users[i];
+            var cls = u.blacklisted ? 'color:#c00' : 'color:#1d2327';
+            var suffix = u.blacklisted ? ' <span style="font-size:9px;color:#c00">(wird nicht benachrichtigt)</span>' : '';
+            html += '<div class="dgptm-forum-mention-item" data-name="' + u.name + '" data-at-idx="' + atIdx + '" style="padding:5px 10px;cursor:pointer;' + cls + '" onmouseover="this.style.background=\'#f0f6fc\'" onmouseout="this.style.background=\'\'">' + u.name + suffix + '</div>';
+        }
+        html += '</div>';
+        $mentionDropdown = $(html);
+        // Position unter der Textarea
+        var offset = $ta.offset();
+        $mentionDropdown.css({ top: offset.top + $ta.outerHeight() + 2, left: offset.left, width: Math.min($ta.outerWidth(), 300) });
+        $('body').append($mentionDropdown);
+    }
+
+    function removeMentionDropdown() {
+        if ($mentionDropdown) { $mentionDropdown.remove(); $mentionDropdown = null; }
+    }
+
+    $(document).on('click', '.dgptm-forum-mention-item', function() {
+        var name = $(this).data('name');
+        var atIdx = parseInt($(this).data('at-idx'));
+        // Finde die aktive Textarea
+        var $ta = $('textarea:focus');
+        if (!$ta.length) $ta = $('.dgptm-forum-thread-form textarea, .dgptm-forum-reply-form textarea').last();
+        if (!$ta.length) { removeMentionDropdown(); return; }
+        var val = $ta.val();
+        var pos = $ta[0].selectionStart;
+        // Text vor @ + Name + Leerzeichen + Text nach Cursor
+        var newVal = val.substring(0, atIdx) + '@' + name + ' ' + val.substring(pos);
+        $ta.val(newVal);
+        var newPos = atIdx + name.length + 2;
+        $ta[0].setSelectionRange(newPos, newPos);
+        $ta.focus();
+        removeMentionDropdown();
+    });
+
+    // Dropdown schließen bei Klick außerhalb
+    $(document).on('click', function(e) {
+        if ($mentionDropdown && !$(e.target).closest('.dgptm-forum-mention-dropdown').length) {
+            removeMentionDropdown();
+        }
+    });
+
+    // Dropdown schließen bei Escape
+    $(document).on('keydown', function(e) {
+        if (e.key === 'Escape') removeMentionDropdown();
+    });
+
+    // ===========================================================
     // Init + Dashboard Re-Init
     // ===========================================================
 

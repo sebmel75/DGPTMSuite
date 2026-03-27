@@ -390,64 +390,50 @@ class DGPTM_Forum_Admin_Renderer {
      */
     public static function render_tab_admins() {
         ob_start();
-
         $admins = DGPTM_Forum_Permissions::get_forum_admins();
+        $blacklisted_users = class_exists('DGPTM_Forum_Notifications') ? DGPTM_Forum_Notifications::get_blacklisted_users() : [];
         ?>
         <div class="dgptm-forum-admin-section">
-
-            <h3>Forum-Admin hinzufügen</h3>
-            <div class="dgptm-forum-user-search-wrap" data-context="forum-admin">
-                <input type="text" class="dgptm-forum-user-search" placeholder="Benutzer suchen...">
-                <div class="dgptm-forum-user-results"></div>
+            <!-- Admin hinzufügen -->
+            <div style="border:1px solid #e4e8ec;border-radius:6px;padding:12px 14px;margin-bottom:10px;background:#fff">
+                <div style="font-size:13px;font-weight:600;color:#1d2327;margin-bottom:8px">Forum-Admin hinzuf&uuml;gen</div>
+                <div class="dgptm-forum-user-search-wrap" data-context="forum-admin">
+                    <input type="text" class="dgptm-forum-user-search" placeholder="Name oder E-Mail eingeben…" style="font-size:12px;padding:4px 8px;width:300px">
+                    <div class="dgptm-forum-user-results"></div>
+                </div>
             </div>
 
-            <hr>
-
-            <h3>Aktuelle Forum-Admins</h3>
+            <!-- Aktuelle Admins -->
+            <div style="font-size:12px;font-weight:600;color:#888;margin:12px 0 6px">Aktuelle Forum-Admins</div>
             <?php if (empty($admins)) : ?>
-                <p>Keine Forum-Admins konfiguriert. WordPress-Administratoren haben automatisch Zugriff.</p>
+                <div style="font-size:12px;color:#999;padding:8px 0">WordPress-Administratoren haben automatisch Zugriff.</div>
             <?php else : ?>
-                <div class="dgptm-forum-member-list">
-                    <?php foreach ($admins as $admin) : ?>
-                        <div class="member-item">
-                            <span>
-                                <?php echo esc_html(dgptm_forum_fullname($admin)); ?>
-                                <span class="member-role">(<?php echo esc_html($admin->user_email); ?>)</span>
-                            </span>
-                            <a href="#" class="dgptm-forum-btn danger dgptm-forum-admin-remove-admin"
-                               data-user-id="<?php echo esc_attr($admin->ID); ?>"
-                               title="Admin-Rechte entfernen">&times;</a>
+                <?php foreach ($admins as $admin) : ?>
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border:1px solid #eee;border-radius:4px;margin-bottom:4px;background:#fff">
+                        <div>
+                            <span style="font-size:12px;font-weight:500;color:#1d2327"><?php echo esc_html(dgptm_forum_fullname($admin)); ?></span>
+                            <span style="font-size:10px;color:#999;margin-left:6px"><?php echo esc_html($admin->user_email); ?></span>
                         </div>
-                    <?php endforeach; ?>
-                </div>
+                        <a href="#" class="dgptm-forum-btn danger dgptm-forum-btn-sm dgptm-forum-admin-remove-admin" data-user-id="<?php echo esc_attr($admin->ID); ?>">&times;</a>
+                    </div>
+                <?php endforeach; ?>
             <?php endif; ?>
 
-            <hr>
-
-            <h3>Blacklist (Benachrichtigungen deaktiviert)</h3>
-            <?php
-                $blacklisted_users = class_exists('DGPTM_Forum_Notifications')
-                    ? DGPTM_Forum_Notifications::get_blacklisted_users()
-                    : [];
-            ?>
+            <!-- Blacklist -->
+            <div style="font-size:12px;font-weight:600;color:#888;margin:16px 0 6px">Blacklist (Benachrichtigungen deaktiviert)</div>
             <?php if (empty($blacklisted_users)) : ?>
-                <p>Keine Benutzer auf der Blacklist.</p>
+                <div style="font-size:12px;color:#999;padding:8px 0">Keine Benutzer auf der Blacklist.</div>
             <?php else : ?>
-                <div class="dgptm-forum-member-list">
-                    <?php foreach ($blacklisted_users as $bl_user) : ?>
-                        <div class="member-item">
-                            <span>
-                                <?php echo esc_html(dgptm_forum_fullname($bl_user)); ?>
-                                <span class="member-role">(<?php echo esc_html($bl_user->user_email); ?>)</span>
-                            </span>
-                            <a href="#" class="dgptm-forum-btn secondary dgptm-forum-admin-unblacklist"
-                               data-user-id="<?php echo esc_attr($bl_user->ID); ?>"
-                               title="Entsperren" style="font-size:11px;padding:2px 8px">Entsperren</a>
+                <?php foreach ($blacklisted_users as $bl_user) : ?>
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border:1px solid #eee;border-radius:4px;margin-bottom:4px;background:#fff">
+                        <div>
+                            <span style="font-size:12px;color:#1d2327"><?php echo esc_html(dgptm_forum_fullname($bl_user)); ?></span>
+                            <span style="font-size:10px;color:#999;margin-left:6px"><?php echo esc_html($bl_user->user_email); ?></span>
                         </div>
-                    <?php endforeach; ?>
-                </div>
+                        <a href="#" class="dgptm-forum-btn secondary dgptm-forum-btn-sm dgptm-forum-admin-unblacklist" data-user-id="<?php echo esc_attr($bl_user->ID); ?>">Entsperren</a>
+                    </div>
+                <?php endforeach; ?>
             <?php endif; ?>
-
         </div>
         <?php
         return ob_get_clean();

@@ -1898,5 +1898,48 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
 
             wp_send_json_error( [ 'message' => 'Notifications-Klasse nicht verfügbar.' ] );
         }
+
+        /**
+         * Search users for @mention autocomplete.
+         * POST: term (min 3 chars)
+         * Returns up to 10 users with first_name + last_name.
+         */
+        private function search_mentions() {
+            $term = isset($_POST['term']) ? sanitize_text_field($_POST['term']) : '';
+            if (strlen($term) < 3) {
+                wp_send_json_success(['users' => []]);
+                return;
+            }
+
+            global $wpdb;
+            $like = '%' . $wpdb->esc_like($term) . '%';
+
+            // Search by first_name, last_name, or CONCAT
+            $users = $wpdb->get_results($wpdb->prepare(
+                "SELECT u.ID, um1.meta_value AS first_name, um2.meta_value AS last_name
+                 FROM {$wpdb->users} u
+                 LEFT JOIN {$wpdb->usermeta} um1 ON um1.user_id = u.ID AND um1.meta_key = 'first_name'
+                 LEFT JOIN {$wpdb->usermeta} um2 ON um2.user_id = u.ID AND um2.meta_key = 'last_name'
+                 WHERE um1.meta_value LIKE %s OR um2.meta_value LIKE %s
+                    OR CONCAT(um1.meta_value, ' ', um2.meta_value) LIKE %s
+                 ORDER BY um1.meta_value, um2.meta_value
+                 LIMIT 10",
+                $like, $like, $like
+            ));
+
+            $result = [];
+            foreach ($users as $u) {
+                $fn = trim(($u->first_name ?: '') . ' ' . ($u->last_name ?: ''));
+                if (!$fn) continue;
+                $is_bl = class_exists('DGPTM_Forum_Notifications') && DGPTM_Forum_Notifications::is_blacklisted($u->ID);
+                $result[] = [
+                    'id'   => (int)$u->ID,
+                    'name' => $fn,
+                    'blacklisted' => $is_bl,
+                ];
+            }
+
+            wp_send_json_success(['users' => $result]);
+        }
     }
 }

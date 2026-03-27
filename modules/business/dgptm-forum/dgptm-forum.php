@@ -99,6 +99,7 @@ if (!class_exists('DGPTM_Forum')) {
                 'dgptm_forum_admin_bulk_subscribe_ag',
                 'dgptm_forum_admin_unblacklist_user',
                 'dgptm_forum_toggle_blacklist',
+                'dgptm_forum_search_mentions',
             ];
 
             foreach (array_merge($forum_actions, $admin_actions) as $action) {

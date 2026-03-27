@@ -458,25 +458,22 @@ if (!class_exists('DGPTM_Forum_Ajax')) {
                 </div>
             </div>
 
-            <?php if (false) : // placeholder to keep structure ?>
-                <div class="dgptm-forum-actions">
-                </div>
-                <div class="dgptm-forum-compose-area" id="dgptm-forum-compose-thread" style="display:none;">
+            <?php if ($can_post) : ?>
+                <div class="dgptm-forum-compose-area" id="dgptm-forum-compose-thread" style="display:none;margin-bottom:10px;padding:10px 12px;background:#f8f9fa;border-radius:5px;border:1px solid #eee">
                     <form class="dgptm-forum-thread-form" enctype="multipart/form-data">
                         <input type="hidden" name="ag_id" value="<?php echo esc_attr($ag_id); ?>">
-                        <h4>Neuen Thread erstellen</h4>
-                        <div style="margin-bottom:10px">
-                            <input type="text" name="title" placeholder="Titel" required style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:14px">
+                        <div style="margin-bottom:8px">
+                            <input type="text" name="title" placeholder="Titel" required style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:3px;font-size:13px">
                         </div>
-                        <div style="margin-bottom:10px">
-                            <textarea name="content" rows="5" placeholder="Ihr Beitrag…" required style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:13px"></textarea>
+                        <div style="margin-bottom:8px">
+                            <textarea name="content" rows="3" placeholder="Ihr Beitrag…" required style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:3px;font-size:12px"></textarea>
                         </div>
-                        <div style="margin-bottom:10px">
-                            <input type="file" name="attachments[]" multiple accept=".pdf,.jpg,.jpeg,.png,.docx" style="font-size:12px">
-                        </div>
-                        <div>
-                            <button type="submit" class="dgptm-forum-btn dgptm-forum-btn-sm">Absenden</button>
-                            <a href="#" class="dgptm-forum-cancel-compose" style="margin-left:8px;font-size:11px;color:#888">Abbrechen</a>
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <input type="file" name="attachments[]" multiple accept=".pdf,.jpg,.jpeg,.png,.docx" style="font-size:10px">
+                            <div>
+                                <button type="submit" class="dgptm-forum-btn dgptm-forum-btn-sm">Absenden</button>
+                                <a href="#" class="dgptm-forum-cancel-compose" style="margin-left:6px;font-size:10px;color:#999">Abbrechen</a>
+                            </div>
                         </div>
                     </form>
                 </div>

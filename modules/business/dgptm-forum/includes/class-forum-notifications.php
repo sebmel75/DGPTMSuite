@@ -321,15 +321,14 @@ class DGPTM_Forum_Notifications {
     public static function process_mentions( $content, $post_type, $post_id, $thread_id, $author_id ) {
         $blacklisted_names = [];
 
-        // Parse @Vorname Nachname patterns
-        if ( ! preg_match_all( '/@([A-Za-zÄÖÜäöüß]+\s+[A-Za-zÄÖÜäöüß]+)/', $content, $matches ) ) {
+        // Parse @Vorname Nachname patterns (inkl. Bindestrich, Umlaute, diakritische Zeichen)
+        if ( ! preg_match_all( '/@([\p{L}\-]+\s+[\p{L}\-]+)/u', $content, $matches ) ) {
             return $blacklisted_names;
         }
 
         global $wpdb;
         $prefix = $wpdb->prefix . 'dgptm_forum_';
 
-        // Get thread title for the email
         $thread = $wpdb->get_row( $wpdb->prepare(
             "SELECT * FROM {$prefix}threads WHERE id = %d", $thread_id
         ) );
@@ -349,29 +348,23 @@ class DGPTM_Forum_Notifications {
             $parts     = explode( ' ', $full_name, 2 );
             if ( count( $parts ) < 2 ) continue;
 
-            $first = $parts[0];
-            $last  = $parts[1];
+            $first = trim( $parts[0] );
+            $last  = trim( $parts[1] );
 
-            // Search wp_users by first_name + last_name
-            $user_query = new \WP_User_Query( [
-                'meta_query' => [
-                    'relation' => 'AND',
-                    [
-                        'key'     => 'first_name',
-                        'value'   => $first,
-                        'compare' => '=',
-                    ],
-                    [
-                        'key'     => 'last_name',
-                        'value'   => $last,
-                        'compare' => '=',
-                    ],
-                ],
-                'number' => 1,
-            ] );
+            // Suche per SQL LIKE (robuster als exakter Match)
+            $mentioned_user = $wpdb->get_row( $wpdb->prepare(
+                "SELECT u.ID FROM {$wpdb->users} u
+                 JOIN {$wpdb->usermeta} um1 ON um1.user_id = u.ID AND um1.meta_key = 'first_name'
+                 JOIN {$wpdb->usermeta} um2 ON um2.user_id = u.ID AND um2.meta_key = 'last_name'
+                 WHERE um1.meta_value LIKE %s AND um2.meta_value LIKE %s
+                 LIMIT 1",
+                $wpdb->esc_like( $first ),
+                $wpdb->esc_like( $last )
+            ) );
 
-            $users = $user_query->get_results();
-            if ( empty( $users ) ) continue;
+            if ( ! $mentioned_user ) continue;
+            $mentioned_user = get_userdata( $mentioned_user->ID );
+            if ( ! $mentioned_user ) continue;
 
             $mentioned_user = $users[0];
 

@@ -366,8 +366,6 @@ class DGPTM_Forum_Notifications {
             $mentioned_user = get_userdata( $mentioned_user->ID );
             if ( ! $mentioned_user ) continue;
 
-            $mentioned_user = $users[0];
-
             // Skip self-mentions and duplicates
             if ( (int) $mentioned_user->ID === (int) $author_id ) continue;
             if ( in_array( (int) $mentioned_user->ID, $already_notified, true ) ) continue;

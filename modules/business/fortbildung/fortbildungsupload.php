@@ -43,7 +43,7 @@
  * - ✅ OPTIMIERUNG: Claude-Prompt verbessert zur besseren Unterscheidung Flyer vs. Nachweis
  * 
  * Changelog v3.6:
- * - ✅ KRITISCHER FIX: Modellname korrigiert (claude-sonnet-4-5-20250929 statt 4.5)
+ * - ✅ KRITISCHER FIX: Modellname korrigiert (claude-sonnet-4-6-20250514 statt 4.5)
  * - ✅ Fehler "model was not found" behoben
  * 
  * Changelog v3.5:
@@ -123,7 +123,7 @@ function fobi_ebcp_default_settings() {
         
         // Claude AI
         'claude_api_key' => '',
-        'claude_model' => 'claude-sonnet-4-5-20250929', // Neueste Version! (KORREKTUR: Bindestrich statt Punkt)
+        'claude_model' => 'claude-sonnet-4-6-20250514', // Neueste Version! (KORREKTUR: Bindestrich statt Punkt)
         'claude_max_tokens' => 2048,
         
         // OpenAI Vision
@@ -430,12 +430,11 @@ function fobi_ebcp_settings_page_render(){
                         <th>Claude Modell</th>
                         <td>
                             <select name="claude_model">
-                                <option value="claude-sonnet-4-5-20250929" <?php selected($s['claude_model'],'claude-sonnet-4-5-20250929'); ?>>Claude Sonnet 4.5 (neueste, empfohlen) ⭐</option>
-                                <option value="claude-3-5-sonnet-20240620" <?php selected($s['claude_model'],'claude-3-5-sonnet-20240620'); ?>>Claude 3.5 Sonnet (stabil)</option>
-                                <option value="claude-3-5-haiku-20241022" <?php selected($s['claude_model'],'claude-3-5-haiku-20241022'); ?>>Claude 3.5 Haiku (günstiger)</option>
-                                <option value="claude-3-opus-20240229" <?php selected($s['claude_model'],'claude-3-opus-20240229'); ?>>Claude 3 Opus (höchste Genauigkeit)</option>
+                                <option value="claude-sonnet-4-6-20250514" <?php selected($s['claude_model'],'claude-sonnet-4-6-20250514'); ?>>Claude Sonnet 4.6 (empfohlen) ⭐</option>
+                                <option value="claude-haiku-4-5-20251001" <?php selected($s['claude_model'],'claude-haiku-4-5-20251001'); ?>>Claude Haiku 4.5 (guenstiger, schnell)</option>
+                                <option value="claude-opus-4-6-20250610" <?php selected($s['claude_model'],'claude-opus-4-6-20250610'); ?>>Claude Opus 4.6 (hoechste Genauigkeit)</option>
                             </select>
-                            <p class="description"><strong>Sonnet 4.5:</strong> Neueste Version, beste Performance | <strong>Kosten:</strong> ~$0.02/Analyse</p>
+                            <p class="description"><strong>Sonnet 4.6:</strong> Bestes Preis-Leistungs-Verhaeltnis | <strong>Kosten:</strong> ~$0.01/Analyse</p>
                         </td>
                     </tr>
                     <tr>
@@ -710,6 +709,14 @@ function fobi_ebcp_shortcode_render($atts){
     .fobi-success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
     .fobi-error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
     .fobi-loading { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+    /* Dashboard-Integration (Forum-Vorbild) */
+    .dgptm-dash .fobi-ebcp-upload-wrap { max-width: 100%; margin: 0; padding: 0; background: none; border: none; border-radius: 0; }
+    .dgptm-dash .fobi-ebcp-upload-wrap h3 { font-size: 14px; margin: 0 0 8px; color: #1d2327; }
+    .dgptm-dash .fobi-ebcp-upload-wrap p { font-size: 13px; color: #888; margin-bottom: 12px; }
+    .dgptm-dash .fobi-ebcp-upload-wrap input[type=file] { border: 1px dashed #ccc; border-radius: 4px; padding: 8px; font-size: 13px; }
+    .dgptm-dash .fobi-ebcp-upload-wrap button[type=submit] { display: inline-block !important; padding: 4px 10px !important; border: 1px solid #0073aa !important; border-radius: 4px !important; background: #0073aa !important; color: #fff !important; font-size: 12px !important; font-weight: 400 !important; line-height: 1.4 !important; cursor: pointer; }
+    .dgptm-dash .fobi-ebcp-upload-wrap button[type=submit]:hover { background: #005d8c !important; }
+    .dgptm-dash .fobi-success, .dgptm-dash .fobi-error, .dgptm-dash .fobi-loading { padding: 10px; font-size: 13px; border-radius: 4px; }
     </style>
     <?php
     return ob_get_clean();
@@ -1044,7 +1051,7 @@ function fobi_ebcp_analyze_document($filepath, $mime, $expected_name, $s){
  * ============================================================ */
 function fobi_ebcp_claude_analyze($filepath, $mime, $expected_name, $s){
     $api_key = $s['claude_api_key'];
-    $model = $s['claude_model'] ?? 'claude-sonnet-4-5-20250929';
+    $model = $s['claude_model'] ?? 'claude-sonnet-4-6-20250514';
     $max_tokens = intval($s['claude_max_tokens'] ?? 2048);
     
     $file_data = file_get_contents($filepath);
@@ -1669,36 +1676,9 @@ function fobi_ebcp_send_rejected_email($user, $post_id, $reject_comment, $settin
 add_shortcode('fobi_nachweis_pruefliste', 'fobi_ebcp_pruefliste_shortcode');
 
 
-/**
- * ============================================================
- * KORRIGIERTE VERSION v2.1: Shortcode [fobi_nachweis_pruefliste]
- * ============================================================
- * 
- * WICHTIG: Diese Datei enthält NUR die zu ersetzenden/hinzuzufügenden Funktionen!
- * 
- * INSTALLATION:
- * 1. Backup der Datei ebcp-nachweis-upload-v3_9-komplett.php erstellen
- * 2. Funktion fobi_ebcp_pruefliste_shortcode() ERSETZEN (siehe unten)
- * 3. Funktion fobi_ebcp_ajax_load_pruefliste() HINZUFÜGEN (siehe unten)
- * 4. Funktion fobi_ebcp_ajax_load_details() ERSETZEN (siehe unten)
- * 
- * ÄNDERUNGEN V2.1:
- * ✅ FIX: Kritische Fehler behoben
- * ✅ FIX: Benutzer-Feld korrekt laden (ACF return_format = array)
- * ✅ FIX: Attachment-Feld korrekt laden (ACF return_format = url)
- * ✅ NEU: AJAX-Button zum on-demand Laden der Liste
- * ✅ OPTIMIERUNG: Keine doppelten Funktionsdefinitionen
- * ============================================================
- */
-
 /* ============================================================
- * SCHRITT 1: DIESE FUNKTION ERSETZEN
- * ============================================================
- * Suche in ebcp-nachweis-upload-v3_9-komplett.php nach:
- * - Zeile 1612: function fobi_ebcp_pruefliste_shortcode($atts){
- * 
- * Ersetze die KOMPLETTE Funktion (bis zur schließenden } vor dem nächsten Kommentar)
- * mit dem folgenden Code:
+ * Shortcode: [fobi_nachweis_pruefliste]
+ * Frontend-Pruefung von eingereichten Fortbildungsnachweisen
  * ============================================================ */
 
 function fobi_ebcp_pruefliste_shortcode($atts){
@@ -2113,6 +2093,31 @@ function fobi_ebcp_pruefliste_shortcode($atts){
         margin: 0;
         padding-left: 20px;
     }
+    /* Dashboard-Integration (Forum-Vorbild) */
+    .dgptm-dash .fobi-pruefliste-wrap { margin: 0; }
+    .dgptm-dash .fobi-load-section { padding: 30px 15px; border: 1px dashed #ccc; border-radius: 4px; background: #f8f9fa; }
+    .dgptm-dash .fobi-btn-load { padding: 4px 10px; font-size: 12px; font-weight: 400; border-radius: 4px; background: #0073aa; transition: background .15s; }
+    .dgptm-dash .fobi-btn-load:hover { background: #005d8c; transform: none; box-shadow: none; }
+    .dgptm-dash .fobi-info-text { font-size: 12px; margin-top: 8px; }
+    .dgptm-dash .fobi-pruefliste-table { box-shadow: none; margin-top: 12px; }
+    .dgptm-dash .fobi-pruefliste-table thead { background: none; color: #1d2327; }
+    .dgptm-dash .fobi-pruefliste-table th { color: #1d2327; padding: 8px 12px; font-size: 12px; font-weight: 600; text-transform: none; letter-spacing: 0; border-bottom: 2px solid #eee; }
+    .dgptm-dash .fobi-pruefliste-table td { padding: 10px 12px; border-bottom: 1px solid #eee; font-size: 13px; }
+    .dgptm-dash .fobi-pruefliste-table tbody tr:hover { background: #f8f9fa; }
+    .dgptm-dash .fobi-btn { padding: 4px 10px; font-size: 12px; border-radius: 4px; transition: background .15s; }
+    .dgptm-dash .fobi-btn-view { background: #0073aa; }
+    .dgptm-dash .fobi-btn-view:hover { background: #005d8c; }
+    .dgptm-dash .fobi-btn-approve { padding: 4px 10px; font-size: 12px; font-weight: 400; flex: none; }
+    .dgptm-dash .fobi-btn-reject-show { padding: 4px 10px; font-size: 12px; font-weight: 400; flex: none; }
+    .dgptm-dash .fobi-btn-reject-submit { padding: 4px 10px; font-size: 12px; font-weight: 400; }
+    .dgptm-dash .fobi-actions { gap: 8px; margin-top: 16px; padding-top: 12px; }
+    .dgptm-dash .fobi-detail-grid { gap: 8px; margin: 12px 0; }
+    .dgptm-dash .fobi-detail-item { padding: 10px; background: #f8f9fa; border-radius: 4px; }
+    .dgptm-dash .fobi-detail-item label { font-size: 12px; color: #888; margin-bottom: 2px; }
+    .dgptm-dash .fobi-detail-item .value { font-size: 14px; }
+    .dgptm-dash .fobi-no-results { padding: 24px; font-size: 14px; border-radius: 4px; }
+    .dgptm-dash .fobi-reject-form { padding: 12px; }
+    .dgptm-dash .fobi-reject-comment { min-height: 80px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
     </style>
     <?php
     return ob_get_clean();
@@ -2120,18 +2125,8 @@ function fobi_ebcp_pruefliste_shortcode($atts){
 
 
 /* ============================================================
- * SCHRITT 2: DIESE FUNKTION HINZUFÜGEN
- * ============================================================
- * Füge diese Funktion NACH der obigen Funktion ein, aber VOR
- * der nächsten AJAX-Handler-Funktion (fobi_ebcp_ajax_load_details)
- * 
- * WICHTIG: Prüfe ob diese Zeile bereits existiert:
- * add_action('wp_ajax_fobi_load_pruefliste', 'fobi_ebcp_ajax_load_pruefliste');
- * 
- * Falls JA: Ersetze nur die Funktion, nicht die add_action Zeile
- * Falls NEIN: Füge beides hinzu
+ * AJAX-Handler: Pruefliste laden
  * ============================================================ */
-
 add_action('wp_ajax_fobi_load_pruefliste', 'fobi_ebcp_ajax_load_pruefliste');
 
 function fobi_ebcp_ajax_load_pruefliste(){
@@ -2276,17 +2271,91 @@ function fobi_ebcp_ajax_load_pruefliste(){
     wp_send_json_success(array('html' => ob_get_clean()));
 }
 
+/* ============================================================
+ * AJAX-Handler: Nachweis genehmigen
+ * ============================================================ */
+add_action('wp_ajax_fobi_approve_nachweis', 'fobi_ebcp_ajax_approve_nachweis');
+
+function fobi_ebcp_ajax_approve_nachweis(){
+    check_ajax_referer('fobi_pruefliste', 'nonce');
+
+    if( ! current_user_can('edit_posts') ){
+        wp_send_json_error('Keine Berechtigung.');
+    }
+
+    $post_id = intval($_POST['post_id']);
+    $post = get_post($post_id);
+
+    if( ! $post || $post->post_type !== 'fortbildung' ){
+        wp_send_json_error('Fortbildung nicht gefunden.');
+    }
+
+    // Freigeben
+    update_field('freigegeben', true, $post_id);
+    wp_update_post(array('ID' => $post_id, 'post_status' => 'publish'));
+
+    // E-Mail an Benutzer senden
+    $user_field = get_field('user', $post_id);
+    $user = null;
+    if( is_array($user_field) && isset($user_field['ID']) ){
+        $user = get_userdata($user_field['ID']);
+    } elseif( is_numeric($user_field) ){
+        $user = get_userdata($user_field);
+    }
+
+    if( $user ){
+        $settings = fobi_ebcp_get_settings();
+        fobi_ebcp_send_approved_email($user, $post_id, $settings);
+    }
+
+    wp_send_json_success(array('message' => 'Nachweis genehmigt und Benutzer benachrichtigt.'));
+}
 
 /* ============================================================
- * SCHRITT 3: DIESE FUNKTION ERSETZEN
- * ============================================================
- * Suche in ebcp-nachweis-upload-v3_9-komplett.php nach:
- * - function fobi_ebcp_ajax_load_details()
- * 
- * Ersetze die KOMPLETTE Funktion mit dem folgenden Code:
- * 
- * WICHTIG: Behalte diese Zeile ÜBER der Funktion:
- * add_action('wp_ajax_fobi_load_nachweis_details', 'fobi_ebcp_ajax_load_details');
+ * AJAX-Handler: Nachweis ablehnen
+ * ============================================================ */
+add_action('wp_ajax_fobi_reject_nachweis', 'fobi_ebcp_ajax_reject_nachweis');
+
+function fobi_ebcp_ajax_reject_nachweis(){
+    check_ajax_referer('fobi_pruefliste', 'nonce');
+
+    if( ! current_user_can('edit_posts') ){
+        wp_send_json_error('Keine Berechtigung.');
+    }
+
+    $post_id = intval($_POST['post_id']);
+    $comment = sanitize_textarea_field($_POST['comment'] ?? '');
+    $post = get_post($post_id);
+
+    if( ! $post || $post->post_type !== 'fortbildung' ){
+        wp_send_json_error('Fortbildung nicht gefunden.');
+    }
+
+    // Status auf Entwurf setzen und Ablehnungsgrund speichern
+    wp_update_post(array('ID' => $post_id, 'post_status' => 'draft'));
+    update_post_meta($post_id, 'fobi_reject_comment', $comment);
+    update_post_meta($post_id, 'fobi_rejected_at', current_time('mysql'));
+
+    // E-Mail an Benutzer senden
+    $user_field = get_field('user', $post_id);
+    $user = null;
+    if( is_array($user_field) && isset($user_field['ID']) ){
+        $user = get_userdata($user_field['ID']);
+    } elseif( is_numeric($user_field) ){
+        $user = get_userdata($user_field);
+    }
+
+    if( $user ){
+        $settings = fobi_ebcp_get_settings();
+        fobi_ebcp_send_rejected_email($user, $post_id, $comment, $settings);
+    }
+
+    wp_send_json_success(array('message' => 'Nachweis abgelehnt und Benutzer benachrichtigt.'));
+}
+
+
+/* ============================================================
+ * AJAX-Handler: Nachweis-Details laden (Modal)
  * ============================================================ */
 add_action('wp_ajax_fobi_load_nachweis_details', 'fobi_ebcp_ajax_load_details');
 

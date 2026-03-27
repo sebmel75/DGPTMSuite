@@ -45,6 +45,8 @@ jQuery(function($) {
             loadTab(id, $fp);
             loaded[id] = true;
         }
+
+        $(document).trigger('dgptm:ftab-switched', { panel: id });
     });
 
     // Deep link: #tab-name oder ?tab=name
@@ -93,6 +95,7 @@ jQuery(function($) {
                 });
                 // Notify other modules that tab content was loaded
                 $(document).trigger('dgptm_tab_loaded', [id]);
+                $(document).trigger('dgptm:ftab-switched', { panel: id });
             } else {
                 $target.html('<p style="color:red">' + (r.data || 'Fehler') + '</p>');
             }

@@ -282,8 +282,8 @@ if (!class_exists('ZK_Shortcodes')) {
             ]);
 
             ob_start();
-            include ZK_PLUGIN_DIR . 'templates/partials/_partial-issues.php';
-            include ZK_PLUGIN_DIR . 'templates/partials/_partial-modals-issues.php';
+            include ZK_PLUGIN_DIR . 'templates/_partial-issues.php';
+            include ZK_PLUGIN_DIR . 'templates/_partial-modals-issues.php';
             echo self::render_shared_elements();
             return ob_get_clean();
         }
@@ -308,8 +308,8 @@ if (!class_exists('ZK_Shortcodes')) {
             ]);
 
             ob_start();
-            include ZK_PLUGIN_DIR . 'templates/partials/_partial-articles.php';
-            include ZK_PLUGIN_DIR . 'templates/partials/_partial-modals-articles.php';
+            include ZK_PLUGIN_DIR . 'templates/_partial-articles.php';
+            include ZK_PLUGIN_DIR . 'templates/_partial-modals-articles.php';
             echo self::render_shared_elements();
             return ob_get_clean();
         }
@@ -333,7 +333,7 @@ if (!class_exists('ZK_Shortcodes')) {
             ]);
 
             ob_start();
-            include ZK_PLUGIN_DIR . 'templates/partials/_partial-accepted.php';
+            include ZK_PLUGIN_DIR . 'templates/_partial-accepted.php';
             echo self::render_shared_elements();
             return ob_get_clean();
         }
@@ -358,8 +358,8 @@ if (!class_exists('ZK_Shortcodes')) {
             ]);
 
             ob_start();
-            include ZK_PLUGIN_DIR . 'templates/partials/_partial-pdf-import.php';
-            include ZK_PLUGIN_DIR . 'templates/partials/_partial-modals-pdf.php';
+            include ZK_PLUGIN_DIR . 'templates/_partial-pdf-import.php';
+            include ZK_PLUGIN_DIR . 'templates/_partial-modals-pdf.php';
             echo self::render_shared_elements();
             return ob_get_clean();
         }

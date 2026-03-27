@@ -399,14 +399,19 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
             $status_filter = sanitize_text_field($_POST['status'] ?? '');
             $year_filter = sanitize_text_field($_POST['year'] ?? '');
 
+            // Default: laufendes Jahr (Performance)
+            if (empty($year_filter)) {
+                $year_filter = date('Y');
+            }
+
             $args = [
                 'post_type' => ZK_POST_TYPE,
                 'posts_per_page' => -1,
                 'post_status' => 'publish'
             ];
 
-            // Jahr-Filter
-            if (!empty($year_filter)) {
+            // Jahr-Filter (immer aktiv, default = aktuelles Jahr)
+            if ($year_filter !== 'all') {
                 $args['meta_query'][] = [
                     'key' => 'jahr',
                     'value' => $year_filter,
@@ -732,17 +737,30 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
             }
 
             $search = sanitize_text_field($_POST['search'] ?? '');
+            $year_filter = sanitize_text_field($_POST['year'] ?? '');
 
             $sort_by = sanitize_text_field($_POST['sort_by'] ?? 'date');
             $sort_order = sanitize_text_field($_POST['sort_order'] ?? 'DESC');
 
+            // Default: laufendes Jahr (Performance)
+            if (empty($year_filter)) {
+                $year_filter = date('Y');
+            }
+
             $args = [
                 'post_type' => ZK_PUBLIKATION_TYPE,
-                'posts_per_page' => 200,
+                'posts_per_page' => 100,
                 'post_status' => ['publish', 'draft', 'pending'],
                 'orderby' => $sort_by === 'modified' ? 'modified' : 'date',
                 'order' => strtoupper($sort_order) === 'ASC' ? 'ASC' : 'DESC'
             ];
+
+            // Jahresfilter via Post-Erstellungsdatum
+            if ($year_filter !== 'all') {
+                $args['date_query'] = [
+                    ['year' => (int) $year_filter]
+                ];
+            }
 
             if (!empty($search)) {
                 $args['s'] = $search;

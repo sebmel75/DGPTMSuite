@@ -22,6 +22,9 @@ if (!defined('ABSPATH')) exit;
                 <option value="DESC">Neueste zuerst</option>
                 <option value="ASC">Älteste zuerst</option>
             </select>
+            <select id="zk-article-year" class="zk-select">
+                <option value="<?php echo date('Y'); ?>"><?php echo date('Y'); ?></option>
+            </select>
         </div>
         <button type="button" class="zk-btn zk-btn-primary" id="zk-new-article-btn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

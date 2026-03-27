@@ -162,8 +162,8 @@
                 }, 300);
             });
 
-            // Artikel-Sortierung
-            $(document).on('change', '#zk-article-sort, #zk-article-order', function() {
+            // Artikel-Sortierung und Jahresfilter
+            $(document).on('change', '#zk-article-sort, #zk-article-order, #zk-article-year', function() {
                 self.loadArticles();
             });
 
@@ -302,6 +302,7 @@
          */
         loadYearFilter: function() {
             var self = this;
+            var currentYear = new Date().getFullYear().toString();
 
             $.ajax({
                 url: this.config.ajaxUrl,
@@ -313,11 +314,29 @@
                 success: function(response) {
                     if (response.success && response.data.years) {
                         var $select = $('#zk-filter-year');
-                        $select.find('option:not(:first)').remove();
+                        $select.empty();
+                        $select.append('<option value="' + currentYear + '">' + currentYear + '</option>');
 
                         response.data.years.forEach(function(year) {
-                            $select.append('<option value="' + year + '">' + year + '</option>');
+                            if (year !== currentYear) {
+                                $select.append('<option value="' + year + '">' + year + '</option>');
+                            }
                         });
+
+                        $select.append('<option value="all">Alle Jahre</option>');
+
+                        // Auch Artikel-Jahresfilter befuellen
+                        var $selectArticles = $('#zk-article-year');
+                        if ($selectArticles.length) {
+                            $selectArticles.empty();
+                            $selectArticles.append('<option value="' + currentYear + '">' + currentYear + '</option>');
+                            response.data.years.forEach(function(year) {
+                                if (year !== currentYear) {
+                                    $selectArticles.append('<option value="' + year + '">' + year + '</option>');
+                                }
+                            });
+                            $selectArticles.append('<option value="all">Alle Jahre</option>');
+                        }
                     }
                 }
             });
@@ -827,7 +846,8 @@
                     nonce: this.config.nonce,
                     search: search,
                     sort_by: sortBy,
-                    sort_order: sortOrder
+                    sort_order: sortOrder,
+                    year: $('#zk-article-year').val() || ''
                 },
                 success: function(response) {
                     if (response.success) {

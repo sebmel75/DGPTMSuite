@@ -13,25 +13,34 @@
             adminUrl: ''
         },
 
+        isDashboard: false,
+        sectionLoaded: {},
+        sectionToTab: {
+            'issues':     'zk-ausgaben',
+            'articles':   'zk-artikel',
+            'accepted':   'zk-einreichungen',
+            'pdf-import': 'zk-pdfimport'
+        },
+
         /**
          * Initialisierung
          */
         init: function() {
-            console.log('ZK Manager: Initialisierung gestartet');
-
             if (typeof zkAdmin === 'undefined') {
-                console.error('ZK Admin: Konfiguration nicht geladen');
                 return;
             }
 
-            console.log('ZK Manager: Konfiguration geladen', zkAdmin);
-
             this.config = zkAdmin;
+            this.isDashboard = $('.dgptm-dash .zk-section-wrap').length > 0;
             this.bindEvents();
-            this.loadYearFilter();
-            this.loadIssues();
 
-            console.log('ZK Manager: Initialisierung abgeschlossen');
+            if (this.isDashboard) {
+                this.bindDashboardHooks();
+                this.autoDetect();
+            } else {
+                this.loadYearFilter();
+                this.loadIssues();
+            }
         },
 
         /**
@@ -201,6 +210,80 @@
                     self.closeModals();
                 }
             });
+        },
+
+        /**
+         * Dashboard-Events binden (Lazy Loading bei Tab-Wechsel)
+         */
+        bindDashboardHooks: function() {
+            var self = this;
+
+            $(document).on('dgptm:ftab-switched', function(e, data) {
+                if (!data || !data.panel) return;
+
+                var $panel = $('[data-fpanel="' + data.panel + '"]');
+                if (!$panel.length) return;
+
+                if ($panel.find('#zk-issues-list').length && !self.sectionLoaded.issues) {
+                    self.sectionLoaded.issues = true;
+                    self.loadYearFilter();
+                    self.loadIssues();
+                }
+
+                if ($panel.find('#zk-articles-list').length && !self.sectionLoaded.articles) {
+                    self.sectionLoaded.articles = true;
+                    self.loadArticles();
+                }
+
+                if ($panel.find('#zk-accepted-list').length && !self.sectionLoaded.accepted) {
+                    self.sectionLoaded.accepted = true;
+                    self.loadAcceptedArticles();
+                }
+            });
+        },
+
+        /**
+         * Erkennt bereits sichtbare Sections und laedt deren Daten
+         */
+        autoDetect: function() {
+            var self = this;
+
+            setTimeout(function() {
+                $('.zk-section-wrap:visible').each(function() {
+                    var section = $(this).data('section');
+                    if (section === 'issues' && !self.sectionLoaded.issues) {
+                        self.sectionLoaded.issues = true;
+                        self.loadYearFilter();
+                        self.loadIssues();
+                    }
+                    if (section === 'articles' && !self.sectionLoaded.articles) {
+                        self.sectionLoaded.articles = true;
+                        self.loadArticles();
+                    }
+                    if (section === 'accepted' && !self.sectionLoaded.accepted) {
+                        self.sectionLoaded.accepted = true;
+                        self.loadAcceptedArticles();
+                    }
+                });
+            }, 100);
+        },
+
+        /**
+         * Navigiert zu einer Section — Dashboard via Folder-Tab, standalone via switchTab
+         */
+        navigateToSection: function(sectionId) {
+            if (!this.isDashboard) {
+                this.switchTab(sectionId);
+                return;
+            }
+
+            var tabId = this.sectionToTab[sectionId];
+            if (!tabId) return;
+
+            var $ftab = $('.dgptm-ftab[data-ftab="' + tabId + '"]');
+            if ($ftab.length) {
+                $ftab.trigger('click');
+            }
         },
 
         /**
@@ -1763,8 +1846,9 @@
                         self.resetPdfImport();
 
                         // Zur Ausgaben-Übersicht wechseln
-                        self.switchTab('issues');
-                        self.loadIssues();
+                        self.sectionLoaded.issues = false;
+                        self.navigateToSection('issues');
+                        if (!self.isDashboard) self.loadIssues();
                     } else {
                         self.showToast('error', response.data.message || 'Fehler beim Import');
                     }
@@ -1944,7 +2028,7 @@
 
     // Initialisierung
     $(document).ready(function() {
-        if ($('#zk-manager').length > 0) {
+        if ($('#zk-manager').length > 0 || $('.zk-section-wrap').length > 0) {
             ZKManager.init();
             ZKManager.bindPdfImportEvents();
         }

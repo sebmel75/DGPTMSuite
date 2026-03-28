@@ -40,6 +40,7 @@ class DGPTM_Plugin_Manager {
         add_action('wp_ajax_dgptm_delete_module', [$this, 'ajax_delete_module']);
         add_action('wp_ajax_dgptm_reinit_module', [$this, 'ajax_reinit_module']);
         add_action('admin_post_dgptm_clear_logs', [$this, 'clear_logs']);
+        add_action('wp_ajax_dgptm_cleanup_logs', [$this, 'ajax_cleanup_logs']);
 
         // Module Metadata AJAX-Handler
         add_action('wp_ajax_dgptm_add_flag', [$this, 'ajax_add_flag']);
@@ -899,6 +900,50 @@ class DGPTM_Plugin_Manager {
             ], admin_url('admin.php')));
         }
         exit;
+    }
+
+    /**
+     * AJAX: Log-Tabelle manuell bereinigen
+     */
+    public function ajax_cleanup_logs() {
+        check_ajax_referer('dgptm_cleanup_logs', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Keine Berechtigung.');
+        }
+
+        $mode = sanitize_text_field($_POST['mode'] ?? 'old');
+        $hours = absint($_POST['hours'] ?? 48);
+
+        if (!class_exists('DGPTM_Logger_Installer') || !DGPTM_Logger_Installer::table_exists()) {
+            wp_send_json_error('Log-Tabelle nicht verfuegbar.');
+        }
+
+        global $wpdb;
+        $table = DGPTM_Logger_Installer::get_table_name();
+        $deleted = 0;
+
+        switch ($mode) {
+            case 'old':
+                $deleted = DGPTM_Logger_Installer::cleanup_old_logs($hours, true);
+                $msg = sprintf('%s Eintraege aelter als %d Stunden geloescht (Critical/Error erhalten).', number_format($deleted, 0, ',', '.'), $hours);
+                break;
+
+            case 'info':
+                $deleted = $wpdb->query("DELETE FROM $table WHERE level = 'info'");
+                $msg = sprintf('%s Info-Eintraege geloescht.', number_format($deleted, 0, ',', '.'));
+                break;
+
+            case 'all':
+                $deleted = $wpdb->query("TRUNCATE TABLE $table");
+                $msg = 'Log-Tabelle komplett geleert.';
+                break;
+
+            default:
+                wp_send_json_error('Unbekannter Modus.');
+        }
+
+        wp_send_json_success(['message' => $msg, 'deleted' => $deleted]);
     }
 
     /**

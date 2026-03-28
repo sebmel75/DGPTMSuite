@@ -313,6 +313,57 @@ $level_icons = [
             </div>
             <?php endif; ?>
 
+            <?php if ($db_available): ?>
+            <div style="background: #fff8e1; border-left: 4px solid #f0ad4e; padding: 15px; margin: 20px 0;">
+                <h4 style="margin-top: 0;">Log-Tabelle bereinigen</h4>
+                <p style="margin: 0 0 12px; font-size: 13px; color: #666;">
+                    Loescht Eintraege aus der Datenbank. Critical/Error-Eintraege bleiben bei der Alters-Bereinigung erhalten.
+                </p>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                    <button type="button" id="dgptm-cleanup-old" class="button" data-mode="old">
+                        Aelter als <input type="number" id="dgptm-cleanup-hours" value="48" min="1" max="8760" style="width: 60px; margin: 0 4px;"> Stunden loeschen
+                    </button>
+                    <button type="button" id="dgptm-cleanup-info" class="button" data-mode="info">
+                        Nur Info-Eintraege loeschen
+                    </button>
+                    <button type="button" id="dgptm-cleanup-all" class="button button-link-delete" data-mode="all">
+                        Alle Eintraege loeschen
+                    </button>
+                </div>
+                <p id="dgptm-cleanup-result" style="margin: 10px 0 0; display: none;"></p>
+            </div>
+            <script>
+            jQuery(function($){
+                $('[id^="dgptm-cleanup-"]').filter('button').on('click', function(){
+                    var mode = $(this).data('mode');
+                    var hours = $('#dgptm-cleanup-hours').val();
+                    var msg = mode === 'all' ? 'ALLE Log-Eintraege unwiderruflich loeschen?' :
+                              mode === 'info' ? 'Alle Info-Eintraege loeschen (Errors/Critical bleiben)?' :
+                              'Eintraege aelter als ' + hours + ' Stunden loeschen?';
+
+                    if (!confirm(msg)) return;
+
+                    var $result = $('#dgptm-cleanup-result');
+                    $result.html('Bereinige...').show().css('color', '#666');
+
+                    $.post(ajaxurl, {
+                        action: 'dgptm_cleanup_logs',
+                        nonce: '<?php echo wp_create_nonce('dgptm_cleanup_logs'); ?>',
+                        mode: mode,
+                        hours: hours
+                    }, function(res){
+                        if (res.success) {
+                            $result.html(res.data.message).css('color', '#46b450');
+                            setTimeout(function(){ location.reload(); }, 1500);
+                        } else {
+                            $result.html(res.data || 'Fehler').css('color', '#dc3232');
+                        }
+                    });
+                });
+            });
+            </script>
+            <?php endif; ?>
+
             <p class="submit">
                 <button type="submit" name="dgptm_save_logging_settings" class="button button-primary">
                     <?php _e('Einstellungen speichern', 'dgptm-suite'); ?>

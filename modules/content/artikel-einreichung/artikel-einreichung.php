@@ -20,6 +20,8 @@ require_once __DIR__ . '/includes/class-sharepoint-client.php';
 require_once __DIR__ . '/includes/class-sharepoint-uploader.php';
 require_once __DIR__ . '/includes/class-upload-token.php';
 require_once __DIR__ . '/includes/class-reviewer-shortcode.php';
+require_once __DIR__ . '/includes/class-crm-reviewer.php';
+require_once __DIR__ . '/includes/class-role-manager.php';
 
 // Initialize database tables
 register_activation_hook(__FILE__, array('DGPTM_Artikel_DB_Installer', 'install'));
@@ -137,6 +139,9 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
 
             // Admin notices
             add_action('admin_notices', [$this, 'show_admin_notices']);
+
+            // Autor-Rolle bei Login ggf. entziehen
+            add_action('wp_login', [$this, 'on_user_login'], 10, 2);
         }
 
         /**
@@ -149,6 +154,13 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
                 echo '<p><strong>Artikel-Einreichung:</strong> ' . $count . ' Testdatensätze wurden erfolgreich erstellt.</p>';
                 echo '</div>';
             }
+        }
+
+        /**
+         * Autor-Rolle bei Login pruefen und ggf. entziehen
+         */
+        public function on_user_login($user_login, $user) {
+            DGPTM_Artikel_Role_Manager::maybe_revoke_autor_role($user->ID);
         }
 
         /**

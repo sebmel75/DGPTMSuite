@@ -750,3 +750,99 @@ body .dgptm-artikel-form .btn.btn-primary:hover {
         display: none;
     }
 }
+
+/* ========================================
+   Dashboard-Integration (Forum-Vorbild)
+   ======================================== */
+
+/* Container-Reset */
+.dgptm-dash .dgptm-artikel-container { max-width: 100%; padding: 0; }
+.dgptm-dash .dgptm-artikel-form { padding: 0; background: none; border: none; box-shadow: none; border-radius: 0; }
+
+/* Headings */
+.dgptm-dash .dgptm-artikel-container h2 { font-size: 15px; margin: 0 0 12px; color: #1d2327; }
+.dgptm-dash .dgptm-artikel-container h3 { font-size: 14px; margin: 16px 0 8px; color: #1d2327; }
+
+/* Buttons: Forum-Stil */
+.dgptm-dash .dgptm-artikel-container .btn,
+.dgptm-dash .dgptm-artikel-container button[type="submit"],
+.dgptm-dash .dgptm-artikel-container button,
+.dgptm-dash .dgptm-artikel-container .btn-primary {
+    display: inline-block !important;
+    padding: 4px 10px !important;
+    border: 1px solid #0073aa !important;
+    border-radius: 4px !important;
+    background: #0073aa !important;
+    color: #fff !important;
+    font-size: 12px !important;
+    font-weight: 400 !important;
+    line-height: 1.4 !important;
+    text-decoration: none !important;
+    min-height: 0 !important;
+    height: auto !important;
+    box-shadow: none !important;
+    transition: background .15s;
+}
+.dgptm-dash .dgptm-artikel-container .btn:hover,
+.dgptm-dash .dgptm-artikel-container button:hover { background: #005d8c !important; }
+
+.dgptm-dash .dgptm-artikel-container .btn-secondary { background: #f0f0f0 !important; border-color: #ccc !important; color: #555 !important; }
+.dgptm-dash .dgptm-artikel-container .btn-secondary:hover { background: #e0e0e0 !important; }
+.dgptm-dash .dgptm-artikel-container .btn-success { background: #46b450 !important; border-color: #46b450 !important; }
+.dgptm-dash .dgptm-artikel-container .btn-danger { background: #dc3232 !important; border-color: #dc3232 !important; }
+
+/* Inputs */
+.dgptm-dash .dgptm-artikel-container input[type="text"],
+.dgptm-dash .dgptm-artikel-container input[type="email"],
+.dgptm-dash .dgptm-artikel-container input[type="url"],
+.dgptm-dash .dgptm-artikel-container input[type="date"],
+.dgptm-dash .dgptm-artikel-container textarea,
+.dgptm-dash .dgptm-artikel-container select {
+    padding: 8px !important;
+    border: 1px solid #ccc !important;
+    border-radius: 4px !important;
+    font-size: 14px !important;
+    box-shadow: none !important;
+}
+
+/* Labels */
+.dgptm-dash .dgptm-artikel-container label { font-weight: 500; font-size: 13px; margin-bottom: 4px; }
+
+/* Tables */
+.dgptm-dash .dgptm-artikel-table { box-shadow: none; border-radius: 0; }
+.dgptm-dash .dgptm-artikel-table thead { background: none; }
+.dgptm-dash .dgptm-artikel-table th { color: #1d2327; padding: 8px 12px; font-size: 12px; font-weight: 600; text-transform: none; border-bottom: 2px solid #eee; background: none; }
+.dgptm-dash .dgptm-artikel-table td { padding: 10px 12px; border-bottom: 1px solid #eee; font-size: 13px; }
+.dgptm-dash .dgptm-artikel-table tbody tr:hover { background: #f8f9fa; }
+
+/* Status Badges */
+.dgptm-dash .dgptm-artikel-container .status-badge { padding: 2px 8px; border-radius: 10px; font-size: 0.75em; font-weight: 600; }
+
+/* Cards */
+.dgptm-dash .dgptm-artikel-container .article-card,
+.dgptm-dash .dgptm-artikel-container .detail-card { box-shadow: none; border: 1px solid #eee; border-radius: 4px; padding: 12px; }
+
+/* Progress Steps kompakter */
+.dgptm-dash .progress-steps { gap: 8px; }
+.dgptm-dash .progress-step .step-number { width: 24px; height: 24px; font-size: 12px; line-height: 24px; }
+.dgptm-dash .progress-step .step-label { font-size: 12px; }
+
+/* Tabs */
+.dgptm-dash .dgptm-artikel-container .tab-nav a { padding: 6px 12px; font-size: 12px; }
+
+/* File Upload */
+.dgptm-dash .dgptm-artikel-container .file-upload-zone { padding: 20px; border-radius: 4px; }
+
+/* Timeline */
+.dgptm-dash .dgptm-artikel-container .timeline-item { padding: 10px 0; }
+
+/* Loading */
+.dgptm-dash .dgptm-artikel-container .loading { text-align: center; padding: 30px; color: #888; }
+
+/* Form Intro */
+.dgptm-dash .dgptm-artikel-container .form-intro { font-size: 13px; color: #888; margin-bottom: 12px; }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .dgptm-dash .dgptm-artikel-container button { width: auto !important; }
+}

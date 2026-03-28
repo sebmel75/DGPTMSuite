@@ -32,6 +32,10 @@
 
 Kein Template-Umbau — nur CSS-Overrides (~100-120 Zeilen).
 
+### Token-Zugriff
+
+Der bestehende Token-basierte Zugriff auf Artikel (fuer nicht-eingeloggte Autoren und Reviewer) bleibt vollstaendig erhalten. Die Dashboard-Integration ist ein **zusaetzlicher** Zugriffsweg — Token-URLs funktionieren weiterhin unabhaengig.
+
 ---
 
 ## 2. Reviewer-Gruppen-Management

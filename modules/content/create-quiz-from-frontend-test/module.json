@@ -1,0 +1,19 @@
+{
+    "id": "create-quiz-from-frontend-test",
+    "name": "Quiz Maker Add-on - Create quiz from frontend",
+    "description": "This is a short description of what the plugin does. It\\'s displayed in the WordPress admin area.",
+    "version": "1.0.6",
+    "author": "Quiz Maker team",
+    "main_file": "quiz-maker-frontend-requests.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": []
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "content",
+    "icon": "dashicons-admin-plugins",
+    "active": false,
+    "can_export": true
+}

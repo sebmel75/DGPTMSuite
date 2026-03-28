@@ -1,0 +1,58 @@
+/**
+ * All of the CSS for your admin-specific functionality should be
+ * included in this file.
+ */
+ .ays_quiz_approve_button[data-type="approve"]{
+    color: #fff;
+    border-color: #00af00;
+    background-color: #00af00;
+}
+
+input.ays_quiz_approve_button[data-type="approve"]:active,
+input.ays_quiz_approve_button[data-type="approve"]:hover,
+input.ays_quiz_approve_button[data-type="approve"]:focus{
+    background: #00af00;
+    border-color: #00af00;
+    color: #fff;
+    box-shadow: 0 0 0 1px #036b03;
+    outline: 2px solid transparent;
+    outline-offset: 0;
+}
+
+input.ays_quiz_approve_button[data-type="create"]{
+    color: #000;
+    border-color: #d0b004;
+    background-color: #ffd700;
+}
+
+input.ays_quiz_approve_button[data-type="create"]:active,
+input.ays_quiz_approve_button[data-type="create"]:hover,
+input.ays_quiz_approve_button[data-type="create"]:focus{
+    background: #ffd700;
+    border-color: #ffd700; 
+    color: #000;
+    box-shadow: 0 0 0 1px #d0b004;
+    outline: 2px solid transparent;
+    outline-offset: 0;
+}
+input#ays_fr_save {
+    margin: 11px 0;
+}
+
+div.ays-quiz-frontend-request-content{
+    margin: 20px 10px;
+}
+
+p.ays-frontend-request-data-text,
+p.ays-frontend-request-data-text-answer,
+p.ays-frontend-request-data-number-answer{
+    font-size: 18px;
+}
+
+.ays-frontend-request-data{
+    font-weight: bold;
+}
+
+p.ays-frontend-request-data-text-answer, p.ays-frontend-request-data-number-answer, div.ays-frontend-request-data-text-input-type{
+    margin: 0 15px;
+}

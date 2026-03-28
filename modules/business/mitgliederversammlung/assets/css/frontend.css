@@ -1,0 +1,453 @@
+/* ===========================================
+   DGPTM Mitgliederversammlung - Frontend CSS
+   =========================================== */
+
+/* --- Layout --- */
+.dgptm-mv-wrap {
+	max-width: 1200px;
+	margin: 1em auto;
+	font-family: system-ui, -apple-system, sans-serif;
+}
+
+.dgptm-mv-notice {
+	padding: 1em;
+	background: #f0f4ff;
+	border-left: 4px solid #2d6cdf;
+	border-radius: 4px;
+	margin: 1em 0;
+}
+
+.dgptm-mv-hint {
+	font-size: 13px;
+	color: #666;
+	margin: 4px 0;
+}
+
+/* --- Buttons --- */
+.dgptm-mv-btn {
+	display: inline-block;
+	padding: 8px 16px;
+	border: 1px solid #d0d7de;
+	border-radius: 6px;
+	background: #f6f8fa;
+	cursor: pointer;
+	font-size: 14px;
+	transition: all 0.15s;
+}
+.dgptm-mv-btn:hover { background: #eaeef2; }
+.dgptm-mv-btn.primary { background: #2d6cdf; color: #fff; border-color: #2d6cdf; }
+.dgptm-mv-btn.primary:hover { background: #1a56c4; }
+.dgptm-mv-btn.danger { background: #dc3545; color: #fff; border-color: #dc3545; }
+.dgptm-mv-btn.danger:hover { background: #b02a37; }
+.dgptm-mv-btn.small { padding: 4px 10px; font-size: 12px; }
+.dgptm-mv-btn.large { padding: 12px 32px; font-size: 18px; font-weight: 700; }
+
+/* --- Badges --- */
+.dgptm-mv-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 12px;
+	font-size: 12px;
+	font-weight: 600;
+}
+.dgptm-mv-badge.active { background: #d1fae5; color: #065f46; }
+.dgptm-mv-badge.planned { background: #dbeafe; color: #1e40af; }
+.dgptm-mv-badge.closed { background: #f3f4f6; color: #6b7280; }
+.dgptm-mv-badge.prepared { background: #fef3c7; color: #92400e; }
+.dgptm-mv-badge.stopped { background: #fee2e2; color: #991b1b; }
+.dgptm-mv-badge.released { background: #d1fae5; color: #065f46; }
+.dgptm-mv-badge.eligible { background: #d1fae5; color: #065f46; }
+.dgptm-mv-badge.not-eligible { background: #fee2e2; color: #991b1b; }
+.dgptm-mv-badge.pulse { animation: pulse 1.5s infinite; }
+.dgptm-mv-badge.small { font-size: 10px; padding: 1px 6px; }
+
+@keyframes pulse {
+	0%, 100% { opacity: 1; }
+	50% { opacity: 0.5; }
+}
+
+/* --- Statistik --- */
+.dgptm-mv-stats {
+	display: flex;
+	gap: 16px;
+	margin: 16px 0;
+	flex-wrap: wrap;
+}
+.dgptm-mv-stats .stat {
+	background: #f8fafc;
+	border: 1px solid #e2e8f0;
+	border-radius: 8px;
+	padding: 12px 20px;
+	text-align: center;
+	min-width: 100px;
+}
+.dgptm-mv-stats .stat strong {
+	display: block;
+	font-size: 28px;
+	color: #1e293b;
+}
+.dgptm-mv-stats .stat span {
+	font-size: 12px;
+	color: #64748b;
+}
+
+/* --- Tabellen --- */
+.dgptm-mv-table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 12px 0;
+}
+.dgptm-mv-table th, .dgptm-mv-table td {
+	border: 1px solid #e2e8f0;
+	padding: 8px 10px;
+	text-align: left;
+	font-size: 13px;
+}
+.dgptm-mv-table th {
+	background: #f1f5f9;
+	font-weight: 600;
+}
+.dgptm-mv-table.compact td { padding: 4px 8px; }
+
+/* --- Formulare --- */
+.dgptm-mv-form { margin: 16px 0; }
+.dgptm-mv-field { margin: 10px 0; }
+.dgptm-mv-field label { display: block; font-weight: 600; margin-bottom: 4px; font-size: 13px; }
+.dgptm-mv-field input[type="text"],
+.dgptm-mv-field input[type="datetime-local"],
+.dgptm-mv-field input[type="number"],
+.dgptm-mv-field textarea,
+.dgptm-mv-field select {
+	width: 100%;
+	max-width: 500px;
+	padding: 8px 12px;
+	border: 1px solid #d1d5db;
+	border-radius: 6px;
+	font-size: 14px;
+}
+
+.dgptm-mv-inline-form {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	margin: 8px 0;
+}
+.dgptm-mv-inline-form input { flex: 1; padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; }
+.dgptm-mv-inline-form select { padding: 6px; border: 1px solid #d1d5db; border-radius: 6px; }
+
+/* --- Sections --- */
+.dgptm-mv-section { margin: 24px 0; }
+.dgptm-mv-section h4 { margin: 0 0 8px; font-size: 16px; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px; }
+.dgptm-mv-details { margin: 12px 0; }
+.dgptm-mv-details summary { cursor: pointer; font-weight: 600; padding: 8px; background: #f8fafc; border-radius: 6px; }
+
+.dgptm-mv-header { display: flex; align-items: center; gap: 12px; }
+.dgptm-mv-active-poll {
+	background: #ecfdf5;
+	border: 2px solid #10b981;
+	border-radius: 8px;
+	padding: 12px 16px;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin: 8px 0;
+}
+.dgptm-mv-toolbar { display: flex; gap: 8px; margin: 8px 0; }
+
+/* --- Voting Interface --- */
+.dgptm-mv-vote-header { text-align: center; margin-bottom: 16px; }
+.dgptm-mv-poll-card {
+	background: #fff;
+	border: 1px solid #e2e8f0;
+	border-radius: 12px;
+	padding: 24px;
+	max-width: 700px;
+	margin: 0 auto;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.dgptm-mv-poll-header { text-align: center; margin-bottom: 20px; }
+.dgptm-mv-poll-header h3 { font-size: 22px; margin: 0 0 8px; }
+.dgptm-mv-poll-desc { color: #64748b; font-size: 14px; }
+.dgptm-mv-poll-meta { font-size: 12px; color: #94a3b8; display: flex; gap: 16px; justify-content: center; }
+
+.dgptm-mv-choices { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; }
+.dgptm-mv-choice {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 14px 18px;
+	border: 2px solid #e2e8f0;
+	border-radius: 10px;
+	cursor: pointer;
+	transition: all 0.15s;
+	font-size: 16px;
+}
+.dgptm-mv-choice:hover { border-color: #2d6cdf; background: #f0f4ff; }
+.dgptm-mv-choice input:checked + span { font-weight: 700; }
+.dgptm-mv-choice:has(input:checked) { border-color: #2d6cdf; background: #eff6ff; }
+
+.dgptm-mv-voted-notice {
+	text-align: center;
+	padding: 24px;
+	background: #ecfdf5;
+	border-radius: 8px;
+	color: #065f46;
+	font-size: 16px;
+}
+.dgptm-mv-anon-hint {
+	text-align: center;
+	font-size: 12px;
+	color: #94a3b8;
+	margin-top: 12px;
+	font-style: italic;
+}
+
+#dgptm-mv-submit-vote { display: block; width: 100%; margin-top: 16px; }
+
+/* --- Manuelle Stimmabgabe --- */
+.dgptm-mv-manual-section { margin: 20px 0; padding: 16px; background: #f8fafc; border-radius: 8px; }
+.dgptm-mv-manual-section h3 { margin: 0 0 8px; }
+#dgptm-mv-member-search { width: 100%; max-width: 400px; padding: 10px; font-size: 15px; border: 1px solid #d1d5db; border-radius: 6px; }
+#dgptm-mv-member-results .member-item {
+	padding: 8px 12px;
+	border: 1px solid #e2e8f0;
+	border-radius: 6px;
+	margin: 4px 0;
+	cursor: pointer;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+#dgptm-mv-member-results .member-item:hover { background: #eff6ff; }
+#dgptm-mv-member-results .member-item.voted { opacity: 0.5; cursor: not-allowed; }
+#dgptm-mv-selected-member {
+	margin-top: 12px;
+	padding: 10px;
+	background: #ecfdf5;
+	border-radius: 6px;
+	border: 1px solid #10b981;
+}
+
+/* --- Scanner --- */
+.dgptm-mv-scanner-wrap {
+	min-height: 80vh;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	font-family: system-ui, sans-serif;
+	position: relative;
+}
+.dgptm-mv-scanner-flash {
+	position: fixed;
+	inset: 0;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 0.15s;
+	z-index: 9999;
+}
+.dgptm-mv-scanner-flash.green { background: #22c55e; opacity: 0.5; }
+.dgptm-mv-scanner-flash.yellow { background: #eab308; opacity: 0.5; }
+.dgptm-mv-scanner-flash.red { background: #ef4444; opacity: 0.5; }
+
+.dgptm-mv-scanner-header { text-align: center; margin-bottom: 20px; }
+.dgptm-mv-scanner-header h2 { margin: 0; }
+
+.dgptm-mv-scan-input {
+	font-size: 28px;
+	padding: 12px 20px;
+	width: min(520px, 90vw);
+	text-align: center;
+	border: 2px solid #d1d5db;
+	border-radius: 12px;
+	outline: none;
+}
+.dgptm-mv-scan-input:focus { border-color: #2d6cdf; box-shadow: 0 0 0 3px rgba(45,108,223,0.2); }
+
+.dgptm-mv-scanner-result { text-align: center; margin: 20px 0; min-height: 80px; }
+.dgptm-mv-scanner-info { font-size: 22px; font-weight: 600; }
+.dgptm-mv-scanner-sub { font-size: 16px; color: #64748b; }
+
+.dgptm-mv-scanner-actions { margin: 16px 0; }
+
+.dgptm-mv-scanner-history { width: 100%; max-width: 600px; margin-top: 30px; }
+.dgptm-mv-scanner-history h3 { font-size: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+#dgptm-mv-scanner-list .scan-entry {
+	display: flex;
+	justify-content: space-between;
+	padding: 6px 10px;
+	border-bottom: 1px solid #f1f5f9;
+	font-size: 14px;
+}
+#dgptm-mv-scanner-list .scan-entry .time { color: #94a3b8; }
+
+.dgptm-mv-scanner-stats { margin-top: 20px; font-size: 14px; font-weight: 600; text-align: center; }
+
+/* --- Modal --- */
+.dgptm-mv-modal {
+	position: fixed;
+	inset: 0;
+	background: rgba(0,0,0,0.5);
+	z-index: 10000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.dgptm-mv-modal-content {
+	background: #fff;
+	border-radius: 12px;
+	width: min(600px, 90vw);
+	max-height: 80vh;
+	overflow-y: auto;
+	box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.dgptm-mv-modal-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 16px 20px;
+	border-bottom: 1px solid #e2e8f0;
+}
+.dgptm-mv-modal-header h3 { margin: 0; }
+.dgptm-mv-modal-close {
+	background: none;
+	border: none;
+	font-size: 24px;
+	cursor: pointer;
+	color: #64748b;
+}
+.dgptm-mv-modal-body { padding: 20px; }
+.dgptm-mv-modal-body input {
+	width: 100%;
+	padding: 10px;
+	border: 1px solid #d1d5db;
+	border-radius: 6px;
+	font-size: 15px;
+	margin-bottom: 12px;
+}
+
+/* --- Beamer --- */
+.dgptm-mv-beamer-container {
+	width: 100%;
+	height: 100vh;
+	position: relative;
+	overflow: hidden;
+	background: #fff;
+	font-family: system-ui, sans-serif;
+}
+
+#dgptm-mv-beamer-clock {
+	position: absolute;
+	top: 10px;
+	left: 10px;
+	background: rgba(0,0,0,0.55);
+	color: #fff;
+	padding: 6px 12px;
+	border-radius: 6px;
+	font-size: 14px;
+	z-index: 10;
+}
+
+#dgptm-mv-beamer-title {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+	background: rgba(0,0,0,0.55);
+	color: #fff;
+	padding: 6px 12px;
+	border-radius: 6px;
+	font-size: 16px;
+	z-index: 10;
+}
+
+#dgptm-mv-beamer-idle {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	text-align: center;
+}
+.dgptm-mv-beamer-logo { max-width: 60%; max-height: 40vh; }
+.dgptm-mv-beamer-filler { font-size: 24px; color: #444; margin-top: 20px; }
+
+#dgptm-mv-beamer-live {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	text-align: center;
+	width: 80%;
+	max-width: 1000px;
+}
+#dgptm-mv-beamer-cta { font-size: clamp(24px, 5vw, 46px); font-weight: 900; }
+#dgptm-mv-beamer-question { font-size: clamp(18px, 3vw, 34px); margin: 8px 0; }
+#dgptm-mv-beamer-majority-info { font-size: 16px; color: #64748b; }
+#dgptm-mv-beamer-live-bar { font-size: 18px; margin: 8px 0; }
+#dgptm-mv-beamer-chart { margin-top: 15px; width: 100%; max-height: 400px; }
+
+#dgptm-mv-beamer-results-all {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 92%;
+	max-width: 1400px;
+	text-align: center;
+}
+#dgptm-mv-beamer-results-grid {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+	justify-content: center;
+}
+#dgptm-mv-beamer-results-grid .result-card {
+	flex: 1 1 360px;
+	max-width: 500px;
+	border: 1px solid #e2e8f0;
+	border-radius: 8px;
+	padding: 12px;
+}
+#dgptm-mv-beamer-results-grid .result-card canvas { width: 100%; height: 280px; }
+
+#dgptm-mv-beamer-qr {
+	position: absolute;
+	right: 14px;
+	top: 50px;
+	background: rgba(255,255,255,0.96);
+	border: 1px solid #e2e8f0;
+	border-radius: 8px;
+	padding: 10px;
+	text-align: center;
+	z-index: 10;
+}
+#dgptm-mv-beamer-qr canvas { display: block; width: 200px !important; height: 200px !important; }
+#dgptm-mv-beamer-qr small { display: block; margin-top: 4px; color: #333; }
+
+#dgptm-mv-beamer-stats {
+	position: absolute;
+	bottom: 10px;
+	left: 50%;
+	transform: translateX(-50%);
+	background: rgba(0,0,0,0.55);
+	color: #fff;
+	padding: 6px 16px;
+	border-radius: 6px;
+	font-size: 14px;
+	display: flex;
+	gap: 20px;
+	z-index: 10;
+}
+
+/* --- Beamer-Steuerung --- */
+.dgptm-mv-beamer-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* --- Loading --- */
+.dgptm-mv-loading { text-align: center; padding: 20px; color: #94a3b8; }
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+	.dgptm-mv-stats { flex-direction: column; }
+	.dgptm-mv-stats .stat { min-width: auto; }
+	.dgptm-mv-poll-meta { flex-direction: column; gap: 4px; }
+	.dgptm-mv-scan-input { font-size: 20px; }
+}

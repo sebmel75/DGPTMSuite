@@ -1,0 +1,26 @@
+{
+  "id": "mitgliederversammlung",
+  "name": "DGPTM - Mitgliederversammlung",
+  "description": "Hybride Mitgliederversammlung mit anonymer Abstimmung, Anwesenheitserfassung (Praesenz + Online/Zoom), Beamer-Ansicht und satzungskonformer Stimmabgabe gemaess DGPTM-Satzung §7.",
+  "version": "1.0.0",
+  "author": "Sebastian Melzer",
+  "main_file": "mitgliederversammlung.php",
+  "dependencies": [],
+  "optional_dependencies": ["webhook-trigger", "crm-abruf"],
+  "wp_dependencies": {
+    "plugins": []
+  },
+  "requires_php": "7.4",
+  "requires_wp": "5.8",
+  "category": "business",
+  "icon": "dashicons-groups",
+  "active": false,
+  "can_export": true,
+  "critical": false,
+  "flags": ["development"],
+  "comment": {
+    "text": "Fusion aus abstimmen-addon + anwesenheitsscanner. Satzungskonforme anonyme Abstimmung.",
+    "timestamp": 1741651200,
+    "user_id": 1
+  }
+}

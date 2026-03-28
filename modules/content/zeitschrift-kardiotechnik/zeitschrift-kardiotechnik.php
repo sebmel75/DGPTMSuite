@@ -406,8 +406,11 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
 
             $args = [
                 'post_type' => ZK_POST_TYPE,
-                'posts_per_page' => -1,
-                'post_status' => 'publish'
+                'posts_per_page' => 4,
+                'post_status' => 'publish',
+                'meta_key' => 'ausgabe',
+                'orderby' => 'meta_value_num',
+                'order' => 'DESC'
             ];
 
             // Jahr-Filter (immer aktiv, default = aktuelles Jahr)
@@ -417,24 +420,12 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
                     'value' => $year_filter,
                     'compare' => '='
                 ];
+            } else {
+                // Alle Jahre: nach Jahr+Ausgabe sortieren, mehr laden
+                $args['posts_per_page'] = 20;
             }
 
             $issues = get_posts($args);
-
-            // Sortieren nach Jahr und Ausgabe
-            usort($issues, function($a, $b) {
-                $year_a = (int) get_field('jahr', $a->ID);
-                $year_b = (int) get_field('jahr', $b->ID);
-
-                if ($year_a !== $year_b) {
-                    return $year_b - $year_a;
-                }
-
-                $ausgabe_a = (int) get_field('ausgabe', $a->ID);
-                $ausgabe_b = (int) get_field('ausgabe', $b->ID);
-
-                return $ausgabe_b - $ausgabe_a;
-            });
 
             $result = [];
             foreach ($issues as $issue) {
@@ -450,7 +441,9 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
                 }
 
                 $titelseite = get_field('titelseite', $issue->ID);
-                $articles = self::get_issue_articles($issue->ID);
+
+                // Schneller Artikel-Count statt vollem get_issue_articles()
+                $article_count = self::count_issue_articles_fast($issue->ID);
 
                 $result[] = [
                     'id' => $issue->ID,
@@ -465,7 +458,7 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
                     'status' => $is_visible ? 'online' : 'scheduled',
                     'status_label' => $is_visible ? 'Online' : 'Geplant',
                     'thumbnail' => $titelseite ? ($titelseite['sizes']['thumbnail'] ?? $titelseite['url']) : null,
-                    'article_count' => count($articles),
+                    'article_count' => $article_count,
                     'edit_url' => admin_url('post.php?post=' . $issue->ID . '&action=edit')
                 ];
             }
@@ -749,7 +742,7 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
 
             $args = [
                 'post_type' => ZK_PUBLIKATION_TYPE,
-                'posts_per_page' => 100,
+                'posts_per_page' => 30,
                 'post_status' => ['publish', 'draft', 'pending'],
                 'orderby' => $sort_by === 'modified' ? 'modified' : 'date',
                 'order' => strtoupper($sort_order) === 'ASC' ? 'ASC' : 'DESC'
@@ -791,29 +784,45 @@ if (!class_exists('DGPTM_Zeitschrift_Kardiotechnik')) {
         /**
          * Hilfsfunktion: Findet die Ausgabe, mit der ein Artikel verknüpft ist
          */
+        /**
+         * Schneller Artikel-Count per Single-Query (statt get_issue_articles)
+         */
+        private static function count_issue_articles_fast($issue_id) {
+            global $wpdb;
+            $fields = ['editorial', 'journalclub', 'tutorial', 'pub1', 'pub2', 'pub3', 'pub4', 'pub5', 'pub6'];
+            $placeholders = implode(',', array_fill(0, count($fields), '%s'));
+
+            return (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->postmeta}
+                 WHERE post_id = %d AND meta_key IN ($placeholders) AND meta_value != '' AND meta_value != '0'",
+                array_merge([$issue_id], $fields)
+            ));
+        }
+
+        /**
+         * Findet die Ausgabe eines Artikels — 1 Query statt 9
+         */
         private function get_article_linked_issue($article_id) {
             global $wpdb;
 
-            // Suche in allen Ausgaben nach diesem Artikel
             $fields = ['editorial', 'journalclub', 'tutorial', 'pub1', 'pub2', 'pub3', 'pub4', 'pub5', 'pub6'];
+            $placeholders = implode(',', array_fill(0, count($fields), '%s'));
 
-            foreach ($fields as $field) {
-                $issue_id = $wpdb->get_var($wpdb->prepare(
-                    "SELECT post_id FROM {$wpdb->postmeta}
-                     WHERE meta_key = %s AND meta_value = %d",
-                    $field,
-                    $article_id
-                ));
+            $row = $wpdb->get_row($wpdb->prepare(
+                "SELECT post_id, meta_key FROM {$wpdb->postmeta}
+                 WHERE meta_key IN ($placeholders) AND meta_value = %d
+                 LIMIT 1",
+                array_merge($fields, [$article_id])
+            ));
 
-                if ($issue_id) {
-                    $issue = get_post($issue_id);
-                    if ($issue && $issue->post_type === ZK_POST_TYPE) {
-                        return [
-                            'id' => $issue_id,
-                            'label' => self::format_issue_label($issue_id),
-                            'field' => $field
-                        ];
-                    }
+            if ($row) {
+                $issue = get_post($row->post_id);
+                if ($issue && $issue->post_type === ZK_POST_TYPE) {
+                    return [
+                        'id' => $row->post_id,
+                        'label' => self::format_issue_label($row->post_id),
+                        'field' => $row->meta_key
+                    ];
                 }
             }
 

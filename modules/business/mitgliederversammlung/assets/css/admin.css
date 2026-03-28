@@ -1,0 +1,4 @@
+/* DGPTM Mitgliederversammlung - Admin CSS */
+.dgptm-mv-admin-wrap { max-width: 1200px; }
+.dgptm-mv-admin-wrap .form-table th { width: 200px; }
+.dgptm-mv-admin-wrap .widefat code { font-size: 11px; word-break: break-all; }

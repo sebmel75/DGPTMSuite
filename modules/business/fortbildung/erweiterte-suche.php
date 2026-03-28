@@ -129,11 +129,11 @@ function fobi_admin_filter_query( $query ) {
         );
     }
     
-    // Benutzer-Filter
+    // Benutzer-Filter (ACF speichert user als String, daher auch als String vergleichen)
     if ( isset($_GET['fobi_user_filter']) && $_GET['fobi_user_filter'] > 0 ) {
         $meta_query[] = array(
             'key' => 'user',
-            'value' => intval($_GET['fobi_user_filter']),
+            'value' => (string) intval($_GET['fobi_user_filter']),
             'compare' => '='
         );
     }
@@ -574,13 +574,13 @@ function fobi_frontend_search_ajax() {
     if ($own_only) {
         $meta_query[] = array(
             'key' => 'user',
-            'value' => $current_user_id,
+            'value' => (string) $current_user_id,
             'compare' => '='
         );
     } elseif (isset($_POST['user_id']) && $_POST['user_id'] !== '') {
         $meta_query[] = array(
             'key' => 'user',
-            'value' => intval($_POST['user_id']),
+            'value' => (string) intval($_POST['user_id']),
             'compare' => '='
         );
     }

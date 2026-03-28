@@ -1228,6 +1228,42 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             // User ID is 0 for non-logged in users
             $user_id = get_current_user_id();
 
+            // Nicht eingeloggt: User ueber E-Mail zuordnen oder anlegen
+            if (!$user_id) {
+                $author_email = sanitize_email($_POST['hauptautor_email'] ?? '');
+                if (!empty($author_email)) {
+                    $existing_user = get_user_by('email', $author_email);
+                    if ($existing_user) {
+                        $user_id = $existing_user->ID;
+                    } else {
+                        $author_name = sanitize_text_field($_POST['hauptautor'] ?? '');
+                        $name_parts = explode(' ', $author_name, 2);
+                        $fn = $name_parts[0] ?? '';
+                        $ln = $name_parts[1] ?? $name_parts[0];
+
+                        $user_id = DGPTM_Artikel_Role_Manager::create_user($author_email, $fn, $ln, 'zeitschrift_autor');
+                        if (is_wp_error($user_id)) {
+                            $user_id = 0;
+                        } else {
+                            if (DGPTM_CRM_Reviewer::is_available()) {
+                                $crm = DGPTM_CRM_Reviewer::search_by_email($author_email);
+                                if ($crm) {
+                                    DGPTM_CRM_Reviewer::link_user($user_id, $crm['zoho_id']);
+                                } else {
+                                    $zoho_id = DGPTM_CRM_Reviewer::create_contact($fn, $ln, $author_email);
+                                    if ($zoho_id) DGPTM_CRM_Reviewer::link_user($user_id, $zoho_id);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Autor-Rolle vergeben
+            if ($user_id) {
+                DGPTM_Artikel_Role_Manager::grant_autor_role($user_id);
+            }
+
             // Validate required fields
             $required = ['titel', 'publikationsart', 'hauptautor', 'hauptautor_email', 'abstract_deutsch', 'highlights'];
             foreach ($required as $field) {
@@ -1810,6 +1846,37 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
         }
 
         /**
+         * Holt Reviewer-Pool mit automatischer Migration alter Struktur
+         */
+        public function get_reviewer_pool() {
+            $pool = get_option(self::OPT_REVIEWERS, []);
+
+            if (!empty($pool) && isset($pool[0]) && (is_int($pool[0]) || is_string($pool[0]))) {
+                $migrated = [];
+                foreach ($pool as $uid) {
+                    $uid = intval($uid);
+                    $zoho_id = get_user_meta($uid, 'zoho_id', true);
+                    $migrated[] = [
+                        'user_id' => $uid,
+                        'active' => true,
+                        'zoho_id' => $zoho_id ?: '',
+                        'added_at' => date('Y-m-d'),
+                    ];
+                }
+                update_option(self::OPT_REVIEWERS, $migrated);
+                DGPTM_Artikel_Role_Manager::sync_reviewer_roles($migrated);
+                return $migrated;
+            }
+
+            return is_array($pool) ? $pool : [];
+        }
+
+        public function save_reviewer_pool($pool) {
+            update_option(self::OPT_REVIEWERS, $pool);
+            DGPTM_Artikel_Role_Manager::sync_reviewer_roles($pool);
+        }
+
+        /**
          * AJAX: Add a reviewer to the pool
          */
         public function ajax_add_reviewer() {
@@ -1820,18 +1887,85 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             }
 
             $user_id = intval($_POST['user_id'] ?? 0);
+            $email = sanitize_email($_POST['email'] ?? '');
+            $first_name = sanitize_text_field($_POST['first_name'] ?? '');
+            $last_name = sanitize_text_field($_POST['last_name'] ?? '');
+            $zoho_id = sanitize_text_field($_POST['zoho_id'] ?? '');
 
-            if (!$user_id) {
-                wp_send_json_error(['message' => 'Ungültige Benutzer-ID.']);
+            if ($user_id) {
+                $user = get_userdata($user_id);
+                if (!$user) {
+                    wp_send_json_error(['message' => 'Benutzer nicht gefunden.']);
+                }
+            } elseif ($email) {
+                $existing = get_user_by('email', $email);
+                if ($existing) {
+                    $user_id = $existing->ID;
+                } else {
+                    if (empty($last_name)) {
+                        wp_send_json_error(['message' => 'Nachname ist erforderlich.']);
+                    }
+                    $user_id = DGPTM_Artikel_Role_Manager::create_user($email, $first_name, $last_name, 'reviewer');
+                    if (is_wp_error($user_id)) {
+                        wp_send_json_error(['message' => 'Fehler beim Anlegen: ' . $user_id->get_error_message()]);
+                    }
+                }
+            } else {
+                wp_send_json_error(['message' => 'User-ID oder E-Mail erforderlich.']);
             }
 
-            $reviewer_ids = get_option(self::OPT_REVIEWERS, []);
-            if (!in_array($user_id, $reviewer_ids)) {
-                $reviewer_ids[] = $user_id;
-                update_option(self::OPT_REVIEWERS, $reviewer_ids);
+            if (empty($zoho_id) && $email && DGPTM_CRM_Reviewer::is_available()) {
+                $crm_contact = DGPTM_CRM_Reviewer::search_by_email($email);
+                if ($crm_contact) {
+                    $zoho_id = $crm_contact['zoho_id'];
+                } else {
+                    $user = get_userdata($user_id);
+                    $zoho_id = DGPTM_CRM_Reviewer::create_contact(
+                        $user->first_name ?: $first_name,
+                        $user->last_name ?: $last_name,
+                        $user->user_email ?: $email
+                    ) ?: '';
+                }
             }
 
-            wp_send_json_success(['message' => 'Reviewer hinzugefügt.']);
+            if ($zoho_id) {
+                DGPTM_CRM_Reviewer::link_user($user_id, $zoho_id);
+            }
+
+            $pool = $this->get_reviewer_pool();
+            $exists = false;
+            foreach ($pool as &$r) {
+                if (intval($r['user_id']) === $user_id) {
+                    $r['active'] = true;
+                    $r['zoho_id'] = $zoho_id ?: ($r['zoho_id'] ?? '');
+                    $exists = true;
+                    break;
+                }
+            }
+            unset($r);
+
+            if (!$exists) {
+                $pool[] = [
+                    'user_id' => $user_id,
+                    'active' => true,
+                    'zoho_id' => $zoho_id,
+                    'added_at' => date('Y-m-d'),
+                ];
+            }
+
+            $this->save_reviewer_pool($pool);
+
+            $user = get_userdata($user_id);
+            wp_send_json_success([
+                'message' => 'Reviewer hinzugefuegt.',
+                'reviewer' => [
+                    'user_id' => $user_id,
+                    'name' => $user->display_name,
+                    'email' => $user->user_email,
+                    'active' => true,
+                    'zoho_id' => $zoho_id,
+                ]
+            ]);
         }
 
         /**

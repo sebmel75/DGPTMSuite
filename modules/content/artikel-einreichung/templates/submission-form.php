@@ -11,6 +11,13 @@ $publikationsarten = DGPTM_Artikel_Einreichung::PUBLIKATIONSARTEN;
 ?>
 
 <div class="dgptm-artikel-container">
+    <?php if (!is_user_logged_in()) : ?>
+    <div class="dgptm-artikel-login-hint" style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; padding: 15px; margin-bottom: 20px;">
+        <strong>Haben Sie bereits ein Konto?</strong>
+        <a href="<?php echo wp_login_url(get_permalink()); ?>">Bitte melden Sie sich an</a>, um Ihre Einreichung im Mitgliederbereich verfolgen zu koennen.
+        <br><small>Sie koennen auch ohne Anmeldung einreichen — Sie erhalten dann einen Zugangslink per E-Mail.</small>
+    </div>
+    <?php endif; ?>
     <form id="artikel-submission-form" class="dgptm-artikel-form" enctype="multipart/form-data">
 
         <h2>Artikel einreichen</h2>

@@ -746,92 +746,175 @@ $base_url = remove_query_arg(['tab', 'status', 'editor_artikel_id']);
              REVIEWERS TAB
              ============================================ -->
         <?php
-        $current_reviewer_ids = get_option(DGPTM_Artikel_Einreichung::OPT_REVIEWERS, []);
-        $current_reviewers = [];
-        if (!empty($current_reviewer_ids)) {
-            $current_reviewers = get_users([
-                'include' => $current_reviewer_ids,
-                'orderby' => 'display_name'
-            ]);
+        $pool = $plugin->get_reviewer_pool();
+        $active_ids = [];
+        $inactive_ids = [];
+        foreach ($pool as $r) {
+            if (is_array($r)) {
+                if (!empty($r['active'])) $active_ids[] = intval($r['user_id']);
+                else $inactive_ids[] = intval($r['user_id']);
+            }
         }
-
-        // Get all users for selection
-        $all_users = get_users([
-            'orderby' => 'display_name',
-            'number' => 200
-        ]);
+        $active_reviewers = !empty($active_ids) ? get_users(['include' => $active_ids, 'orderby' => 'display_name']) : [];
+        $inactive_reviewers = !empty($inactive_ids) ? get_users(['include' => $inactive_ids, 'orderby' => 'display_name']) : [];
         ?>
 
-        <h2>Reviewer-Verwaltung</h2>
-        <p style="color: #718096; margin-bottom: 30px;">
-            Verwalten Sie hier die Liste der verfügbaren Reviewer für Artikel-Einreichungen.
-            Nur Benutzer in dieser Liste können als Reviewer für Artikel zugewiesen werden.
-        </p>
+        <h3>Reviewer-Verwaltung</h3>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
-            <!-- Current Reviewers -->
-            <div class="article-card">
-                <div class="article-card-header">
-                    <h3 style="margin: 0;">Aktuelle Reviewer (<?php echo count($current_reviewers); ?>)</h3>
-                </div>
-                <div class="article-card-body">
-                    <?php if (empty($current_reviewers)): ?>
-                        <p style="color: #718096; font-style: italic;">Noch keine Reviewer hinzugefügt.</p>
-                    <?php else: ?>
-                        <table class="dgptm-artikel-table" style="margin: 0;">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>E-Mail</th>
-                                    <th style="width: 100px;">Aktion</th>
-                                </tr>
-                            </thead>
-                            <tbody id="reviewer-list">
-                                <?php foreach ($current_reviewers as $reviewer): ?>
-                                <tr data-user-id="<?php echo $reviewer->ID; ?>">
-                                    <td>
-                                        <strong><?php echo esc_html($reviewer->display_name); ?></strong>
-                                    </td>
-                                    <td><?php echo esc_html($reviewer->user_email); ?></td>
-                                    <td>
-                                        <button type="button" class="btn btn-danger remove-reviewer-btn" data-user-id="<?php echo $reviewer->ID; ?>" style="padding: 6px 12px; font-size: 12px;">
-                                            Entfernen
-                                        </button>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    <?php endif; ?>
-                </div>
+        <!-- Reviewer hinzufuegen: Suchfeld statt Dropdown -->
+        <div style="margin-bottom: 16px;">
+            <label style="font-weight: 500; font-size: 13px;">Reviewer suchen und hinzufuegen:</label>
+            <div style="display: flex; gap: 8px; margin-top: 4px;">
+                <input type="text" id="reviewer-search-input" placeholder="Name oder E-Mail eingeben..." style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
             </div>
-
-            <!-- Add Reviewer -->
-            <div class="article-card">
-                <div class="article-card-header">
-                    <h3 style="margin: 0;">Reviewer hinzufügen</h3>
-                </div>
-                <div class="article-card-body">
-                    <div class="form-row">
-                        <label for="add-reviewer-select">Benutzer auswählen:</label>
-                        <select id="add-reviewer-select" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px;">
-                            <option value="">-- Benutzer wählen --</option>
-                            <?php foreach ($all_users as $user):
-                                if (in_array($user->ID, $current_reviewer_ids)) continue;
-                            ?>
-                                <option value="<?php echo $user->ID; ?>">
-                                    <?php echo esc_html($user->display_name); ?> (<?php echo esc_html($user->user_email); ?>)
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-
-                    <button type="button" id="add-reviewer-btn" class="btn btn-primary" style="margin-top: 15px;">
-                        Hinzufügen
-                    </button>
-                </div>
-            </div>
+            <div id="reviewer-search-results" style="border: 1px solid #eee; border-top: none; border-radius: 0 0 4px 4px; display: none; max-height: 200px; overflow-y: auto;"></div>
         </div>
+
+        <!-- Aktive Reviewer -->
+        <h4 style="font-size: 13px; color: #1d2327; margin: 16px 0 8px;">Aktive Reviewer (<?php echo count($active_reviewers); ?>)</h4>
+        <?php if (empty($active_reviewers)): ?>
+            <p style="color: #888; font-size: 13px;">Noch keine Reviewer hinzugefuegt.</p>
+        <?php else: ?>
+            <table class="dgptm-artikel-table" style="margin: 0;">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>E-Mail</th>
+                        <th style="width: 160px;">Aktion</th>
+                    </tr>
+                </thead>
+                <tbody id="reviewer-list">
+                    <?php foreach ($active_reviewers as $reviewer): ?>
+                    <tr data-user-id="<?php echo $reviewer->ID; ?>">
+                        <td><strong><?php echo esc_html($reviewer->display_name); ?></strong></td>
+                        <td><?php echo esc_html($reviewer->user_email); ?></td>
+                        <td>
+                            <button type="button" class="btn btn-secondary btn-toggle-reviewer" data-user-id="<?php echo $reviewer->ID; ?>" style="padding: 3px 8px; font-size: 11px;">Deaktivieren</button>
+                            <button type="button" class="btn btn-danger remove-reviewer-btn" data-user-id="<?php echo $reviewer->ID; ?>" style="padding: 3px 8px; font-size: 11px;">Entfernen</button>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
+
+        <!-- Inaktive Reviewer -->
+        <?php if (!empty($inactive_reviewers)): ?>
+            <h4 style="font-size: 13px; color: #888; margin: 16px 0 8px;">Inaktive Reviewer (<?php echo count($inactive_reviewers); ?>)</h4>
+            <table class="dgptm-artikel-table" style="margin: 0; opacity: 0.6;">
+                <tbody>
+                    <?php foreach ($inactive_reviewers as $reviewer): ?>
+                    <tr data-user-id="<?php echo $reviewer->ID; ?>" class="reviewer-inactive">
+                        <td><strong><?php echo esc_html($reviewer->display_name); ?></strong></td>
+                        <td><?php echo esc_html($reviewer->user_email); ?></td>
+                        <td style="width: 160px;">
+                            <button type="button" class="btn btn-primary btn-toggle-reviewer" data-user-id="<?php echo $reviewer->ID; ?>" style="padding: 3px 8px; font-size: 11px;">Aktivieren</button>
+                            <button type="button" class="btn btn-danger remove-reviewer-btn" data-user-id="<?php echo $reviewer->ID; ?>" style="padding: 3px 8px; font-size: 11px;" data-permanent="1">Loeschen</button>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
+
+        <!-- Externe Person einladen -->
+        <div style="margin-top: 16px; padding: 12px; border: 1px dashed #ccc; border-radius: 4px; background: #f8f9fa;">
+            <h4 style="font-size: 13px; margin: 0 0 8px; color: #1d2327;">Externe Person als Reviewer einladen</h4>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <input type="text" id="ext-reviewer-first" placeholder="Vorname" style="padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; width: 120px;">
+                <input type="text" id="ext-reviewer-last" placeholder="Nachname *" style="padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; width: 120px;">
+                <input type="email" id="ext-reviewer-email" placeholder="E-Mail *" style="padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; flex: 1; min-width: 200px;">
+                <button type="button" id="ext-reviewer-invite" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;">Einladen</button>
+            </div>
+            <small style="color: #888; font-size: 11px; display: block; margin-top: 4px;">WP-Benutzer wird angelegt, Einladungs-E-Mail versendet, CRM-Contact erstellt.</small>
+        </div>
+
+        <script>
+        jQuery(function($){
+            // Externe Person einladen
+            $('#ext-reviewer-invite').on('click', function(){
+                var fn = $('#ext-reviewer-first').val().trim();
+                var ln = $('#ext-reviewer-last').val().trim();
+                var em = $('#ext-reviewer-email').val().trim();
+
+                if (!ln || !em) {
+                    alert('Bitte Nachname und E-Mail angeben.');
+                    return;
+                }
+
+                var $btn = $(this);
+                $btn.prop('disabled', true).text('Wird angelegt...');
+
+                $.post(dgptmArtikel.ajaxUrl, {
+                    action: 'dgptm_add_reviewer',
+                    nonce: dgptmArtikel.nonce,
+                    user_id: 0,
+                    email: em,
+                    first_name: fn,
+                    last_name: ln,
+                    zoho_id: ''
+                }, function(res){
+                    $btn.prop('disabled', false).text('Einladen');
+                    if (res.success) {
+                        alert('Reviewer eingeladen: ' + (res.data.reviewer ? res.data.reviewer.name : em));
+                        location.reload();
+                    } else {
+                        alert(res.data.message || 'Fehler');
+                    }
+                });
+            });
+
+            var searchTimeout;
+            $('#reviewer-search-input').on('input', function(){
+                clearTimeout(searchTimeout);
+                var q = $(this).val().trim();
+                if (q.length < 2) { $('#reviewer-search-results').hide(); return; }
+
+                searchTimeout = setTimeout(function(){
+                    $.post(dgptmArtikel.ajaxUrl, {
+                        action: 'dgptm_search_users',
+                        nonce: dgptmArtikel.nonce,
+                        search: q
+                    }, function(res){
+                        if (!res.success || !res.data.users.length) {
+                            $('#reviewer-search-results').html('<div style="padding:8px;color:#888;font-size:12px;">Keine Treffer</div>').show();
+                            return;
+                        }
+                        var html = '';
+                        res.data.users.forEach(function(u){
+                            var badge = u.source === 'crm' ? '<span class="ae-source-badge ae-source-crm">CRM</span>' : '<span class="ae-source-badge ae-source-wp">WP</span>';
+                            html += '<div class="reviewer-search-item" style="padding:8px 10px;border-bottom:1px solid #f0f0f0;cursor:pointer;font-size:13px;" data-user-id="' + u.id + '" data-email="' + (u.email||'') + '" data-first-name="' + (u.first_name||'') + '" data-last-name="' + (u.last_name||'') + '" data-zoho-id="' + (u.zoho_id||'') + '">';
+                            html += '<strong>' + u.name + '</strong> ' + badge + '<br><small>' + (u.email||'') + '</small></div>';
+                        });
+                        $('#reviewer-search-results').html(html).show();
+                    });
+                }, 300);
+            });
+
+            $(document).on('click', '.reviewer-search-item', function(){
+                var $item = $(this);
+                $.post(dgptmArtikel.ajaxUrl, {
+                    action: 'dgptm_add_reviewer',
+                    nonce: dgptmArtikel.nonce,
+                    user_id: $item.data('user-id'),
+                    email: $item.data('email'),
+                    first_name: $item.data('first-name'),
+                    last_name: $item.data('last-name'),
+                    zoho_id: $item.data('zoho-id')
+                }, function(res){
+                    if (res.success) {
+                        location.reload();
+                    } else {
+                        alert(res.data.message || 'Fehler');
+                    }
+                });
+            });
+
+            // Hover-Effekt
+            $(document).on('mouseenter', '.reviewer-search-item', function(){ $(this).css('background', '#f8f9fa'); });
+            $(document).on('mouseleave', '.reviewer-search-item', function(){ $(this).css('background', ''); });
+        });
+        </script>
 
     </div><!-- /reviewers -->
 
@@ -1270,13 +1353,13 @@ jQuery(document).ready(function($) {
         });
     });
 
-    // Remove reviewer
+    // Remove reviewer (permanent flag from data attribute)
     $(document).on('click', '.remove-reviewer-btn', function() {
         var userId = parseInt($(this).data('user-id'));
+        var permanent = $(this).data('permanent') ? true : false;
+        var msg = permanent ? 'Reviewer endgueltig loeschen?' : 'Reviewer deaktivieren?';
 
-        if (!confirm('Reviewer wirklich entfernen?')) {
-            return;
-        }
+        if (!confirm(msg)) return;
 
         $.ajax({
             url: dgptmArtikel.ajaxUrl,
@@ -1284,13 +1367,14 @@ jQuery(document).ready(function($) {
             data: {
                 action: 'dgptm_remove_reviewer',
                 nonce: dgptmArtikel.nonce,
-                user_id: userId
+                user_id: userId,
+                permanent: permanent ? 1 : 0
             },
             success: function(response) {
                 if (response.success) {
                     location.reload();
                 } else {
-                    alert(response.data.message || 'Fehler beim Entfernen.');
+                    alert(response.data.message || 'Fehler.');
                 }
             }
         });

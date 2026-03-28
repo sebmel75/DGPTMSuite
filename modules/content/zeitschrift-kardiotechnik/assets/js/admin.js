@@ -31,15 +31,17 @@
             }
 
             this.config = zkAdmin;
-            this.isDashboard = $('.dgptm-dash .zk-section-wrap').length > 0;
             this.bindEvents();
 
-            if (this.isDashboard) {
-                this.bindDashboardHooks();
-                this.autoDetect();
-            } else {
+            // Standalone-Modus: #zk-manager ist sofort im DOM
+            if ($('#zk-manager').length > 0) {
+                this.isDashboard = false;
                 this.loadYearFilter();
                 this.loadIssues();
+            } else {
+                // Dashboard-Modus: Content kommt spaeter per AJAX
+                this.isDashboard = true;
+                this.bindDashboardHooks();
             }
         },
 
@@ -218,10 +220,9 @@
         bindDashboardHooks: function() {
             var self = this;
 
-            $(document).on('dgptm:ftab-switched', function(e, data) {
-                if (!data || !data.panel) return;
-
-                var $panel = $('[data-fpanel="' + data.panel + '"]');
+            // Reagiere auf Folder-Tab-Wechsel UND auf AJAX-Content-Load
+            function checkPanel(panelId) {
+                var $panel = $('[data-fpanel="' + panelId + '"]');
                 if (!$panel.length) return;
 
                 if ($panel.find('#zk-issues-list').length && !self.sectionLoaded.issues) {
@@ -239,34 +240,35 @@
                     self.sectionLoaded.accepted = true;
                     self.loadAcceptedArticles();
                 }
+            }
+
+            // Folder-Tab gewechselt (Tab bereits im DOM)
+            $(document).on('dgptm:ftab-switched', function(e, data) {
+                if (data && data.panel) checkPanel(data.panel);
+            });
+
+            // Tab-Content per AJAX nachgeladen — pruefe ob ZK-Content dabei ist
+            $(document).on('dgptm_tab_loaded', function(e, tabId) {
+                // Der erste sichtbare Folder-Tab des geladenen Panels aktivieren
+                var $panel = $('[data-panel="' + tabId + '"]');
+                if (!$panel.length) return;
+
+                var $firstFpanel = $panel.find('.dgptm-fpanel:first');
+                if ($firstFpanel.length) {
+                    var fpanelId = $firstFpanel.data('fpanel');
+                    if (fpanelId) checkPanel(fpanelId);
+                }
+
+                // Auch direkt pruefen (falls kein Folder-Tab)
+                if ($panel.find('#zk-issues-list').length && !self.sectionLoaded.issues) {
+                    self.sectionLoaded.issues = true;
+                    self.loadYearFilter();
+                    self.loadIssues();
+                }
             });
         },
 
-        /**
-         * Erkennt bereits sichtbare Sections und laedt deren Daten
-         */
-        autoDetect: function() {
-            var self = this;
-
-            setTimeout(function() {
-                $('.zk-section-wrap:visible').each(function() {
-                    var section = $(this).data('section');
-                    if (section === 'issues' && !self.sectionLoaded.issues) {
-                        self.sectionLoaded.issues = true;
-                        self.loadYearFilter();
-                        self.loadIssues();
-                    }
-                    if (section === 'articles' && !self.sectionLoaded.articles) {
-                        self.sectionLoaded.articles = true;
-                        self.loadArticles();
-                    }
-                    if (section === 'accepted' && !self.sectionLoaded.accepted) {
-                        self.sectionLoaded.accepted = true;
-                        self.loadAcceptedArticles();
-                    }
-                });
-            }, 100);
-        },
+        // autoDetect entfernt — dgptm_tab_loaded Event uebernimmt die Erkennung
 
         /**
          * Navigiert zu einer Section — Dashboard via Folder-Tab, standalone via switchTab
@@ -2046,9 +2048,9 @@
         }
     };
 
-    // Initialisierung
+    // Initialisierung — zkAdmin existiert nur auf Seiten wo ZK-Assets geladen sind
     $(document).ready(function() {
-        if ($('#zk-manager').length > 0 || $('.zk-section-wrap').length > 0) {
+        if (typeof zkAdmin !== 'undefined') {
             ZKManager.init();
             ZKManager.bindPdfImportEvents();
         }

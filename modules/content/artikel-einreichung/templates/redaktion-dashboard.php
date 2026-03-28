@@ -1113,4 +1113,144 @@ jQuery(document).ready(function($) {
 .stat-filter-card.active {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
+
+/* ========================================
+   Dashboard-Integration (Forum-Vorbild)
+   ======================================== */
+
+/* Container */
+.dgptm-dash .dgptm-artikel-container { max-width: 100%; }
+
+/* Stats Grid: kompakter */
+.dgptm-dash .stat-filter-card {
+    padding: 10px !important;
+    border-radius: 4px !important;
+    box-shadow: none !important;
+    border: 1px solid #eee !important;
+}
+.dgptm-dash .stat-filter-card:hover {
+    transform: none !important;
+    box-shadow: none !important;
+    background: #f8f9fa !important;
+}
+.dgptm-dash .stat-filter-card h3 { font-size: 20px !important; margin: 0 !important; }
+.dgptm-dash .stat-filter-card p { font-size: 11px !important; margin: 2px 0 0 !important; }
+
+/* Headings */
+.dgptm-dash .dgptm-artikel-container h2 { font-size: 15px; margin: 0 0 12px; color: #1d2327; }
+.dgptm-dash .dgptm-artikel-container h3 { font-size: 14px; margin: 12px 0 8px; color: #1d2327; }
+.dgptm-dash .dgptm-artikel-container h4 { font-size: 13px; margin: 10px 0 6px; color: #1d2327; }
+
+/* Tabelle: Forum-Stil */
+.dgptm-dash .dgptm-artikel-table,
+.dgptm-dash table { box-shadow: none !important; border-radius: 0 !important; }
+.dgptm-dash .dgptm-artikel-table thead,
+.dgptm-dash table thead { background: none !important; }
+.dgptm-dash .dgptm-artikel-table th,
+.dgptm-dash table th {
+    color: #1d2327 !important;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    border-bottom: 2px solid #eee !important;
+    background: none !important;
+}
+.dgptm-dash .dgptm-artikel-table td,
+.dgptm-dash table td {
+    padding: 10px 12px !important;
+    border-bottom: 1px solid #eee !important;
+    font-size: 13px !important;
+}
+.dgptm-dash .dgptm-artikel-table tbody tr:hover,
+.dgptm-dash table tbody tr:hover { background: #f8f9fa !important; }
+
+/* Buttons */
+.dgptm-dash .dgptm-artikel-container .btn,
+.dgptm-dash .dgptm-artikel-container button,
+.dgptm-dash .dgptm-artikel-container a.btn {
+    display: inline-block !important;
+    padding: 4px 10px !important;
+    border: 1px solid #0073aa !important;
+    border-radius: 4px !important;
+    background: #0073aa !important;
+    color: #fff !important;
+    font-size: 12px !important;
+    font-weight: 400 !important;
+    line-height: 1.4 !important;
+    text-decoration: none !important;
+    box-shadow: none !important;
+    min-height: 0 !important;
+    height: auto !important;
+}
+.dgptm-dash .dgptm-artikel-container .btn:hover,
+.dgptm-dash .dgptm-artikel-container button:hover { background: #005d8c !important; }
+.dgptm-dash .dgptm-artikel-container .btn-secondary,
+.dgptm-dash .dgptm-artikel-container .btn.btn-secondary { background: #f0f0f0 !important; border-color: #ccc !important; color: #555 !important; }
+.dgptm-dash .dgptm-artikel-container .btn-danger { background: #dc3232 !important; border-color: #dc3232 !important; }
+.dgptm-dash .dgptm-artikel-container .btn-success { background: #46b450 !important; border-color: #46b450 !important; }
+
+/* Status Badges: kompakter */
+.dgptm-dash .status-badge {
+    padding: 2px 8px !important;
+    border-radius: 10px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+}
+
+/* Cards: flach */
+.dgptm-dash .article-card {
+    box-shadow: none !important;
+    border: 1px solid #eee !important;
+    border-radius: 4px !important;
+}
+.dgptm-dash .article-card-header {
+    padding: 12px !important;
+    border-bottom: 1px solid #eee !important;
+}
+.dgptm-dash .article-card-body { padding: 12px !important; }
+
+/* Info-Liste */
+.dgptm-dash .info-list { font-size: 13px; }
+.dgptm-dash .info-list li { padding: 4px 0; }
+.dgptm-dash .info-list .label { font-size: 12px; color: #888; }
+
+/* Inputs/Selects */
+.dgptm-dash .dgptm-artikel-container input,
+.dgptm-dash .dgptm-artikel-container select,
+.dgptm-dash .dgptm-artikel-container textarea {
+    padding: 6px 8px !important;
+    border: 1px solid #ccc !important;
+    border-radius: 4px !important;
+    font-size: 13px !important;
+    box-shadow: none !important;
+}
+
+/* Status-Dropdown */
+.dgptm-dash .status-dropdown {
+    padding: 4px 8px !important;
+    font-size: 12px !important;
+}
+
+/* Grid-Layouts kompakter */
+.dgptm-dash .dgptm-artikel-container [style*="grid-template-columns"] { gap: 12px !important; }
+.dgptm-dash .dgptm-artikel-container [style*="gap: 30px"] { gap: 12px !important; }
+.dgptm-dash .dgptm-artikel-container [style*="gap: 20px"] { gap: 10px !important; }
+
+/* Tabs: filigran */
+.dgptm-dash .tabs .tab { padding: 6px 12px; font-size: 12px; }
+
+/* Abstracts/Textbloecke */
+.dgptm-dash .dgptm-artikel-container [style*="background: #f7fafc"],
+.dgptm-dash .dgptm-artikel-container [style*="background: #f8f9fa"] {
+    background: #f8f9fa !important;
+    padding: 10px !important;
+    border-radius: 4px !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .dgptm-dash .dgptm-artikel-container [style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+}
 </style>

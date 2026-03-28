@@ -721,3 +721,14 @@
         flex-wrap: wrap;
     }
 }
+
+/* Source Badges */
+.ae-source-badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; margin-left: 4px; }
+.ae-source-wp { background: #e8f0f8; color: #005792; }
+.ae-source-crm { background: #fff3e0; color: #e65100; }
+
+/* Inactive Reviewers */
+.reviewer-item.reviewer-inactive,
+tr.reviewer-inactive { opacity: 0.5; }
+.reviewer-item.reviewer-inactive .reviewer-name,
+tr.reviewer-inactive .reviewer-name { text-decoration: line-through; }

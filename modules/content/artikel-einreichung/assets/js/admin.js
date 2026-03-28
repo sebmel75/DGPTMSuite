@@ -48,15 +48,29 @@
                         if (response.success && response.data.users.length) {
                             $results.empty();
                             response.data.users.forEach(function(user) {
-                                $results.append(`
-                                    <div class="user-search-item" data-user-id="${user.ID}">
-                                        <img src="${user.avatar}" alt="" class="avatar">
-                                        <div>
-                                            <div class="name">${user.display_name}</div>
-                                            <div class="email">${user.email}</div>
-                                        </div>
-                                    </div>
-                                `);
+                                var source = user.source || 'wp';
+                                var badgeClass = source === 'crm' ? 'ae-source-crm' : 'ae-source-wp';
+                                var badgeLabel = source === 'crm' ? 'CRM' : 'WP';
+                                var firstName = user.first_name || '';
+                                var lastName = user.last_name || '';
+                                var zohoId = user.zoho_id || '';
+                                $results.append(
+                                    '<div class="user-search-item"' +
+                                    ' data-user-id="' + user.ID + '"' +
+                                    ' data-email="' + user.email + '"' +
+                                    ' data-first-name="' + firstName + '"' +
+                                    ' data-last-name="' + lastName + '"' +
+                                    ' data-zoho-id="' + zohoId + '"' +
+                                    ' data-source="' + source + '">' +
+                                    '<img src="' + user.avatar + '" alt="" class="avatar">' +
+                                    '<div>' +
+                                    '<div class="name">' + user.display_name +
+                                    ' <span class="ae-source-badge ' + badgeClass + '">' + badgeLabel + '</span>' +
+                                    '</div>' +
+                                    '<div class="email">' + user.email + '</div>' +
+                                    '</div>' +
+                                    '</div>'
+                                );
                             });
                             $results.addClass('active');
                         } else {
@@ -69,29 +83,39 @@
 
         // Add user to list
         $results.on('click', '.user-search-item', function() {
-            const userId = $(this).data('user-id');
-            const userName = $(this).find('.name').text();
-            const userEmail = $(this).find('.email').text();
-            const userAvatar = $(this).find('.avatar').attr('src');
+            const $item = $(this);
+            const userId = $item.data('user-id');
+            const userName = $item.find('.name').text().trim();
+            const userEmail = $item.data('email') || $item.find('.email').text();
+            const userAvatar = $item.find('.avatar').attr('src');
+            const firstName = $item.data('first-name') || '';
+            const lastName = $item.data('last-name') || '';
+            const zohoId = $item.data('zoho-id') || '';
+            const source = $item.data('source') || 'wp';
 
             // Check if already in list
-            if ($list.find(`[data-user-id="${userId}"]`).length) {
+            if ($list.find('[data-user-id="' + userId + '"]').length) {
                 alert('Dieser Benutzer ist bereits in der Liste.');
                 return;
             }
 
-            $list.append(`
-                <div class="reviewer-list-item" data-user-id="${userId}">
-                    <div class="user-info">
-                        <img src="${userAvatar}" alt="" class="avatar">
-                        <div>
-                            <div class="name">${userName}</div>
-                            <div class="email">${userEmail}</div>
-                        </div>
-                    </div>
-                    <span class="remove-btn dashicons dashicons-no-alt" title="Entfernen"></span>
-                </div>
-            `);
+            $list.append(
+                '<div class="reviewer-list-item" data-user-id="' + userId + '"' +
+                ' data-email="' + userEmail + '"' +
+                ' data-first-name="' + firstName + '"' +
+                ' data-last-name="' + lastName + '"' +
+                ' data-zoho-id="' + zohoId + '"' +
+                ' data-source="' + source + '">' +
+                '<div class="user-info">' +
+                '<img src="' + userAvatar + '" alt="" class="avatar">' +
+                '<div>' +
+                '<div class="name">' + userName + '</div>' +
+                '<div class="email">' + userEmail + '</div>' +
+                '</div>' +
+                '</div>' +
+                '<span class="remove-btn dashicons dashicons-no-alt" title="Entfernen"></span>' +
+                '</div>'
+            );
 
             $searchInput.val('');
             $results.removeClass('active').empty();
@@ -113,9 +137,17 @@
         });
 
         function saveReviewerList() {
-            const userIds = [];
+            const reviewers = [];
             $list.find('.reviewer-list-item').each(function() {
-                userIds.push($(this).data('user-id'));
+                const $row = $(this);
+                reviewers.push({
+                    user_id: $row.data('user-id'),
+                    email: $row.data('email') || '',
+                    first_name: $row.data('first-name') || '',
+                    last_name: $row.data('last-name') || '',
+                    zoho_id: $row.data('zoho-id') || '',
+                    source: $row.data('source') || 'wp'
+                });
             });
 
             $.ajax({
@@ -124,7 +156,8 @@
                 data: {
                     action: 'dgptm_save_reviewer_list',
                     nonce: config.nonce,
-                    reviewer_ids: userIds
+                    reviewer_ids: reviewers.map(function(r) { return r.user_id; }),
+                    reviewers: reviewers
                 },
                 success: function(response) {
                     if (response.success) {
@@ -135,6 +168,30 @@
             });
         }
     }
+
+    // Reviewer aktiv/inaktiv Toggle
+    $(document).on('click', '.btn-toggle-reviewer', function(e) {
+        e.preventDefault();
+        var $btn = $(this);
+        var userId = $btn.data('user-id');
+
+        $.post(config.ajaxUrl || ajaxurl, {
+            action: 'dgptm_toggle_reviewer_active',
+            nonce: config.nonce,
+            user_id: userId
+        }, function(res) {
+            if (res.success) {
+                var $row = $btn.closest('.reviewer-item, tr, .search-result-item');
+                if (res.data.active) {
+                    $row.removeClass('reviewer-inactive');
+                    $btn.text('Deaktivieren');
+                } else {
+                    $row.addClass('reviewer-inactive');
+                    $btn.text('Aktivieren');
+                }
+            }
+        });
+    });
 
     $(document).ready(init);
 

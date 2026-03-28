@@ -198,39 +198,45 @@
 }
 
 .toggle-label input[type="checkbox"] {
-    position: absolute;
-    opacity: 0;
+    position: absolute !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 .toggle-slider {
-    position: relative;
-    display: inline-block;
-    width: 50px;
-    height: 24px;
-    background-color: #ccc;
-    border-radius: 24px;
-    margin-right: 12px;
+    position: relative !important;
+    display: inline-block !important;
+    width: 50px !important;
+    min-width: 50px !important;
+    height: 24px !important;
+    background-color: #ccc !important;
+    border-radius: 24px !important;
+    margin-right: 12px !important;
     transition: background-color 0.3s;
+    flex-shrink: 0;
 }
 
 .toggle-slider::before {
-    content: '';
-    position: absolute;
-    width: 18px;
-    height: 18px;
-    left: 3px;
-    top: 3px;
-    background-color: white;
-    border-radius: 50%;
+    content: '' !important;
+    position: absolute !important;
+    width: 18px !important;
+    height: 18px !important;
+    left: 3px !important;
+    top: 3px !important;
+    background-color: white !important;
+    border-radius: 50% !important;
     transition: transform 0.3s;
 }
 
 .toggle-label input[type="checkbox"]:checked + .toggle-slider {
-    background-color: #0073aa;
+    background-color: #0073aa !important;
 }
 
 .toggle-label input[type="checkbox"]:checked + .toggle-slider::before {
-    transform: translateX(26px);
+    transform: translateX(26px) !important;
 }
 
 /* Form Actions */

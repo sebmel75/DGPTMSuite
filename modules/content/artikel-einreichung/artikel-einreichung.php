@@ -106,6 +106,7 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             add_action('wp_ajax_dgptm_search_users', [$this, 'ajax_search_users']);
             add_action('wp_ajax_dgptm_add_reviewer', [$this, 'ajax_add_reviewer']);
             add_action('wp_ajax_dgptm_remove_reviewer', [$this, 'ajax_remove_reviewer']);
+            add_action('wp_ajax_dgptm_toggle_reviewer_active', [$this, 'ajax_toggle_reviewer_active']);
             add_action('wp_ajax_dgptm_save_reviewer_notes', [$this, 'ajax_save_reviewer_notes']);
             add_action('wp_ajax_dgptm_preview_email', [$this, 'ajax_preview_email']);
             add_action('wp_ajax_dgptm_send_custom_email', [$this, 'ajax_send_custom_email']);
@@ -1829,17 +1830,49 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             $users = get_users([
                 'search' => '*' . $search . '*',
                 'search_columns' => ['display_name', 'user_email', 'user_login'],
-                'number' => 20,
+                'number' => 10,
                 'orderby' => 'display_name'
             ]);
 
             $results = [];
+            $found_emails = [];
+
             foreach ($users as $user) {
+                $zoho_id = get_user_meta($user->ID, 'zoho_id', true);
                 $results[] = [
                     'id' => $user->ID,
                     'name' => $user->display_name,
-                    'email' => $user->user_email
+                    'email' => $user->user_email,
+                    'source' => 'wp',
+                    'zoho_id' => $zoho_id ?: '',
                 ];
+                $found_emails[] = strtolower($user->user_email);
+            }
+
+            if (DGPTM_CRM_Reviewer::is_available()) {
+                $crm_results = [];
+
+                if (filter_var($search, FILTER_VALIDATE_EMAIL)) {
+                    $contact = DGPTM_CRM_Reviewer::search_by_email($search);
+                    if ($contact) $crm_results[] = $contact;
+                } else {
+                    $crm_results = DGPTM_CRM_Reviewer::search_by_name($search);
+                }
+
+                foreach ($crm_results as $c) {
+                    if (!empty($c['email']) && in_array(strtolower($c['email']), $found_emails)) continue;
+
+                    $results[] = [
+                        'id' => 0,
+                        'name' => trim($c['first_name'] . ' ' . $c['last_name']),
+                        'email' => $c['email'],
+                        'source' => 'crm',
+                        'zoho_id' => $c['zoho_id'],
+                        'first_name' => $c['first_name'],
+                        'last_name' => $c['last_name'],
+                    ];
+                    if (!empty($c['email'])) $found_emails[] = strtolower($c['email']);
+                }
             }
 
             wp_send_json_success(['users' => $results]);
@@ -1979,19 +2012,67 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             }
 
             $user_id = intval($_POST['user_id'] ?? 0);
+            $permanent = !empty($_POST['permanent']);
 
             if (!$user_id) {
-                wp_send_json_error(['message' => 'Ungültige Benutzer-ID.']);
+                wp_send_json_error(['message' => 'Ungueltige Benutzer-ID.']);
             }
 
-            $reviewer_ids = get_option(self::OPT_REVIEWERS, []);
-            $reviewer_ids = array_filter($reviewer_ids, function($id) use ($user_id) {
-                return $id !== $user_id;
-            });
-            $reviewer_ids = array_values($reviewer_ids); // Re-index
-            update_option(self::OPT_REVIEWERS, $reviewer_ids);
+            $pool = $this->get_reviewer_pool();
 
-            wp_send_json_success(['message' => 'Reviewer entfernt.']);
+            if ($permanent) {
+                $pool = array_values(array_filter($pool, function($r) use ($user_id) {
+                    return intval($r['user_id']) !== $user_id;
+                }));
+            } else {
+                foreach ($pool as &$r) {
+                    if (intval($r['user_id']) === $user_id) {
+                        $r['active'] = false;
+                        break;
+                    }
+                }
+                unset($r);
+            }
+
+            $this->save_reviewer_pool($pool);
+
+            wp_send_json_success(['message' => $permanent ? 'Reviewer entfernt.' : 'Reviewer deaktiviert.']);
+        }
+
+        /**
+         * AJAX: Aktiv/Inaktiv-Status eines Reviewers umschalten
+         */
+        public function ajax_toggle_reviewer_active() {
+            check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+            if (!$this->is_editor_in_chief() && !current_user_can('manage_options')) {
+                wp_send_json_error(['message' => 'Keine Berechtigung.']);
+            }
+
+            $user_id = intval($_POST['user_id'] ?? 0);
+
+            if (!$user_id) {
+                wp_send_json_error(['message' => 'Ungueltige Benutzer-ID.']);
+            }
+
+            $pool = $this->get_reviewer_pool();
+            $new_state = false;
+
+            foreach ($pool as &$r) {
+                if (intval($r['user_id']) === $user_id) {
+                    $r['active'] = !$r['active'];
+                    $new_state = $r['active'];
+                    break;
+                }
+            }
+            unset($r);
+
+            $this->save_reviewer_pool($pool);
+
+            wp_send_json_success([
+                'message' => $new_state ? 'Reviewer aktiviert.' : 'Reviewer deaktiviert.',
+                'active' => $new_state,
+            ]);
         }
 
         /**

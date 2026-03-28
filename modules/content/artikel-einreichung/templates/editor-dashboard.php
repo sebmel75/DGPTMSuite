@@ -21,7 +21,7 @@ if (!$plugin->is_editor_in_chief($user_id)) {
     return;
 }
 
-// Current tab
+// Current tab — GET-Parameter oder JS-gesteuert (Dashboard-kompatibel)
 $current_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'articles';
 $valid_tabs = ['articles', 'reviewers', 'settings'];
 if (!in_array($current_tab, $valid_tabs)) {
@@ -31,29 +31,39 @@ if (!in_array($current_tab, $valid_tabs)) {
 // Get available reviewers
 $reviewers = $plugin->get_reviewers();
 
-// Build base URL for tab navigation
+// Dashboard-Kontext erkennen
+$in_dashboard = (defined('DOING_AJAX') && DOING_AJAX) || !empty($GLOBALS['dgptm_dash_context']);
 $base_url = remove_query_arg(['tab', 'status', 'editor_artikel_id']);
 ?>
 
 <div class="dgptm-artikel-container">
 
-    <!-- Tab Navigation -->
-    <div class="editor-tabs" style="display: flex; gap: 0; margin-bottom: 30px; border-bottom: 2px solid #e2e8f0;">
-        <a href="<?php echo esc_url(add_query_arg('tab', 'articles', $base_url)); ?>"
-           class="editor-tab <?php echo $current_tab === 'articles' ? 'active' : ''; ?>">
+    <!-- Tab Navigation (JS-basiert fuer Dashboard-Kompatibilitaet) -->
+    <div class="editor-tabs" style="display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0;">
+        <a href="#" class="editor-tab <?php echo $current_tab === 'articles' ? 'active' : ''; ?>" data-editor-tab="articles">
             Artikel
         </a>
-        <a href="<?php echo esc_url(add_query_arg('tab', 'reviewers', $base_url)); ?>"
-           class="editor-tab <?php echo $current_tab === 'reviewers' ? 'active' : ''; ?>">
+        <a href="#" class="editor-tab <?php echo $current_tab === 'reviewers' ? 'active' : ''; ?>" data-editor-tab="reviewers">
             Reviewer verwalten
         </a>
-        <a href="<?php echo esc_url(add_query_arg('tab', 'settings', $base_url)); ?>"
-           class="editor-tab <?php echo $current_tab === 'settings' ? 'active' : ''; ?>">
+        <a href="#" class="editor-tab <?php echo $current_tab === 'settings' ? 'active' : ''; ?>" data-editor-tab="settings">
             Einstellungen
         </a>
     </div>
+    <script>
+    jQuery(function($){
+        $(document).on('click', '.editor-tab[data-editor-tab]', function(e){
+            e.preventDefault();
+            var tab = $(this).data('editor-tab');
+            $('.editor-tab').removeClass('active');
+            $(this).addClass('active');
+            $('.editor-tab-content').hide();
+            $('.editor-tab-content[data-editor-content="' + tab + '"]').show();
+        });
+    });
+    </script>
 
-    <?php if ($current_tab === 'articles'): ?>
+    <div class="editor-tab-content" data-editor-content="articles" <?php echo $current_tab !== 'articles' ? 'style="display:none"' : ''; ?>>
         <!-- ============================================
              ARTICLES TAB
              ============================================ -->
@@ -729,7 +739,9 @@ $base_url = remove_query_arg(['tab', 'status', 'editor_artikel_id']);
             <?php endif; ?>
         <?php endif; ?>
 
-    <?php elseif ($current_tab === 'reviewers'): ?>
+    </div><!-- /articles -->
+
+    <div class="editor-tab-content" data-editor-content="reviewers" <?php echo $current_tab !== 'reviewers' ? 'style="display:none"' : ''; ?>>
         <!-- ============================================
              REVIEWERS TAB
              ============================================ -->
@@ -821,7 +833,9 @@ $base_url = remove_query_arg(['tab', 'status', 'editor_artikel_id']);
             </div>
         </div>
 
-    <?php elseif ($current_tab === 'settings'): ?>
+    </div><!-- /reviewers -->
+
+    <div class="editor-tab-content" data-editor-content="settings" <?php echo $current_tab !== 'settings' ? 'style="display:none"' : ''; ?>>
         <!-- ============================================
              SETTINGS TAB
              ============================================ -->
@@ -1079,7 +1093,7 @@ $base_url = remove_query_arg(['tab', 'status', 'editor_artikel_id']);
         }
         </style>
 
-    <?php endif; ?>
+    </div><!-- /settings -->
 
 </div>
 
@@ -1093,6 +1107,7 @@ $base_url = remove_query_arg(['tab', 'status', 'editor_artikel_id']);
     border-bottom: 2px solid transparent;
     margin-bottom: -2px;
     transition: all 0.2s;
+    cursor: pointer;
 }
 
 .editor-tab:hover {
@@ -1105,6 +1120,12 @@ $base_url = remove_query_arg(['tab', 'status', 'editor_artikel_id']);
     border-bottom-color: #1a365d;
     background: transparent;
 }
+
+/* Dashboard-filigran */
+.dgptm-dash .editor-tabs { margin-bottom: 12px; border-bottom: 1px solid #eee; }
+.dgptm-dash .editor-tab { padding: 6px 12px; font-size: 12px; font-weight: 400; color: #888; }
+.dgptm-dash .editor-tab:hover { color: #1d2327; background: #f8f9fa; }
+.dgptm-dash .editor-tab.active { color: #0073aa; border-bottom-color: #0073aa; font-weight: 600; }
 </style>
 
 <script>

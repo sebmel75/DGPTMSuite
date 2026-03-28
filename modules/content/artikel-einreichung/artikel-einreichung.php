@@ -990,12 +990,17 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             global $post;
             if (!$post) return;
 
-            // Only load on pages with our shortcodes
-            if (has_shortcode($post->post_content, 'artikel_einreichung') ||
+            // Load on pages with our shortcodes OR on the dashboard page
+            $has_shortcode = has_shortcode($post->post_content, 'artikel_einreichung') ||
                 has_shortcode($post->post_content, 'artikel_dashboard') ||
                 has_shortcode($post->post_content, 'artikel_review') ||
                 has_shortcode($post->post_content, 'artikel_redaktion') ||
-                has_shortcode($post->post_content, 'artikel_editor_dashboard')) {
+                has_shortcode($post->post_content, 'artikel_editor_dashboard');
+
+            // Dashboard: Shortcodes werden per AJAX nachgeladen, Assets muessen vorgeladen werden
+            $is_dashboard = has_shortcode($post->post_content, 'dgptm_dashboard');
+
+            if ($has_shortcode || $is_dashboard) {
 
                 wp_enqueue_style(
                     'dgptm-artikel-frontend',
@@ -3333,17 +3338,28 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
          * Get available reviewers
          */
         public function get_reviewers() {
-            $reviewer_ids = get_option(self::OPT_REVIEWERS, []);
-            if (empty($reviewer_ids)) {
+            $pool = $this->get_reviewer_pool();
+            if (empty($pool)) {
                 return [];
             }
 
-            $users = get_users([
-                'include' => $reviewer_ids,
+            $active_ids = [];
+            foreach ($pool as $r) {
+                if (is_array($r) && !empty($r['active'])) {
+                    $active_ids[] = intval($r['user_id']);
+                } elseif (is_int($r) || is_string($r)) {
+                    $active_ids[] = intval($r);
+                }
+            }
+
+            if (empty($active_ids)) {
+                return [];
+            }
+
+            return get_users([
+                'include' => $active_ids,
                 'orderby' => 'display_name'
             ]);
-
-            return $users;
         }
 
         // =====================================================

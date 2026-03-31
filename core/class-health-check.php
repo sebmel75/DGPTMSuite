@@ -52,6 +52,65 @@ class DGPTM_Health_Check {
 			'callback'            => [ $this, 'handle_health_check' ],
 			'permission_callback' => [ $this, 'check_auth' ],
 		] );
+
+		register_rest_route( 'dgptm/v1', '/forum-diag', [
+			'methods'             => 'GET',
+			'callback'            => [ $this, 'handle_forum_diag' ],
+			'permission_callback' => [ $this, 'check_auth' ],
+		] );
+	}
+
+	/**
+	 * Forum-Diagnose: zeigt DB-Inhalte der Forum-Tabellen
+	 */
+	public function handle_forum_diag( $request ) {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'dgptm_forum_';
+
+		$diag = [];
+
+		// AGs (Hauptgruppen)
+		$diag['ags'] = $wpdb->get_results( "SELECT id, name, slug, group_type, status, is_hidden FROM {$prefix}ags ORDER BY sort_order" );
+
+		// Topics
+		$diag['topics'] = $wpdb->get_results( "SELECT id, ag_id, title, slug, access_mode, status, thread_count FROM {$prefix}topics ORDER BY ag_id, sort_order" );
+
+		// Threads (alle, inkl. Status)
+		$diag['threads'] = $wpdb->get_results(
+			"SELECT th.id, th.topic_id, th.title, th.status, th.is_pinned, th.reply_count, th.author_id, th.created_at, t.ag_id, t.title AS topic_title
+			 FROM {$prefix}threads th
+			 JOIN {$prefix}topics t ON t.id = th.topic_id
+			 ORDER BY th.created_at DESC
+			 LIMIT 50"
+		);
+
+		// Threads die nicht angezeigt werden (status = deleted ODER topic/ag inaktiv)
+		$diag['hidden_threads'] = $wpdb->get_results(
+			"SELECT th.id, th.title, th.status AS thread_status, th.author_id, th.created_at,
+			        t.id AS topic_id, t.title AS topic_title, t.status AS topic_status, t.access_mode,
+			        a.id AS ag_id, a.name AS ag_name, a.status AS ag_status, a.group_type, a.is_hidden
+			 FROM {$prefix}threads th
+			 JOIN {$prefix}topics t ON t.id = th.topic_id
+			 JOIN {$prefix}ags a ON a.id = t.ag_id
+			 WHERE th.status = 'deleted'
+			    OR t.status != 'active'
+			    OR a.status != 'active'
+			    OR a.is_hidden = 1
+			 ORDER BY th.created_at DESC"
+		);
+
+		// Replies Count
+		$diag['reply_count'] = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}replies" );
+
+		// Memberships
+		$diag['memberships'] = $wpdb->get_results(
+			"SELECT m.ag_id, a.name AS ag_name, COUNT(*) AS member_count
+			 FROM {$prefix}ag_members m
+			 JOIN {$prefix}ags a ON a.id = m.ag_id
+			 GROUP BY m.ag_id"
+		);
+
+		return new WP_REST_Response( $diag, 200 );
 	}
 
 	/**

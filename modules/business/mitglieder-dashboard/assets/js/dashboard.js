@@ -88,6 +88,13 @@ jQuery(function($) {
             data: { action: 'dgptm_dash_load_tab', nonce: dgptmDash.nonce, tab: id }
         }).done(function(raw) {
             console.log('[Dashboard] RAW response for "' + id + '" (len=' + raw.length + '):', raw.substring(0, 300));
+
+            // "0" = WordPress AJAX handler nicht gefunden (Session abgelaufen)
+            if (raw === '0' || raw === '') {
+                $target.html('<p style="padding:20px;text-align:center;color:#666;">Ihre Sitzung ist abgelaufen. <a href="' + window.location.href + '" style="color:#0073aa;">Seite neu laden</a> oder <a href="/wp-login.php?redirect_to=' + encodeURIComponent(window.location.href) + '" style="color:#0073aa;">erneut anmelden</a>.</p>');
+                return;
+            }
+
             var r;
             try { r = JSON.parse(raw); } catch(e) {
                 console.error('[Dashboard] JSON parse failed:', e.message, 'Raw:', raw.substring(0, 500));

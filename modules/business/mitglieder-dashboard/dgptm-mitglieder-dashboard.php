@@ -30,6 +30,9 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
             add_action('wp_ajax_dgptm_dash_save_settings', [$this, 'ajax_save_settings']);
             add_action('wp_ajax_dgptm_dash_load_tab', [$this, 'ajax_load_tab']);
 
+            // Nicht-eingeloggte User: klare Fehlermeldung statt "0"
+            add_action('wp_ajax_nopriv_dgptm_dash_load_tab', [$this, 'ajax_load_tab_nopriv']);
+
             // WP Rocket: Dashboard-Seite nie cachen (Nonce ist user-spezifisch)
             add_filter('rocket_cache_reject_uri', [$this, 'exclude_from_cache']);
         }
@@ -205,6 +208,10 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
         }
 
         // ─── AJAX: Load tab content ───
+
+        public function ajax_load_tab_nopriv() {
+            wp_send_json_error('Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.');
+        }
 
         public function ajax_load_tab() {
             // PHP-Warnings abfangen damit JSON nicht kaputt geht

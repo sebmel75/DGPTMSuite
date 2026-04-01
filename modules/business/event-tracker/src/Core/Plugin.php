@@ -12,6 +12,7 @@ use EventTracker\Admin\CPT;
 use EventTracker\Admin\Settings;
 use EventTracker\Ajax\Handler as AjaxHandler;
 use EventTracker\Frontend\Shortcodes;
+use EventTracker\Frontend\WebinarShortcode;
 use EventTracker\Frontend\RedirectHandler;
 use EventTracker\Mailer\MailerCore;
 
@@ -147,6 +148,7 @@ class Plugin {
 
 		// Frontend Components
 		$this->components['shortcodes'] = new Shortcodes();
+		$this->components['webinar']    = new WebinarShortcode();
 		$this->components['redirect']   = new RedirectHandler();
 
 		// Mailer Components

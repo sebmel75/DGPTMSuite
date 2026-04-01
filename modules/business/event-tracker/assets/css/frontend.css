@@ -981,3 +981,86 @@
 }
 
 /* 640px breakpoint removed — .et-grid already set to 1fr at 768px */
+
+/* ========================================
+   Dashboard-Integration (Forum-Vorbild)
+   ======================================== */
+
+.dgptm-dash .et-panels { max-width: 100%; }
+
+/* Buttons */
+.dgptm-dash .et-btn,
+.dgptm-dash button.et-btn {
+    padding: 4px 10px !important;
+    border: 1px solid #0073aa !important;
+    border-radius: 4px !important;
+    background: #0073aa !important;
+    color: #fff !important;
+    font-size: 12px !important;
+    font-weight: 400 !important;
+    line-height: 1.4 !important;
+    box-shadow: none !important;
+    min-height: 0 !important;
+    height: auto !important;
+}
+.dgptm-dash .et-btn:hover { background: #005d8c !important; }
+.dgptm-dash .et-btn.secondary,
+.dgptm-dash .et-btn-secondary { background: #f0f0f0 !important; border-color: #ccc !important; color: #555 !important; }
+.dgptm-dash .et-btn.danger,
+.dgptm-dash .et-btn-danger { background: #dc3232 !important; border-color: #dc3232 !important; }
+
+/* Panel Controls */
+.dgptm-dash .et-panel-controls { gap: 6px; margin-bottom: 12px; }
+
+/* Inputs */
+.dgptm-dash .et-panels input[type="text"],
+.dgptm-dash .et-panels input[type="url"],
+.dgptm-dash .et-panels input[type="email"],
+.dgptm-dash .et-panels input[type="datetime-local"],
+.dgptm-dash .et-panels textarea,
+.dgptm-dash .et-panels select {
+    padding: 6px 8px !important;
+    border: 1px solid #ccc !important;
+    border-radius: 4px !important;
+    font-size: 13px !important;
+    box-shadow: none !important;
+}
+
+/* Labels */
+.dgptm-dash .et-panels label { font-size: 12px; font-weight: 500; }
+
+/* Event List */
+.dgptm-dash .et-event-row {
+    padding: 10px 12px !important;
+    border: none !important;
+    border-bottom: 1px solid #eee !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: none !important;
+}
+.dgptm-dash .et-event-row:hover { background: #f8f9fa !important; }
+.dgptm-dash .et-event-title { font-size: 13px; font-weight: 600; color: #1d2327; }
+.dgptm-dash .et-event-meta { font-size: 11px; color: #888; }
+
+/* Status Badges */
+.dgptm-dash .et-badge {
+    padding: 2px 8px !important;
+    border-radius: 10px !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+}
+
+/* Form */
+.dgptm-dash .et-form-group { margin-bottom: 10px; }
+.dgptm-dash .et-form-row { gap: 8px; }
+
+/* Zoho Meeting Panel */
+.dgptm-dash .et-zm-section { padding: 12px; border: 1px solid #eee; border-radius: 4px; margin-top: 10px; }
+.dgptm-dash .et-zm-section h4 { font-size: 13px; margin: 0 0 8px; }
+
+/* Loading */
+.dgptm-dash .et-loading { padding: 20px; text-align: center; color: #888; font-size: 13px; }
+
+/* Mail UI */
+.dgptm-dash .et-mailer { border: 1px solid #eee; border-radius: 4px; padding: 12px; margin-top: 12px; }
+.dgptm-dash .et-mailer h3 { font-size: 14px; margin: 0 0 10px; }

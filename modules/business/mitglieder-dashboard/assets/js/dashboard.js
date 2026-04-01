@@ -1,5 +1,6 @@
 jQuery(function($) {
     var $d = $('.dgptm-dash');
+    console.log('[Dashboard] Init, container found:', $d.length, 'active:', $d.data('active'));
     if (!$d.length) return;
 
     var loaded = {};
@@ -78,12 +79,14 @@ jQuery(function($) {
     }
 
     function loadTab(id, $target) {
+        console.log('[Dashboard] loadTab:', id);
         $target.html('<div class="dgptm-loading">Wird geladen...</div>');
         $.post(dgptmDash.ajax, {
             action: 'dgptm_dash_load_tab',
             nonce: dgptmDash.nonce,
             tab: id
         }).done(function(r) {
+            console.log('[Dashboard] Response for', id, ':', typeof r, r && r.success, r && r.data ? (typeof r.data === 'string' ? r.data.substring(0, 100) : JSON.stringify(r.data).substring(0, 100)) : 'no data');
             if (r.success) {
                 $target.html(r.data.html);
                 // Execute inline scripts

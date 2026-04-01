@@ -6,16 +6,17 @@
 (function($) {
 	'use strict';
 
-	$(document).ready(function() {
-
+	// Init sofort oder wenn Content spaeter nachgeladen wird (Dashboard AJAX)
+	function etInit() {
 		var panelsContainer = $('.et-panels');
 
-		if (!panelsContainer.length) {
+		if (!panelsContainer.length || panelsContainer.data('et-init')) {
 			return;
 		}
+		panelsContainer.data('et-init', true);
 
-		var ajaxUrl = eventTrackerData.ajaxUrl;
-		var nonce = eventTrackerData.nonce;
+		var ajaxUrl = (typeof eventTrackerData !== 'undefined') ? eventTrackerData.ajaxUrl : ajaxurl;
+		var nonce = (typeof eventTrackerData !== 'undefined') ? eventTrackerData.nonce : '';
 
 		var currentPanel = null;
 
@@ -541,6 +542,16 @@
 			});
 		});
 
+	}
+
+	// Init bei document.ready (normale Seiten)
+	$(document).ready(function() {
+		etInit();
+	});
+
+	// Init nach Dashboard-Tab-Load (AJAX-Kontext)
+	$(document).on('dgptm_tab_loaded dgptm:ftab-switched', function() {
+		setTimeout(etInit, 50);
 	});
 
 })(jQuery);

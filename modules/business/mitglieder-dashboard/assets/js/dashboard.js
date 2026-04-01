@@ -98,7 +98,7 @@ jQuery(function($) {
             var r;
             try { r = JSON.parse(raw); } catch(e) {
                 console.error('[Dashboard] JSON parse failed:', e.message, 'Raw:', raw.substring(0, 500));
-                $target.html('<p style="color:red;padding:12px;">Server-Antwort ungueltig. <a href="javascript:location.reload()">Seite neu laden</a></p>');
+                $target.html('<div style="padding:12px;background:#fff3cd;border:1px solid #ffc107;border-radius:4px;font-size:12px;"><strong>Debug — Server-Antwort (kein JSON):</strong><pre style="white-space:pre-wrap;word-break:break-all;max-height:200px;overflow:auto;margin:8px 0;padding:8px;background:#f8f9fa;border:1px solid #eee;font-size:11px;">' + $('<div>').text(raw.substring(0, 1000)).html() + '</pre><a href="javascript:location.reload()" style="color:#0073aa;">Seite neu laden</a></div>');
                 return;
             }
             if (r.success) {

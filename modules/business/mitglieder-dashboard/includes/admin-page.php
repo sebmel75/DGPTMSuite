@@ -1,17 +1,22 @@
 <?php
 if (!defined('ABSPATH')) exit;
 $all_tabs = $tabs->get_all();
-$acf_fields = [
-    '' => '-- Keine --',
-    'news_schreiben' => 'news_schreiben', 'news_alle' => 'news_alle',
-    'stellenanzeigen_anlegen' => 'stellenanzeigen_anlegen', 'testbereich' => 'testbereich',
-    'eventtracker' => 'eventtracker', 'quizz_verwalten' => 'quizz_verwalten',
-    'delegate' => 'delegate', 'timeline' => 'timeline',
-    'mitgliederversammlung' => 'mitgliederversammlung', 'checkliste' => 'checkliste',
-    'webinar' => 'webinar', 'checkliste_erstellen' => 'checkliste_erstellen',
-    'editor_in_chief' => 'editor_in_chief', 'redaktion_perfusiologie' => 'redaktion_perfusiologie',
-    'zeitschriftmanager' => 'zeitschriftmanager', 'umfragen' => 'umfragen',
-];
+
+// ACF True/False Felder dynamisch aus allen User-Feldgruppen laden
+$acf_fields = ['' => '-- Keine --'];
+if (function_exists('acf_get_field_groups') && function_exists('acf_get_fields')) {
+    $groups = acf_get_field_groups(['user_form' => 'all']);
+    foreach ($groups as $group) {
+        $group_fields = acf_get_fields($group['key']);
+        if (!is_array($group_fields)) continue;
+        foreach ($group_fields as $f) {
+            if ($f['type'] === 'true_false' && !empty($f['name'])) {
+                $acf_fields[$f['name']] = $f['name'] . ' (' . $f['label'] . ')';
+            }
+        }
+    }
+}
+ksort($acf_fields);
 // Top-level tabs for parent dropdown
 $top_tabs = array_filter($all_tabs, function($t) { return empty($t['parent']); });
 ?>

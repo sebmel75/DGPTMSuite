@@ -36,8 +36,8 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
             // WP Rocket: Dashboard-Seite nie cachen (Nonce ist user-spezifisch)
             add_filter('rocket_cache_reject_uri', [$this, 'exclude_from_cache']);
 
-            // ACF-Felder fuer Dashboard-Berechtigungen registrieren
-            add_action('acf/init', [$this, 'register_acf_fields']);
+            // ACF-Felder fuer Permission-Auswahl im Tab-Editor laden
+            add_action('wp_ajax_dgptm_dash_get_acf_fields', [$this, 'ajax_get_acf_fields']);
         }
 
         /**
@@ -50,63 +50,32 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
         }
 
         /**
-         * ACF-Felder fuer Dashboard-Tab-Berechtigungen
-         * Werden auf dem Benutzer-Profil als Toggles angezeigt
+         * AJAX: Verfuegbare ACF User-Felder (True/False) fuer Permission-Dropdown
          */
-        public function register_acf_fields() {
-            if ( ! function_exists('acf_add_local_field_group') ) return;
+        public function ajax_get_acf_fields() {
+            check_ajax_referer('dgptm_dash_admin', 'nonce');
+            if (!current_user_can('manage_options')) wp_send_json_error('Keine Berechtigung');
 
-            acf_add_local_field_group([
-                'key' => 'group_dgptm_dashboard_perms',
-                'title' => 'DGPTM Dashboard-Berechtigungen',
-                'fields' => [
-                    [
-                        'key' => 'field_dgptm_fobiupload',
-                        'label' => 'Fortbildungsnachweis-Upload',
-                        'name' => 'fobiupload',
-                        'type' => 'true_false',
-                        'instructions' => 'Zugriff auf den Fortbildungsnachweis-Upload im Dashboard',
-                        'ui' => 1,
-                    ],
-                    [
-                        'key' => 'field_dgptm_zeitschriftmanager',
-                        'label' => 'Zeitschrift-Manager',
-                        'name' => 'zeitschriftmanager',
-                        'type' => 'true_false',
-                        'instructions' => 'Zugriff auf die Zeitschrift-Verwaltung im Dashboard',
-                        'ui' => 1,
-                    ],
-                    [
-                        'key' => 'field_dgptm_testbereich',
-                        'label' => 'Testbereich',
-                        'name' => 'testbereich',
-                        'type' => 'true_false',
-                        'instructions' => 'Zugriff auf den Testbereich im Dashboard',
-                        'ui' => 1,
-                    ],
-                    [
-                        'key' => 'field_dgptm_editor_in_chief',
-                        'label' => 'Editor-in-Chief (Zeitschrift)',
-                        'name' => 'editor_in_chief',
-                        'type' => 'true_false',
-                        'instructions' => 'Editor-in-Chief Berechtigung fuer Artikel-Einreichung',
-                        'ui' => 1,
-                    ],
-                ],
-                'location' => [
-                    [
-                        [
-                            'param' => 'user_form',
-                            'operator' => '==',
-                            'value' => 'all',
-                        ],
-                    ],
-                ],
-                'menu_order' => 10,
-                'position' => 'normal',
-                'style' => 'default',
-                'label_placement' => 'left',
-            ]);
+            $fields = [];
+
+            if (function_exists('acf_get_field_groups')) {
+                $groups = acf_get_field_groups(['user_form' => 'all']);
+                foreach ($groups as $group) {
+                    $group_fields = acf_get_fields($group['key']);
+                    if (!is_array($group_fields)) continue;
+                    foreach ($group_fields as $f) {
+                        if ($f['type'] === 'true_false') {
+                            $fields[] = [
+                                'name' => $f['name'],
+                                'label' => $f['label'],
+                                'group' => $group['title'],
+                            ];
+                        }
+                    }
+                }
+            }
+
+            wp_send_json_success(['fields' => $fields]);
         }
 
         public function register_shortcodes() {

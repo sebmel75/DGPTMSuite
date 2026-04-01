@@ -2,11 +2,25 @@
 if (!defined('ABSPATH')) exit;
 $all_tabs = $tabs->get_all();
 
-// ACF True/False Felder dynamisch aus allen User-Feldgruppen laden
+// ACF True/False Felder: ALLE Feldgruppen durchsuchen (nicht nur user_form)
 $acf_fields = ['' => '-- Keine --'];
 if (function_exists('acf_get_field_groups') && function_exists('acf_get_fields')) {
-    $groups = acf_get_field_groups(['user_form' => 'all']);
+    $groups = acf_get_field_groups();
     foreach ($groups as $group) {
+        // Pruefen ob die Gruppe User-Felder enthaelt (Location Rule)
+        $is_user_group = false;
+        if (!empty($group['location'])) {
+            foreach ($group['location'] as $rules) {
+                foreach ($rules as $rule) {
+                    if (isset($rule['param']) && in_array($rule['param'], ['user_form', 'user_role', 'current_user', 'current_user_role'], true)) {
+                        $is_user_group = true;
+                        break 2;
+                    }
+                }
+            }
+        }
+        if (!$is_user_group) continue;
+
         $group_fields = acf_get_fields($group['key']);
         if (!is_array($group_fields)) continue;
         foreach ($group_fields as $f) {

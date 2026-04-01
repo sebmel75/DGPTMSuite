@@ -53,11 +53,55 @@ class DGPTM_Health_Check {
 			'permission_callback' => [ $this, 'check_auth' ],
 		] );
 
+		register_rest_route( 'dgptm/v1', '/user-check', [
+			'methods'             => 'GET',
+			'callback'            => [ $this, 'handle_user_check' ],
+			'permission_callback' => [ $this, 'check_auth' ],
+		] );
+
 		register_rest_route( 'dgptm/v1', '/forum-diag', [
 			'methods'             => 'GET',
 			'callback'            => [ $this, 'handle_forum_diag' ],
 			'permission_callback' => [ $this, 'check_auth' ],
 		] );
+	}
+
+	/**
+	 * User-Check: ACF-Felder und Rollen eines Users pruefen
+	 * ?login=jokuhle&fields=fobiupload,zeitschriftmanager,testbereich
+	 */
+	public function handle_user_check( $request ) {
+		$login = sanitize_text_field( $request->get_param( 'login' ) ?? '' );
+		$field_names = sanitize_text_field( $request->get_param( 'fields' ) ?? 'fobiupload,zeitschriftmanager,testbereich,editor_in_chief' );
+
+		if ( ! $login ) {
+			return new WP_REST_Response( [ 'error' => 'Parameter login fehlt' ], 400 );
+		}
+
+		$user = get_user_by( 'login', $login );
+		if ( ! $user ) {
+			return new WP_REST_Response( [ 'error' => 'User nicht gefunden: ' . $login ], 404 );
+		}
+
+		$fields = array_map( 'trim', explode( ',', $field_names ) );
+		$acf_values = [];
+		foreach ( $fields as $field ) {
+			$acf_val = function_exists( 'get_field' ) ? get_field( $field, 'user_' . $user->ID ) : null;
+			$meta_val = get_user_meta( $user->ID, $field, true );
+			$acf_values[ $field ] = [
+				'acf' => $acf_val,
+				'meta' => $meta_val,
+			];
+		}
+
+		return new WP_REST_Response( [
+			'user_id' => $user->ID,
+			'login' => $user->user_login,
+			'display_name' => $user->display_name,
+			'email' => $user->user_email,
+			'roles' => $user->roles,
+			'acf_fields' => $acf_values,
+		], 200 );
 	}
 
 	/**

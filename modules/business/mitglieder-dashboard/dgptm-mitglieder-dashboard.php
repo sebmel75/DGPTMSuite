@@ -35,6 +35,9 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
 
             // WP Rocket: Dashboard-Seite nie cachen (Nonce ist user-spezifisch)
             add_filter('rocket_cache_reject_uri', [$this, 'exclude_from_cache']);
+
+            // ACF-Felder fuer Dashboard-Berechtigungen registrieren
+            add_action('acf/init', [$this, 'register_acf_fields']);
         }
 
         /**
@@ -44,6 +47,66 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
             $uris[] = '/mitgliedschaft/interner-bereich/(.*)';
             $uris[] = '/interner-bereich/(.*)';
             return $uris;
+        }
+
+        /**
+         * ACF-Felder fuer Dashboard-Tab-Berechtigungen
+         * Werden auf dem Benutzer-Profil als Toggles angezeigt
+         */
+        public function register_acf_fields() {
+            if ( ! function_exists('acf_add_local_field_group') ) return;
+
+            acf_add_local_field_group([
+                'key' => 'group_dgptm_dashboard_perms',
+                'title' => 'DGPTM Dashboard-Berechtigungen',
+                'fields' => [
+                    [
+                        'key' => 'field_dgptm_fobiupload',
+                        'label' => 'Fortbildungsnachweis-Upload',
+                        'name' => 'fobiupload',
+                        'type' => 'true_false',
+                        'instructions' => 'Zugriff auf den Fortbildungsnachweis-Upload im Dashboard',
+                        'ui' => 1,
+                    ],
+                    [
+                        'key' => 'field_dgptm_zeitschriftmanager',
+                        'label' => 'Zeitschrift-Manager',
+                        'name' => 'zeitschriftmanager',
+                        'type' => 'true_false',
+                        'instructions' => 'Zugriff auf die Zeitschrift-Verwaltung im Dashboard',
+                        'ui' => 1,
+                    ],
+                    [
+                        'key' => 'field_dgptm_testbereich',
+                        'label' => 'Testbereich',
+                        'name' => 'testbereich',
+                        'type' => 'true_false',
+                        'instructions' => 'Zugriff auf den Testbereich im Dashboard',
+                        'ui' => 1,
+                    ],
+                    [
+                        'key' => 'field_dgptm_editor_in_chief',
+                        'label' => 'Editor-in-Chief (Zeitschrift)',
+                        'name' => 'editor_in_chief',
+                        'type' => 'true_false',
+                        'instructions' => 'Editor-in-Chief Berechtigung fuer Artikel-Einreichung',
+                        'ui' => 1,
+                    ],
+                ],
+                'location' => [
+                    [
+                        [
+                            'param' => 'user_form',
+                            'operator' => '==',
+                            'value' => 'all',
+                        ],
+                    ],
+                ],
+                'menu_order' => 10,
+                'position' => 'normal',
+                'style' => 'default',
+                'label_placement' => 'left',
+            ]);
         }
 
         public function register_shortcodes() {

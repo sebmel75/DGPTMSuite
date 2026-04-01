@@ -207,7 +207,9 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
         // ─── AJAX: Load tab content ───
 
         public function ajax_load_tab() {
-            check_ajax_referer('dgptm_dash', 'nonce');
+            if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'dgptm_dash' ) ) {
+                wp_send_json_error('Sitzung abgelaufen. Bitte Seite neu laden (Strg+R).');
+            }
             $tab_id = sanitize_key($_POST['tab'] ?? '');
             $tabs_mgr = DGPTM_Dashboard_Tabs::get_instance();
             $tab = $tabs_mgr->get_tab($tab_id);

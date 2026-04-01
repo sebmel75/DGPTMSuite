@@ -97,10 +97,16 @@ jQuery(function($) {
                 $(document).trigger('dgptm_tab_loaded', [id]);
                 $(document).trigger('dgptm:ftab-switched', { panel: id });
             } else {
-                $target.html('<p style="color:red">' + (r.data || 'Fehler') + '</p>');
+                var msg = (typeof r.data === 'string') ? r.data : (r.data && r.data.message ? r.data.message : 'Fehler beim Laden');
+                if (msg.indexOf('Sitzung') !== -1 || msg.indexOf('nonce') !== -1) {
+                    msg += ' <a href="javascript:location.reload()" style="color:#0073aa;text-decoration:underline">Seite neu laden</a>';
+                }
+                $target.html('<p style="color:red;padding:12px;">' + msg + '</p>');
             }
-        }).fail(function() {
-            $target.html('<p style="color:red">Laden fehlgeschlagen</p>');
+        }).fail(function(xhr) {
+            var failMsg = 'Laden fehlgeschlagen';
+            if (xhr.status === 403) failMsg = 'Sitzung abgelaufen. <a href="javascript:location.reload()" style="color:#0073aa;text-decoration:underline">Seite neu laden</a>';
+            $target.html('<p style="color:red;padding:12px;">' + failMsg + '</p>');
         });
     }
 });

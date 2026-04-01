@@ -127,9 +127,9 @@ class Shortcodes {
 		$if_enable = isset( $_POST['et_iframe_enable'] ) ? '1' : '0';
 		$if_raw    = isset( $_POST['et_iframe_url'] ) ? trim( wp_unslash( $_POST['et_iframe_url'] ) ) : '';
 
-		// Validate required fields
-		if ( ! $title || ! $start || ! $end || ! $url_raw ) {
-			return Helpers::notice( __( 'Bitte fülle alle Pflichtfelder aus.', 'event-tracker' ), 'error' );
+		// Validate required fields (URL ist optional — wird ggf. durch Zoho Meeting gesetzt)
+		if ( ! $title || ! $start || ! $end ) {
+			return Helpers::notice( __( 'Bitte Titel, Start und Ende ausfuellen.', 'event-tracker' ), 'error' );
 		}
 
 		// Parse dates

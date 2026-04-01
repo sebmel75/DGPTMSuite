@@ -163,10 +163,17 @@ class Handler {
 					<td data-label="<?php esc_attr_e( 'Status', 'event-tracker' ); ?>"><span class="<?php echo esc_attr( $badge_class ); ?>"><?php echo esc_html( $badge_text ); ?></span></td>
 					<?php if ( $show_action_link ) : ?>
 						<td data-label="<?php esc_attr_e( 'Aktionen', 'event-tracker' ); ?>" class="et-actions">
-							<?php if ( $target ) : ?>
+							<?php
+							$zm_join = get_post_meta( $post_id, Constants::META_ZM_JOIN_URL, true );
+							$zm_key  = get_post_meta( $post_id, Constants::META_ZM_KEY, true );
+							if ( $target ) : ?>
 								<a href="<?php echo esc_url( $link ); ?>"><?php esc_html_e( 'Zum Event / prüfen', 'event-tracker' ); ?></a>
+							<?php elseif ( $zm_join ) : ?>
+								<a href="<?php echo esc_url( $zm_join ); ?>" target="_blank"><?php esc_html_e( 'Zoho Meeting beitreten', 'event-tracker' ); ?></a>
+							<?php elseif ( $zm_key ) : ?>
+								<em><?php esc_html_e( 'Meeting erstellt (kein Join-Link)', 'event-tracker' ); ?></em>
 							<?php else : ?>
-								<em><?php esc_html_e( 'Keine Ziel-URL hinterlegt', 'event-tracker' ); ?></em>
+								<em><?php esc_html_e( 'Noch kein Meeting/URL', 'event-tracker' ); ?></em>
 							<?php endif; ?>
 							<?php if ( $can_edit ) : ?>
 								<button type="button" class="et-btn" data-action="edit" data-event-id="<?php echo esc_attr( $post_id ); ?>"><?php esc_html_e( 'Bearbeiten', 'event-tracker' ); ?></button>
@@ -238,6 +245,8 @@ class Handler {
 		if ( ! $title || ! $start || ! $end ) {
 			wp_send_json_error( [ 'message' => __( 'Titel, Start und Ende sind Pflichtfelder.', 'event-tracker' ) ] );
 		}
+
+		// URL ist optional — wird ggf. durch Zoho Meeting Join-URL ersetzt
 
 		$start_ts = Helpers::sanitize_datetime_local( $start );
 		$end_ts   = Helpers::sanitize_datetime_local( $end );
@@ -356,8 +365,8 @@ class Handler {
 					<input type="datetime-local" name="et_end" required value="<?php echo esc_attr( $end_val ); ?>" />
 				</div>
 				<div class="full">
-					<label><strong><?php esc_html_e( 'Weiterleitungs-URL', 'event-tracker' ); ?></strong></label>
-					<input type="url" name="et_url" placeholder="https://example.com/ziel" required value="<?php echo esc_attr( $url ); ?>" />
+					<label><strong><?php esc_html_e( 'Weiterleitungs-URL (optional — wird bei Zoho-Meeting automatisch gesetzt)', 'event-tracker' ); ?></strong></label>
+					<input type="url" name="et_url" placeholder="https://example.com/ziel oder leer fuer Zoho Meeting" value="<?php echo esc_attr( $url ); ?>" />
 				</div>
 				<div class="full">
 					<label><strong><?php esc_html_e( 'Zoho-ID (optional, für Mail/Webhook)', 'event-tracker' ); ?></strong></label>
@@ -402,6 +411,10 @@ class Handler {
 
 		<?php if ( $is_edit ) : ?>
 			<?php $this->render_zoho_meeting_panel( $event_id ); ?>
+		<?php else : ?>
+			<div class="et-zm-section" style="margin-top:12px;padding:12px;background:#f8f9fa;border:1px solid #eee;border-radius:4px">
+				<p style="color:#888;font-size:12px;margin:0">Speichern Sie zuerst die Veranstaltung, dann koennen Sie ein Zoho Meeting erstellen und Co-Presenter hinzufuegen.</p>
+			</div>
 		<?php endif; ?>
 
 		<script>
@@ -973,6 +986,14 @@ class Handler {
 			update_post_meta( $event_id, Constants::META_ZM_START_URL, $start_url );
 			update_post_meta( $event_id, Constants::META_ZM_JOIN_URL, $join_url );
 			update_post_meta( $event_id, Constants::META_ZM_STATUS, 'created' );
+
+			// Join-URL als Redirect-URL setzen, falls noch keine vorhanden
+			$existing_url = get_post_meta( $event_id, Constants::META_REDIRECT_URL, true );
+			if ( empty( $existing_url ) && $join_url ) {
+				update_post_meta( $event_id, Constants::META_REDIRECT_URL, $join_url );
+				Helpers::log( sprintf( 'Redirect-URL automatisch auf Join-URL gesetzt: %s', $join_url ), 'info' );
+			}
+
 			Helpers::end_cap_override();
 		}
 

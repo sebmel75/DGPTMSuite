@@ -97,15 +97,24 @@ jQuery(function($) {
                 $(document).trigger('dgptm_tab_loaded', [id]);
                 $(document).trigger('dgptm:ftab-switched', { panel: id });
             } else {
-                var msg = (typeof r.data === 'string') ? r.data : (r.data && r.data.message ? r.data.message : 'Fehler beim Laden');
+                var msg = (typeof r.data === 'string') ? r.data : (r.data && r.data.message ? r.data.message : 'Unbekannter Fehler');
                 if (msg.indexOf('Sitzung') !== -1 || msg.indexOf('nonce') !== -1) {
                     msg += ' <a href="javascript:location.reload()" style="color:#0073aa;text-decoration:underline">Seite neu laden</a>';
                 }
                 $target.html('<p style="color:red;padding:12px;">' + msg + '</p>');
             }
         }).fail(function(xhr) {
-            var failMsg = 'Laden fehlgeschlagen';
-            if (xhr.status === 403) failMsg = 'Sitzung abgelaufen. <a href="javascript:location.reload()" style="color:#0073aa;text-decoration:underline">Seite neu laden</a>';
+            var raw = xhr.responseText || '';
+            var failMsg = 'Verbindungsfehler (HTTP ' + xhr.status + ')';
+            if (xhr.status === 403 || raw.indexOf('nonce') !== -1) {
+                failMsg = 'Sitzung abgelaufen. <a href="javascript:location.reload()" style="color:#0073aa;text-decoration:underline">Seite neu laden</a>';
+            } else if (xhr.status === 0) {
+                failMsg = 'Keine Verbindung zum Server.';
+            } else if (raw.length > 0 && raw.charAt(0) !== '{') {
+                // PHP-Warnung oder HTML vor dem JSON
+                failMsg = 'Server-Fehler. <a href="javascript:location.reload()" style="color:#0073aa;text-decoration:underline">Seite neu laden</a>';
+                console.error('Dashboard AJAX raw response:', raw.substring(0, 500));
+            }
             $target.html('<p style="color:red;padding:12px;">' + failMsg + '</p>');
         });
     }

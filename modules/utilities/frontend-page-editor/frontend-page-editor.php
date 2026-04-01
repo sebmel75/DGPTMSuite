@@ -360,6 +360,11 @@ class DGPTM_Frontend_Page_Editor {
      * SECURITY: Blockiere Zugriff auf Admin-Bereiche außer zugewiesener Seite
      */
     public function restrict_backend_access() {
+        // AJAX-Requests nicht blockieren (Dashboard-Tabs, Shortcodes etc.)
+        if (defined('DOING_AJAX') && DOING_AJAX) {
+            return;
+        }
+
         // Admins und Editoren nicht einschränken
         if (current_user_can('manage_options') || current_user_can('edit_others_pages')) {
             return;

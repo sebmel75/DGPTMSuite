@@ -207,14 +207,21 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
         // ─── AJAX: Load tab content ───
 
         public function ajax_load_tab() {
+            // PHP-Warnings abfangen damit JSON nicht kaputt geht
+            ob_start();
+
             if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'dgptm_dash' ) ) {
+                ob_end_clean();
                 wp_send_json_error('Sitzung abgelaufen. Bitte Seite neu laden (Strg+R).');
             }
             $tab_id = sanitize_key($_POST['tab'] ?? '');
             $tabs_mgr = DGPTM_Dashboard_Tabs::get_instance();
             $tab = $tabs_mgr->get_tab($tab_id);
 
-            if (!$tab) wp_send_json_error('Tab nicht gefunden');
+            if (!$tab) {
+                ob_end_clean();
+                wp_send_json_error('Tab nicht gefunden: ' . $tab_id);
+            }
 
             $user_id = get_current_user_id();
             $all_visible = $tabs_mgr->get_visible_tabs($user_id);
@@ -223,41 +230,49 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
                 if (($t['parent'] ?? '') === $tab_id) $kids[] = $t;
             }
 
-            if (!empty($kids)) {
-                $parent_has_content = !empty(trim($tab['content'] ?? ''));
-                $folder = $parent_has_content ? array_merge([$tab], $kids) : $kids;
-                $html = '<div class="dgptm-folder"><div class="dgptm-folder-nav">';
-                $folder_content = [];
-                $first_content = true;
-                foreach ($folder as $f) {
-                    if (!empty($f['link'])) {
-                        $target = (strpos($f['link'], home_url()) === 0) ? '' : ' target="_blank" rel="noopener"';
-                        $html .= '<a href="' . esc_url($f['link']) . '" class="dgptm-ftab dgptm-ftab-link"' . $target . '>'
-                            . esc_html($f['label']) . ' <span class="dgptm-link-icon">↗</span></a>';
-                    } else {
-                        $cls = $first_content ? ' dgptm-ftab-active' : '';
-                        $html .= '<a href="#" class="dgptm-ftab' . $cls . '" data-ftab="' . esc_attr($f['id']) . '">' . esc_html($f['label']) . '</a>';
-                        $folder_content[] = ['tab' => $f, 'first' => $first_content];
-                        $first_content = false;
-                    }
-                }
-                $html .= '</div>';
-                foreach ($folder_content as $fc) {
-                    $f = $fc['tab'];
-                    $html .= '<div class="dgptm-fpanel' . ($fc['first'] ? ' dgptm-fpanel-active' : '') . '" data-fpanel="' . esc_attr($f['id']) . '"' . ($fc['first'] ? '' : ' style="display:none"') . '>';
-                    if ($fc['first']) {
-                        $html .= self::render_content_with_mobile($f);
-                    } else {
-                        $html .= '<div class="dgptm-loading">Wird geladen...</div>';
+            // PHP-Warnings die bis hierher aufgelaufen sind verwerfen
+            $php_warnings = ob_get_clean();
+
+            try {
+                if (!empty($kids)) {
+                    $parent_has_content = !empty(trim($tab['content'] ?? ''));
+                    $folder = $parent_has_content ? array_merge([$tab], $kids) : $kids;
+                    $html = '<div class="dgptm-folder"><div class="dgptm-folder-nav">';
+                    $folder_content = [];
+                    $first_content = true;
+                    foreach ($folder as $f) {
+                        if (!empty($f['link'])) {
+                            $target = (strpos($f['link'], home_url()) === 0) ? '' : ' target="_blank" rel="noopener"';
+                            $html .= '<a href="' . esc_url($f['link']) . '" class="dgptm-ftab dgptm-ftab-link"' . $target . '>'
+                                . esc_html($f['label']) . ' <span class="dgptm-link-icon">↗</span></a>';
+                        } else {
+                            $cls = $first_content ? ' dgptm-ftab-active' : '';
+                            $html .= '<a href="#" class="dgptm-ftab' . $cls . '" data-ftab="' . esc_attr($f['id']) . '">' . esc_html($f['label']) . '</a>';
+                            $folder_content[] = ['tab' => $f, 'first' => $first_content];
+                            $first_content = false;
+                        }
                     }
                     $html .= '</div>';
+                    foreach ($folder_content as $fc) {
+                        $f = $fc['tab'];
+                        $html .= '<div class="dgptm-fpanel' . ($fc['first'] ? ' dgptm-fpanel-active' : '') . '" data-fpanel="' . esc_attr($f['id']) . '"' . ($fc['first'] ? '' : ' style="display:none"') . '>';
+                        if ($fc['first']) {
+                            $html .= self::render_content_with_mobile($f);
+                        } else {
+                            $html .= '<div class="dgptm-loading">Wird geladen...</div>';
+                        }
+                        $html .= '</div>';
+                    }
+                    $html .= '</div>';
+                    wp_send_json_success(['html' => $html]);
                 }
-                $html .= '</div>';
-                wp_send_json_success(['html' => $html]);
-            }
 
-            // Simple tab
-            wp_send_json_success(['html' => self::render_content_with_mobile($tab)]);
+                // Simple tab
+                wp_send_json_success(['html' => self::render_content_with_mobile($tab)]);
+
+            } catch (\Throwable $e) {
+                wp_send_json_error('Fehler im Tab "' . $tab_id . '": ' . $e->getMessage());
+            }
         }
 
         // ─── ADMIN ───

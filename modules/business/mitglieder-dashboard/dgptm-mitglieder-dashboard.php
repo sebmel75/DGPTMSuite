@@ -29,6 +29,18 @@ if (!class_exists('DGPTM_Mitglieder_Dashboard')) {
             add_action('wp_ajax_dgptm_dash_save', [$this, 'ajax_save']);
             add_action('wp_ajax_dgptm_dash_save_settings', [$this, 'ajax_save_settings']);
             add_action('wp_ajax_dgptm_dash_load_tab', [$this, 'ajax_load_tab']);
+
+            // WP Rocket: Dashboard-Seite nie cachen (Nonce ist user-spezifisch)
+            add_filter('rocket_cache_reject_uri', [$this, 'exclude_from_cache']);
+        }
+
+        /**
+         * Dashboard-Seite von WP Rocket Caching ausschliessen
+         */
+        public function exclude_from_cache($uris) {
+            $uris[] = '/mitgliedschaft/interner-bereich/(.*)';
+            $uris[] = '/interner-bereich/(.*)';
+            return $uris;
         }
 
         public function register_shortcodes() {

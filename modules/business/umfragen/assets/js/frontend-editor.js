@@ -471,6 +471,9 @@
             $('#dgptm-fe-questions-list .dgptm-fe-question-item').each(function() {
                 var $item = $(this);
                 var type = $item.find('.dgptm-fe-q-type').val();
+                // Validation muss VOR choices deklariert werden
+                var validation = {};
+
                 var q = {
                     id: $item.attr('data-question-id') || 0,
                     question_type: type,
@@ -517,9 +520,6 @@
                         q.choices = { rows: rows, columns: cols };
                     }
                 }
-
-                // Validation
-                var validation = {};
                 if (q.is_required) validation.required = true;
 
                 if (type === 'number') {

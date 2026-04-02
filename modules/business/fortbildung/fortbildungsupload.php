@@ -3141,30 +3141,63 @@ function fobi_ebcp_ajax_reevaluate(){
 
     $s = fobi_ebcp_get_settings();
 
-    // Attachment finden
-    $attachments = function_exists('get_field') ? get_field('attachements', $post_id) : null;
+    // Attachment finden — ACF return_format kann variieren (ID, URL, Array, Object)
+    $attachment_raw = function_exists('get_field') ? get_field('attachements', $post_id) : null;
     $filepath = '';
     $mime = '';
+    $is_temp = false;
 
-    if( is_numeric($attachments) ){
-        $filepath = get_attached_file($attachments);
-        $mime = get_post_mime_type($attachments);
-    } elseif( is_string($attachments) && filter_var($attachments, FILTER_VALIDATE_URL) ){
-        // URL — Download in temp
-        $tmp = download_url($attachments, 30);
+    // Fallback: auch post_meta direkt pruefen
+    if( empty($attachment_raw) ){
+        $attachment_raw = get_post_meta($post_id, 'attachements', true);
+    }
+
+    // Debug-Log fuer Diagnose
+    error_log(sprintf('[Fobi-Reanalyze] Post %d: attachment_raw type=%s, value=%s',
+        $post_id, gettype($attachment_raw), is_scalar($attachment_raw) ? $attachment_raw : json_encode($attachment_raw)));
+
+    if( is_numeric($attachment_raw) && intval($attachment_raw) > 0 ){
+        // Attachment-ID
+        $filepath = get_attached_file(intval($attachment_raw));
+        $mime = get_post_mime_type(intval($attachment_raw));
+    } elseif( is_string($attachment_raw) && filter_var($attachment_raw, FILTER_VALIDATE_URL) ){
+        // Direkte URL — in Temp-Datei herunterladen
+        $tmp = download_url($attachment_raw, 30);
         if( !is_wp_error($tmp) ){
             $filepath = $tmp;
-            $ext = pathinfo($attachments, PATHINFO_EXTENSION);
+            $is_temp = true;
+            $ext = strtolower(pathinfo(parse_url($attachment_raw, PHP_URL_PATH), PATHINFO_EXTENSION));
             $mime_map = ['pdf' => 'application/pdf', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png'];
-            $mime = $mime_map[strtolower($ext)] ?? 'application/pdf';
+            $mime = $mime_map[$ext] ?? 'application/pdf';
         }
-    } elseif( is_array($attachments) && isset($attachments['ID']) ){
-        $filepath = get_attached_file($attachments['ID']);
-        $mime = get_post_mime_type($attachments['ID']);
+    } elseif( is_array($attachment_raw) ){
+        // Array: ACF gibt {ID, url, ...} oder {id, url, ...} zurueck
+        $att_id = $attachment_raw['ID'] ?? $attachment_raw['id'] ?? 0;
+        $att_url = $attachment_raw['url'] ?? '';
+        if( $att_id ){
+            $filepath = get_attached_file(intval($att_id));
+            $mime = get_post_mime_type(intval($att_id));
+        } elseif( $att_url && filter_var($att_url, FILTER_VALIDATE_URL) ){
+            $tmp = download_url($att_url, 30);
+            if( !is_wp_error($tmp) ){
+                $filepath = $tmp;
+                $is_temp = true;
+                $ext = strtolower(pathinfo(parse_url($att_url, PHP_URL_PATH), PATHINFO_EXTENSION));
+                $mime_map = ['pdf' => 'application/pdf', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png'];
+                $mime = $mime_map[$ext] ?? 'application/pdf';
+            }
+        }
+    } elseif( is_object($attachment_raw) && isset($attachment_raw->ID) ){
+        $filepath = get_attached_file($attachment_raw->ID);
+        $mime = get_post_mime_type($attachment_raw->ID);
     }
 
     if( empty($filepath) || !file_exists($filepath) ){
-        wp_send_json_error('Kein Nachweis-Dokument hinterlegt oder Datei nicht gefunden.');
+        wp_send_json_error(sprintf(
+            'Kein Nachweis-Dokument hinterlegt oder Datei nicht gefunden. (Typ: %s, Wert: %s)',
+            gettype($attachment_raw),
+            is_scalar($attachment_raw) ? substr($attachment_raw, 0, 100) : json_encode($attachment_raw)
+        ));
     }
 
     // User-Daten fuer Namensvergleich
@@ -3182,8 +3215,8 @@ function fobi_ebcp_ajax_reevaluate(){
     $result = fobi_ebcp_analyze_document($filepath, $mime, $expected_name, $s);
 
     // Temp-Datei aufraeumen
-    if( isset($tmp) && !is_wp_error($tmp) && file_exists($tmp) ){
-        @unlink($tmp);
+    if( $is_temp && !empty($filepath) && file_exists($filepath) ){
+        @unlink($filepath);
     }
 
     if( !$result['ok'] ){

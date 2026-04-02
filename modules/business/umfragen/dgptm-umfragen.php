@@ -81,6 +81,7 @@ if (!class_exists('DGPTM_Umfragen')) {
             add_action('wp_ajax_dgptm_survey_delete_response', [$this, 'ajax_delete_response']);
             add_action('wp_ajax_dgptm_survey_duplicate', [$this, 'ajax_duplicate_survey']);
             add_action('wp_ajax_dgptm_survey_search_users', [$this, 'ajax_search_users']);
+            add_action('wp_ajax_dgptm_survey_get_responses', [$this, 'ajax_get_responses']);
 
             // Public AJAX (nopriv for public surveys)
             add_action('wp_ajax_dgptm_survey_submit', [$this, 'ajax_submit_survey']);
@@ -266,6 +267,39 @@ if (!class_exists('DGPTM_Umfragen')) {
 
         public function ajax_duplicate_survey() {
             DGPTM_Survey_Admin::get_instance()->ajax_duplicate_survey();
+        }
+
+        public function ajax_get_responses() {
+            check_ajax_referer('dgptm_suite_nonce', 'nonce');
+            if (!self::user_can_manage_surveys()) {
+                wp_send_json_error(['message' => 'Keine Berechtigung.']);
+            }
+
+            $survey_id = intval($_POST['survey_id'] ?? 0);
+            if (!$survey_id) {
+                wp_send_json_error(['message' => 'Survey-ID fehlt.']);
+            }
+
+            global $wpdb;
+            $t = $wpdb->prefix . 'dgptm_survey_responses';
+            $responses = $wpdb->get_results($wpdb->prepare(
+                "SELECT id, status, respondent_name, respondent_email, user_id, started_at, completed_at
+                 FROM {$t} WHERE survey_id = %d ORDER BY id DESC LIMIT 200",
+                $survey_id
+            ));
+
+            $result = [];
+            foreach ($responses as $r) {
+                $result[] = [
+                    'id' => $r->id,
+                    'status' => $r->status,
+                    'name' => $r->respondent_name ?: ($r->user_id ? get_userdata($r->user_id)->display_name ?? '' : ''),
+                    'started_at' => $r->started_at ? wp_date('d.m.Y H:i', strtotime($r->started_at)) : '',
+                    'completed_at' => $r->completed_at ? wp_date('d.m.Y H:i', strtotime($r->completed_at)) : '',
+                ];
+            }
+
+            wp_send_json_success(['responses' => $result]);
         }
 
         public function ajax_search_users() {

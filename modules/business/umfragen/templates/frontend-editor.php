@@ -239,6 +239,23 @@ $status_labels = [
                             </div>
                         </div>
 
+                        <!-- Sonstiges-Option (radio/checkbox/select) -->
+                        <div class="dgptm-fe-other-section" <?php if (!in_array($q->question_type, ['radio', 'checkbox', 'select'])) echo 'style="display:none;"'; ?>>
+                            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                                <input type="checkbox" class="dgptm-fe-q-allow-other" <?php checked(!empty($validation['allow_other'])); ?>>
+                                "Sonstiges:"-Feld mit Texteingabe aktivieren
+                            </label>
+                        </div>
+
+                        <!-- Freitextfeld (alle Fragetypen) -->
+                        <div class="dgptm-fe-freetext-section" style="margin-top:6px;">
+                            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                                <input type="checkbox" class="dgptm-fe-q-free-text" <?php checked(!empty($validation['allow_free_text'])); ?>>
+                                Freitextfeld unter der Frage anzeigen
+                            </label>
+                            <small style="color:#888;font-size:11px;">Zeigt ein zusaetzliches Feld "Weitere Anmerkungen (optional)" unter der Frage.</small>
+                        </div>
+
                         <!-- Matrix -->
                         <div class="dgptm-fe-matrix-section" <?php if ($q->question_type !== 'matrix') echo 'style="display:none;"'; ?>>
                             <div class="dgptm-fe-field">
@@ -406,6 +423,19 @@ $status_labels = [
                         <small>Schliesst alle anderen Optionen aus, wenn angekreuzt.</small>
                     </div>
                 </div>
+                <div class="dgptm-fe-other-section" style="display:none;">
+                    <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                        <input type="checkbox" class="dgptm-fe-q-allow-other">
+                        "Sonstiges:"-Feld mit Texteingabe aktivieren
+                    </label>
+                </div>
+                <div class="dgptm-fe-freetext-section" style="margin-top:6px;">
+                    <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                        <input type="checkbox" class="dgptm-fe-q-free-text">
+                        Freitextfeld unter der Frage anzeigen
+                    </label>
+                    <small style="color:#888;font-size:11px;">Zeigt "Weitere Anmerkungen (optional)" unter der Frage.</small>
+                </div>
                 <div class="dgptm-fe-matrix-section" style="display:none;">
                     <div class="dgptm-fe-field">
                         <label>Matrix-Zeilen</label>
@@ -510,6 +540,10 @@ $status_labels = [
                         <?php if ($s->response_count > 0) : ?>
                             <a href="<?php echo esc_url(admin_url('admin-ajax.php?action=dgptm_survey_export_csv&survey_id=' . $s->id . '&nonce=' . wp_create_nonce('dgptm_suite_nonce'))); ?>" class="dgptm-fe-btn dgptm-fe-btn-small" title="CSV Export">CSV</a>
                             <a href="<?php echo esc_url(admin_url('admin-ajax.php?action=dgptm_survey_export_pdf&survey_id=' . $s->id . '&nonce=' . wp_create_nonce('dgptm_suite_nonce'))); ?>" class="dgptm-fe-btn dgptm-fe-btn-small" title="PDF Export">PDF</a>
+                        <?php endif; ?>
+                        <button type="button" class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-duplicate-survey" data-id="<?php echo esc_attr($s->id); ?>" title="Umfrage duplizieren">Duplizieren</button>
+                        <?php if ($s->response_count > 0) : ?>
+                            <button type="button" class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-show-responses" data-id="<?php echo esc_attr($s->id); ?>" data-count="<?php echo esc_attr($s->response_count); ?>" title="Antworten anzeigen">Antworten (<?php echo esc_html($s->response_count); ?>)</button>
                         <?php endif; ?>
                         <button type="button" class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-btn-danger dgptm-fe-archive-survey" data-id="<?php echo esc_attr($s->id); ?>">Archivieren</button>
                     </div>

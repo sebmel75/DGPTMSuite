@@ -251,6 +251,7 @@
 
                 $item.find('.dgptm-fe-choices-section').toggle(choiceTypes.indexOf(type) !== -1);
                 $item.find('.dgptm-fe-exclusive-section').toggle(type === 'checkbox');
+                $item.find('.dgptm-fe-other-section').toggle(choiceTypes.indexOf(type) !== -1);
                 $item.find('.dgptm-fe-matrix-section').toggle(type === 'matrix');
                 $item.find('.dgptm-fe-number-section').toggle(type === 'number');
                 $item.find('.dgptm-fe-text-section').toggle(type === 'text');
@@ -527,6 +528,14 @@
                     if (exclusive) validation.exclusive_option = exclusive;
                 }
 
+                // Sonstiges-Option + Freitextfeld
+                if ($item.find('.dgptm-fe-q-allow-other').is(':checked')) {
+                    validation.allow_other = true;
+                }
+                if ($item.find('.dgptm-fe-q-free-text').is(':checked')) {
+                    validation.allow_free_text = true;
+                }
+
                 if (Object.keys(validation).length > 0) {
                     q.validation_rules = validation;
                 }
@@ -558,6 +567,100 @@
             return questions;
         }
     };
+
+    // === Duplizieren ===
+    $(document).on('click', '.dgptm-fe-duplicate-survey', function() {
+        var id = $(this).data('id');
+        if (!confirm('Umfrage duplizieren?')) return;
+        var $btn = $(this);
+        $btn.prop('disabled', true).text('...');
+        $.post(dgptmSurveyEditor.ajaxUrl, {
+            action: 'dgptm_survey_duplicate',
+            nonce: dgptmSurveyEditor.nonce,
+            survey_id: id
+        }, function(res) {
+            $btn.prop('disabled', false).text('Duplizieren');
+            if (res.success) {
+                alert('Umfrage dupliziert: ' + (res.data.title || 'OK'));
+                location.reload();
+            } else {
+                alert(res.data && res.data.message ? res.data.message : 'Fehler');
+            }
+        });
+    });
+
+    // === Antworten anzeigen/loeschen ===
+    $(document).on('click', '.dgptm-fe-show-responses', function() {
+        var $btn = $(this);
+        var surveyId = $btn.data('id');
+        var $card = $btn.closest('.dgptm-fe-survey-card');
+        var $existing = $card.find('.dgptm-fe-responses-panel');
+
+        // Toggle: schon offen → schliessen
+        if ($existing.length) {
+            $existing.slideToggle(200);
+            return;
+        }
+
+        $btn.prop('disabled', true).text('Lade...');
+
+        $.post(dgptmSurveyEditor.ajaxUrl, {
+            action: 'dgptm_survey_get_responses',
+            nonce: dgptmSurveyEditor.nonce,
+            survey_id: surveyId
+        }, function(res) {
+            $btn.prop('disabled', false).text('Antworten (' + $btn.data('count') + ')');
+            if (!res.success) {
+                alert(res.data && res.data.message ? res.data.message : 'Fehler');
+                return;
+            }
+
+            var responses = res.data.responses || [];
+            var html = '<div class="dgptm-fe-responses-panel" style="margin-top:10px;border-top:1px solid #eee;padding-top:10px;">';
+            html += '<h4 style="font-size:13px;margin:0 0 8px;">Antworten (' + responses.length + ')</h4>';
+
+            if (responses.length === 0) {
+                html += '<p style="color:#888;font-size:12px;">Keine Antworten.</p>';
+            } else {
+                html += '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
+                html += '<tr style="border-bottom:1px solid #eee;"><th style="text-align:left;padding:4px;">ID</th><th style="text-align:left;padding:4px;">Datum</th><th style="text-align:left;padding:4px;">Status</th><th style="padding:4px;"></th></tr>';
+                responses.forEach(function(r) {
+                    html += '<tr data-response-id="' + r.id + '" style="border-bottom:1px solid #f0f0f0;">';
+                    html += '<td style="padding:4px;">#' + r.id + '</td>';
+                    html += '<td style="padding:4px;">' + (r.completed_at || r.started_at || '-') + '</td>';
+                    html += '<td style="padding:4px;">' + r.status + '</td>';
+                    html += '<td style="padding:4px;"><button class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-btn-danger dgptm-fe-delete-response" data-id="' + r.id + '" data-survey-id="' + surveyId + '">Loeschen</button></td>';
+                    html += '</tr>';
+                });
+                html += '</table>';
+            }
+            html += '</div>';
+            $card.append(html);
+        });
+    });
+
+    // Einzelne Antwort loeschen
+    $(document).on('click', '.dgptm-fe-delete-response', function() {
+        var $btn = $(this);
+        var responseId = $btn.data('id');
+        var surveyId = $btn.data('survey-id');
+        if (!confirm('Antwort #' + responseId + ' unwiderruflich loeschen?')) return;
+
+        $btn.prop('disabled', true).text('...');
+        $.post(dgptmSurveyEditor.ajaxUrl, {
+            action: 'dgptm_survey_delete_response',
+            nonce: dgptmSurveyEditor.nonce,
+            response_id: responseId,
+            survey_id: surveyId
+        }, function(res) {
+            if (res.success) {
+                $btn.closest('tr').fadeOut(200, function() { $(this).remove(); });
+            } else {
+                alert(res.data && res.data.message ? res.data.message : 'Fehler');
+                $btn.prop('disabled', false).text('Loeschen');
+            }
+        });
+    });
 
     // Init on page load
     $(document).ready(function() {

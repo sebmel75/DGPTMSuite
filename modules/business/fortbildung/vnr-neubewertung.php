@@ -110,11 +110,21 @@ function fobi_ajax_vnr_reeval() {
 
     $s = fobi_ebcp_get_settings();
 
-    $posts = get_posts([
+    // Exakte VNR-Suche (auch in kommaseparierten Feldern)
+    global $wpdb;
+    $post_ids = $wpdb->get_col($wpdb->prepare(
+        "SELECT post_id FROM {$wpdb->postmeta}
+         WHERE meta_key = 'vnr' AND (meta_value = %s OR meta_value LIKE %s OR meta_value LIKE %s OR meta_value LIKE %s)",
+        $vnr,
+        $vnr . ',%',
+        '%,' . $vnr . ',%',
+        '%,' . $vnr
+    ));
+    $posts = !empty($post_ids) ? get_posts([
         'post_type' => 'fortbildung', 'posts_per_page' => -1,
         'post_status' => ['publish', 'draft', 'pending'],
-        'meta_query' => [['key' => 'vnr', 'value' => $vnr, 'compare' => 'LIKE']],
-    ]);
+        'post__in' => array_map('intval', $post_ids),
+    ]) : [];
     if (empty($posts)) wp_send_json_error(['message' => 'Keine Fortbildungen mit VNR ' . $vnr]);
 
     // BÄK-Daten

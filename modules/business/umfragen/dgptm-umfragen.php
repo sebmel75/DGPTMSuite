@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('DGPTM_UMFRAGEN_VERSION')) {
-    define('DGPTM_UMFRAGEN_VERSION', '1.4.0');
+    define('DGPTM_UMFRAGEN_VERSION', '1.4.1');
 }
 if (!defined('DGPTM_UMFRAGEN_PATH')) {
     define('DGPTM_UMFRAGEN_PATH', plugin_dir_path(__FILE__));

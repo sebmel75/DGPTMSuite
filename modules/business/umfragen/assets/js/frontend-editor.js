@@ -87,7 +87,7 @@
         bindSurveyForm: function() {
             var self = this;
 
-            $('#dgptm-fe-survey-form').on('submit', function(e) {
+            $(document).on('submit', '#dgptm-fe-survey-form', function(e) {
                 e.preventDefault();
                 var $form = $(this);
                 var $btn = $form.find('.dgptm-fe-btn-primary');
@@ -141,7 +141,7 @@
             var searchTimer = null;
 
             // Search users with debounce
-            $('#dgptm-fe-share-search').on('input', function() {
+            $(document).on('input', '#dgptm-fe-share-search', function() {
                 var term = $.trim($(this).val());
                 var $results = $('#dgptm-fe-share-results');
 
@@ -268,7 +268,7 @@
             });
 
             // Add question
-            $('#dgptm-fe-add-question').on('click', function() {
+            $(document).on('click', '#dgptm-fe-add-question', function() {
                 var type = $('#dgptm-fe-new-type').val();
                 var template = $('#tmpl-dgptm-fe-question').html();
                 var count = $('#dgptm-fe-questions-list .dgptm-fe-question-item').length + 1;
@@ -365,7 +365,7 @@
             });
 
             // Save questions
-            $('#dgptm-fe-save-questions').on('click', function() {
+            $(document).on('click', '#dgptm-fe-save-questions', function() {
                 var $btn = $(this);
                 var questions = self.collectQuestions();
 

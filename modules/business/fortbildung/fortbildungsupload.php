@@ -845,11 +845,10 @@ function fobi_ebcp_ajax_upload(){
 
     $duplicate = fobi_ebcp_check_duplicate($u->ID, $data['title'], $date_for_check);
     if( $duplicate ){
-        wp_send_json_error(sprintf(
-            '⚠️ Diese Veranstaltung wurde bereits eingereicht: „%s" (ID %d). Duplikate sind nicht erlaubt.',
-            esc_html($duplicate->post_title),
-            $duplicate->ID
-        ));
+        // Nur warnen, nicht blockieren — User kann trotzdem einreichen
+        $duplicate_warning = sprintf('Hinweis: Aehnliche Veranstaltung bereits vorhanden: „%s"', esc_html($duplicate->post_title));
+    } else {
+        $duplicate_warning = '';
     }
 
     // ============================================================
@@ -872,18 +871,18 @@ function fobi_ebcp_ajax_upload(){
     $event_valid = fobi_ebcp_verify_event($data['title'], $data['location'], $data['start_date'], $s);
     $points = fobi_ebcp_calc_points($data, $s);
 
-    $is_valid = $participant_valid && $event_valid && $points > 0;
+    $is_valid = $participant_valid && $event_valid;
     $is_suspicious = !$participant_valid || !$event_valid || $confidence < 0.7;
-    
-    if( $is_suspicious ){
-        $status = 'suspicious';
-        $status_label = 'Verdächtig';
-    } elseif( $auto_approve && $is_valid ){
-        $status = 'approved';
-        $status_label = 'Automatisch freigegeben';
-    } else {
-        $status = 'pending';
-        $status_label = 'Prüfung erforderlich';
+
+    // IMMER als ungenehmigt — manuelle Pruefung erforderlich
+    $status = $is_suspicious ? 'suspicious' : 'pending';
+    $status_label = $is_suspicious ? 'Verdaechtig — Pruefung erforderlich' : 'Pruefung erforderlich';
+
+    // Punkte-Debug: loggen warum 0
+    $category_key_debug = fobi_ebcp_get_category_key($data);
+    if( $points <= 0 ){
+        error_log(sprintf('[Fobi-Upload] 0 Punkte! category=%s, key=%s, data=%s',
+            $data['category'], $category_key_debug, json_encode($data)));
     }
     
     $post_data = array(
@@ -936,26 +935,23 @@ function fobi_ebcp_ajax_upload(){
         $category_label = fobi_ebcp_get_category_label($category_key, $s);
         update_field('type', $category_label, $post_id);
         
-        // Zusätzliche Metadaten für interne Verwendung speichern
+        // KI-Rohdaten komplett speichern (fuer Backend-Anzeige + Neubewertung)
+        update_post_meta($post_id, '_ebcp_ai_response', json_encode($data, JSON_UNESCAPED_UNICODE));
+        update_post_meta($post_id, '_ebcp_ai_confidence', $confidence);
         update_post_meta($post_id, '_ebcp_category_key', $category_key);
         update_post_meta($post_id, '_ebcp_raw_category', $data['category']);
-        update_post_meta($post_id, '_ebcp_raw_subtype', $data['subtype']);
-        update_post_meta($post_id, '_ebcp_active_role', $data['active_role']);
-        
+        update_post_meta($post_id, '_ebcp_raw_subtype', $data['subtype'] ?? '');
+        update_post_meta($post_id, '_ebcp_active_role', $data['active_role'] ?? '');
+        update_post_meta($post_id, '_ebcp_doc_type', $data['doc_type'] ?? '');
+
         // Punkte
         update_field('points', $points, $post_id);
-        
-        // Token für Verifizierung (kann später verwendet werden)
+
+        // Token
         update_field('token', wp_generate_password(32, false), $post_id);
-        
-        // Freigabe-Status
-        if( $status === 'approved' ){
-            update_field('freigegeben', true, $post_id);
-            update_field('freigabe_durch', 'KI (automatisch)', $post_id);
-            update_field('freigabe_mail', get_option('admin_email'), $post_id);
-        } else {
-            update_field('freigegeben', false, $post_id);
-        }
+
+        // IMMER ungenehmigt — manuelle Pruefung erforderlich
+        update_field('freigegeben', false, $post_id);
     }
     
     if( $s['store_proof_as_attachment'] === '1' ){
@@ -975,25 +971,30 @@ function fobi_ebcp_ajax_upload(){
     $category_label = fobi_ebcp_get_category_label($category_key, $s);
     
     $message = sprintf(
-        '<strong>%s</strong><br><br>📄 <strong>Titel:</strong> %s<br>👤 <strong>Teilnehmer:</strong> %s<br>📍 <strong>Ort:</strong> %s<br>📅 <strong>Datum:</strong> %s<br>🏷️ <strong>Art:</strong> %s<br>⭐ <strong>Punkte:</strong> %s<br>🎯 <strong>Konfidenz:</strong> %d%%',
+        '<strong>%s</strong><br><br>📄 <strong>Titel:</strong> %s<br>👤 <strong>Teilnehmer:</strong> %s<br>📍 <strong>Ort:</strong> %s<br>📅 <strong>Datum:</strong> %s<br>🏷️ <strong>Art:</strong> %s (Key: %s)<br>⭐ <strong>Punkte:</strong> %s<br>🎯 <strong>Konfidenz:</strong> %d%%<br>📋 <strong>Dokumenttyp:</strong> %s',
         $status_label,
         esc_html($data['title']),
         esc_html($data['participant']),
         esc_html($data['location']),
         esc_html($data['start_date']),
         esc_html($category_label),
+        esc_html($category_key),
         esc_html(number_format($points, 1)),
-        intval($confidence * 100)
+        intval($confidence * 100),
+        esc_html($data['doc_type'] ?? 'unbekannt')
     );
-    
+
+    // Duplikat-Warnung
+    if( !empty($duplicate_warning) ){
+        $message .= '<br><br>⚠️ ' . $duplicate_warning;
+    }
+
+    $message .= '<br><br>ℹ️ <strong>Dieser Nachweis muss manuell geprueft und freigegeben werden.</strong>';
+
     // Link zur erstellten Fortbildung nur für Benutzer mit Bearbeitungsrechten anzeigen
     if( current_user_can('edit_post', $post_id) ){
         $edit_link = admin_url('post.php?post='.$post_id.'&action=edit');
-        $message .= sprintf('<br><br>📋 <a href="%s" target="_blank">Fortbildung im Backend anzeigen</a>', esc_url($edit_link));
-    }
-    
-    if( $status === 'suspicious' ){
-        $message .= '<br><br>⚠️ <strong>Hinweis:</strong> Dieser Nachweis muss manuell geprüft werden.';
+        $message .= sprintf('<br>📋 <a href="%s" target="_blank">Fortbildung im Backend anzeigen</a>', esc_url($edit_link));
     }
     
     wp_send_json_success(array(
@@ -1486,25 +1487,22 @@ function fobi_ebcp_get_international_list($s){
  * Prueft Titel-Aehnlichkeit + Datum fuer den aktuellen User
  * ============================================================ */
 function fobi_ebcp_check_duplicate($user_id, $title, $date){
-    if( empty($title) ) return false;
+    if( empty($title) || empty($date) ) return false;
 
+    // Nur mit exaktem Datum UND gleichem User suchen
     $args = array(
         'post_type' => 'fortbildung',
-        'posts_per_page' => -1,
+        'posts_per_page' => 20,
         'post_status' => array('publish', 'draft', 'pending'),
         'author' => $user_id,
-    );
-
-    // Datum-Filter wenn vorhanden
-    if( !empty($date) ){
-        $args['meta_query'] = array(
+        'meta_query' => array(
             array(
                 'key' => 'date',
                 'value' => $date,
                 'compare' => '='
             )
-        );
-    }
+        ),
+    );
 
     $existing = get_posts($args);
     if( empty($existing) ) return false;
@@ -1514,16 +1512,12 @@ function fobi_ebcp_check_duplicate($user_id, $title, $date){
     foreach( $existing as $post ){
         $existing_title = mb_strtolower(trim($post->post_title), 'UTF-8');
 
-        // Exakte Uebereinstimmung
+        // Nur exakte Uebereinstimmung (kein Fuzzy-Match mehr)
         if( $title_norm === $existing_title ){
             return $post;
         }
 
-        // Aehnlichkeitspruefung (80%)
-        similar_text($title_norm, $existing_title, $pct);
-        if( $pct >= 80 ){
-            return $post;
-        }
+        // Kein Fuzzy-Match mehr — nur exakter Titel + exaktes Datum zaehlt als Duplikat
     }
 
     return false;
@@ -2086,9 +2080,42 @@ function fobi_ebcp_pruefliste_shortcode($atts){
                 }
             });
         });
+        // Neubewertung durch KI
+        $(document).on('click', '.fobi-reevaluate-btn', function(){
+            var postId = $(this).data('post-id') || currentPostId;
+            if( ! postId ) return;
+
+            var $btn = $(this);
+            $btn.prop('disabled', true).text('⏳ KI analysiert...');
+
+            $.ajax({
+                url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                type: 'POST',
+                data: {
+                    action: 'fobi_reevaluate_nachweis',
+                    post_id: postId,
+                    nonce: '<?php echo wp_create_nonce('fobi_pruefliste'); ?>'
+                },
+                timeout: 90000,
+                success: function(res){
+                    $btn.prop('disabled', false).text('🔄 KI-Neubewertung');
+                    if(res.success){
+                        alert('✅ ' + res.data.message + '\n\nKI-Antwort:\n' + JSON.stringify(res.data.ai_response, null, 2));
+                        // Modal neu laden
+                        $('.fobi-btn-view[data-post-id="' + postId + '"]').trigger('click');
+                    } else {
+                        alert('❌ ' + (res.data || 'Fehler'));
+                    }
+                },
+                error: function(){
+                    $btn.prop('disabled', false).text('🔄 KI-Neubewertung');
+                    alert('❌ Verbindungsfehler oder Timeout');
+                }
+            });
+        });
     });
     </script>
-    
+
     <style>
     .fobi-pruefliste-wrap {
         max-width: 100%;
@@ -2570,6 +2597,116 @@ function fobi_ebcp_ajax_reject_nachweis(){
     wp_send_json_success(array('message' => 'Nachweis abgelehnt und Benutzer benachrichtigt.'));
 }
 
+/* ============================================================
+ * AJAX-Handler: Neubewertung durch KI
+ * ============================================================ */
+add_action('wp_ajax_fobi_reevaluate_nachweis', 'fobi_ebcp_ajax_reevaluate');
+
+function fobi_ebcp_ajax_reevaluate(){
+    check_ajax_referer('fobi_pruefliste', 'nonce');
+
+    if( ! current_user_can('edit_posts') ){
+        wp_send_json_error('Keine Berechtigung.');
+    }
+
+    $post_id = intval($_POST['post_id']);
+    $post = get_post($post_id);
+
+    if( ! $post || $post->post_type !== 'fortbildung' ){
+        wp_send_json_error('Fortbildung nicht gefunden.');
+    }
+
+    $s = fobi_ebcp_get_settings();
+
+    // Attachment finden
+    $attachments = function_exists('get_field') ? get_field('attachements', $post_id) : null;
+    $filepath = '';
+    $mime = '';
+
+    if( is_numeric($attachments) ){
+        $filepath = get_attached_file($attachments);
+        $mime = get_post_mime_type($attachments);
+    } elseif( is_string($attachments) && filter_var($attachments, FILTER_VALIDATE_URL) ){
+        // URL — Download in temp
+        $tmp = download_url($attachments, 30);
+        if( !is_wp_error($tmp) ){
+            $filepath = $tmp;
+            $ext = pathinfo($attachments, PATHINFO_EXTENSION);
+            $mime_map = ['pdf' => 'application/pdf', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png'];
+            $mime = $mime_map[strtolower($ext)] ?? 'application/pdf';
+        }
+    } elseif( is_array($attachments) && isset($attachments['ID']) ){
+        $filepath = get_attached_file($attachments['ID']);
+        $mime = get_post_mime_type($attachments['ID']);
+    }
+
+    if( empty($filepath) || !file_exists($filepath) ){
+        wp_send_json_error('Kein Nachweis-Dokument hinterlegt oder Datei nicht gefunden.');
+    }
+
+    // User-Daten fuer Namensvergleich
+    $user_field = function_exists('get_field') ? get_field('user', $post_id) : null;
+    $expected_name = '';
+    if( is_array($user_field) && isset($user_field['ID']) ){
+        $u = get_userdata($user_field['ID']);
+        if($u) $expected_name = trim($u->first_name . ' ' . $u->last_name) ?: $u->display_name;
+    } elseif( is_numeric($user_field) ){
+        $u = get_userdata($user_field);
+        if($u) $expected_name = trim($u->first_name . ' ' . $u->last_name) ?: $u->display_name;
+    }
+
+    // KI-Analyse ausfuehren
+    $result = fobi_ebcp_analyze_document($filepath, $mime, $expected_name, $s);
+
+    // Temp-Datei aufraeumen
+    if( isset($tmp) && !is_wp_error($tmp) && file_exists($tmp) ){
+        @unlink($tmp);
+    }
+
+    if( !$result['ok'] ){
+        wp_send_json_error('KI-Analyse fehlgeschlagen: ' . ($result['error'] ?? 'Unbekannt'));
+    }
+
+    $data = $result['data'];
+    $confidence = floatval($result['confidence'] ?? 0);
+
+    // Punkte neu berechnen
+    $points = fobi_ebcp_calc_points($data, $s);
+    $category_key = fobi_ebcp_get_category_key($data);
+    $category_label = fobi_ebcp_get_category_label($category_key, $s);
+
+    // Aktualisieren
+    if( function_exists('update_field') ){
+        update_field('points', $points, $post_id);
+        update_field('type', $category_label, $post_id);
+        if( !empty($data['location']) ) update_field('location', $data['location'], $post_id);
+        if( !empty($data['start_date']) ){
+            $ts = strtotime($data['start_date']);
+            if($ts) update_field('date', date('Y-m-d', $ts), $post_id);
+        }
+    }
+
+    // Meta aktualisieren
+    update_post_meta($post_id, '_ebcp_ai_response', json_encode($data, JSON_UNESCAPED_UNICODE));
+    update_post_meta($post_id, '_ebcp_ai_confidence', $confidence);
+    update_post_meta($post_id, '_ebcp_category_key', $category_key);
+    update_post_meta($post_id, '_ebcp_raw_category', $data['category']);
+    update_post_meta($post_id, '_ebcp_doc_type', $data['doc_type'] ?? '');
+    update_post_meta($post_id, '_ebcp_reevaluated_at', current_time('mysql'));
+
+    wp_send_json_success(array(
+        'message' => sprintf(
+            'Neubewertung abgeschlossen: %s — %s Punkte (Konfidenz: %d%%)',
+            $category_label, number_format($points, 1), intval($confidence * 100)
+        ),
+        'ai_response' => $data,
+        'confidence' => $confidence,
+        'points' => $points,
+        'category_key' => $category_key,
+        'category_label' => $category_label,
+    ));
+}
+
 
 /* ============================================================
  * AJAX-Handler: Nachweis-Details laden (Modal)
@@ -2682,9 +2819,26 @@ function fobi_ebcp_ajax_load_details(){
         </div>
     <?php endif; ?>
     
+    <!-- KI-Rohdaten -->
+    <?php
+    $ai_response = get_post_meta($post_id, '_ebcp_ai_response', true);
+    $ai_confidence = get_post_meta($post_id, '_ebcp_ai_confidence', true);
+    $ai_category = get_post_meta($post_id, '_ebcp_category_key', true);
+    $ai_doc_type = get_post_meta($post_id, '_ebcp_doc_type', true);
+    $reevaluated = get_post_meta($post_id, '_ebcp_reevaluated_at', true);
+    ?>
+    <?php if ($ai_response): ?>
+    <details style="margin: 15px 0; padding: 10px; background: #f0f6fc; border: 1px solid #c5d9ed; border-radius: 4px;">
+        <summary style="cursor: pointer; font-weight: 600; font-size: 13px;">KI-Analyse anzeigen<?php echo $reevaluated ? ' (zuletzt: ' . esc_html($reevaluated) . ')' : ''; ?></summary>
+        <pre style="margin: 8px 0; padding: 8px; background: #fff; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; white-space: pre-wrap; overflow: auto; max-height: 300px;"><?php echo esc_html($ai_response); ?></pre>
+        <p style="font-size: 12px; margin: 4px 0;">Konfidenz: <strong><?php echo $ai_confidence ? intval($ai_confidence * 100) . '%' : 'k.A.'; ?></strong> | Kategorie-Key: <code><?php echo esc_html($ai_category ?: 'k.A.'); ?></code> | Dokumenttyp: <code><?php echo esc_html($ai_doc_type ?: 'k.A.'); ?></code></p>
+    </details>
+    <?php endif; ?>
+
     <div class="fobi-actions">
         <button class="fobi-btn fobi-btn-approve">✅ Genehmigen & E-Mail senden</button>
         <button class="fobi-btn fobi-btn-reject-show">❌ Ablehnen</button>
+        <button class="fobi-btn fobi-reevaluate-btn" data-post-id="<?php echo $post_id; ?>" style="background: #2271b1; color: #fff;">🔄 KI-Neubewertung</button>
     </div>
     
     <div class="fobi-reject-form">

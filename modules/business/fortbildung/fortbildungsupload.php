@@ -216,6 +216,10 @@ function fobi_ebcp_render_ai_metabox($post) {
         echo '<tr><th style="width:120px;">Konfidenz</th><td><strong>' . ($ai_confidence ? intval($ai_confidence * 100) . '%' : 'k.A.') . '</strong></td></tr>';
         echo '<tr><th>Kategorie-Key</th><td><code>' . esc_html($ai_category ?: 'k.A.') . '</code></td></tr>';
         echo '<tr><th>Dokumenttyp</th><td><code>' . esc_html($ai_doc_type ?: 'k.A.') . '</code></td></tr>';
+        $vnr = function_exists('get_field') ? get_field('vnr', $post_id) : get_post_meta($post_id, 'vnr', true);
+        if ($vnr) {
+            echo '<tr><th>VNR</th><td><code>' . esc_html($vnr) . '</code></td></tr>';
+        }
         echo '</tbody></table>';
 
         echo '<details style="margin-bottom:12px;"><summary style="cursor:pointer;font-size:12px;color:#0073aa;">Rohe KI-Antwort anzeigen</summary>';
@@ -1059,6 +1063,11 @@ function fobi_ebcp_ajax_upload(){
         // Punkte
         update_field('points', $points, $post_id);
 
+        // VNR (Veranstaltungsnummer)
+        if (!empty($data['vnr'])) {
+            update_field('vnr', $data['vnr'], $post_id);
+        }
+
         // Token
         update_field('token', wp_generate_password(32, false), $post_id);
 
@@ -1278,8 +1287,16 @@ Antworte NUR mit JSON in diesem Format:
   \"active_role\": \"no\",
   \"ects\": 0,
   \"cme_points\": 0,
+  \"vnr\": \"\",
   \"confidence\": 0.95
 }
+
+WICHTIG fuer vnr (Veranstaltungsnummer):
+- VNR beginnt IMMER mit 276 und ist eine lange Ziffernfolge (ca. 15-20 Stellen)
+- Kann als Text oder als Barcode auf dem Dokument stehen
+- Kann auch als 'Veranstaltungsnummer', 'VNR' oder 'Veranst.-Nr.' beschriftet sein
+- Mehrere VNRs moeglich (kommasepariert zurueckgeben)
+- Wenn keine VNR erkennbar: vnr = \"\" (leer)
 
 WICHTIG fuer doc_type:
 - \"certificate\": Teilnahmebescheinigung, Zertifikat, CME-Nachweis
@@ -1441,6 +1458,7 @@ KRITISCH: Bei Rechnungen/Zahlungsbelegen -> doc_type=\"invoice\", participant=\"
         'active_role' => strtolower(trim($data['active_role'] ?? 'no')),
         'ects' => intval($data['ects'] ?? 0),
         'cme_points' => intval($data['cme_points'] ?? 0),
+        'vnr' => trim($data['vnr'] ?? ''),
         'doc_type' => $doc_type
     );
 
@@ -2873,6 +2891,11 @@ function fobi_ebcp_ajax_reevaluate(){
     update_post_meta($post_id, '_ebcp_raw_category', $data['category']);
     update_post_meta($post_id, '_ebcp_doc_type', $data['doc_type'] ?? '');
     update_post_meta($post_id, '_ebcp_reevaluated_at', current_time('mysql'));
+
+    // VNR bei Neubewertung aktualisieren
+    if (!empty($data['vnr']) && function_exists('update_field')) {
+        update_field('vnr', $data['vnr'], $post_id);
+    }
 
     wp_send_json_success(array(
         'message' => sprintf(

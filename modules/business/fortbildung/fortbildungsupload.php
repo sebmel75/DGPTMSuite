@@ -90,6 +90,115 @@ if ( ! defined('ABSPATH') ) { exit; }
  * ============================================================ */
 define('FOBI_EBCP_OPTION_KEY', 'fobi_ebcp_settings');
 
+/* ============================================================
+ * Geschuetzter Upload-Ordner fuer Fortbildungsnachweise
+ * ============================================================ */
+
+/**
+ * Leitet WordPress-Uploads in geschuetzten Unterordner um
+ */
+function fobi_ebcp_protected_upload_dir($uploads) {
+    $protected_dir = '/fobi-protected';
+    $uploads['path']   = $uploads['basedir'] . $protected_dir;
+    $uploads['url']    = $uploads['baseurl'] . $protected_dir;
+    $uploads['subdir'] = $protected_dir;
+
+    // Ordner erstellen falls nicht vorhanden
+    if (!file_exists($uploads['path'])) {
+        wp_mkdir_p($uploads['path']);
+    }
+
+    // .htaccess erstellen falls nicht vorhanden
+    $htaccess = $uploads['path'] . '/.htaccess';
+    if (!file_exists($htaccess)) {
+        file_put_contents($htaccess, "# Direkter Zugriff verweigert — nur ueber PHP-Handler\nDeny from all\n");
+    }
+
+    // index.php als zusaetzlichen Schutz
+    $index = $uploads['path'] . '/index.php';
+    if (!file_exists($index)) {
+        file_put_contents($index, "<?php // Silence is golden.\n");
+    }
+
+    return $uploads;
+}
+
+/**
+ * Geschuetzter Download-Handler fuer Fortbildungsnachweise
+ * Nur eingeloggte User mit edit_posts oder der Besitzer duerfen downloaden
+ */
+add_action('init', function() {
+    if (empty($_GET['fobi_download']) || empty($_GET['attachment_id'])) return;
+
+    $attachment_id = intval($_GET['attachment_id']);
+    if (!$attachment_id) return;
+
+    // Berechtigung pruefen
+    if (!is_user_logged_in()) {
+        wp_die('Bitte melden Sie sich an.', 'Zugriff verweigert', ['response' => 403]);
+    }
+
+    $user_id = get_current_user_id();
+    $can_download = false;
+
+    // Admins/Editoren duerfen immer
+    if (current_user_can('edit_posts')) {
+        $can_download = true;
+    }
+
+    // Besitzer des Fortbildungs-Posts darf auch
+    if (!$can_download) {
+        $parent_id = wp_get_post_parent_id($attachment_id);
+        if ($parent_id) {
+            $parent = get_post($parent_id);
+            if ($parent && $parent->post_type === 'fortbildung') {
+                // ACF User-Feld pruefen
+                $fobi_user = function_exists('get_field') ? get_field('user', $parent_id) : null;
+                $fobi_user_id = 0;
+                if (is_array($fobi_user) && isset($fobi_user['ID'])) $fobi_user_id = $fobi_user['ID'];
+                elseif (is_numeric($fobi_user)) $fobi_user_id = intval($fobi_user);
+
+                if ($fobi_user_id === $user_id || intval($parent->post_author) === $user_id) {
+                    $can_download = true;
+                }
+            }
+        }
+    }
+
+    if (!$can_download) {
+        wp_die('Keine Berechtigung.', 'Zugriff verweigert', ['response' => 403]);
+    }
+
+    $filepath = get_attached_file($attachment_id);
+    if (!$filepath || !file_exists($filepath)) {
+        wp_die('Datei nicht gefunden.', 'Fehler', ['response' => 404]);
+    }
+
+    $mime = get_post_mime_type($attachment_id) ?: 'application/octet-stream';
+    $filename = basename($filepath);
+
+    header('Content-Type: ' . $mime);
+    header('Content-Disposition: inline; filename="' . $filename . '"');
+    header('Content-Length: ' . filesize($filepath));
+    header('Cache-Control: private, max-age=3600');
+    readfile($filepath);
+    exit;
+});
+
+/**
+ * URLs von geschuetzten Attachments auf den Download-Handler umleiten
+ */
+add_filter('wp_get_attachment_url', function($url, $attachment_id) {
+    $filepath = get_attached_file($attachment_id);
+    if ($filepath && strpos($filepath, '/fobi-protected/') !== false) {
+        return add_query_arg([
+            'fobi_download' => '1',
+            'attachment_id' => $attachment_id,
+        ], home_url('/'));
+    }
+    return $url;
+}, 10, 2);
+
 function fobi_ebcp_default_settings() {
     return array(
         // Frontend
@@ -1086,10 +1195,13 @@ function fobi_ebcp_ajax_upload(){
         require_once(ABSPATH . 'wp-admin/includes/file.php');
         require_once(ABSPATH . 'wp-admin/includes/media.php');
         require_once(ABSPATH . 'wp-admin/includes/image.php');
-        
+
+        // Upload in geschuetzten Ordner umleiten
+        add_filter('upload_dir', 'fobi_ebcp_protected_upload_dir');
         $attachment_id = media_handle_upload('fobi_file', $post_id);
+        remove_filter('upload_dir', 'fobi_ebcp_protected_upload_dir');
+
         if( ! is_wp_error($attachment_id) && function_exists('update_field') ){
-            // ACF field heißt "attachements" (mit e)
             update_field('attachements', $attachment_id, $post_id);
         }
     }

@@ -65,6 +65,12 @@ class DGPTM_Health_Check {
 			'permission_callback' => [ $this, 'check_auth' ],
 		] );
 
+		register_rest_route( 'dgptm/v1', '/survey-fix', [
+			'methods'             => 'POST',
+			'callback'            => [ $this, 'handle_survey_fix' ],
+			'permission_callback' => [ $this, 'check_auth' ],
+		] );
+
 		register_rest_route( 'dgptm/v1', '/fobi-repair', [
 			'methods'             => 'POST',
 			'callback'            => [ $this, 'handle_fobi_repair' ],
@@ -182,6 +188,74 @@ class DGPTM_Health_Check {
 		}
 
 		return new WP_REST_Response( $result, 200 );
+	}
+
+	/**
+	 * Survey-Fix: Group-Labels, parent_id, Sektionen, Settings
+	 * POST /wp-json/dgptm/v1/survey-fix
+	 */
+	public function handle_survey_fix( $request ) {
+		global $wpdb;
+		$t_surveys   = $wpdb->prefix . 'dgptm_surveys';
+		$t_questions = $wpdb->prefix . 'dgptm_survey_questions';
+		$changes = [];
+
+		// === SURVEY 1: Group-Labels normalisieren ===
+		// "Start" → "START", "Technische Ausstattung" → "TECHNISCHE AUSSTATTUNG"
+		$label_fixes = [
+			'Start' => 'START',
+			'Technische Ausstattung' => 'TECHNISCHE AUSSTATTUNG',
+		];
+		foreach ( $label_fixes as $old => $new ) {
+			$updated = $wpdb->update( $t_questions, [ 'group_label' => $new ], [ 'survey_id' => 1, 'group_label' => $old ] );
+			if ( $updated ) $changes[] = "Survey 1: Label '$old' → '$new' ($updated Fragen)";
+		}
+
+		// === SURVEY 1 + 2: parent_id=0 → NULL fuer Hauptfragen ===
+		// parent_id=0 bedeutet "keine Elternfrage" — sollte NULL sein, nicht 0
+		// Aber: Fragen die parent_id auf eine echte Frage zeigen behalten
+		$main_questions_fixed = $wpdb->query(
+			"UPDATE {$t_questions} SET parent_question_id = NULL
+			 WHERE parent_question_id = 0 AND parent_answer_value = ''"
+		);
+		if ( $main_questions_fixed ) $changes[] = "parent_id=0 → NULL fuer $main_questions_fixed Hauptfragen";
+
+		// === SURVEY 2: Sektionen zuweisen ===
+		$sections = [
+			// Klinik & Fallzahlen (Q18-Q22)
+			'Klinik & Fallzahlen' => [18, 19, 20, 21, 24, 25, 22],
+			// Personalbedarf (Q26-Q32)
+			'Personalbedarf & Prognose' => [26, 27, 28, 29, 31, 32],
+			// Studierende (Q33-Q34, Q97, Q99, Q107, Q96)
+			'Studierende & Anstellung' => [33, 97, 99, 107, 96, 34],
+			// Ausbildung (Q76-Q80)
+			'Ausbildungsplaetze' => [76, 77, 78, 79, 80],
+			// Qualifikation (Q84-Q92)
+			'Qualifikation & Voraussetzungen' => [84, 85, 86, 87, 89, 90, 91, 92],
+			// Engagement (Q93-Q95)
+			'Engagement & Kontakt' => [93, 94, 95],
+		];
+
+		foreach ( $sections as $label => $ids ) {
+			if ( empty( $ids ) ) continue;
+			$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+			$sql = $wpdb->prepare(
+				"UPDATE {$t_questions} SET group_label = %s WHERE survey_id = 2 AND id IN ($placeholders)",
+				array_merge( [ $label ], $ids )
+			);
+			$updated = $wpdb->query( $sql );
+			if ( $updated ) $changes[] = "Survey 2: Sektion '$label' → $updated Fragen";
+		}
+
+		// === SURVEY 2: Resume + Progress aktivieren ===
+		$wpdb->update( $t_surveys, [
+			'show_progress' => 1,
+			'allow_save_resume' => 1,
+			'completion_text' => '<h3>Vielen Dank fuer Ihre Teilnahme!</h3><p>Ihre Angaben helfen uns, den Personalbedarf in der Perfusiologie besser zu verstehen und die Ausbildung weiterzuentwickeln.</p>',
+		], [ 'id' => 2 ] );
+		$changes[] = "Survey 2: show_progress=1, allow_save_resume=1, completion_text gesetzt";
+
+		return new WP_REST_Response( [ 'changes' => $changes ], 200 );
 	}
 
 	public function handle_fobi_attachment( $request ) {

@@ -152,6 +152,22 @@ class DGPTM_Survey_Admin {
         $table = $wpdb->prefix . 'dgptm_surveys';
 
         $survey_id = absint($_POST['survey_id'] ?? 0);
+
+        // Schnell-Status-Update (nur Status aendern, kein volles Formular)
+        if (!empty($_POST['_only_status']) && $survey_id) {
+            $new_status = sanitize_text_field($_POST['status'] ?? '');
+            $valid = ['draft', 'active', 'closed'];
+            if (!in_array($new_status, $valid, true)) {
+                wp_send_json_error(['message' => 'Ungueltiger Status.']);
+            }
+            $update = ['status' => $new_status, 'updated_at' => current_time('mysql')];
+            if ($new_status === 'active') {
+                $update['published_at'] = current_time('mysql');
+            }
+            $wpdb->update($table, $update, ['id' => $survey_id]);
+            wp_send_json_success(['message' => 'Status aktualisiert.', 'survey_id' => $survey_id]);
+        }
+
         $data = [
             'title'           => sanitize_text_field($_POST['title'] ?? ''),
             'slug'            => sanitize_title($_POST['slug'] ?? ''),
@@ -282,7 +298,38 @@ class DGPTM_Survey_Admin {
         $archive_survey = $this->get_survey($survey_id);
         $archive_shared_with = ($archive_survey && !empty($archive_survey->shared_with)) ? $archive_survey->shared_with : '';
 
-        // Archive instead of hard delete
+        $permanent = !empty($_POST['permanent']);
+
+        if ($permanent) {
+            // Endgueltig loeschen: Umfrage + Fragen + Antworten
+            $t_surveys   = $wpdb->prefix . 'dgptm_surveys';
+            $t_questions = $wpdb->prefix . 'dgptm_survey_questions';
+            $t_responses = $wpdb->prefix . 'dgptm_survey_responses';
+            $t_answers   = $wpdb->prefix . 'dgptm_survey_answers';
+
+            // Antworten zu Responses dieser Umfrage loeschen
+            $response_ids = $wpdb->get_col($wpdb->prepare(
+                "SELECT id FROM $t_responses WHERE survey_id = %d", $survey_id
+            ));
+            if (!empty($response_ids)) {
+                $placeholders = implode(',', array_fill(0, count($response_ids), '%d'));
+                $wpdb->query($wpdb->prepare(
+                    "DELETE FROM $t_answers WHERE response_id IN ($placeholders)", ...$response_ids
+                ));
+            }
+
+            $wpdb->delete($t_responses, ['survey_id' => $survey_id]);
+            $wpdb->delete($t_questions, ['survey_id' => $survey_id]);
+            $wpdb->delete($t_surveys, ['id' => $survey_id]);
+
+            if (function_exists('dgptm_log_info')) {
+                dgptm_log_info('Umfrage endgueltig geloescht (ID: ' . $survey_id . ')', 'umfragen');
+            }
+
+            wp_send_json_success(['message' => 'Umfrage und alle Daten geloescht.']);
+        }
+
+        // Archive (Soft-Delete)
         $wpdb->update(
             $wpdb->prefix . 'dgptm_surveys',
             ['status' => 'archived', 'updated_at' => current_time('mysql')],

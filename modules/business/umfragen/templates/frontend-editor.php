@@ -555,6 +555,10 @@ $status_labels = [
                             <button type="button" class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-show-responses" data-id="<?php echo esc_attr($s->id); ?>" data-count="<?php echo esc_attr($s->response_count); ?>" title="Antworten anzeigen">Antworten (<?php echo esc_html($s->response_count); ?>)</button>
                         <?php endif; ?>
                         <button type="button" class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-btn-danger dgptm-fe-archive-survey" data-id="<?php echo esc_attr($s->id); ?>">Archivieren</button>
+                        <?php if ($s->status !== 'active') : ?>
+                            <button type="button" class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-publish-survey" data-id="<?php echo esc_attr($s->id); ?>" style="background:#46b450 !important;border-color:#46b450 !important;">Freigeben</button>
+                        <?php endif; ?>
+                        <button type="button" class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-btn-danger dgptm-fe-delete-survey" data-id="<?php echo esc_attr($s->id); ?>" data-title="<?php echo esc_attr($s->title); ?>">Loeschen</button>
                     </div>
                 </div>
             <?php endforeach; ?>

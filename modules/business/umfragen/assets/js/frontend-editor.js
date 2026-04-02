@@ -81,6 +81,60 @@
                     $btn.prop('disabled', false);
                 });
             });
+
+            // Freigeben (Status auf 'active' setzen)
+            $(document).on('click', '.dgptm-fe-publish-survey', function() {
+                if (!confirm('Umfrage freigeben und veroeffentlichen?')) return;
+
+                var $btn = $(this);
+                var surveyId = $btn.data('id');
+                $btn.prop('disabled', true).text('...');
+
+                $.post(dgptmSurveyEditor.ajaxUrl, {
+                    action: 'dgptm_survey_save',
+                    nonce: dgptmSurveyEditor.nonce,
+                    survey_id: surveyId,
+                    status: 'active',
+                    _only_status: '1'
+                }, function(resp) {
+                    if (resp.success) {
+                        self.notify('Umfrage freigegeben.');
+                        // Badge aktualisieren
+                        var $card = $btn.closest('.dgptm-fe-survey-card');
+                        $card.find('.dgptm-fe-badge').removeClass('dgptm-fe-badge-draft dgptm-fe-badge-closed').addClass('dgptm-fe-badge-active').text('Aktiv');
+                        $btn.remove();
+                    } else {
+                        self.notify(resp.data.message || 'Fehler', 'error');
+                        $btn.prop('disabled', false).text('Freigeben');
+                    }
+                });
+            });
+
+            // Endgueltig loeschen
+            $(document).on('click', '.dgptm-fe-delete-survey', function() {
+                var title = $(this).data('title') || 'diese Umfrage';
+                if (!confirm('Umfrage "' + title + '" und alle Antworten endgueltig loeschen?')) return;
+
+                var $btn = $(this);
+                var surveyId = $btn.data('id');
+                var $card = $btn.closest('.dgptm-fe-survey-card');
+                $btn.prop('disabled', true).text('...');
+
+                $.post(dgptmSurveyEditor.ajaxUrl, {
+                    action: 'dgptm_survey_delete',
+                    nonce: dgptmSurveyEditor.nonce,
+                    survey_id: surveyId,
+                    permanent: '1'
+                }, function(resp) {
+                    if (resp.success) {
+                        $card.fadeOut(300, function() { $(this).remove(); });
+                        self.notify('Umfrage geloescht.');
+                    } else {
+                        self.notify(resp.data.message || 'Fehler', 'error');
+                        $btn.prop('disabled', false).text('Loeschen');
+                    }
+                });
+            });
         },
 
         // --- Survey Form ---

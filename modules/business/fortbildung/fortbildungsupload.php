@@ -1177,6 +1177,15 @@ function fobi_ebcp_ajax_upload(){
     }
     
     // ============================================================
+    // Race-Condition-Schutz: Transient-Lock gegen parallele Uploads
+    // ============================================================
+    $lock_key = 'fobi_upload_' . $u->ID . '_' . md5(mb_strtolower($data['title'], 'UTF-8'));
+    if( get_transient($lock_key) ){
+        wp_send_json_error('Diese Veranstaltung wird gerade verarbeitet. Bitte warten Sie einen Moment.');
+    }
+    set_transient($lock_key, true, 60); // 60 Sekunden Lock
+
+    // ============================================================
     // Duplikaterkennung: Gleiche Veranstaltung schon eingereicht?
     // ============================================================
     $date_for_check = '';
@@ -1193,10 +1202,14 @@ function fobi_ebcp_ajax_upload(){
 
     $duplicate = fobi_ebcp_check_duplicate($u->ID, $data['title'], $date_for_check, $end_date_for_check);
     if( $duplicate ){
-        // Nur warnen, nicht blockieren — User kann trotzdem einreichen
-        $duplicate_warning = sprintf('Hinweis: Aehnliche Veranstaltung bereits vorhanden: „%s"', esc_html($duplicate->post_title));
-    } else {
-        $duplicate_warning = '';
+        delete_transient($lock_key);
+        wp_send_json_error(sprintf(
+            'Diese Veranstaltung wurde bereits eingereicht: „%s" (ID %d). Duplikate sind nicht erlaubt.',
+            esc_html($duplicate->post_title),
+            $duplicate->ID
+        ));
+    }
+    $duplicate_warning = '';
     }
 
     // ============================================================
@@ -1390,6 +1403,9 @@ function fobi_ebcp_ajax_upload(){
         $message .= sprintf('<br>📋 <a href="%s" target="_blank">Fortbildung im Backend anzeigen</a>', esc_url($edit_link));
     }
     
+    // Race-Condition Lock freigeben
+    delete_transient($lock_key);
+
     wp_send_json_success(array(
         'message' => $message,
         'post_id' => $post_id,
@@ -1737,8 +1753,8 @@ KRITISCH: Bei Rechnungen/Zahlungsbelegen -> doc_type=\"invoice\", participant=\"
     }
 
     $parsed = array(
-        'participant' => trim($data['participant'] ?? ''),
-        'title' => trim($data['title'] ?? ''),
+        'participant' => trim(html_entity_decode(strip_tags($data['participant'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8')),
+        'title' => trim(html_entity_decode(strip_tags($data['title'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8')),
         'location' => trim($data['location'] ?? ''),
         'start_date' => trim($data['start_date'] ?? ''),
         'end_date' => trim($data['end_date'] ?? $data['start_date'] ?? ''),
@@ -1865,8 +1881,8 @@ JSON-Format:
     }
     
     $parsed = array(
-        'participant' => trim($data['participant'] ?? ''),
-        'title' => trim($data['title'] ?? ''),
+        'participant' => trim(html_entity_decode(strip_tags($data['participant'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8')),
+        'title' => trim(html_entity_decode(strip_tags($data['title'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8')),
         'location' => trim($data['location'] ?? ''),
         'start_date' => trim($data['start_date'] ?? ''),
         'end_date' => trim($data['end_date'] ?? $data['start_date'] ?? ''),
@@ -1956,12 +1972,12 @@ function fobi_ebcp_check_duplicate($user_id, $title, $date, $end_date = ''){
     $existing = get_posts($args);
     if( empty($existing) ) return false;
 
-    $title_norm = mb_strtolower(trim($title), 'UTF-8');
-    // Mehrtages-Suffix entfernen fuer Vergleich
+    // Titel normalisieren: HTML-Entities dekodieren, Tags entfernen, Suffix entfernen
+    $title_norm = mb_strtolower(trim(html_entity_decode(strip_tags($title), ENT_QUOTES | ENT_HTML5, 'UTF-8')), 'UTF-8');
     $title_norm = preg_replace('/\s*\(tag\s+\d+\/\d+\)\s*$/i', '', $title_norm);
 
     foreach( $existing as $post ){
-        $existing_title = mb_strtolower(trim($post->post_title), 'UTF-8');
+        $existing_title = mb_strtolower(trim(html_entity_decode(strip_tags($post->post_title), ENT_QUOTES | ENT_HTML5, 'UTF-8')), 'UTF-8');
         $existing_title = preg_replace('/\s*\(tag\s+\d+\/\d+\)\s*$/i', '', $existing_title);
 
         if( $title_norm === $existing_title ){

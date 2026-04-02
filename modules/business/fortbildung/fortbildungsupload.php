@@ -174,6 +174,96 @@ function fobi_ebcp_get_settings() {
 /* ============================================================
  * Admin-Seite: Einstellungen
  * ============================================================ */
+// Meta-Box: KI-Analyse + Neubewertung im Post-Editor
+add_action('add_meta_boxes', function(){
+    add_meta_box(
+        'fobi_ebcp_ai_metabox',
+        'KI-Analyse & Neubewertung',
+        'fobi_ebcp_render_ai_metabox',
+        'fortbildung',
+        'normal',
+        'high'
+    );
+});
+
+function fobi_ebcp_render_ai_metabox($post) {
+    $post_id = $post->ID;
+    $ai_response = get_post_meta($post_id, '_ebcp_ai_response', true);
+    $ai_confidence = get_post_meta($post_id, '_ebcp_ai_confidence', true);
+    $ai_category = get_post_meta($post_id, '_ebcp_category_key', true);
+    $ai_doc_type = get_post_meta($post_id, '_ebcp_doc_type', true);
+    $reevaluated = get_post_meta($post_id, '_ebcp_reevaluated_at', true);
+
+    // Pruefe ob ein Attachment vorhanden ist
+    $has_attachment = false;
+    if (function_exists('get_field')) {
+        $att = get_field('attachements', $post_id);
+        $has_attachment = !empty($att);
+    }
+
+    echo '<div id="fobi-ai-metabox">';
+
+    if ($ai_response) {
+        echo '<h4 style="margin-top:0;">Letzte KI-Analyse' . ($reevaluated ? ' (Neubewertung: ' . esc_html($reevaluated) . ')' : '') . '</h4>';
+        echo '<table class="widefat striped" style="margin-bottom:12px;"><tbody>';
+        echo '<tr><th style="width:120px;">Konfidenz</th><td><strong>' . ($ai_confidence ? intval($ai_confidence * 100) . '%' : 'k.A.') . '</strong></td></tr>';
+        echo '<tr><th>Kategorie-Key</th><td><code>' . esc_html($ai_category ?: 'k.A.') . '</code></td></tr>';
+        echo '<tr><th>Dokumenttyp</th><td><code>' . esc_html($ai_doc_type ?: 'k.A.') . '</code></td></tr>';
+        echo '</tbody></table>';
+
+        echo '<details style="margin-bottom:12px;"><summary style="cursor:pointer;font-size:12px;color:#0073aa;">Rohe KI-Antwort anzeigen</summary>';
+        echo '<pre style="background:#f8f9fa;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:11px;white-space:pre-wrap;max-height:300px;overflow:auto;">' . esc_html($ai_response) . '</pre>';
+        echo '</details>';
+    } else {
+        echo '<p style="color:#888;font-style:italic;">Keine KI-Analyse vorhanden.</p>';
+    }
+
+    if ($has_attachment) {
+        $nonce = wp_create_nonce('fobi_pruefliste');
+        echo '<button type="button" id="fobi-reevaluate-backend" class="button button-primary" data-post-id="' . esc_attr($post_id) . '" data-nonce="' . esc_attr($nonce) . '">🔄 KI-Neubewertung starten</button>';
+        echo '<span id="fobi-reevaluate-status" style="margin-left:10px;"></span>';
+
+        echo '<script>
+        jQuery(function($){
+            $("#fobi-reevaluate-backend").on("click", function(){
+                var $btn = $(this);
+                var $status = $("#fobi-reevaluate-status");
+                $btn.prop("disabled", true).text("⏳ KI analysiert...");
+                $status.text("").css("color","");
+
+                $.ajax({
+                    url: ajaxurl,
+                    type: "POST",
+                    data: {
+                        action: "fobi_reevaluate_nachweis",
+                        post_id: $btn.data("post-id"),
+                        nonce: $btn.data("nonce")
+                    },
+                    timeout: 90000,
+                    success: function(res){
+                        $btn.prop("disabled", false).text("🔄 KI-Neubewertung starten");
+                        if(res.success){
+                            $status.text("✅ " + res.data.message).css("color","#46b450");
+                            setTimeout(function(){ location.reload(); }, 2000);
+                        } else {
+                            $status.text("❌ " + (res.data || "Fehler")).css("color","#dc3232");
+                        }
+                    },
+                    error: function(){
+                        $btn.prop("disabled", false).text("🔄 KI-Neubewertung starten");
+                        $status.text("❌ Verbindungsfehler").css("color","#dc3232");
+                    }
+                });
+            });
+        });
+        </script>';
+    } else {
+        echo '<p style="color:#999;font-size:12px;">Kein Nachweis-Dokument hinterlegt — Neubewertung nicht moeglich.</p>';
+    }
+
+    echo '</div>';
+}
+
 add_action('admin_menu', function(){
     // Unter Fortbildungen CPT
     add_submenu_page(

@@ -1241,9 +1241,94 @@ function fobi_ebcp_ajax_upload(){
     $is_valid = $participant_valid && $event_valid;
     $is_suspicious = !$participant_valid || !$event_valid || $confidence < 0.7;
 
-    // IMMER als ungenehmigt — manuelle Pruefung erforderlich
-    $status = $is_suspicious ? 'suspicious' : 'pending';
-    $status_label = $is_suspicious ? 'Verdaechtig — Pruefung erforderlich' : 'Pruefung erforderlich';
+    // ============================================================
+    // VNR-Validierung: Aerztekammer-Daten abrufen + KI-Plausibilitaet
+    // ============================================================
+    $baek_verified = false;
+    $baek_data = null;
+
+    if (!empty($data['vnr']) && function_exists('dgptm_eiv_get_baek_token') && function_exists('dgptm_eiv_fetch_veranstaltung')) {
+        $vnr_list = array_map('trim', explode(',', $data['vnr']));
+        $vnr_primary = $vnr_list[0];
+
+        $jwt = dgptm_eiv_get_baek_token();
+        if (!is_wp_error($jwt) && !empty($jwt)) {
+            $event_info = dgptm_eiv_fetch_veranstaltung($jwt, $vnr_primary);
+
+            if (!is_wp_error($event_info) && is_array($event_info)) {
+                $baek_data = $event_info;
+                $baek_title = $event_info['titel'] ?? $event_info['thema'] ?? '';
+                $baek_ort = $event_info['veranstaltungsort'] ?? $event_info['ort'] ?? '';
+                $baek_datum = $event_info['beginn'] ?? $event_info['datum_von'] ?? '';
+
+                error_log(sprintf('[Fobi-Upload] BÄK-Daten fuer VNR %s: titel=%s, ort=%s, datum=%s',
+                    $vnr_primary, $baek_title, $baek_ort, $baek_datum));
+
+                // KI-Plausibilitaetspruefung: stimmen Dokument und BÄK ueberein?
+                $api_key = $s['claude_api_key'];
+                if (!empty($api_key) && !empty($baek_title)) {
+                    $plausibility_prompt = sprintf(
+                        'Plausibilitaetspruefung: Ein Fortbildungsnachweis wurde eingereicht und die Aerztekammer hat folgende Daten zur VNR %s geliefert:' .
+                        "\n\nAerztekammer-Daten:\n- Titel: %s\n- Ort: %s\n- Datum: %s" .
+                        "\n\nDokument-Daten (KI-Extraktion):\n- Titel: %s\n- Ort: %s\n- Datum: %s\n- Teilnehmer: %s" .
+                        "\n\nPrüfe:\n1. Stimmt der Veranstaltungstitel ueberein (auch bei leichten Abweichungen)?" .
+                        "\n2. Stimmt der Ort ueberein?" .
+                        "\n3. Stimmt das Datum ueberein (auch bei mehrtaegigen Events)?" .
+                        "\n4. Ist das Dokument plausibel eine Teilnahmebestaetigung fuer diese Veranstaltung?" .
+                        "\n\nAntworte NUR mit JSON: {\"plausible\": true/false, \"reason\": \"kurze Begruendung\"}",
+                        $vnr_primary, $baek_title, $baek_ort, $baek_datum,
+                        $data['title'], $data['location'], $data['start_date'], $data['participant']
+                    );
+
+                    $model = $s['claude_model'] ?? 'claude-sonnet-4-6-20250514';
+                    $body = [
+                        'model' => $model,
+                        'max_tokens' => 200,
+                        'messages' => [['role' => 'user', 'content' => $plausibility_prompt]]
+                    ];
+
+                    $ai_resp = wp_remote_post('https://api.anthropic.com/v1/messages', [
+                        'headers' => [
+                            'Content-Type' => 'application/json',
+                            'x-api-key' => $api_key,
+                            'anthropic-version' => '2023-06-01'
+                        ],
+                        'body' => json_encode($body),
+                        'timeout' => 15
+                    ]);
+
+                    if (!is_wp_error($ai_resp) && wp_remote_retrieve_response_code($ai_resp) === 200) {
+                        $ai_body = json_decode(wp_remote_retrieve_body($ai_resp), true);
+                        $ai_text = $ai_body['content'][0]['text'] ?? '';
+                        if (preg_match('/\{[\s\S]*\}/s', $ai_text, $ai_match)) {
+                            $plausibility = json_decode($ai_match[0], true);
+                            if (isset($plausibility['plausible']) && $plausibility['plausible']) {
+                                $baek_verified = true;
+                                error_log(sprintf('[Fobi-Upload] BÄK+KI verifiziert: VNR %s — %s', $vnr_primary, $plausibility['reason'] ?? 'OK'));
+                            } else {
+                                error_log(sprintf('[Fobi-Upload] KI-Plausibilitaet NICHT bestanden: %s', $plausibility['reason'] ?? 'unbekannt'));
+                            }
+                        }
+                    }
+                } else {
+                    // Ohne KI: nur BÄK-Daten vorhanden → als verifiziert betrachten
+                    $baek_verified = true;
+                }
+            }
+        }
+    }
+
+    // Status: BÄK-verifiziert → direkt freigeben
+    if ($baek_verified && $participant_valid) {
+        $status = 'approved';
+        $status_label = 'Automatisch freigegeben (Aerztekammer-verifiziert)';
+    } elseif ($is_suspicious) {
+        $status = 'suspicious';
+        $status_label = 'Verdaechtig — Pruefung erforderlich';
+    } else {
+        $status = 'pending';
+        $status_label = 'Pruefung erforderlich';
+    }
 
     // Punkte-Debug: loggen warum 0
     $category_key_debug = fobi_ebcp_get_category_key($data);
@@ -1334,7 +1419,13 @@ function fobi_ebcp_ajax_upload(){
             }
 
             update_field('token', wp_generate_password(32, false), $post_id);
-            update_field('freigegeben', false, $post_id);
+
+            // Freigabe: BÄK-verifiziert → automatisch, sonst manuell
+            if ($baek_verified && $participant_valid) {
+                update_field('freigegeben', true, $post_id);
+            } else {
+                update_field('freigegeben', false, $post_id);
+            }
 
             // KI-Rohdaten
             update_post_meta($post_id, '_ebcp_ai_response', json_encode($data, JSON_UNESCAPED_UNICODE));
@@ -1344,6 +1435,15 @@ function fobi_ebcp_ajax_upload(){
             update_post_meta($post_id, '_ebcp_raw_subtype', $data['subtype'] ?? '');
             update_post_meta($post_id, '_ebcp_active_role', $data['active_role'] ?? '');
             update_post_meta($post_id, '_ebcp_doc_type', $data['doc_type'] ?? '');
+
+            // BÄK-Verifikation speichern
+            if ($baek_verified) {
+                update_post_meta($post_id, '_fobi_baek_verified', true);
+                update_post_meta($post_id, '_fobi_baek_vnr', $data['vnr']);
+                if ($baek_data) {
+                    update_post_meta($post_id, '_fobi_baek_data', json_encode($baek_data, JSON_UNESCAPED_UNICODE));
+                }
+            }
 
             // Mehrtages-Gruppierung
             if ($group_id) {

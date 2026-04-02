@@ -2259,6 +2259,7 @@ function fortbildung_bestaetigung_shortcode() {
     return $out;
 }
 require_once plugin_dir_path(__FILE__) . 'fortbildungsupload.php';
+require_once plugin_dir_path(__FILE__) . 'vnr-neubewertung.php';
 require_once plugin_dir_path(__FILE__) . 'fortbildung-csv-import.php';
 require_once plugin_dir_path(__FILE__) . 'doublettencheck.php';
 require_once plugin_dir_path(__FILE__) . 'erweiterte-suche.php';

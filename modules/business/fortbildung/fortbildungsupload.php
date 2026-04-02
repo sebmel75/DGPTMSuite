@@ -43,7 +43,7 @@
  * - ✅ OPTIMIERUNG: Claude-Prompt verbessert zur besseren Unterscheidung Flyer vs. Nachweis
  * 
  * Changelog v3.6:
- * - ✅ KRITISCHER FIX: Modellname korrigiert (claude-sonnet-4-5-20250514 statt 4.5)
+ * - ✅ KRITISCHER FIX: Modellname korrigiert (claude-sonnet-4-5-20250929 statt 4.5)
  * - ✅ Fehler "model was not found" behoben
  * 
  * Changelog v3.5:
@@ -123,7 +123,7 @@ function fobi_ebcp_default_settings() {
         
         // Claude AI
         'claude_api_key' => '',
-        'claude_model' => 'claude-sonnet-4-5-20250514', // Neueste Version! (KORREKTUR: Bindestrich statt Punkt)
+        'claude_model' => 'claude-sonnet-4-5-20250929', // Neueste Version! (KORREKTUR: Bindestrich statt Punkt)
         'claude_max_tokens' => 2048,
         
         // OpenAI Vision
@@ -542,9 +542,9 @@ function fobi_ebcp_settings_page_render(){
                         <th>Claude Modell</th>
                         <td>
                             <select name="claude_model">
-                                <option value="claude-sonnet-4-5-20250514" <?php selected($s['claude_model'],'claude-sonnet-4-5-20250514'); ?>>Claude Sonnet 4.5 (empfohlen) ⭐</option>
-                                <option value="claude-haiku-4-5-20251001" <?php selected($s['claude_model'],'claude-haiku-4-5-20251001'); ?>>Claude Haiku 4.5 (guenstiger, schnell)</option>
-                                <option value="claude-opus-4-5-20251101" <?php selected($s['claude_model'],'claude-opus-4-5-20251101'); ?>>Claude Opus 4.5 (hoechste Genauigkeit)</option>
+                                <option value="claude-sonnet-4-5-20250929" <?php selected($s['claude_model'],'claude-sonnet-4-5-20250929'); ?>>Claude Sonnet 4.5 (empfohlen) ⭐</option>
+                                <option value="claude-3-5-sonnet-20241022" <?php selected($s['claude_model'],'claude-3-5-sonnet-20241022'); ?>>Claude 3.5 Sonnet (stabil)</option>
+                                <option value="claude-3-5-haiku-20241022" <?php selected($s['claude_model'],'claude-3-5-haiku-20241022'); ?>>Claude 3.5 Haiku (guenstiger, schnell)</option>
                             </select>
                             <p class="description"><strong>Sonnet 4.6:</strong> Bestes Preis-Leistungs-Verhaeltnis | <strong>Kosten:</strong> ~$0.01/Analyse</p>
                         </td>
@@ -1210,7 +1210,7 @@ function fobi_ebcp_analyze_document($filepath, $mime, $expected_name, $s){
  * ============================================================ */
 function fobi_ebcp_claude_analyze($filepath, $mime, $expected_name, $s){
     $api_key = $s['claude_api_key'];
-    $model = $s['claude_model'] ?? 'claude-sonnet-4-5-20250514';
+    $model = $s['claude_model'] ?? 'claude-sonnet-4-5-20250929';
     $max_tokens = intval($s['claude_max_tokens'] ?? 2048);
     
     $file_data = file_get_contents($filepath);
@@ -1654,7 +1654,7 @@ function fobi_ebcp_ai_verify_name($doc_name, $expected_name, $s){
     $api_key = $s['claude_api_key'];
     if( empty($api_key) ) return false;
 
-    $model = $s['claude_model'] ?? 'claude-sonnet-4-5-20250514';
+    $model = $s['claude_model'] ?? 'claude-sonnet-4-5-20250929';
 
     $prompt = sprintf(
         'Auf einem Fortbildungsnachweis steht der Teilnehmername "%s". ' .

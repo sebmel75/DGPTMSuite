@@ -1857,21 +1857,41 @@ function fobi_ebcp_get_category_label($key, $s){
 function fobi_ebcp_calc_points($parsed, $s){
     $map = json_decode($s['ebcp_mapping_json'], true);
     if(!is_array($map)) $map=array();
-    
+
     $bykey = array();
     foreach($map as $r){
-        $bykey[$r['key']] = floatval($r['points']);
+        if(!empty($r['key'])){
+            $bykey[$r['key']] = floatval($r['points']);
+        }
     }
-    
+
     $key = fobi_ebcp_get_category_key($parsed);
     $ects = intval($parsed['ects'] ?? 0);
-    
-    // Spezialfall ECTS: Punkte pro Credit multiplizieren
+
+    // Spezialfall ECTS
     if( $key === 'ects_per_credit' ){
         return max(0, $ects) * ($bykey['ects_per_credit'] ?? 1.0);
     }
-    
-    return $bykey[$key] ?? 0.0;
+
+    // Key in gespeicherter Matrix suchen
+    if( isset($bykey[$key]) ){
+        return $bykey[$key];
+    }
+
+    // Fallback: Default-Matrix wenn Key in Settings fehlt
+    $defaults = fobi_ebcp_default_settings();
+    $default_map = json_decode($defaults['ebcp_mapping_json'], true);
+    if(is_array($default_map)){
+        foreach($default_map as $r){
+            if(($r['key'] ?? '') === $key){
+                error_log(sprintf('[Fobi-Upload] Key "%s" nicht in Settings-Matrix — Fallback auf Default: %s Punkte', $key, $r['points']));
+                return floatval($r['points']);
+            }
+        }
+    }
+
+    error_log(sprintf('[Fobi-Upload] Key "%s" nirgends gefunden! category=%s', $key, $parsed['category'] ?? ''));
+    return 0.0;
 }
 
 /**

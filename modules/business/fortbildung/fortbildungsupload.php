@@ -656,32 +656,7 @@ function fobi_ebcp_settings_page_render(){
                 <tr>
                     <th>Dateischutz</th>
                     <td>
-                        <p class="description">Neue Uploads werden automatisch im geschuetzten Ordner <code>fobi-protected/</code> gespeichert (kein direkter HTTP-Zugriff).</p>
-                        <button type="button" id="fobi-migrate-protected" class="button">Bestehende Dateien schuetzen</button>
-                        <span id="fobi-migrate-status" style="margin-left:10px;"></span>
-                        <script>
-                        jQuery(function($){
-                            $('#fobi-migrate-protected').on('click', function(){
-                                var $btn = $(this), $status = $('#fobi-migrate-status');
-                                if (!confirm('Alle bestehenden Fortbildungs-Attachments in den geschuetzten Ordner verschieben?')) return;
-                                $btn.prop('disabled', true).text('Verschiebe...');
-                                $status.text('').css('color','');
-                                $.post(ajaxurl, {
-                                    action: 'fobi_migrate_protected',
-                                    nonce: '<?php echo wp_create_nonce('fobi_migrate_protected'); ?>'
-                                }, function(res){
-                                    $btn.prop('disabled', false).text('Bestehende Dateien schuetzen');
-                                    if (res.success) {
-                                        $status.text(res.data.message).css('color','#46b450');
-                                        if (res.data.errors && res.data.errors.length) {
-                                            console.error('Migration Errors:', res.data.errors);
-                                        }
-                                    } else {
-                                        $status.text(res.data || 'Fehler').css('color','#dc3232');
-                                    }
-                                });
-                            });
-                        });
+                        <p class="description">Neue Uploads werden automatisch im geschuetzten Ordner <code>fobi-protected/</code> gespeichert (kein direkter HTTP-Zugriff). Bestehende Dateien wurden migriert.</p>
                         </script>
                     </td>
                 </tr>

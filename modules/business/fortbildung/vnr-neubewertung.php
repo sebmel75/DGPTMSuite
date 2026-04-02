@@ -43,9 +43,9 @@ function fobi_vnr_neubewertung_shortcode($atts) {
                 if(!r.success){alert(r.data||'Fehler');return;}
                 var ev=r.data.events;
                 if(!ev.length){jq('#fobi-vnr-list').html('<p style="color:#888">Keine Veranstaltungen mit VNR.</p>').show();return;}
-                var h='<table style="width:100%;font-size:13px;border-collapse:collapse"><tr style="border-bottom:2px solid #eee"><th style="text-align:left;padding:6px 8px">VNR</th><th style="text-align:left;padding:6px 8px">Veranstaltung</th><th style="text-align:right;padding:6px 8px">Eintr.</th><th style="text-align:right;padding:6px 8px">Pkt</th><th></th></tr>';
+                var h='<table style="width:100%;font-size:13px;border-collapse:collapse"><tr style="border-bottom:2px solid #eee"><th style="text-align:left;padding:6px 8px">VNR</th><th style="text-align:left;padding:6px 8px">Veranstaltung</th><th style="text-align:right;padding:6px 8px">Tage</th><th style="text-align:right;padding:6px 8px">Pkt/Tag</th><th></th></tr>';
                 for(var i=0;i<ev.length;i++){var e=ev[i];
-                    h+='<tr style="border-bottom:1px solid #f0f0f0"><td style="padding:6px 8px;font-family:monospace;font-size:11px">'+e.vnr+'</td><td style="padding:6px 8px">'+e.title+'</td><td style="padding:6px 8px;text-align:right">'+e.count+'</td><td style="padding:6px 8px;text-align:right">'+e.total_points+'</td><td style="padding:6px"><button type="button" class="fobi-vnr-reeval" data-vnr="'+e.vnr+'" style="padding:3px 8px;font-size:11px;background:#0073aa;color:#fff;border:1px solid #0073aa;border-radius:4px;cursor:pointer">Neu bewerten</button></td></tr>';
+                    h+='<tr style="border-bottom:1px solid #f0f0f0"><td style="padding:6px 8px;font-family:monospace;font-size:11px">'+e.vnr+'</td><td style="padding:6px 8px">'+e.title+'</td><td style="padding:6px 8px;text-align:right">'+e.count+'</td><td style="padding:6px 8px;text-align:right">'+e.points_per+'</td><td style="padding:6px"><button type="button" class="fobi-vnr-reeval" data-vnr="'+e.vnr+'" style="padding:3px 8px;font-size:11px;background:#0073aa;color:#fff;border:1px solid #0073aa;border-radius:4px;cursor:pointer">Neu bewerten</button></td></tr>';
                 }
                 h+='</table>';jq('#fobi-vnr-list').html(h).show();
             });
@@ -56,7 +56,7 @@ function fobi_vnr_neubewertung_shortcode($atts) {
                 b.prop('disabled',false).text('Neu bewerten');
                 if(r.success){var d=r.data;
                     jq('#fobi-vnr-result').prepend('<div style="background:#d4edda;border:1px solid #c3e6cb;padding:10px;border-radius:4px;margin:6px 0;font-size:13px"><strong>VNR '+v+':</strong> '+d.message+(d.baek_title?'<br>AEK: '+d.baek_title:'')+'</div>');
-                    b.closest('tr').find('td:nth-child(4)').text(d.new_total_points);
+                    b.closest('tr').find('td:nth-child(4)').text(d.points);
                     b.css({background:'#46b450','border-color':'#46b450'}).text('Erledigt');
                 }else{
                     jq('#fobi-vnr-result').prepend('<div style="background:#f8d7da;border:1px solid #f5c6cb;padding:10px;border-radius:4px;margin:6px 0;font-size:13px"><strong>VNR '+v+':</strong> '+(r.data&&r.data.message?r.data.message:'Fehler')+'</div>');
@@ -80,7 +80,7 @@ function fobi_ajax_vnr_list() {
 
     $results = $wpdb->get_results("
         SELECT pm_vnr.meta_value AS vnr, MIN(p.post_title) AS title, COUNT(*) AS cnt,
-               SUM(CAST(COALESCE(pm_pts.meta_value, '0') AS DECIMAL(10,1))) AS total_points
+               AVG(CAST(COALESCE(pm_pts.meta_value, '0') AS DECIMAL(10,1))) AS points_per_entry
         FROM {$wpdb->posts} p
         JOIN {$wpdb->postmeta} pm_vnr ON pm_vnr.post_id = p.ID AND pm_vnr.meta_key = 'vnr'
         LEFT JOIN {$wpdb->postmeta} pm_pts ON pm_pts.post_id = p.ID AND pm_pts.meta_key = 'points'
@@ -93,7 +93,7 @@ function fobi_ajax_vnr_list() {
     foreach ($results as $r) {
         $title = html_entity_decode(strip_tags($r->title), ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $title = preg_replace('/\s*\(Tag\s+\d+\/\d+\)\s*$/i', '', $title);
-        $events[] = ['vnr' => $r->vnr, 'title' => $title, 'count' => (int)$r->cnt, 'total_points' => number_format((float)$r->total_points, 1)];
+        $events[] = ['vnr' => $r->vnr, 'title' => $title, 'count' => (int)$r->cnt, 'points_per' => number_format((float)$r->points_per_entry, 1)];
     }
     wp_send_json_success(['events' => $events]);
 }

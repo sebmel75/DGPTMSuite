@@ -3160,15 +3160,23 @@ function fobi_ebcp_ajax_reevaluate(){
         // Attachment-ID
         $filepath = get_attached_file(intval($attachment_raw));
         $mime = get_post_mime_type(intval($attachment_raw));
-    } elseif( is_string($attachment_raw) && filter_var($attachment_raw, FILTER_VALIDATE_URL) ){
+    } elseif( is_string($attachment_raw) ){
+        // Geschuetzte Download-URL: ?fobi_download=1&attachment_id=XXXX
+        if( preg_match('/attachment_id=(\d+)/', $attachment_raw, $m) ){
+            $att_id = intval($m[1]);
+            $filepath = get_attached_file($att_id);
+            $mime = get_post_mime_type($att_id);
+        }
         // Direkte URL — in Temp-Datei herunterladen
-        $tmp = download_url($attachment_raw, 30);
-        if( !is_wp_error($tmp) ){
-            $filepath = $tmp;
-            $is_temp = true;
-            $ext = strtolower(pathinfo(parse_url($attachment_raw, PHP_URL_PATH), PATHINFO_EXTENSION));
-            $mime_map = ['pdf' => 'application/pdf', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png'];
-            $mime = $mime_map[$ext] ?? 'application/pdf';
+        elseif( filter_var($attachment_raw, FILTER_VALIDATE_URL) ){
+            $tmp = download_url($attachment_raw, 30);
+            if( !is_wp_error($tmp) ){
+                $filepath = $tmp;
+                $is_temp = true;
+                $ext = strtolower(pathinfo(parse_url($attachment_raw, PHP_URL_PATH), PATHINFO_EXTENSION));
+                $mime_map = ['pdf' => 'application/pdf', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png'];
+                $mime = $mime_map[$ext] ?? 'application/pdf';
+            }
         }
     } elseif( is_array($attachment_raw) ){
         // Array: ACF gibt {ID, url, ...} oder {id, url, ...} zurueck

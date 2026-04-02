@@ -634,12 +634,14 @@
                 html += '<p style="color:#888;font-size:12px;">Keine Antworten.</p>';
             } else {
                 html += '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
-                html += '<tr style="border-bottom:1px solid #eee;"><th style="text-align:left;padding:4px;">ID</th><th style="text-align:left;padding:4px;">Datum</th><th style="text-align:left;padding:4px;">Status</th><th style="padding:4px;"></th></tr>';
+                html += '<tr style="border-bottom:2px solid #eee;"><th style="text-align:left;padding:4px 8px;">ID</th><th style="text-align:left;padding:4px 8px;">Teilnehmer</th><th style="text-align:left;padding:4px 8px;">Datum</th><th style="text-align:left;padding:4px 8px;">Status</th><th style="padding:4px;"></th></tr>';
                 responses.forEach(function(r) {
+                    var statusLabel = r.status === 'completed' ? '<span style="color:#46b450;">Abgeschlossen</span>' : '<span style="color:#f0ad4e;">' + r.status + '</span>';
                     html += '<tr data-response-id="' + r.id + '" style="border-bottom:1px solid #f0f0f0;">';
-                    html += '<td style="padding:4px;">#' + r.id + '</td>';
-                    html += '<td style="padding:4px;">' + (r.completed_at || r.started_at || '-') + '</td>';
-                    html += '<td style="padding:4px;">' + r.status + '</td>';
+                    html += '<td style="padding:4px 8px;">#' + r.id + '</td>';
+                    html += '<td style="padding:4px 8px;">' + (r.name || '<em style="color:#999;">Anonym</em>') + '</td>';
+                    html += '<td style="padding:4px 8px;">' + (r.completed_at || r.started_at || '-') + '</td>';
+                    html += '<td style="padding:4px 8px;">' + statusLabel + '</td>';
                     html += '<td style="padding:4px;"><button class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-btn-danger dgptm-fe-delete-response" data-id="' + r.id + '" data-survey-id="' + surveyId + '">Loeschen</button></td>';
                     html += '</tr>';
                 });

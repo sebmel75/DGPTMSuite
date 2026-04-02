@@ -111,6 +111,26 @@ class DGPTM_Health_Check {
 		$prefix = $wpdb->prefix . 'dgptm_survey_';
 		$survey_id = intval( $request->get_param( 'id' ) ?? 0 );
 
+		// Tabellenexistenz pruefen
+		$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$prefix}s'" );
+		if ( ! $table_exists ) {
+			// Versuch alternativen Tabellennamen
+			$alt_prefix = $wpdb->prefix . 'dgptm_surveys';
+			$alt_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$alt_prefix}'" );
+			if ( $alt_exists ) {
+				// Tabelle heisst anders — korrigieren
+				return new WP_REST_Response( [
+					'error' => 'Tabelle heisst ' . $alt_prefix . ' statt ' . $prefix . 's',
+					'tables_like_dgptm' => $wpdb->get_col( "SHOW TABLES LIKE '%dgptm%survey%'" ),
+				], 200 );
+			}
+			return new WP_REST_Response( [
+				'error' => 'Survey-Tabellen nicht gefunden',
+				'expected' => $prefix . 's',
+				'tables_like_dgptm' => $wpdb->get_col( "SHOW TABLES LIKE '%dgptm%'" ),
+			], 200 );
+		}
+
 		// Surveys laden
 		if ( $survey_id ) {
 			$surveys = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$prefix}s WHERE id = %d", $survey_id ) );

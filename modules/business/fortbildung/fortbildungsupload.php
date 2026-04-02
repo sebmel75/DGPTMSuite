@@ -2170,6 +2170,32 @@ function fobi_ebcp_pruefliste_shortcode($atts){
                 }
             });
         });
+        // Quick-Approve direkt aus der Liste
+        $(document).on('click', '.fobi-btn-approve-quick', function(){
+            var $btn = $(this);
+            var postId = $btn.data('post-id');
+            if( ! confirm('Diesen Nachweis genehmigen?') ) return;
+
+            $btn.prop('disabled', true).text('...');
+            $.ajax({
+                url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                type: 'POST',
+                data: {
+                    action: 'fobi_approve_nachweis',
+                    post_id: postId,
+                    nonce: '<?php echo wp_create_nonce('fobi_pruefliste'); ?>'
+                },
+                success: function(res){
+                    if(res.success){
+                        $('tr[data-post-id="'+postId+'"]').fadeOut(function(){ $(this).remove(); });
+                    } else {
+                        alert('❌ ' + (res.data || 'Fehler'));
+                        $btn.prop('disabled', false).text('✅');
+                    }
+                }
+            });
+        });
+
         // Neubewertung durch KI
         $(document).on('click', '.fobi-reevaluate-btn', function(){
             var postId = $(this).data('post-id') || currentPostId;
@@ -2539,8 +2565,8 @@ function fobi_ebcp_ajax_load_pruefliste(){
                     <th>Benutzer</th>
                     <th>Titel</th>
                     <th>Art</th>
-                    <th>Punkte</th>
-                    <th>Hochgeladen</th>
+                    <th>Pkt.</th>
+                    <th>KI %</th>
                     <th>Status</th>
                     <th>Aktionen</th>
                 </tr>
@@ -2580,18 +2606,25 @@ function fobi_ebcp_ajax_load_pruefliste(){
                         $status_label = '<span style="background:#0073aa;color:#fff;padding:3px 8px;border-radius:3px;font-size:12px;">Veröffentlicht</span>';
                     }
                 ?>
+                    <?php
+                        $ai_conf = get_post_meta($post_id, '_ebcp_ai_confidence', true);
+                        $ai_cat = get_post_meta($post_id, '_ebcp_category_key', true);
+                        $has_att = !empty(get_field('attachements', $post_id));
+                    ?>
                     <tr data-post-id="<?php echo $post_id; ?>">
                         <td><?php echo esc_html($date ? $date : '-'); ?></td>
                         <td><?php echo $user ? esc_html($user->display_name) : '<em>Unbekannt</em>'; ?></td>
                         <td><strong><?php echo esc_html($post->post_title); ?></strong></td>
                         <td><?php echo esc_html($type ? $type : '-'); ?></td>
                         <td><?php echo esc_html($points ? number_format($points, 1) : '-'); ?></td>
-                        <td><?php echo get_the_date('d.m.Y H:i', $post_id); ?></td>
+                        <td><?php echo $ai_conf ? intval($ai_conf * 100) . '%' : '-'; ?></td>
                         <td><?php echo $status_label; ?></td>
-                        <td>
-                            <button class="fobi-btn fobi-btn-view" data-post-id="<?php echo $post_id; ?>">
-                                👁️ Ansehen
-                            </button>
+                        <td style="white-space:nowrap;">
+                            <button class="fobi-btn fobi-btn-view" data-post-id="<?php echo $post_id; ?>">👁️</button>
+                            <?php if($has_att): ?>
+                                <button class="fobi-btn fobi-reevaluate-btn" data-post-id="<?php echo $post_id; ?>" title="KI-Neubewertung" style="background:#2271b1;color:#fff;">🔄</button>
+                            <?php endif; ?>
+                            <button class="fobi-btn fobi-btn-approve-quick" data-post-id="<?php echo $post_id; ?>" title="Genehmigen" style="background:#46b450;color:#fff;">✅</button>
                         </td>
                     </tr>
                 <?php endforeach; ?>

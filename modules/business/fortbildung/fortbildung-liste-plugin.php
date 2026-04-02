@@ -479,7 +479,9 @@ class Fortbildung_Liste_Plugin {
         while ( $q->have_posts() ) {
             $q->the_post();
             $pid   = get_the_ID();
-            $title = html_entity_decode( get_the_title( $pid ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+            $title_raw = html_entity_decode( get_the_title( $pid ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+            // Mehrtages-Suffix entfernen fuer Gruppierung: "Workshop (Tag 2/3)" → "Workshop"
+            $title = preg_replace('/\s*\(Tag\s+\d+\/\d+\)\s*$/i', '', $title_raw);
             $raw_date = (string) get_field('date', $pid);
             $display_date = '';
             if ($raw_date !== '') {
@@ -493,7 +495,10 @@ class Fortbildung_Liste_Plugin {
             $type    = (string) get_field( 'type', $pid );
             $loc     = (string) get_field( 'location', $pid );
             $free    = fobi_is_freigegeben( get_field( 'freigegeben', $pid ) );
-            $key     = $title ?: '(Ohne Titel)';
+
+            // Auch per _fobi_group_id gruppieren (falls vorhanden)
+            $group_id = get_post_meta($pid, '_fobi_group_id', true);
+            $key = $group_id ?: ($title ?: '(Ohne Titel)');
 
             if ( ! isset( $grouped[$key] ) ) {
                 $grouped[$key] = array(
@@ -523,10 +528,10 @@ class Fortbildung_Liste_Plugin {
         <!-- Mobile -->
         <div class="fobi-mobile">
             <ul class="fobi-list">
-            <?php foreach ($grouped as $g): $date_str = implode(', ', $g['dates']); ?>
+            <?php foreach ($grouped as $g): $sorted_dates = $g['dates']; sort($sorted_dates); $date_str = count($sorted_dates) > 1 ? $sorted_dates[0] . ' – ' . end($sorted_dates) : ($sorted_dates[0] ?? ''); ?>
                 <li class="fobi-card<?php echo $g['approved'] ? '' : ' fobi-grey'; ?>">
                     <div class="fobi-row"><div class="fobi-label">Datum</div><div><?php echo esc_html( $date_str ); ?></div></div>
-                    <div class="fobi-row"><div class="fobi-label">Titel</div><div><?php echo esc_html( $g['title'] ); ?><?php if ($g['count']>1) echo ' <small style="color:#666;">('.$g['count'].' Teile)</small>'; ?></div></div>
+                    <div class="fobi-row"><div class="fobi-label">Titel</div><div><?php echo esc_html( $g['title'] ); ?><?php if ($g['count']>1) echo ' <small style="color:#666;">('.$g['count'].' Tage)</small>'; ?></div></div>
                     <div class="fobi-row"><div class="fobi-label">Ort</div><div class="fobi-dim"><?php echo esc_html( $g['location'] ); ?></div></div>
                     <div class="fobi-row"><div class="fobi-label">Punkte</div><div class="fobi-points"><?php echo esc_html( number_format($g['sum_points'],1,',','.') ); ?></div></div>
                     <div class="fobi-row"><div class="fobi-label">Art</div><div class="fobi-dim"><?php echo esc_html( $g['type'] ); ?></div></div>
@@ -543,10 +548,10 @@ class Fortbildung_Liste_Plugin {
             <table class="fortbildung-liste">
                 <thead><tr><th>Datum</th><th>Titel</th><th>Ort</th><th style="width:110px; text-align:right;">Punkte</th><th>Art</th></tr></thead>
                 <tbody>
-                <?php foreach ($grouped as $g): $date_str = implode(', ', $g['dates']); ?>
+                <?php foreach ($grouped as $g): $sorted_dates = $g['dates']; sort($sorted_dates); $date_str = count($sorted_dates) > 1 ? $sorted_dates[0] . ' – ' . end($sorted_dates) : ($sorted_dates[0] ?? ''); ?>
                     <tr<?php echo $g['approved'] ? '' : ' style="color:#9aa"'; ?>>
                         <td><?php echo esc_html( $date_str ); ?></td>
-                        <td><?php echo esc_html( $g['title'] ); ?><?php if ($g['count']>1) echo ' <small style="color:#666;">('.$g['count'].' Teile)</small>'; ?></td>
+                        <td><?php echo esc_html( $g['title'] ); ?><?php if ($g['count']>1) echo ' <small style="color:#666;">('.$g['count'].' Tage)</small>'; ?></td>
                         <td class="fobi-dim"><?php echo esc_html( $g['location'] ); ?></td>
                         <td style="text-align:right;"><?php echo esc_html( number_format($g['sum_points'],1,',','.') ); ?></td>
                         <td class="fobi-dim"><?php echo esc_html( $g['type'] ); ?></td>

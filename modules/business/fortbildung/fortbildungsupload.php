@@ -3248,15 +3248,36 @@ function fobi_ebcp_ajax_reevaluate(){
     $category_key = fobi_ebcp_get_category_key($data);
     $category_label = fobi_ebcp_get_category_label($category_key, $s);
 
-    // Aktualisieren
+    // ============================================================
+    // Mehrtages-Erkennung: fehlende Tage nachtraeglich anlegen
+    // ============================================================
+    $start_date = $data['start_date'] ?? '';
+    $end_date = $data['end_date'] ?? $start_date;
+    $num_days = 1;
+    $extra_posts_created = 0;
+
+    $start_ts_calc = strtotime($start_date);
+    $end_ts_calc = strtotime($end_date);
+
+    if ($start_ts_calc && $end_ts_calc && $end_ts_calc > $start_ts_calc) {
+        $num_days = (int) round(($end_ts_calc - $start_ts_calc) / 86400) + 1;
+    }
+
+    // Aktuellen Post aktualisieren (wird Tag 1)
     if( function_exists('update_field') ){
+        $title_base = html_entity_decode(strip_tags(get_the_title($post_id)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        // Alten Suffix entfernen falls vorhanden
+        $title_base = preg_replace('/\s*\(Tag\s+\d+\/\d+\)\s*$/i', '', $title_base);
+
+        if ($num_days > 1) {
+            wp_update_post(['ID' => $post_id, 'post_title' => $title_base . ' (Tag 1/' . $num_days . ')']);
+        }
+
         update_field('points', $points, $post_id);
         update_field('type', $category_label, $post_id);
         if( !empty($data['location']) ) update_field('location', $data['location'], $post_id);
-        if( !empty($data['start_date']) ){
-            $ts = strtotime($data['start_date']);
-            if($ts) update_field('date', date('Y-m-d', $ts), $post_id);
-        }
+        if( $start_ts_calc ) update_field('date', date('Y-m-d', $start_ts_calc), $post_id);
+        if (!empty($data['vnr'])) update_field('vnr', $data['vnr'], $post_id);
     }
 
     // Meta aktualisieren
@@ -3267,21 +3288,94 @@ function fobi_ebcp_ajax_reevaluate(){
     update_post_meta($post_id, '_ebcp_doc_type', $data['doc_type'] ?? '');
     update_post_meta($post_id, '_ebcp_reevaluated_at', current_time('mysql'));
 
-    // VNR bei Neubewertung aktualisieren
-    if (!empty($data['vnr']) && function_exists('update_field')) {
-        update_field('vnr', $data['vnr'], $post_id);
+    // Mehrtages-Gruppen-Meta
+    if ($num_days > 1) {
+        $group_id = get_post_meta($post_id, '_fobi_group_id', true);
+        if (empty($group_id)) {
+            $group_id = 'fobi_group_' . wp_generate_password(12, false);
+        }
+        update_post_meta($post_id, '_fobi_group_id', $group_id);
+        update_post_meta($post_id, '_fobi_group_day', 1);
+        update_post_meta($post_id, '_fobi_group_total_days', $num_days);
+
+        // Fehlende Tage anlegen (Tag 2 bis N)
+        $post_obj = get_post($post_id);
+        $author_id = $post_obj ? $post_obj->post_author : get_current_user_id();
+        $user_field_val = function_exists('get_field') ? get_field('user', $post_id) : $author_id;
+        $user_id_for_field = is_array($user_field_val) ? ($user_field_val['ID'] ?? $author_id) : ($user_field_val ?: $author_id);
+        $attachment_val = $attachment_raw; // Gleicher Nachweis fuer alle Tage
+
+        for ($day = 2; $day <= $num_days; $day++) {
+            $day_date = date('Y-m-d', strtotime('+' . ($day - 1) . ' days', $start_ts_calc));
+
+            // Duplikat-Check: existiert dieser Tag schon?
+            $existing_day = get_posts([
+                'post_type' => 'fortbildung',
+                'posts_per_page' => 1,
+                'meta_query' => [
+                    ['key' => '_fobi_group_id', 'value' => $group_id],
+                    ['key' => '_fobi_group_day', 'value' => $day],
+                ],
+            ]);
+
+            if (!empty($existing_day)) continue;
+
+            $new_id = wp_insert_post([
+                'post_type' => 'fortbildung',
+                'post_title' => $title_base . ' (Tag ' . $day . '/' . $num_days . ')',
+                'post_status' => 'publish',
+                'post_author' => $author_id,
+            ]);
+
+            if (is_wp_error($new_id) || !$new_id) continue;
+
+            $extra_posts_created++;
+
+            if (function_exists('update_field')) {
+                update_field('user', $user_id_for_field, $new_id);
+                update_field('date', $day_date, $new_id);
+                update_field('location', $data['location'] ?? '', $new_id);
+                update_field('type', $category_label, $new_id);
+                update_field('points', $points, $new_id);
+                if (!empty($data['vnr'])) update_field('vnr', $data['vnr'], $new_id);
+                update_field('token', wp_generate_password(32, false), $new_id);
+                update_field('freigegeben', false, $new_id);
+
+                if ($attachment_val) {
+                    update_field('attachements', $attachment_val, $new_id);
+                }
+            }
+
+            update_post_meta($new_id, '_ebcp_ai_response', json_encode($data, JSON_UNESCAPED_UNICODE));
+            update_post_meta($new_id, '_ebcp_ai_confidence', $confidence);
+            update_post_meta($new_id, '_ebcp_category_key', $category_key);
+            update_post_meta($new_id, '_fobi_group_id', $group_id);
+            update_post_meta($new_id, '_fobi_group_day', $day);
+            update_post_meta($new_id, '_fobi_group_total_days', $num_days);
+        }
+    }
+
+    // Erfolgsmeldung
+    $msg = sprintf('Neubewertung: %s — %s Pkt/Tag (Konfidenz: %d%%)',
+        $category_label, number_format($points, 1), intval($confidence * 100));
+
+    if ($num_days > 1) {
+        $total = $points * $num_days;
+        $msg .= sprintf(' | Mehrtaegig: %d Tage × %s = %s Pkt gesamt', $num_days, number_format($points, 1), number_format($total, 1));
+        if ($extra_posts_created > 0) {
+            $msg .= sprintf(' | %d neue Tageseintraege angelegt', $extra_posts_created);
+        }
     }
 
     wp_send_json_success(array(
-        'message' => sprintf(
-            'Neubewertung abgeschlossen: %s — %s Punkte (Konfidenz: %d%%)',
-            $category_label, number_format($points, 1), intval($confidence * 100)
-        ),
+        'message' => $msg,
         'ai_response' => $data,
         'confidence' => $confidence,
         'points' => $points,
         'category_key' => $category_key,
         'category_label' => $category_label,
+        'num_days' => $num_days,
+        'extra_posts_created' => $extra_posts_created,
     ));
 }
 

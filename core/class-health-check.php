@@ -59,6 +59,12 @@ class DGPTM_Health_Check {
 			'permission_callback' => [ $this, 'check_auth' ],
 		] );
 
+		register_rest_route( 'dgptm/v1', '/fobi-attachment', [
+			'methods'             => 'GET',
+			'callback'            => [ $this, 'handle_fobi_attachment' ],
+			'permission_callback' => [ $this, 'check_auth' ],
+		] );
+
 		register_rest_route( 'dgptm/v1', '/fobi-reevaluate', [
 			'methods'             => 'POST',
 			'callback'            => [ $this, 'handle_fobi_reevaluate' ],
@@ -80,6 +86,36 @@ class DGPTM_Health_Check {
 	 * Fobi-Neubewertung via REST API
 	 * POST /wp-json/dgptm/v1/fobi-reevaluate?post_id=41983
 	 */
+	/**
+	 * Fobi Attachment Debug
+	 * GET /wp-json/dgptm/v1/fobi-attachment?post_id=41979
+	 */
+	public function handle_fobi_attachment( $request ) {
+		$post_id = intval( $request->get_param( 'post_id' ) ?? 0 );
+		if ( ! $post_id ) return new WP_REST_Response( [ 'error' => 'post_id fehlt' ], 400 );
+
+		global $wpdb;
+
+		// Alle relevanten Meta-Felder lesen
+		$acf_val = function_exists( 'get_field' ) ? get_field( 'attachements', $post_id ) : 'ACF not loaded';
+		$meta_val = get_post_meta( $post_id, 'attachements', true );
+		$meta_underscore = get_post_meta( $post_id, '_attachements', true );
+
+		// Alle post_meta mit "attach" im Key
+		$all_attach_meta = $wpdb->get_results( $wpdb->prepare(
+			"SELECT meta_key, meta_value FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key LIKE %s",
+			$post_id, '%attach%'
+		) );
+
+		return new WP_REST_Response( [
+			'post_id' => $post_id,
+			'acf_get_field' => $acf_val,
+			'meta_attachements' => $meta_val,
+			'meta__attachements' => $meta_underscore,
+			'all_attach_meta' => $all_attach_meta,
+		], 200 );
+	}
+
 	public function handle_fobi_reevaluate( $request ) {
 		$post_id = intval( $request->get_param( 'post_id' ) ?? 0 );
 		if ( ! $post_id ) {

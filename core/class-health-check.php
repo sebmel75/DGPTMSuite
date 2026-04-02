@@ -108,45 +108,28 @@ class DGPTM_Health_Check {
 	 */
 	public function handle_survey_diag( $request ) {
 		global $wpdb;
-		$prefix = $wpdb->prefix . 'dgptm_survey_';
-		$survey_id = intval( $request->get_param( 'id' ) ?? 0 );
-
-		// Tabellenexistenz pruefen
-		$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$prefix}s'" );
-		if ( ! $table_exists ) {
-			// Versuch alternativen Tabellennamen
-			$alt_prefix = $wpdb->prefix . 'dgptm_surveys';
-			$alt_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$alt_prefix}'" );
-			if ( $alt_exists ) {
-				// Tabelle heisst anders — korrigieren
-				return new WP_REST_Response( [
-					'error' => 'Tabelle heisst ' . $alt_prefix . ' statt ' . $prefix . 's',
-					'tables_like_dgptm' => $wpdb->get_col( "SHOW TABLES LIKE '%dgptm%survey%'" ),
-				], 200 );
-			}
-			return new WP_REST_Response( [
-				'error' => 'Survey-Tabellen nicht gefunden',
-				'expected' => $prefix . 's',
-				'tables_like_dgptm' => $wpdb->get_col( "SHOW TABLES LIKE '%dgptm%'" ),
-			], 200 );
-		}
+		$t_surveys   = $wpdb->prefix . 'dgptm_surveys';
+		$t_questions = $wpdb->prefix . 'dgptm_survey_questions';
+		$t_responses = $wpdb->prefix . 'dgptm_survey_responses';
+		$t_answers   = $wpdb->prefix . 'dgptm_survey_answers';
+		$survey_id   = intval( $request->get_param( 'id' ) ?? 0 );
 
 		// Surveys laden
 		if ( $survey_id ) {
-			$surveys = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$prefix}s WHERE id = %d", $survey_id ) );
+			$surveys = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$t_surveys} WHERE id = %d", $survey_id ) );
 		} else {
-			$surveys = $wpdb->get_results( "SELECT * FROM {$prefix}s ORDER BY id" );
+			$surveys = $wpdb->get_results( "SELECT * FROM {$t_surveys} ORDER BY id" );
 		}
 
 		$result = [];
 		foreach ( $surveys as $s ) {
 			$questions = $wpdb->get_results( $wpdb->prepare(
-				"SELECT * FROM {$prefix}questions WHERE survey_id = %d ORDER BY sort_order",
+				"SELECT * FROM {$t_questions} WHERE survey_id = %d ORDER BY sort_order",
 				$s->id
 			) );
 
 			$response_count = $wpdb->get_var( $wpdb->prepare(
-				"SELECT COUNT(*) FROM {$prefix}responses WHERE survey_id = %d AND status = 'completed'",
+				"SELECT COUNT(*) FROM {$t_responses} WHERE survey_id = %d AND status = 'completed'",
 				$s->id
 			) );
 
@@ -158,8 +141,8 @@ class DGPTM_Health_Check {
 
 				// Antwort-Statistik fuer diese Frage
 				$answers = $wpdb->get_col( $wpdb->prepare(
-					"SELECT a.answer_value FROM {$prefix}answers a
-					 JOIN {$prefix}responses r ON r.id = a.response_id
+					"SELECT a.answer_value FROM {$t_answers} a
+					 JOIN {$t_responses} r ON r.id = a.response_id
 					 WHERE a.question_id = %d AND r.status = 'completed'",
 					$q->id
 				) );

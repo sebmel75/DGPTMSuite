@@ -43,7 +43,7 @@
  * - ✅ OPTIMIERUNG: Claude-Prompt verbessert zur besseren Unterscheidung Flyer vs. Nachweis
  * 
  * Changelog v3.6:
- * - ✅ KRITISCHER FIX: Modellname korrigiert (claude-sonnet-4-6-20250514 statt 4.5)
+ * - ✅ KRITISCHER FIX: Modellname korrigiert (claude-sonnet-4-5-20250514 statt 4.5)
  * - ✅ Fehler "model was not found" behoben
  * 
  * Changelog v3.5:
@@ -123,7 +123,7 @@ function fobi_ebcp_default_settings() {
         
         // Claude AI
         'claude_api_key' => '',
-        'claude_model' => 'claude-sonnet-4-6-20250514', // Neueste Version! (KORREKTUR: Bindestrich statt Punkt)
+        'claude_model' => 'claude-sonnet-4-5-20250514', // Neueste Version! (KORREKTUR: Bindestrich statt Punkt)
         'claude_max_tokens' => 2048,
         
         // OpenAI Vision
@@ -253,7 +253,12 @@ function fobi_ebcp_render_ai_metabox($post) {
                             $status.text("✅ " + res.data.message).css("color","#46b450");
                             setTimeout(function(){ location.reload(); }, 2000);
                         } else {
-                            $status.text("❌ " + (res.data || "Fehler")).css("color","#dc3232");
+                            var errMsg = (res.data && res.data.message) ? res.data.message : (typeof res.data === "string" ? res.data : "Fehler");
+                            var errDetail = (res.data && res.data.error_detail) ? "\n\nAPI-Antwort:\n" + res.data.error_detail : "";
+                            var errRaw = (res.data && res.data.raw) ? "\n\nRaw:\n" + JSON.stringify(res.data.raw) : "";
+                            $status.html("❌ " + errMsg).css("color","#dc3232");
+                            if(errDetail || errRaw) console.error("[Fobi Reevaluate]", errMsg, errDetail, errRaw);
+                            alert("❌ " + errMsg + errDetail.substring(0, 500));
                         }
                     },
                     error: function(){
@@ -537,9 +542,9 @@ function fobi_ebcp_settings_page_render(){
                         <th>Claude Modell</th>
                         <td>
                             <select name="claude_model">
-                                <option value="claude-sonnet-4-6-20250514" <?php selected($s['claude_model'],'claude-sonnet-4-6-20250514'); ?>>Claude Sonnet 4.6 (empfohlen) ⭐</option>
+                                <option value="claude-sonnet-4-5-20250514" <?php selected($s['claude_model'],'claude-sonnet-4-5-20250514'); ?>>Claude Sonnet 4.5 (empfohlen) ⭐</option>
                                 <option value="claude-haiku-4-5-20251001" <?php selected($s['claude_model'],'claude-haiku-4-5-20251001'); ?>>Claude Haiku 4.5 (guenstiger, schnell)</option>
-                                <option value="claude-opus-4-6-20250610" <?php selected($s['claude_model'],'claude-opus-4-6-20250610'); ?>>Claude Opus 4.6 (hoechste Genauigkeit)</option>
+                                <option value="claude-opus-4-5-20251101" <?php selected($s['claude_model'],'claude-opus-4-5-20251101'); ?>>Claude Opus 4.5 (hoechste Genauigkeit)</option>
                             </select>
                             <p class="description"><strong>Sonnet 4.6:</strong> Bestes Preis-Leistungs-Verhaeltnis | <strong>Kosten:</strong> ~$0.01/Analyse</p>
                         </td>
@@ -1205,7 +1210,7 @@ function fobi_ebcp_analyze_document($filepath, $mime, $expected_name, $s){
  * ============================================================ */
 function fobi_ebcp_claude_analyze($filepath, $mime, $expected_name, $s){
     $api_key = $s['claude_api_key'];
-    $model = $s['claude_model'] ?? 'claude-sonnet-4-6-20250514';
+    $model = $s['claude_model'] ?? 'claude-sonnet-4-5-20250514';
     $max_tokens = intval($s['claude_max_tokens'] ?? 2048);
     
     $file_data = file_get_contents($filepath);
@@ -1368,22 +1373,27 @@ KRITISCH: Bei Rechnungen/Zahlungsbelegen -> doc_type=\"invoice\", participant=\"
     if( $code !== 200 ){
         $err_data = json_decode($body_str, true);
         $err_msg = isset($err_data['error']['message']) ? $err_data['error']['message'] : 'HTTP '.$code;
-        
-        // Übersetze häufige Fehlermeldungen
+        $err_type = isset($err_data['error']['type']) ? $err_data['error']['type'] : '';
+
+        // Modell nicht gefunden — haeufiger Fehler bei falschen Modellnamen
+        if( strpos($err_msg, 'model') !== false || $err_type === 'not_found_error' ){
+            $used_model = $s['claude_model'] ?? '(unbekannt)';
+            return array('ok'=>false, 'error'=>'Modell "' . $used_model . '" nicht gefunden. Bitte in den Einstellungen pruefen.', 'error_detail'=>$body_str);
+        }
         if( strpos($err_msg, 'media_type') !== false ){
-            return array('ok'=>false, 'error'=>'Ungültiges Dateiformat. Bitte nur PDF, JPEG, PNG, GIF oder WebP verwenden.');
+            return array('ok'=>false, 'error'=>'Ungueltiges Dateiformat.', 'error_detail'=>$body_str);
         }
         if( strpos($err_msg, 'api_key') !== false || strpos($err_msg, 'authentication') !== false ){
-            return array('ok'=>false, 'error'=>'Ungültiger API-Key. Bitte in den Einstellungen prüfen.');
+            return array('ok'=>false, 'error'=>'Ungueltiger API-Key.', 'error_detail'=>$body_str);
         }
         if( strpos($err_msg, 'rate_limit') !== false || strpos($err_msg, 'quota') !== false ){
-            return array('ok'=>false, 'error'=>'API-Limit erreicht. Bitte später erneut versuchen.');
+            return array('ok'=>false, 'error'=>'API-Limit erreicht.', 'error_detail'=>$body_str);
         }
         if( strpos($err_msg, 'overloaded') !== false ){
-            return array('ok'=>false, 'error'=>'Claude-Server überlastet. Bitte in wenigen Sekunden erneut versuchen.');
+            return array('ok'=>false, 'error'=>'Claude-Server ueberlastet.', 'error_detail'=>$body_str);
         }
-        
-        return array('ok'=>false, 'error'=>'Claude API-Fehler: '.$err_msg);
+
+        return array('ok'=>false, 'error'=>'Claude API-Fehler (HTTP ' . $code . '): ' . $err_msg, 'error_detail'=>$body_str);
     }
     
     $result = json_decode($body_str, true);
@@ -1644,7 +1654,7 @@ function fobi_ebcp_ai_verify_name($doc_name, $expected_name, $s){
     $api_key = $s['claude_api_key'];
     if( empty($api_key) ) return false;
 
-    $model = $s['claude_model'] ?? 'claude-sonnet-4-6-20250514';
+    $model = $s['claude_model'] ?? 'claude-sonnet-4-5-20250514';
 
     $prompt = sprintf(
         'Auf einem Fortbildungsnachweis steht der Teilnehmername "%s". ' .
@@ -2830,7 +2840,11 @@ function fobi_ebcp_ajax_reevaluate(){
     }
 
     if( !$result['ok'] ){
-        wp_send_json_error('KI-Analyse fehlgeschlagen: ' . ($result['error'] ?? 'Unbekannt'));
+        wp_send_json_error([
+            'message' => 'KI-Analyse fehlgeschlagen: ' . ($result['error'] ?? 'Unbekannt'),
+            'error_detail' => $result['error_detail'] ?? '',
+            'raw' => $result,
+        ]);
     }
 
     $data = $result['data'];

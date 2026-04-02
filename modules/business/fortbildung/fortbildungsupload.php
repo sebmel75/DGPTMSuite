@@ -131,31 +131,38 @@ function fobi_ebcp_default_settings() {
         'openai_vision_model' => 'gpt-4o',
         'openai_vision_max_tokens' => 2048,
 
-        // EBCP-Matrix (v3.10: Workshop/Kongress-Differenzierung)
+        // EBCP-Matrix v3.11: Workshop 3 Punkte, aktiv +1
         'ebcp_mapping_json' => json_encode(array(
-            // === PASSIVE TEILNAHME ===
-            array('key'=>'passive_workshop_inhouse',       'label'=>'In-house Workshop',                  'points'=>1),
-            array('key'=>'passive_workshop_national',      'label'=>'Nationaler Workshop',                'points'=>1),
-            array('key'=>'passive_workshop_international', 'label'=>'Internationaler Workshop',           'points'=>1),
+            // === PASSIVE TEILNAHME — Workshops (3 Punkte) ===
+            array('key'=>'passive_workshop_inhouse',       'label'=>'In-house Workshop (passiv)',         'points'=>3),
+            array('key'=>'passive_workshop_national',      'label'=>'Nationaler Workshop (passiv)',       'points'=>3),
+            array('key'=>'passive_workshop_international', 'label'=>'Internationaler Workshop (passiv)',  'points'=>3),
+
+            // === PASSIVE TEILNAHME — Webinar/Seminar/Kongress ===
             array('key'=>'passive_webinar',                'label'=>'Webinar (passiv)',                   'points'=>1),
-            array('key'=>'passive_seminar_national',       'label'=>'Nationales Seminar',                 'points'=>4),
-            array('key'=>'passive_kongress_national',      'label'=>'Nationaler Kongress',                'points'=>4),
-            array('key'=>'passive_kongress_international', 'label'=>'Internationaler Kongress',           'points'=>6),
+            array('key'=>'passive_seminar_national',       'label'=>'Nationales Seminar (passiv)',        'points'=>4),
+            array('key'=>'passive_kongress_national',      'label'=>'Nationaler Kongress (passiv)',       'points'=>4),
+            array('key'=>'passive_kongress_international', 'label'=>'Internationaler Kongress (passiv)',  'points'=>6),
             array('key'=>'passive_dgptm_jahrestagung',     'label'=>'DGPTM Jahrestagung (Fokustagung Herz)', 'points'=>6),
-            
-            // === AKTIVE TEILNAHME ===
-            array('key'=>'active_inhouse',        'label'=>'In-house Vortrag/Workshop',           'points'=>2),
-            array('key'=>'active_webinar',        'label'=>'Webinar (aktiv)',                     'points'=>2),
+
+            // === AKTIVE TEILNAHME — Workshops (4 Punkte = 3+1) ===
+            array('key'=>'active_workshop_inhouse',  'label'=>'In-house Workshop (aktiv/Referent)',  'points'=>4),
+            array('key'=>'active_workshop_national', 'label'=>'Nationaler Workshop (aktiv/Referent)','points'=>4),
+            array('key'=>'active_workshop_international','label'=>'Internationaler Workshop (aktiv/Referent)','points'=>4),
+
+            // === AKTIVE TEILNAHME — Sonstige ===
+            array('key'=>'active_inhouse',        'label'=>'In-house Vortrag',                    'points'=>2),
+            array('key'=>'active_webinar',        'label'=>'Webinar (aktiv/Referent)',             'points'=>2),
             array('key'=>'active_national_talk',  'label'=>'Nationaler Vortrag',                  'points'=>3),
             array('key'=>'active_national_mod',   'label'=>'Moderator national',                  'points'=>3),
             array('key'=>'active_intl_talk',      'label'=>'Internationaler Vortrag',             'points'=>5),
             array('key'=>'active_intl_mod',       'label'=>'Moderator international',             'points'=>5),
-            
+
             // === PUBLIKATIONEN ===
             array('key'=>'pub_abstract',          'label'=>'Publizierter Abstract',               'points'=>1),
             array('key'=>'pub_no_editorial',      'label'=>'Zeitschrift ohne Editorial Policy',   'points'=>4),
             array('key'=>'pub_with_editorial',    'label'=>'Zeitschrift mit Editorial Policy',    'points'=>8),
-            
+
             // === ECTS ===
             array('key'=>'ects_per_credit',       'label'=>'ECTS pro Credit (relevantes Fach)',   'points'=>1),
         ), JSON_UNESCAPED_UNICODE),
@@ -1267,8 +1274,11 @@ WICHTIG fuer doc_type:
 - \"other\": Alles andere
 
 WICHTIG fuer category-Werte:
-Verwende DIREKT die Keys aus der Kategorieliste oben (z.B. 'passive_workshop_national', 'passive_kongress_international', 'passive_dgptm_jahrestagung')
-Fuer DGPTM oder DGfK Jahrestagung verwende IMMER: \"category\": \"passive_dgptm_jahrestagung\"
+- Verwende AUSSCHLIESSLICH einen Key aus der Kategorieliste oben
+- KEIN eigener Key! Nur die exakt aufgelisteten Keys sind erlaubt
+- Wenn das Dokument in keine Kategorie passt: \"category\": \"undefined\"
+- Bei Workshops mit aktiver Teilnahme (Referent, Dozent): active_workshop_* statt passive_workshop_*
+- Fuer DGPTM oder DGfK Jahrestagung verwende IMMER: \"category\": \"passive_dgptm_jahrestagung\"
 
 WICHTIG fuer cme_points:
 Falls das Dokument explizit CME/Fortbildungspunkte ausweist (z.B. '4 Punkte (A) 6 Punkte (B)'), gib die SUMME der Punkte zurueck.
@@ -1548,23 +1558,26 @@ JSON-Format:
  * Helper-Funktionen
  * ============================================================ */
 function fobi_ebcp_get_categories_description(){
-    return "PASSIVE TEILNAHME:
-- passive_workshop_inhouse (1 Punkt) - In-house Workshop
-- passive_workshop_national (1 Punkt) - Nationaler Workshop  
-- passive_workshop_international (1 Punkt) - Internationaler Workshop
-- passive_webinar (1 Punkt) - Webinar als Teilnehmer
-- passive_seminar_national (4 Punkte) - Nationales Seminar
-- passive_kongress_national (4 Punkte) - Nationaler Kongress
-- passive_kongress_international (6 Punkte) - Internationaler Kongress
-- passive_dgptm_jahrestagung (6 Punkte) - DGPTM Jahrestagung / Fokustagung Herz
+    // Dynamisch aus Default-Matrix + gespeicherter Matrix generieren
+    $s = fobi_ebcp_get_settings();
+    $map = json_decode($s['ebcp_mapping_json'], true);
+    if(!is_array($map) || empty($map)){
+        $defaults = fobi_ebcp_default_settings();
+        $map = json_decode($defaults['ebcp_mapping_json'], true);
+    }
 
-AKTIVE TEILNAHME:
-- active_inhouse (2), active_webinar (2), active_national_talk (3), active_national_mod (3), active_intl_talk (5), active_intl_mod (5)
-
-WICHTIG - Unterscheidung Workshop vs. Kongress:
-- Workshop = kleine, interaktive Veranstaltung (oft 1 Tag) -> IMMER 1 Punkt
-- Kongress = große Fachtagung mit vielen Teilnehmern -> 4 Punkte (national) oder 6 Punkte (international)
-- DGPTM Jahrestagung oder 'Fokustagung Herz' im Titel -> IMMER passive_dgptm_jahrestagung (6 Punkte)";
+    $lines = "ERLAUBTE KATEGORIEN (NUR diese Keys verwenden!):\n";
+    foreach($map as $r){
+        $lines .= sprintf("- %s (%s Punkte) — %s\n", $r['key'], $r['points'], $r['label']);
+    }
+    $lines .= "- undefined (0 Punkte) — Kann keiner Kategorie zugeordnet werden, manuelle Bewertung\n";
+    $lines .= "\nWICHTIG:\n";
+    $lines .= "- Verwende AUSSCHLIESSLICH die oben gelisteten Keys als category-Wert\n";
+    $lines .= "- Wenn das Dokument in keine Kategorie passt: category = \"undefined\"\n";
+    $lines .= "- Workshop = interaktive Veranstaltung (Hands-on, Simulation, Training)\n";
+    $lines .= "- Kongress = grosse Fachtagung mit Vortraegen und vielen Teilnehmern\n";
+    $lines .= "- DGPTM Jahrestagung oder 'Fokustagung Herz' im Titel -> IMMER passive_dgptm_jahrestagung\n";
+    return $lines;
 }
 
 function fobi_ebcp_get_international_list($s){
@@ -1779,17 +1792,17 @@ function fobi_ebcp_get_category_key($parsed){
     $active = strtolower($parsed['active_role'] ?? 'no') === 'yes';
     
     // NEU v3.10: Wenn category schon ein gültiger Key ist (Claude gibt direkt Keys zurück), direkt verwenden
-    $valid_keys = array(
-        'passive_workshop_inhouse', 'passive_workshop_national', 'passive_workshop_international',
-        'passive_webinar', 'passive_seminar_national', 'passive_kongress_national', 
-        'passive_kongress_international', 'passive_dgptm_jahrestagung',
-        'active_inhouse', 'active_webinar', 'active_national_talk', 'active_national_mod',
-        'active_intl_talk', 'active_intl_mod',
-        'pub_abstract', 'pub_no_editorial', 'pub_with_editorial',
-        'ects_per_credit',
-        // Legacy-Keys für Kompatibilität
-        'passive_inhouse', 'passive_national', 'passive_international'
-    );
+    // Gueltige Keys dynamisch aus Default-Matrix lesen
+    $defaults = fobi_ebcp_default_settings();
+    $default_map = json_decode($defaults['ebcp_mapping_json'], true);
+    $valid_keys = array('undefined');
+    if (is_array($default_map)) {
+        foreach ($default_map as $r) {
+            if (!empty($r['key'])) $valid_keys[] = $r['key'];
+        }
+    }
+    // Legacy-Keys
+    $valid_keys = array_merge($valid_keys, array('passive_inhouse', 'passive_national', 'passive_international'));
     
     if( in_array($cat, $valid_keys) ){
         return $cat;

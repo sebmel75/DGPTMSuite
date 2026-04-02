@@ -153,13 +153,30 @@ function fobi_ajax_vnr_reeval() {
         $categories_desc = fobi_ebcp_get_categories_description();
         $model = $s['claude_model'] ?? 'claude-sonnet-4-6-20250514';
 
+        $intl_list = fobi_ebcp_get_international_list($s);
+
         $prompt = sprintf(
-            "Bewerte diese Fortbildungsveranstaltung fuer EBCP-Punkte:\n\nVNR: %s\nTitel: %s\nVeranstalter: %s\nOrt: %s\nDatum: %s\n\nEBCP-Kategorien:\n%s\n\nAntworte NUR mit JSON: {\"category\": \"category_key\", \"reason\": \"Begruendung\"}",
+            "Bewerte diese Fortbildungsveranstaltung fuer EBCP-Punkte. Nutze EXAKT einen Key aus der Kategorieliste.\n\n" .
+            "VNR: %s\nTitel: %s\nVeranstalter: %s\nOrt: %s\nDatum: %s\n\n" .
+            "EBCP-Kategorien:\n%s\n\n" .
+            "INTERNATIONALE MEETINGS: %s\n\n" .
+            "WICHTIG fuer category-Werte:\n" .
+            "- Verwende AUSSCHLIESSLICH einen Key aus der Kategorieliste oben\n" .
+            "- KEIN eigener Key! Nur die exakt aufgelisteten Keys sind erlaubt\n" .
+            "- Fuer DGPTM oder DGfK Jahrestagung verwende IMMER: passive_dgptm_jahrestagung\n" .
+            "- Workshop = 1 Tag Hands-on-Training, kleiner Rahmen\n" .
+            "- Kongress = mehrtaegig, viele Vortraege, grosse Teilnehmerzahl\n" .
+            "- Seminar = Lehrveranstaltung, 1-2 Tage, theoretischer Fokus\n\n" .
+            "WICHTIG fuer national vs. international:\n" .
+            "- INTERNATIONAL wenn: englischer Titel, internationale Organisation (EBCP, AMSECT, EACTS, ECC etc.), Teilnehmer aus mehreren Laendern, EBCP-Punkte vergeben werden\n" .
+            "- Workshop in Deutschland mit englischem Titel und EBCP-Zertifikat ist INTERNATIONAL\n" .
+            "- Nur deutschsprachige Veranstaltungen von deutschen Fachgesellschaften sind NATIONAL\n\n" .
+            "Antworte NUR mit JSON: {\"category\": \"category_key\", \"reason\": \"Begruendung\"}",
             $vnr, $event_title,
             $baek_data['veranstalter'] ?? '',
             $baek_data['veranstaltungsort'] ?? $baek_data['ort'] ?? '',
             $baek_data['beginn'] ?? $baek_data['datum_von'] ?? '',
-            $categories_desc
+            $categories_desc, $intl_list
         );
 
         $resp = wp_remote_post('https://api.anthropic.com/v1/messages', [
@@ -187,6 +204,64 @@ function fobi_ajax_vnr_reeval() {
         wp_send_json_error(['message' => 'KI konnte keine Kategorie bestimmen. Titel: ' . $event_title]);
     }
 
+    // Mehrtages-Erkennung: BÄK-Daten koennen Start/Ende enthalten
+    $baek_start = $baek_data['beginn'] ?? $baek_data['datum_von'] ?? '';
+    $baek_end = $baek_data['ende'] ?? $baek_data['datum_bis'] ?? '';
+    $num_days_baek = 1;
+    if ($baek_start && $baek_end) {
+        $s_ts = strtotime($baek_start);
+        $e_ts = strtotime($baek_end);
+        if ($s_ts && $e_ts && $e_ts > $s_ts) {
+            $num_days_baek = (int) round(($e_ts - $s_ts) / 86400) + 1;
+        }
+    }
+
+    // Fehlende Tage anlegen falls BÄK mehr Tage meldet als Posts vorhanden
+    $extra_created = 0;
+    if ($num_days_baek > count($posts) && function_exists('update_field')) {
+        $existing_dates = [];
+        foreach ($posts as $p) {
+            $d = function_exists('get_field') ? get_field('date', $p->ID) : '';
+            if ($d) $existing_dates[] = $d;
+        }
+
+        $author_id = $posts[0]->post_author;
+        $user_field = function_exists('get_field') ? get_field('user', $posts[0]->ID) : $author_id;
+        $attachment_val = function_exists('get_field') ? get_field('attachements', $posts[0]->ID) : '';
+        $base_title = preg_replace('/\s*\(Tag\s+\d+\/\d+\)\s*$/i', '', html_entity_decode(strip_tags($posts[0]->post_title), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        $group_id = get_post_meta($posts[0]->ID, '_fobi_group_id', true) ?: 'fobi_group_' . wp_generate_password(12, false);
+
+        $start_ts = strtotime($baek_start);
+        for ($day = 0; $day < $num_days_baek; $day++) {
+            $day_date = date('Y-m-d', strtotime("+{$day} days", $start_ts));
+            if (in_array($day_date, $existing_dates)) continue;
+
+            $new_id = wp_insert_post([
+                'post_type' => 'fortbildung', 'post_title' => $base_title . ' (Tag ' . ($day + 1) . '/' . $num_days_baek . ')',
+                'post_status' => 'publish', 'post_author' => $author_id,
+            ]);
+            if (is_wp_error($new_id) || !$new_id) continue;
+
+            update_field('user', $user_field, $new_id);
+            update_field('date', $day_date, $new_id);
+            update_field('location', function_exists('get_field') ? get_field('location', $posts[0]->ID) : '', $new_id);
+            update_field('type', $category_label, $new_id);
+            update_field('points', $new_points, $new_id);
+            update_field('vnr', $vnr, $new_id);
+            update_field('token', wp_generate_password(32, false), $new_id);
+            update_field('freigegeben', true, $new_id);
+            if ($attachment_val) update_field('attachements', $attachment_val, $new_id);
+
+            update_post_meta($new_id, '_fobi_group_id', $group_id);
+            update_post_meta($new_id, '_fobi_group_day', $day + 1);
+            update_post_meta($new_id, '_fobi_group_total_days', $num_days_baek);
+            update_post_meta($new_id, '_ebcp_category_key', $category_key);
+            update_post_meta($new_id, '_fobi_baek_verified', true);
+            $extra_created++;
+            $posts[] = get_post($new_id); // Zur Update-Liste hinzufuegen
+        }
+    }
+
     // Alle Posts aktualisieren + freigeben
     $updated = 0;
     foreach ($posts as $p) {
@@ -204,8 +279,11 @@ function fobi_ajax_vnr_reeval() {
         $updated++;
     }
 
+    $msg = sprintf('%s — %d Eintraege auf %s Pkt/Tag aktualisiert und freigegeben.', $category_label, $updated, number_format($new_points, 1));
+    if ($extra_created > 0) $msg .= sprintf(' %d neue Tage angelegt.', $extra_created);
+
     wp_send_json_success([
-        'message' => sprintf('%s — %d Eintraege auf %s Pkt/Tag aktualisiert und freigegeben.', $category_label, $updated, number_format($new_points, 1)),
+        'message' => $msg,
         'baek_title' => $baek_title,
         'category' => $category_key,
         'category_label' => $category_label,

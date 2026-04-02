@@ -428,20 +428,27 @@ add_action('wp_ajax_fobi_migrate_protected', function(){
     foreach ($posts as $post) {
         $att_field = function_exists('get_field') ? get_field('attachements', $post->ID) : null;
 
-        // Attachment-ID ermitteln
+        // Attachment-ID und Dateipfad ermitteln (ACF gibt URL, ID oder Array zurueck)
         $att_id = 0;
+        $old_path = '';
+
         if (is_numeric($att_field)) {
             $att_id = intval($att_field);
+            $old_path = get_attached_file($att_id);
         } elseif (is_array($att_field) && isset($att_field['ID'])) {
             $att_id = intval($att_field['ID']);
+            $old_path = get_attached_file($att_id);
+        } elseif (is_string($att_field) && filter_var($att_field, FILTER_VALIDATE_URL)) {
+            // URL → in lokalen Pfad umwandeln
+            $upload_base_url = $upload_dir['baseurl'];
+            if (strpos($att_field, $upload_base_url) === 0) {
+                $relative = substr($att_field, strlen($upload_base_url));
+                $old_path = $upload_dir['basedir'] . $relative;
+            }
+            // Attachment-ID ueber URL finden
+            $att_id = attachment_url_to_postid($att_field);
         }
 
-        if (!$att_id) {
-            $skipped++;
-            continue;
-        }
-
-        $old_path = get_attached_file($att_id);
         if (!$old_path || !file_exists($old_path)) {
             $skipped++;
             continue;
@@ -468,10 +475,19 @@ add_action('wp_ajax_fobi_migrate_protected', function(){
         // Datei verschieben
         if (rename($old_path, $new_path)) {
             // WordPress Attachment-Metadaten aktualisieren
-            update_attached_file($att_id, $new_path);
+            if ($att_id) {
+                update_attached_file($att_id, $new_path);
+            }
+            // ACF-Feld aktualisieren wenn es eine URL war
+            if (is_string($att_field) && filter_var($att_field, FILTER_VALIDATE_URL)) {
+                $new_url = $upload_dir['baseurl'] . '/fobi-protected/' . basename($new_path);
+                if (function_exists('update_field')) {
+                    update_field('attachements', $new_url, $post->ID);
+                }
+            }
             $migrated++;
         } else {
-            $errors[] = 'Fehler beim Verschieben: ' . $filename;
+            $errors[] = 'Fehler beim Verschieben: ' . basename($old_path);
         }
     }
 

@@ -59,6 +59,12 @@ class DGPTM_Health_Check {
 			'permission_callback' => [ $this, 'check_auth' ],
 		] );
 
+		register_rest_route( 'dgptm/v1', '/fobi-reevaluate', [
+			'methods'             => 'POST',
+			'callback'            => [ $this, 'handle_fobi_reevaluate' ],
+			'permission_callback' => [ $this, 'check_auth' ],
+		] );
+
 		register_rest_route( 'dgptm/v1', '/forum-diag', [
 			'methods'             => 'GET',
 			'callback'            => [ $this, 'handle_forum_diag' ],
@@ -70,6 +76,54 @@ class DGPTM_Health_Check {
 	 * User-Check: ACF-Felder und Rollen eines Users pruefen
 	 * ?login=jokuhle&fields=fobiupload,zeitschriftmanager,testbereich
 	 */
+	/**
+	 * Fobi-Neubewertung via REST API
+	 * POST /wp-json/dgptm/v1/fobi-reevaluate?post_id=41983
+	 */
+	public function handle_fobi_reevaluate( $request ) {
+		$post_id = intval( $request->get_param( 'post_id' ) ?? 0 );
+		if ( ! $post_id ) {
+			return new WP_REST_Response( [ 'error' => 'post_id fehlt' ], 400 );
+		}
+
+		if ( ! function_exists( 'fobi_ebcp_analyze_document' ) ) {
+			return new WP_REST_Response( [ 'error' => 'Fobi-Upload Modul nicht geladen' ], 500 );
+		}
+
+		$post = get_post( $post_id );
+		if ( ! $post || $post->post_type !== 'fortbildung' ) {
+			return new WP_REST_Response( [ 'error' => 'Fortbildung nicht gefunden' ], 404 );
+		}
+
+		$s = fobi_ebcp_get_settings();
+
+		// Attachment finden
+		$attachments = function_exists( 'get_field' ) ? get_field( 'attachements', $post_id ) : null;
+		$filepath = '';
+		$mime = '';
+
+		if ( is_numeric( $attachments ) ) {
+			$filepath = get_attached_file( $attachments );
+			$mime = get_post_mime_type( $attachments );
+		} elseif ( is_array( $attachments ) && isset( $attachments['ID'] ) ) {
+			$filepath = get_attached_file( $attachments['ID'] );
+			$mime = get_post_mime_type( $attachments['ID'] );
+		}
+
+		if ( empty( $filepath ) || ! file_exists( $filepath ) ) {
+			return new WP_REST_Response( [ 'error' => 'Kein Attachment oder Datei nicht gefunden', 'attachment_raw' => $attachments ], 404 );
+		}
+
+		// Analyse
+		$result = fobi_ebcp_analyze_document( $filepath, $mime, 'REST-API-Test', $s );
+
+		return new WP_REST_Response( [
+			'post_id' => $post_id,
+			'model' => $s['claude_model'] ?? '(unbekannt)',
+			'analysis' => $result,
+		], 200 );
+	}
+
 	public function handle_user_check( $request ) {
 		$login = sanitize_text_field( $request->get_param( 'login' ) ?? '' );
 		$field_names = sanitize_text_field( $request->get_param( 'fields' ) ?? 'fobiupload,zeitschriftmanager,testbereich,editor_in_chief' );

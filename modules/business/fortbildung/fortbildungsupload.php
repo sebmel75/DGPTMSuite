@@ -1185,7 +1185,13 @@ function fobi_ebcp_ajax_upload(){
         if( $ts !== false ) $date_for_check = date('Y-m-d', $ts);
     }
 
-    $duplicate = fobi_ebcp_check_duplicate($u->ID, $data['title'], $date_for_check);
+    $end_date_for_check = '';
+    if( !empty($data['end_date']) ){
+        $ts_end = strtotime($data['end_date']);
+        if( $ts_end !== false ) $end_date_for_check = date('Y-m-d', $ts_end);
+    }
+
+    $duplicate = fobi_ebcp_check_duplicate($u->ID, $data['title'], $date_for_check, $end_date_for_check);
     if( $duplicate ){
         // Nur warnen, nicht blockieren — User kann trotzdem einreichen
         $duplicate_warning = sprintf('Hinweis: Aehnliche Veranstaltung bereits vorhanden: „%s"', esc_html($duplicate->post_title));
@@ -1234,111 +1240,141 @@ function fobi_ebcp_ajax_upload(){
             $data['category'], $category_key_debug, json_encode($data)));
     }
     
-    $post_data = array(
-        'post_type'   => 'fortbildung',
-        'post_title'  => $data['title'] ?: 'Fortbildung vom '.date('d.m.Y'),
-        'post_status' => 'publish', // Immer publish, Freigabe wird über ACF-Feld gesteuert
-        'post_author' => $u->ID,
-    );
-    
-    $post_id = wp_insert_post($post_data);
-    
-    if( is_wp_error($post_id) ){
-        wp_send_json_error('Fehler beim Erstellen: '.$post_id->get_error_message());
-    }
-    
-    // KI-Namens-Override loggen
-    if( $name_ai_override ){
-        update_post_meta($post_id, '_fobi_name_ai_override', sprintf(
-            'KI bestaetigte: "%s" = "%s"', $data['participant'], $expected_fullname
-        ));
-    }
+    // ============================================================
+    // Mehrtaegige Events in Einzeltage aufsplitten
+    // ============================================================
+    $start_date = $data['start_date'] ?? '';
+    $end_date = $data['end_date'] ?? $start_date;
+    $category_key = fobi_ebcp_get_category_key($data);
+    $category_label = fobi_ebcp_get_category_label($category_key, $s);
 
-    // Notification NACH Post-Insert senden, damit post_id verfügbar ist
-    if( $is_suspicious && $s['notify_on_suspicious'] === '1' ){
-        fobi_ebcp_send_notification($u, $data, $confidence, $expected_fullname, $s, $post_id);
-    }
-    
-    if( function_exists('update_field') ){
-        // Benutzer-ID zuweisen (ACF user field)
-        update_field('user', $u->ID, $post_id);
-        
-        // Datum im Format Y-m-d
-        if( !empty($data['start_date']) ){
-            // Versuche das Datum zu parsen
-            $timestamp = strtotime($data['start_date']);
-            if( $timestamp !== false ){
-                $date_formatted = date('Y-m-d', $timestamp);
-                update_field('date', $date_formatted, $post_id);
-            } else {
-                // Fallback: Versuche direktes Speichern, falls bereits im richtigen Format
-                update_field('date', $data['start_date'], $post_id);
-            }
+    // Tage berechnen
+    $event_days = [];
+    $start_ts_calc = strtotime($start_date);
+    $end_ts_calc = strtotime($end_date);
+
+    if ($start_ts_calc && $end_ts_calc && $end_ts_calc > $start_ts_calc) {
+        // Mehrtaegig: fuer jeden Tag einen Eintrag
+        $current = $start_ts_calc;
+        while ($current <= $end_ts_calc) {
+            $event_days[] = date('Y-m-d', $current);
+            $current = strtotime('+1 day', $current);
         }
-        
-        // Ort
-        update_field('location', $data['location'], $post_id);
-        
-        // Art (Deutsche Bezeichnung aus Mapping-Matrix)
-        $category_key = fobi_ebcp_get_category_key($data);
-        $category_label = fobi_ebcp_get_category_label($category_key, $s);
-        update_field('type', $category_label, $post_id);
-        
-        // KI-Rohdaten komplett speichern (fuer Backend-Anzeige + Neubewertung)
-        update_post_meta($post_id, '_ebcp_ai_response', json_encode($data, JSON_UNESCAPED_UNICODE));
-        update_post_meta($post_id, '_ebcp_ai_confidence', $confidence);
-        update_post_meta($post_id, '_ebcp_category_key', $category_key);
-        update_post_meta($post_id, '_ebcp_raw_category', $data['category']);
-        update_post_meta($post_id, '_ebcp_raw_subtype', $data['subtype'] ?? '');
-        update_post_meta($post_id, '_ebcp_active_role', $data['active_role'] ?? '');
-        update_post_meta($post_id, '_ebcp_doc_type', $data['doc_type'] ?? '');
-
-        // Punkte
-        update_field('points', $points, $post_id);
-
-        // VNR (Veranstaltungsnummer)
-        if (!empty($data['vnr'])) {
-            update_field('vnr', $data['vnr'], $post_id);
-        }
-
-        // Token
-        update_field('token', wp_generate_password(32, false), $post_id);
-
-        // IMMER ungenehmigt — manuelle Pruefung erforderlich
-        update_field('freigegeben', false, $post_id);
+    } else {
+        // Eintaegig
+        $event_days[] = $start_date;
     }
-    
-    if( $s['store_proof_as_attachment'] === '1' ){
+
+    $num_days = count($event_days);
+    $group_id = $num_days > 1 ? 'fobi_group_' . wp_generate_password(12, false) : '';
+    $created_post_ids = [];
+
+    // Attachment einmal hochladen (wird bei allen Posts referenziert)
+    $attachment_id = 0;
+    if ($s['store_proof_as_attachment'] === '1') {
         require_once(ABSPATH . 'wp-admin/includes/file.php');
         require_once(ABSPATH . 'wp-admin/includes/media.php');
         require_once(ABSPATH . 'wp-admin/includes/image.php');
 
-        // Upload in geschuetzten Ordner umleiten
         add_filter('upload_dir', 'fobi_ebcp_protected_upload_dir');
-        $attachment_id = media_handle_upload('fobi_file', $post_id);
+        $attachment_id = media_handle_upload('fobi_file', 0);
         remove_filter('upload_dir', 'fobi_ebcp_protected_upload_dir');
 
-        if( ! is_wp_error($attachment_id) && function_exists('update_field') ){
+        if (is_wp_error($attachment_id)) {
+            $attachment_id = 0;
+        }
+    }
+
+    foreach ($event_days as $day_index => $day_date) {
+        $day_num = $day_index + 1;
+        $title_suffix = $num_days > 1 ? sprintf(' (Tag %d/%d)', $day_num, $num_days) : '';
+
+        $post_data = array(
+            'post_type'   => 'fortbildung',
+            'post_title'  => ($data['title'] ?: 'Fortbildung vom ' . date('d.m.Y')) . $title_suffix,
+            'post_status' => 'publish',
+            'post_author' => $u->ID,
+        );
+
+        $post_id = wp_insert_post($post_data);
+
+        if (is_wp_error($post_id)) {
+            continue;
+        }
+
+        $created_post_ids[] = $post_id;
+
+        if ($name_ai_override) {
+            update_post_meta($post_id, '_fobi_name_ai_override', sprintf(
+                'KI bestaetigte: "%s" = "%s"', $data['participant'], $expected_fullname
+            ));
+        }
+
+        if (function_exists('update_field')) {
+            update_field('user', $u->ID, $post_id);
+            update_field('date', $day_date, $post_id);
+            update_field('location', $data['location'], $post_id);
+            update_field('type', $category_label, $post_id);
+            update_field('points', $points, $post_id);
+
+            if (!empty($data['vnr'])) {
+                update_field('vnr', $data['vnr'], $post_id);
+            }
+
+            update_field('token', wp_generate_password(32, false), $post_id);
+            update_field('freigegeben', false, $post_id);
+
+            // KI-Rohdaten
+            update_post_meta($post_id, '_ebcp_ai_response', json_encode($data, JSON_UNESCAPED_UNICODE));
+            update_post_meta($post_id, '_ebcp_ai_confidence', $confidence);
+            update_post_meta($post_id, '_ebcp_category_key', $category_key);
+            update_post_meta($post_id, '_ebcp_raw_category', $data['category']);
+            update_post_meta($post_id, '_ebcp_raw_subtype', $data['subtype'] ?? '');
+            update_post_meta($post_id, '_ebcp_active_role', $data['active_role'] ?? '');
+            update_post_meta($post_id, '_ebcp_doc_type', $data['doc_type'] ?? '');
+
+            // Mehrtages-Gruppierung
+            if ($group_id) {
+                update_post_meta($post_id, '_fobi_group_id', $group_id);
+                update_post_meta($post_id, '_fobi_group_day', $day_num);
+                update_post_meta($post_id, '_fobi_group_total_days', $num_days);
+            }
+        }
+
+        // Attachment bei allen Posts referenzieren
+        if ($attachment_id && function_exists('update_field')) {
             update_field('attachements', $attachment_id, $post_id);
         }
     }
+
+    // Erste Post-ID als Haupt-Post (fuer Notification + Antwort)
+    $post_id = !empty($created_post_ids) ? $created_post_ids[0] : 0;
+
+    if (!$post_id) {
+        wp_send_json_error('Fehler beim Erstellen der Fortbildung.');
+    }
+
+    // Notification senden
+    if ($is_suspicious && $s['notify_on_suspicious'] === '1') {
+        fobi_ebcp_send_notification($u, $data, $confidence, $expected_fullname, $s, $post_id);
+    }
     
-    // Deutsche Kategoriebezeichnung für Anzeige
-    $category_key = fobi_ebcp_get_category_key($data);
-    $category_label = fobi_ebcp_get_category_label($category_key, $s);
-    
+    $total_points = $points * $num_days;
+    $date_display = $num_days > 1
+        ? sprintf('%s bis %s (%d Tage × %s Pkt = %s Pkt gesamt)', esc_html($start_date), esc_html($end_date), $num_days, number_format($points, 1), number_format($total_points, 1))
+        : esc_html($start_date);
+
     $message = sprintf(
-        '<strong>%s</strong><br><br>📄 <strong>Titel:</strong> %s<br>👤 <strong>Teilnehmer:</strong> %s<br>📍 <strong>Ort:</strong> %s<br>📅 <strong>Datum:</strong> %s<br>🏷️ <strong>Art:</strong> %s (Key: %s)<br>⭐ <strong>Punkte:</strong> %s<br>🎯 <strong>Konfidenz:</strong> %d%%<br>📋 <strong>Dokumenttyp:</strong> %s',
+        '<strong>%s</strong><br><br>📄 <strong>Titel:</strong> %s<br>👤 <strong>Teilnehmer:</strong> %s<br>📍 <strong>Ort:</strong> %s<br>📅 <strong>Zeitraum:</strong> %s<br>🏷️ <strong>Art:</strong> %s<br>⭐ <strong>Punkte pro Tag:</strong> %s<br>📊 <strong>Eintraege erstellt:</strong> %d<br>🎯 <strong>Konfidenz:</strong> %d%%',
         $status_label,
         esc_html($data['title']),
         esc_html($data['participant']),
         esc_html($data['location']),
-        esc_html($data['start_date']),
+        $date_display,
         esc_html($category_label),
-        esc_html($category_key),
         esc_html(number_format($points, 1)),
-        intval($confidence * 100),
-        esc_html($data['doc_type'] ?? 'unbekannt')
+        count($created_post_ids),
+        intval($confidence * 100)
     );
 
     // Duplikat-Warnung
@@ -1518,6 +1554,7 @@ Antworte NUR mit JSON in diesem Format:
   \"title\": \"Veranstaltungstitel\",
   \"location\": \"Stadt, Land\",
   \"start_date\": \"YYYY-MM-DD\",
+  \"end_date\": \"YYYY-MM-DD\",
   \"category\": \"passive_kongress_national\",
   \"subtype\": \"\",
   \"active_role\": \"no\",
@@ -1548,6 +1585,12 @@ WICHTIG fuer category-Werte:
 - Wenn das Dokument in keine Kategorie passt: \"category\": \"undefined\"
 - Bei Workshops mit aktiver Teilnahme (Referent, Dozent): active_workshop_* statt passive_workshop_*
 - Fuer DGPTM oder DGfK Jahrestagung verwende IMMER: \"category\": \"passive_dgptm_jahrestagung\"
+
+WICHTIG fuer end_date:
+- Wenn die Veranstaltung ueber mehrere Tage laeuft, gib das LETZTE Datum als end_date an
+- Beispiel: '21. bis 23. Februar 2026' -> start_date='2026-02-21', end_date='2026-02-23'
+- Bei eintaegigen Events: end_date = start_date (gleicher Tag)
+- Wenn nur ein Datum erkennbar: end_date = start_date
 
 WICHTIG fuer cme_points:
 Falls das Dokument explizit CME/Fortbildungspunkte ausweist (z.B. '4 Punkte (A) 6 Punkte (B)'), gib die SUMME der Punkte zurueck.
@@ -1698,6 +1741,7 @@ KRITISCH: Bei Rechnungen/Zahlungsbelegen -> doc_type=\"invoice\", participant=\"
         'title' => trim($data['title'] ?? ''),
         'location' => trim($data['location'] ?? ''),
         'start_date' => trim($data['start_date'] ?? ''),
+        'end_date' => trim($data['end_date'] ?? $data['start_date'] ?? ''),
         'category' => trim($data['category'] ?? ''),
         'subtype' => trim($data['subtype'] ?? ''),
         'active_role' => strtolower(trim($data['active_role'] ?? 'no')),
@@ -1825,6 +1869,7 @@ JSON-Format:
         'title' => trim($data['title'] ?? ''),
         'location' => trim($data['location'] ?? ''),
         'start_date' => trim($data['start_date'] ?? ''),
+        'end_date' => trim($data['end_date'] ?? $data['start_date'] ?? ''),
         'category' => trim($data['category'] ?? ''),
         'subtype' => trim($data['subtype'] ?? ''),
         'active_role' => strtolower(trim($data['active_role'] ?? 'no')),
@@ -1873,20 +1918,37 @@ function fobi_ebcp_get_international_list($s){
  * Duplikaterkennung: Wurde diese Veranstaltung schon eingereicht?
  * Prueft Titel-Aehnlichkeit + Datum fuer den aktuellen User
  * ============================================================ */
-function fobi_ebcp_check_duplicate($user_id, $title, $date){
-    if( empty($title) || empty($date) ) return false;
+function fobi_ebcp_check_duplicate($user_id, $title, $date, $end_date = ''){
+    if( empty($title) ) return false;
 
-    // Nur mit exaktem Datum UND gleichem User suchen
+    // Datumsbereich fuer die Suche
+    $dates_to_check = [];
+    if( !empty($date) ) $dates_to_check[] = $date;
+    if( !empty($end_date) && $end_date !== $date ){
+        $s = strtotime($date);
+        $e = strtotime($end_date);
+        if( $s && $e && $e > $s ){
+            $c = $s;
+            while( $c <= $e ){
+                $dates_to_check[] = date('Y-m-d', $c);
+                $c = strtotime('+1 day', $c);
+            }
+        }
+    }
+
+    if( empty($dates_to_check) ) return false;
+
+    // Suche bestehende Posts dieses Users im Datumsbereich
     $args = array(
         'post_type' => 'fortbildung',
-        'posts_per_page' => 20,
+        'posts_per_page' => 50,
         'post_status' => array('publish', 'draft', 'pending'),
         'author' => $user_id,
         'meta_query' => array(
             array(
                 'key' => 'date',
-                'value' => $date,
-                'compare' => '='
+                'value' => $dates_to_check,
+                'compare' => 'IN'
             )
         ),
     );
@@ -1895,16 +1957,22 @@ function fobi_ebcp_check_duplicate($user_id, $title, $date){
     if( empty($existing) ) return false;
 
     $title_norm = mb_strtolower(trim($title), 'UTF-8');
+    // Mehrtages-Suffix entfernen fuer Vergleich
+    $title_norm = preg_replace('/\s*\(tag\s+\d+\/\d+\)\s*$/i', '', $title_norm);
 
     foreach( $existing as $post ){
         $existing_title = mb_strtolower(trim($post->post_title), 'UTF-8');
+        $existing_title = preg_replace('/\s*\(tag\s+\d+\/\d+\)\s*$/i', '', $existing_title);
 
-        // Nur exakte Uebereinstimmung (kein Fuzzy-Match mehr)
         if( $title_norm === $existing_title ){
             return $post;
         }
 
-        // Kein Fuzzy-Match mehr — nur exakter Titel + exaktes Datum zaehlt als Duplikat
+        // 80% Aehnlichkeit fuer leichte Varianten
+        similar_text($title_norm, $existing_title, $pct);
+        if( $pct >= 80 ){
+            return $post;
+        }
     }
 
     return false;

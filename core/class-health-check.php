@@ -89,6 +89,12 @@ class DGPTM_Health_Check {
 			'permission_callback' => [ $this, 'check_auth' ],
 		] );
 
+		register_rest_route( 'dgptm/v1', '/fobi-analysis', [
+			'methods'             => 'GET',
+			'callback'            => [ $this, 'handle_fobi_analysis' ],
+			'permission_callback' => [ $this, 'check_auth' ],
+		] );
+
 		register_rest_route( 'dgptm/v1', '/forum-diag', [
 			'methods'             => 'GET',
 			'callback'            => [ $this, 'handle_forum_diag' ],
@@ -447,6 +453,52 @@ class DGPTM_Health_Check {
 			'email' => $user->user_email,
 			'roles' => $user->roles,
 			'acf_fields' => $acf_values,
+		], 200 );
+	}
+
+	/**
+	 * Fortbildungs-Analyse: findet mehrtaegige Eintraege
+	 */
+	public function handle_fobi_analysis( $request ) {
+		$posts = get_posts( [
+			'post_type' => 'fortbildung',
+			'posts_per_page' => -1,
+			'post_status' => ['publish', 'draft', 'pending'],
+		] );
+
+		$candidates = [];
+		$grouped = 0;
+
+		foreach ( $posts as $p ) {
+			if ( get_post_meta( $p->ID, '_fobi_group_id', true ) ) { $grouped++; continue; }
+
+			$ai = json_decode( get_post_meta( $p->ID, '_ebcp_ai_response', true ) ?: '{}', true );
+			$start = $ai['start_date'] ?? ( function_exists('get_field') ? get_field('date', $p->ID) : '' );
+			$end = $ai['end_date'] ?? '';
+			$pts = function_exists('get_field') ? floatval(get_field('points', $p->ID)) : 0;
+			$days = 1;
+			$reason = '';
+
+			if ( $start && $end && $end !== $start ) {
+				$s = strtotime($start); $e = strtotime($end);
+				if ( $s && $e && $e > $s ) { $days = (int)round(($e-$s)/86400)+1; $reason = "$start bis $end ({$days}d)"; }
+			}
+			if ( $days <= 1 && preg_match('/(\d{1,2})\.\s*(?:bis|-)\s*(\d{1,2})\./', $p->post_title, $m) ) {
+				$days = abs(intval($m[2])-intval($m[1]))+1; $reason = "Titel: {$m[0]} ({$days}d)";
+			}
+
+			if ( $days > 1 ) {
+				$candidates[] = [
+					'id' => $p->ID, 'title' => $p->post_title, 'days' => $days,
+					'points_now' => $pts, 'points_should' => $pts * $days,
+					'reason' => $reason, 'status' => $p->post_status,
+				];
+			}
+		}
+
+		return new WP_REST_Response( [
+			'total' => count($posts), 'grouped' => $grouped,
+			'candidates' => $candidates, 'candidate_count' => count($candidates),
 		], 200 );
 	}
 

@@ -1210,7 +1210,6 @@ function fobi_ebcp_ajax_upload(){
         ));
     }
     $duplicate_warning = '';
-    }
 
     // ============================================================
     // Validierung + KI-Nachfrage bei Namensmismatch

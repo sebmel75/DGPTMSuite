@@ -565,53 +565,63 @@ function fobi_ebcp_settings_page_render(){
                             <th style="width: 30%;">Kategorie-Key</th>
                             <th style="width: 45%;">Deutsche Bezeichnung</th>
                             <th style="width: 15%;">Punkte</th>
-                            <th style="width: 10%;">Kategorie-Gruppe</th>
+                            <th style="width: 10%;">Gruppe</th>
                         </tr>
                     </thead>
                     <tbody id="ebcp-matrix-rows">
                         <?php
-                        $matrix = json_decode($s['ebcp_mapping_json'], true);
-                        if(!is_array($matrix)) $matrix = array();
-                        
-                        // Gruppierung für bessere Übersicht
-                        $groups = array(
-                            'Passive Teilnahme' => array('passive_inhouse', 'passive_webinar', 'passive_national', 'passive_international'),
-                            'Aktive Teilnahme' => array('active_inhouse', 'active_webinar', 'active_national_talk', 'active_national_mod', 'active_intl_talk', 'active_intl_mod'),
-                            'Publikationen' => array('pub_abstract', 'pub_no_editorial', 'pub_with_editorial'),
-                            'ECTS' => array('ects_per_credit')
+                        // Gespeicherte Matrix laden
+                        $saved_matrix = json_decode($s['ebcp_mapping_json'], true);
+                        if(!is_array($saved_matrix)) $saved_matrix = array();
+                        $saved_bykey = array();
+                        foreach($saved_matrix as $m){ $saved_bykey[$m['key']] = $m; }
+
+                        // Default-Matrix als Referenz (enthaelt ALLE Keys)
+                        $defaults = fobi_ebcp_default_settings();
+                        $default_matrix = json_decode($defaults['ebcp_mapping_json'], true);
+
+                        // Gruppierung anhand Key-Prefix
+                        $group_labels = array(
+                            'passive_workshop' => 'Passive Workshops',
+                            'passive_' => 'Passive Teilnahme',
+                            'active_workshop' => 'Aktive Workshops',
+                            'active_' => 'Aktive Teilnahme',
+                            'pub_' => 'Publikationen',
+                            'ects_' => 'ECTS',
                         );
-                        
-                        foreach($groups as $group_name => $group_keys){
-                            echo '<tr class="group-header"><td colspan="4" style="background: #f0f0f1; font-weight: bold; padding: 8px;">' . esc_html($group_name) . '</td></tr>';
-                            
-                            foreach($group_keys as $key){
-                                $item = null;
-                                foreach($matrix as $m){
-                                    if($m['key'] === $key){
-                                        $item = $m;
-                                        break;
-                                    }
-                                }
-                                
-                                if(!$item){
-                                    $item = array('key' => $key, 'label' => $key, 'points' => 0);
-                                }
-                                
-                                echo '<tr>';
-                                echo '<td><code>' . esc_html($item['key']) . '</code></td>';
-                                echo '<td><input type="text" name="matrix_label[' . esc_attr($item['key']) . ']" value="' . esc_attr($item['label']) . '" class="regular-text"></td>';
-                                echo '<td><input type="number" name="matrix_points[' . esc_attr($item['key']) . ']" value="' . esc_attr($item['points']) . '" step="0.5" min="0" style="width: 80px;"></td>';
-                                echo '<td style="color: #666; font-size: 0.9em;">' . esc_html($group_name) . '</td>';
-                                echo '</tr>';
+
+                        $last_group = '';
+                        foreach($default_matrix as $def){
+                            $key = $def['key'];
+
+                            // Gruppe bestimmen
+                            $group = '';
+                            foreach($group_labels as $prefix => $label){
+                                if(strpos($key, rtrim($prefix, '_')) === 0){ $group = $label; break; }
                             }
+
+                            if($group !== $last_group){
+                                echo '<tr class="group-header"><td colspan="4" style="background:#f0f0f1;font-weight:bold;padding:8px;">' . esc_html($group) . '</td></tr>';
+                                $last_group = $group;
+                            }
+
+                            // Gespeicherte Werte vorziehen, Default als Fallback
+                            $item = isset($saved_bykey[$key]) ? $saved_bykey[$key] : $def;
+
+                            echo '<tr>';
+                            echo '<td><code>' . esc_html($key) . '</code></td>';
+                            echo '<td><input type="text" name="matrix_label[' . esc_attr($key) . ']" value="' . esc_attr($item['label']) . '" class="regular-text"></td>';
+                            echo '<td><input type="number" name="matrix_points[' . esc_attr($key) . ']" value="' . esc_attr($item['points']) . '" step="0.5" min="0" style="width:80px;"></td>';
+                            echo '<td style="color:#666;font-size:0.9em;">' . esc_html($group) . '</td>';
+                            echo '</tr>';
                         }
                         ?>
                     </tbody>
                 </table>
-                
-                <p class="description" style="margin-top: 15px;">
-                    <strong>Hinweis:</strong> Die Kategorie-Keys werden automatisch aus den Claude-Analyse-Daten ermittelt.<br>
-                    Die deutschen Bezeichnungen werden in der Fortbildungsliste angezeigt.
+
+                <p class="description" style="margin-top:15px;">
+                    <strong>Hinweis:</strong> Alle Keys werden automatisch an Claude uebergeben. Beim Speichern wird die Matrix in der Datenbank aktualisiert.<br>
+                    Neue Kategorien koennen im Code unter <code>fobi_ebcp_default_settings()</code> hinzugefuegt werden.
                 </p>
             </div>
             

@@ -108,6 +108,15 @@ class DGPTM_Health_Check {
 		} elseif ( is_array( $attachments ) && isset( $attachments['ID'] ) ) {
 			$filepath = get_attached_file( $attachments['ID'] );
 			$mime = get_post_mime_type( $attachments['ID'] );
+		} elseif ( is_string( $attachments ) && filter_var( $attachments, FILTER_VALIDATE_URL ) ) {
+			// URL — Download in temp
+			$tmp = download_url( $attachments, 30 );
+			if ( ! is_wp_error( $tmp ) ) {
+				$filepath = $tmp;
+				$ext = strtolower( pathinfo( $attachments, PATHINFO_EXTENSION ) );
+				$mime_map = [ 'pdf' => 'application/pdf', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png' ];
+				$mime = $mime_map[ $ext ] ?? 'application/pdf';
+			}
 		}
 
 		if ( empty( $filepath ) || ! file_exists( $filepath ) ) {

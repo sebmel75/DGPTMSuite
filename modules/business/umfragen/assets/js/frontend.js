@@ -422,21 +422,20 @@
         // --- Text Inputs for Choices / "Sonstiges:" ---
 
         bindTextInputs: function($container) {
-            // Radio: show/hide text input when selection changes
+            // Radio: show/hide text + number inputs when selection changes
             $container.on('change', '.dgptm-question input[type="radio"]', function() {
                 var $q = $(this).closest('.dgptm-question');
-                // Hide all choice text inputs and other text inputs
-                $q.find('.dgptm-choice-text-input, .dgptm-other-text-input').hide();
-                // Show text input for the selected option
+                $q.find('.dgptm-choice-text-input, .dgptm-other-text-input, .dgptm-choice-number-wrap').hide();
                 var $label = $(this).closest('.dgptm-radio-label, .dgptm-other-label');
                 if ($(this).val() === '__other__') {
                     $label.find('.dgptm-other-text-input').show().focus();
                 } else {
                     $label.find('.dgptm-choice-text-input').show().focus();
+                    $label.find('.dgptm-choice-number-wrap').show();
                 }
             });
 
-            // Checkbox: show/hide text input when checkbox changes
+            // Checkbox: show/hide text + number inputs when checkbox changes
             $container.on('change', '.dgptm-question input[type="checkbox"]', function() {
                 var $label = $(this).closest('label');
                 var isChecked = $(this).is(':checked');
@@ -446,6 +445,8 @@
                 } else {
                     var $ti = $label.find('.dgptm-choice-text-input');
                     isChecked ? $ti.show().focus() : $ti.hide();
+                    var $ni = $label.find('.dgptm-choice-number-wrap');
+                    isChecked ? $ni.show() : $ni.hide();
                 }
             });
 
@@ -657,13 +658,18 @@
                         var radioVal = $q.find('input[type="radio"]:checked').val();
                         if (radioVal !== undefined) {
                             var textVal = '';
+                            var numberVal = '';
                             var $checkedLabel = $q.find('input[type="radio"]:checked').closest('label');
                             if (radioVal === '__other__') {
                                 textVal = $.trim($checkedLabel.find('.dgptm-other-text-input').val() || '');
                             } else {
                                 textVal = $.trim($checkedLabel.find('.dgptm-choice-text-input').val() || '');
+                                numberVal = $.trim($checkedLabel.find('.dgptm-choice-number-input').val() || '');
                             }
-                            answers[qId] = textVal ? radioVal + '|||' + textVal : radioVal;
+                            var val = radioVal;
+                            if (textVal || numberVal) val += '|||' + textVal;
+                            if (numberVal) val += '|||' + numberVal;
+                            answers[qId] = val;
                         }
                         break;
                     case 'select':
@@ -682,13 +688,18 @@
                         $q.find('input[type="checkbox"]:checked').each(function() {
                             var cbVal = $(this).val();
                             var textVal = '';
+                            var numberVal = '';
                             var $lbl = $(this).closest('label');
                             if (cbVal === '__other__') {
                                 textVal = $.trim($lbl.find('.dgptm-other-text-input').val() || '');
                             } else {
                                 textVal = $.trim($lbl.find('.dgptm-choice-text-input').val() || '');
+                                numberVal = $.trim($lbl.find('.dgptm-choice-number-input').val() || '');
                             }
-                            cbVals.push(textVal ? cbVal + '|||' + textVal : cbVal);
+                            var v = cbVal;
+                            if (textVal || numberVal) v += '|||' + textVal;
+                            if (numberVal) v += '|||' + numberVal;
+                            cbVals.push(v);
                         });
                         if (cbVals.length > 0) answers[qId] = cbVals;
                         break;

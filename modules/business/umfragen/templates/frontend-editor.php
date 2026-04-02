@@ -226,12 +226,22 @@ $status_labels = [
                                 $flat_choices = is_array($choices) && !isset($choices['rows']) ? $choices : [];
                                 $cwt = isset($validation['choices_with_text']) ? (array) $validation['choices_with_text'] : [];
                                 foreach ($flat_choices as $choice) : ?>
+                                    <?php
+                                    $cwn = isset($validation['choices_with_number']) ? (array) $validation['choices_with_number'] : [];
+                                    $cwn_map = [];
+                                    foreach ($cwn as $cn) { if (is_array($cn) && isset($cn['choice'])) $cwn_map[$cn['choice']] = $cn['label'] ?? 'Anzahl:'; }
+                                    ?>
                                     <div class="dgptm-fe-choice-item">
                                         <input type="text" class="dgptm-fe-choice-input" value="<?php echo esc_attr($choice); ?>">
-                                        <label class="dgptm-fe-choice-text-toggle" title="Textfeld bei Auswahl anzeigen" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;cursor:pointer;margin:0 6px;">
+                                        <label class="dgptm-fe-choice-text-toggle" title="Textfeld bei Auswahl" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;cursor:pointer;margin:0 4px;">
                                             <input type="checkbox" class="dgptm-fe-choice-has-text" <?php checked(in_array($choice, $cwt, true)); ?>>
-                                            <small>Textfeld</small>
+                                            <small>Text</small>
                                         </label>
+                                        <label class="dgptm-fe-choice-number-toggle" title="Zahlenfeld bei Auswahl" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;cursor:pointer;margin:0 4px;">
+                                            <input type="checkbox" class="dgptm-fe-choice-has-number" <?php checked(isset($cwn_map[$choice])); ?>>
+                                            <small>Zahl</small>
+                                        </label>
+                                        <input type="text" class="dgptm-fe-choice-number-label" value="<?php echo esc_attr($cwn_map[$choice] ?? 'Anzahl:'); ?>" placeholder="Label..." style="width:80px;font-size:11px;padding:2px 4px;border:1px solid #ccc;border-radius:3px;<?php echo isset($cwn_map[$choice]) ? '' : 'display:none;'; ?>">
                                         <button type="button" class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-btn-danger dgptm-fe-remove-choice">&times;</button>
                                     </div>
                                 <?php endforeach; ?>

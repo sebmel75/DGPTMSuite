@@ -362,14 +362,24 @@
                 $list.append(
                     '<div class="dgptm-fe-choice-item">' +
                     '<input type="text" class="dgptm-fe-choice-input" value="" placeholder="Option...">' +
-                    '<label class="dgptm-fe-choice-text-toggle" title="Textfeld bei Auswahl anzeigen" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;cursor:pointer;margin:0 6px;">' +
+                    '<label class="dgptm-fe-choice-text-toggle" title="Textfeld bei Auswahl" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;cursor:pointer;margin:0 4px;">' +
                     '<input type="checkbox" class="dgptm-fe-choice-has-text">' +
-                    '<small>Textfeld</small>' +
+                    '<small>Text</small>' +
                     '</label>' +
+                    '<label class="dgptm-fe-choice-number-toggle" title="Zahlenfeld bei Auswahl" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;cursor:pointer;margin:0 4px;">' +
+                    '<input type="checkbox" class="dgptm-fe-choice-has-number">' +
+                    '<small>Zahl</small>' +
+                    '</label>' +
+                    '<input type="text" class="dgptm-fe-choice-number-label" value="Anzahl:" placeholder="Label..." style="width:80px;font-size:11px;padding:2px 4px;border:1px solid #ccc;border-radius:3px;display:none;">' +
                     '<button type="button" class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-btn-danger dgptm-fe-remove-choice">&times;</button>' +
                     '</div>'
                 );
                 $list.find('.dgptm-fe-choice-input').last().focus();
+            });
+
+            // Zahlenfeld-Label ein-/ausblenden wenn Checkbox getoggelt wird
+            $(document).on('change', '.dgptm-fe-choice-has-number', function() {
+                $(this).closest('.dgptm-fe-choice-item').find('.dgptm-fe-choice-number-label').toggle(this.checked);
             });
 
             $(document).on('click', '.dgptm-fe-remove-choice', function() {
@@ -555,8 +565,18 @@
                             }
                         }
                     });
+                    var choicesWithNumber = [];
+                    $item.find('.dgptm-fe-choice-item').each(function() {
+                        var val = $.trim($(this).find('.dgptm-fe-choice-input').val());
+                        if (val && $(this).find('.dgptm-fe-choice-has-number').is(':checked')) {
+                            var label = $.trim($(this).find('.dgptm-fe-choice-number-label').val()) || 'Anzahl:';
+                            choicesWithNumber.push({ choice: val, label: label });
+                        }
+                    });
+
                     if (choices.length > 0) q.choices = choices;
                     if (choicesWithText.length > 0) validation.choices_with_text = choicesWithText;
+                    if (choicesWithNumber.length > 0) validation.choices_with_number = choicesWithNumber;
                 }
 
                 // Matrix

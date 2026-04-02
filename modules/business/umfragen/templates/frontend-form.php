@@ -204,18 +204,29 @@ if ($resume_data) {
 
                                 case 'radio':
                                     $cwt = isset($validation['choices_with_text']) ? $validation['choices_with_text'] : [];
+                                    $cwn = isset($validation['choices_with_number']) ? $validation['choices_with_number'] : [];
+                                    $cwn_map = [];
+                                    foreach ($cwn as $cn) { if (is_array($cn) && isset($cn['choice'])) $cwn_map[$cn['choice']] = $cn['label'] ?? 'Anzahl:'; }
+
                                     $pf_base = $prefill_val;
                                     $pf_text = '';
+                                    $pf_number = '';
                                     if ($prefill_val && strpos($prefill_val, '|||') !== false) {
-                                        list($pf_base, $pf_text) = explode('|||', $prefill_val, 2);
+                                        $parts = explode('|||', $prefill_val, 3);
+                                        $pf_base = $parts[0];
+                                        $pf_text = $parts[1] ?? '';
+                                        $pf_number = $parts[2] ?? '';
                                     }
                                     if (is_array($choices)) :
                                         foreach ($choices as $choice) :
                                             $has_text = in_array($choice, $cwt, true);
+                                            $has_number = isset($cwn_map[$choice]);
+                                            $number_label = $has_number ? $cwn_map[$choice] : '';
                                             $is_checked = ($pf_base === $choice);
                                             $ct_val = ($is_checked && $has_text) ? $pf_text : '';
+                                            $cn_val = ($is_checked && $has_number) ? $pf_number : '';
                                             ?>
-                                            <label class="dgptm-radio-label<?php if ($has_text) echo ' dgptm-has-text'; ?>">
+                                            <label class="dgptm-radio-label<?php if ($has_text || $has_number) echo ' dgptm-has-text'; ?>">
                                                 <input type="radio"
                                                        name="<?php echo esc_attr($field_name); ?>"
                                                        value="<?php echo esc_attr($choice); ?>"
@@ -227,6 +238,15 @@ if ($resume_data) {
                                                            value="<?php echo esc_attr($ct_val); ?>"
                                                            placeholder="Bitte angeben..."
                                                            style="<?php if (!$is_checked) echo 'display:none;'; ?>">
+                                                <?php endif; ?>
+                                                <?php if ($has_number) : ?>
+                                                    <span class="dgptm-choice-number-wrap" style="<?php if (!$is_checked) echo 'display:none;'; ?>">
+                                                        <small><?php echo esc_html($number_label); ?></small>
+                                                        <input type="number" class="dgptm-choice-number-input dgptm-input-number"
+                                                               value="<?php echo esc_attr($cn_val); ?>"
+                                                               min="0" step="1"
+                                                               style="width:70px;">
+                                                    </span>
                                                 <?php endif; ?>
                                             </label>
                                         <?php endforeach;
@@ -252,27 +272,31 @@ if ($resume_data) {
 
                                 case 'checkbox':
                                     $cwt = isset($validation['choices_with_text']) ? $validation['choices_with_text'] : [];
+                                    $cwn = isset($validation['choices_with_number']) ? $validation['choices_with_number'] : [];
+                                    $cwn_map = [];
+                                    foreach ($cwn as $cn) { if (is_array($cn) && isset($cn['choice'])) $cwn_map[$cn['choice']] = $cn['label'] ?? 'Anzahl:'; }
+
                                     $checked_vals = is_array($prefill_decoded) ? $prefill_decoded : [];
-                                    // Parse prefill: extract base values and texts
                                     $checked_bases = [];
                                     $checked_texts = [];
+                                    $checked_numbers = [];
                                     foreach ($checked_vals as $cv) {
-                                        if (strpos($cv, '|||') !== false) {
-                                            list($base, $text) = explode('|||', $cv, 2);
-                                            $checked_bases[] = $base;
-                                            $checked_texts[$base] = $text;
-                                        } else {
-                                            $checked_bases[] = $cv;
-                                        }
+                                        $parts = explode('|||', $cv, 3);
+                                        $checked_bases[] = $parts[0];
+                                        if (isset($parts[1])) $checked_texts[$parts[0]] = $parts[1];
+                                        if (isset($parts[2])) $checked_numbers[$parts[0]] = $parts[2];
                                     }
                                     $exclusive_opt = isset($validation['exclusive_option']) ? $validation['exclusive_option'] : '';
                                     if (is_array($choices)) :
                                         foreach ($choices as $choice) :
                                             $has_text = in_array($choice, $cwt, true);
+                                            $has_number = isset($cwn_map[$choice]);
+                                            $number_label = $has_number ? $cwn_map[$choice] : '';
                                             $is_checked = in_array($choice, $checked_bases, true);
                                             $ct_val = ($is_checked && $has_text && isset($checked_texts[$choice])) ? $checked_texts[$choice] : '';
+                                            $cn_val = ($is_checked && $has_number && isset($checked_numbers[$choice])) ? $checked_numbers[$choice] : '';
                                             ?>
-                                            <label class="dgptm-checkbox-label<?php if ($has_text) echo ' dgptm-has-text'; ?>">
+                                            <label class="dgptm-checkbox-label<?php if ($has_text || $has_number) echo ' dgptm-has-text'; ?>">
                                                 <input type="checkbox"
                                                        name="<?php echo esc_attr($field_name); ?>[]"
                                                        value="<?php echo esc_attr($choice); ?>"
@@ -283,6 +307,15 @@ if ($resume_data) {
                                                            value="<?php echo esc_attr($ct_val); ?>"
                                                            placeholder="Bitte angeben..."
                                                            style="<?php if (!$is_checked) echo 'display:none;'; ?>">
+                                                <?php endif; ?>
+                                                <?php if ($has_number) : ?>
+                                                    <span class="dgptm-choice-number-wrap" style="<?php if (!$is_checked) echo 'display:none;'; ?>">
+                                                        <small><?php echo esc_html($number_label); ?></small>
+                                                        <input type="number" class="dgptm-choice-number-input dgptm-input-number"
+                                                               value="<?php echo esc_attr($cn_val); ?>"
+                                                               min="0" step="1"
+                                                               style="width:70px;">
+                                                    </span>
                                                 <?php endif; ?>
                                             </label>
                                         <?php endforeach;

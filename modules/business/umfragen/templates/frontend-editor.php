@@ -19,6 +19,10 @@ if (defined('DOING_AJAX') && DOING_AJAX) {
 } else {
     $current_url = remove_query_arg(['survey_action', 'survey_id']);
 }
+// Dashboard Deep-Link: Tab-Parameter erhalten damit nach Reload der richtige Tab aktiv ist
+if (strpos($current_url, 'tab=') === false && isset($_GET['tab'])) {
+    $current_url = add_query_arg('tab', sanitize_text_field($_GET['tab']), $current_url);
+}
 
 $question_types = [
     'text'     => 'Text (einzeilig)',

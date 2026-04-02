@@ -551,3 +551,83 @@
         flex-direction: column;
     }
 }
+
+/* ========================================
+   Dashboard-Integration (Forum-Vorbild)
+   ======================================== */
+
+.dgptm-dash .dgptm-fe-editor { max-width: 100%; }
+
+/* Buttons: filigran */
+.dgptm-dash .dgptm-fe-btn,
+.dgptm-dash button.dgptm-fe-btn,
+.dgptm-dash a.dgptm-fe-btn {
+    display: inline-block !important;
+    padding: 4px 10px !important;
+    border: 1px solid #0073aa !important;
+    border-radius: 4px !important;
+    background: #0073aa !important;
+    color: #fff !important;
+    font-size: 12px !important;
+    font-weight: 400 !important;
+    line-height: 1.4 !important;
+    text-decoration: none !important;
+    box-shadow: none !important;
+    min-height: 0 !important;
+    height: auto !important;
+}
+.dgptm-dash .dgptm-fe-btn:hover { background: #005d8c !important; }
+.dgptm-dash .dgptm-fe-btn-secondary { background: #f0f0f0 !important; border-color: #ccc !important; color: #555 !important; }
+.dgptm-dash .dgptm-fe-btn-secondary:hover { background: #e0e0e0 !important; }
+.dgptm-dash .dgptm-fe-btn-danger { background: #dc3232 !important; border-color: #dc3232 !important; }
+.dgptm-dash .dgptm-fe-btn-small { padding: 2px 8px !important; font-size: 11px !important; }
+
+/* Inputs */
+.dgptm-dash .dgptm-fe-editor input[type="text"],
+.dgptm-dash .dgptm-fe-editor input[type="url"],
+.dgptm-dash .dgptm-fe-editor input[type="number"],
+.dgptm-dash .dgptm-fe-editor textarea,
+.dgptm-dash .dgptm-fe-editor select {
+    padding: 6px 8px !important;
+    border: 1px solid #ccc !important;
+    border-radius: 4px !important;
+    font-size: 13px !important;
+    box-shadow: none !important;
+}
+
+/* Labels */
+.dgptm-dash .dgptm-fe-editor label { font-size: 12px; font-weight: 500; }
+
+/* Cards */
+.dgptm-dash .dgptm-fe-card {
+    box-shadow: none !important;
+    border: 1px solid #eee !important;
+    border-radius: 4px !important;
+    padding: 12px !important;
+    margin-bottom: 10px !important;
+}
+.dgptm-dash .dgptm-fe-card h3 { font-size: 14px !important; margin: 0 0 10px !important; }
+
+/* Survey List Table */
+.dgptm-dash .dgptm-fe-table { box-shadow: none; }
+.dgptm-dash .dgptm-fe-table thead { background: none; }
+.dgptm-dash .dgptm-fe-table th { color: #1d2327; padding: 8px 12px; font-size: 12px; font-weight: 600; border-bottom: 2px solid #eee; background: none; text-transform: none; }
+.dgptm-dash .dgptm-fe-table td { padding: 10px 12px; border-bottom: 1px solid #eee; font-size: 13px; }
+.dgptm-dash .dgptm-fe-table tbody tr:hover { background: #f8f9fa; }
+
+/* Status Badges */
+.dgptm-dash .dgptm-fe-badge { padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+
+/* Topbar */
+.dgptm-dash .dgptm-fe-topbar { margin-bottom: 12px; }
+.dgptm-dash .dgptm-fe-topbar h2 { font-size: 15px; }
+
+/* Questions */
+.dgptm-dash .dgptm-fe-question { padding: 10px; border: 1px solid #eee; border-radius: 4px; margin-bottom: 8px; }
+.dgptm-dash .dgptm-fe-question-header { font-size: 13px; }
+
+/* Add bar */
+.dgptm-dash .dgptm-fe-add-bar { gap: 6px; margin: 10px 0; }
+
+/* Notices */
+.dgptm-dash .dgptm-fe-notice { font-size: 13px; padding: 8px 12px; border-radius: 4px; }

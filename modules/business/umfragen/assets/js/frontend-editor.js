@@ -11,7 +11,7 @@
 
         init: function() {
             // Only init if editor elements exist on page
-            if (!$('.dgptm-fe-editor-wrap, .dgptm-fe-survey-list').length) return;
+            if (!$('.dgptm-fe-editor-wrap, .dgptm-fe-survey-list, .dgptm-fe-editor').length) return;
 
             // Bind document-level event handlers only once
             if (!this._bound) {
@@ -668,8 +668,8 @@
     });
 
     // Re-init when loaded via AJAX dashboard tab
-    $(document).on('dgptm_tab_loaded', function() {
-        FEEditor.init();
+    $(document).on('dgptm_tab_loaded dgptm:ftab-switched', function() {
+        setTimeout(function() { FEEditor.init(); }, 50);
     });
 
 })(jQuery);

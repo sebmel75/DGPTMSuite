@@ -985,7 +985,14 @@ function fobi_ebcp_ajax_upload(){
     }
 
     $event_valid = fobi_ebcp_verify_event($data['title'], $data['location'], $data['start_date'], $s);
-    $points = fobi_ebcp_calc_points($data, $s);
+
+    // EBCP-Punkte vom Dokument haben Vorrang vor Matrix-Berechnung
+    $ebcp_from_doc = floatval($data['ebcp_points'] ?? 0);
+    if ($ebcp_from_doc > 0) {
+        $points = $ebcp_from_doc;
+    } else {
+        $points = fobi_ebcp_calc_points($data, $s);
+    }
 
     $is_valid = $participant_valid && $event_valid;
     $is_suspicious = !$participant_valid || !$event_valid || $confidence < 0.7;
@@ -1287,6 +1294,7 @@ Antworte NUR mit JSON in diesem Format:
   \"active_role\": \"no\",
   \"ects\": 0,
   \"cme_points\": 0,
+  \"ebcp_points\": 0,
   \"vnr\": \"\",
   \"confidence\": 0.95
 }
@@ -1314,6 +1322,14 @@ WICHTIG fuer category-Werte:
 
 WICHTIG fuer cme_points:
 Falls das Dokument explizit CME/Fortbildungspunkte ausweist (z.B. '4 Punkte (A) 6 Punkte (B)'), gib die SUMME der Punkte zurueck.
+
+WICHTIG fuer ebcp_points:
+Falls das Dokument explizit EBCP-Punkte/Credits vergibt (z.B. 'EBCP Credits: 3', 'EBCP Points: 4'), diese Zahl 1:1 uebernehmen. EBCP-Punkte haben VORRANG vor der Matrix-Berechnung!
+
+WICHTIG fuer national vs. international:
+- Ein Workshop/Kongress ist INTERNATIONAL wenn: englischer Titel, internationale Organisation (EBCP, AMSECT, EACTS, ECC etc.), Teilnehmer aus mehreren Laendern, EBCP-Punkte vergeben werden
+- Ein Workshop in Deutschland mit englischem Titel und EBCP-Zertifikat ist INTERNATIONAL
+- Nur deutschsprachige Veranstaltungen von deutschen Fachgesellschaften sind NATIONAL
 
 Konfidenz-Bewertung:
 - 0.9-1.0: Gueltige Teilnahmebescheinigung mit allen Daten
@@ -1458,6 +1474,7 @@ KRITISCH: Bei Rechnungen/Zahlungsbelegen -> doc_type=\"invoice\", participant=\"
         'active_role' => strtolower(trim($data['active_role'] ?? 'no')),
         'ects' => intval($data['ects'] ?? 0),
         'cme_points' => intval($data['cme_points'] ?? 0),
+        'ebcp_points' => floatval($data['ebcp_points'] ?? 0),
         'vnr' => trim($data['vnr'] ?? ''),
         'doc_type' => $doc_type
     );
@@ -2868,8 +2885,13 @@ function fobi_ebcp_ajax_reevaluate(){
     $data = $result['data'];
     $confidence = floatval($result['confidence'] ?? 0);
 
-    // Punkte neu berechnen
-    $points = fobi_ebcp_calc_points($data, $s);
+    // EBCP-Punkte vom Dokument haben Vorrang
+    $ebcp_from_doc = floatval($data['ebcp_points'] ?? 0);
+    if ($ebcp_from_doc > 0) {
+        $points = $ebcp_from_doc;
+    } else {
+        $points = fobi_ebcp_calc_points($data, $s);
+    }
     $category_key = fobi_ebcp_get_category_key($data);
     $category_label = fobi_ebcp_get_category_label($category_key, $s);
 

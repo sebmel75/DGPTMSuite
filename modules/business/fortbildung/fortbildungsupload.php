@@ -389,6 +389,100 @@ function fobi_ebcp_render_ai_metabox($post) {
     echo '</div>';
 }
 
+/* ============================================================
+ * Migration: Bestehende Fortbildungs-Attachments in geschuetzten Ordner verschieben
+ * Aufruf ueber WP-Admin → Fortbildungen → Upload-Einstellungen → "Dateien schuetzen"
+ * ============================================================ */
+add_action('wp_ajax_fobi_migrate_protected', function(){
+    check_ajax_referer('fobi_migrate_protected', 'nonce');
+
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Keine Berechtigung.');
+    }
+
+    $upload_dir = wp_upload_dir();
+    $protected_path = $upload_dir['basedir'] . '/fobi-protected';
+
+    // Geschuetzten Ordner erstellen
+    if (!file_exists($protected_path)) {
+        wp_mkdir_p($protected_path);
+    }
+    if (!file_exists($protected_path . '/.htaccess')) {
+        file_put_contents($protected_path . '/.htaccess', "Deny from all\n");
+    }
+    if (!file_exists($protected_path . '/index.php')) {
+        file_put_contents($protected_path . '/index.php', "<?php // Silence is golden.\n");
+    }
+
+    // Alle Fortbildungen mit Attachments finden
+    $posts = get_posts([
+        'post_type' => 'fortbildung',
+        'posts_per_page' => -1,
+        'post_status' => 'any',
+    ]);
+
+    $migrated = 0;
+    $skipped = 0;
+    $errors = [];
+
+    foreach ($posts as $post) {
+        $att_field = function_exists('get_field') ? get_field('attachements', $post->ID) : null;
+
+        // Attachment-ID ermitteln
+        $att_id = 0;
+        if (is_numeric($att_field)) {
+            $att_id = intval($att_field);
+        } elseif (is_array($att_field) && isset($att_field['ID'])) {
+            $att_id = intval($att_field['ID']);
+        }
+
+        if (!$att_id) {
+            $skipped++;
+            continue;
+        }
+
+        $old_path = get_attached_file($att_id);
+        if (!$old_path || !file_exists($old_path)) {
+            $skipped++;
+            continue;
+        }
+
+        // Schon im geschuetzten Ordner?
+        if (strpos($old_path, '/fobi-protected/') !== false) {
+            $skipped++;
+            continue;
+        }
+
+        // Neue Position
+        $filename = basename($old_path);
+        $new_path = $protected_path . '/' . $filename;
+
+        // Dateiname-Kollision vermeiden
+        $i = 1;
+        while (file_exists($new_path)) {
+            $info = pathinfo($filename);
+            $new_path = $protected_path . '/' . $info['filename'] . '-' . $i . '.' . ($info['extension'] ?? 'pdf');
+            $i++;
+        }
+
+        // Datei verschieben
+        if (rename($old_path, $new_path)) {
+            // WordPress Attachment-Metadaten aktualisieren
+            update_attached_file($att_id, $new_path);
+            $migrated++;
+        } else {
+            $errors[] = 'Fehler beim Verschieben: ' . $filename;
+        }
+    }
+
+    wp_send_json_success([
+        'message' => sprintf('%d Dateien geschuetzt, %d uebersprungen, %d Fehler.', $migrated, $skipped, count($errors)),
+        'migrated' => $migrated,
+        'skipped' => $skipped,
+        'errors' => $errors,
+    ]);
+});
+
 add_action('admin_menu', function(){
     // Unter Fortbildungen CPT
     add_submenu_page(
@@ -541,6 +635,38 @@ function fobi_ebcp_settings_page_render(){
                             <input type="checkbox" name="store_proof_as_attachment" value="1" <?php checked($s['store_proof_as_attachment'],'1'); ?>>
                             Originalbeleg als Attachment speichern
                         </label>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Dateischutz</th>
+                    <td>
+                        <p class="description">Neue Uploads werden automatisch im geschuetzten Ordner <code>fobi-protected/</code> gespeichert (kein direkter HTTP-Zugriff).</p>
+                        <button type="button" id="fobi-migrate-protected" class="button">Bestehende Dateien schuetzen</button>
+                        <span id="fobi-migrate-status" style="margin-left:10px;"></span>
+                        <script>
+                        jQuery(function($){
+                            $('#fobi-migrate-protected').on('click', function(){
+                                var $btn = $(this), $status = $('#fobi-migrate-status');
+                                if (!confirm('Alle bestehenden Fortbildungs-Attachments in den geschuetzten Ordner verschieben?')) return;
+                                $btn.prop('disabled', true).text('Verschiebe...');
+                                $status.text('').css('color','');
+                                $.post(ajaxurl, {
+                                    action: 'fobi_migrate_protected',
+                                    nonce: '<?php echo wp_create_nonce('fobi_migrate_protected'); ?>'
+                                }, function(res){
+                                    $btn.prop('disabled', false).text('Bestehende Dateien schuetzen');
+                                    if (res.success) {
+                                        $status.text(res.data.message).css('color','#46b450');
+                                        if (res.data.errors && res.data.errors.length) {
+                                            console.error('Migration Errors:', res.data.errors);
+                                        }
+                                    } else {
+                                        $status.text(res.data || 'Fehler').css('color','#dc3232');
+                                    }
+                                });
+                            });
+                        });
+                        </script>
                     </td>
                 </tr>
             </table>

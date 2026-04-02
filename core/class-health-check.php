@@ -59,6 +59,12 @@ class DGPTM_Health_Check {
 			'permission_callback' => [ $this, 'check_auth' ],
 		] );
 
+		register_rest_route( 'dgptm/v1', '/survey-diag', [
+			'methods'             => 'GET',
+			'callback'            => [ $this, 'handle_survey_diag' ],
+			'permission_callback' => [ $this, 'check_auth' ],
+		] );
+
 		register_rest_route( 'dgptm/v1', '/fobi-repair', [
 			'methods'             => 'POST',
 			'callback'            => [ $this, 'handle_fobi_repair' ],
@@ -96,6 +102,85 @@ class DGPTM_Health_Check {
 	 * Fobi Attachment Debug
 	 * GET /wp-json/dgptm/v1/fobi-attachment?post_id=41979
 	 */
+	/**
+	 * Survey-Diagnose: Alle Surveys mit Fragen und Antwort-Statistiken
+	 * GET /wp-json/dgptm/v1/survey-diag?id=1 (einzeln) oder ohne id (alle)
+	 */
+	public function handle_survey_diag( $request ) {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'dgptm_survey_';
+		$survey_id = intval( $request->get_param( 'id' ) ?? 0 );
+
+		// Surveys laden
+		if ( $survey_id ) {
+			$surveys = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$prefix}s WHERE id = %d", $survey_id ) );
+		} else {
+			$surveys = $wpdb->get_results( "SELECT * FROM {$prefix}s ORDER BY id" );
+		}
+
+		$result = [];
+		foreach ( $surveys as $s ) {
+			$questions = $wpdb->get_results( $wpdb->prepare(
+				"SELECT * FROM {$prefix}questions WHERE survey_id = %d ORDER BY sort_order",
+				$s->id
+			) );
+
+			$response_count = $wpdb->get_var( $wpdb->prepare(
+				"SELECT COUNT(*) FROM {$prefix}responses WHERE survey_id = %d AND status = 'completed'",
+				$s->id
+			) );
+
+			$q_data = [];
+			foreach ( $questions as $q ) {
+				$choices = $q->choices ? json_decode( $q->choices, true ) : [];
+				$skip = $q->skip_logic ? json_decode( $q->skip_logic, true ) : [];
+				$validation = $q->validation_rules ? json_decode( $q->validation_rules, true ) : [];
+
+				// Antwort-Statistik fuer diese Frage
+				$answers = $wpdb->get_col( $wpdb->prepare(
+					"SELECT a.answer_value FROM {$prefix}answers a
+					 JOIN {$prefix}responses r ON r.id = a.response_id
+					 WHERE a.question_id = %d AND r.status = 'completed'",
+					$q->id
+				) );
+
+				$q_data[] = [
+					'id' => $q->id,
+					'sort_order' => $q->sort_order,
+					'group_label' => $q->group_label,
+					'type' => $q->question_type,
+					'text' => $q->question_text,
+					'description' => $q->description,
+					'choices' => $choices,
+					'required' => (bool) $q->is_required,
+					'skip_logic' => $skip,
+					'validation' => $validation,
+					'parent_id' => $q->parent_question_id,
+					'parent_value' => $q->parent_answer_value,
+					'answer_count' => count( $answers ),
+					'sample_answers' => array_slice( $answers, 0, 5 ),
+				];
+			}
+
+			$result[] = [
+				'id' => $s->id,
+				'title' => $s->title,
+				'slug' => $s->slug,
+				'description' => $s->description,
+				'status' => $s->status,
+				'access_mode' => $s->access_mode,
+				'duplicate_check' => $s->duplicate_check,
+				'show_progress' => (bool) $s->show_progress,
+				'allow_save_resume' => (bool) $s->allow_save_resume,
+				'completion_text' => $s->completion_text,
+				'response_count' => (int) $response_count,
+				'questions' => $q_data,
+			];
+		}
+
+		return new WP_REST_Response( $result, 200 );
+	}
+
 	public function handle_fobi_attachment( $request ) {
 		$post_id = intval( $request->get_param( 'post_id' ) ?? 0 );
 		if ( ! $post_id ) return new WP_REST_Response( [ 'error' => 'post_id fehlt' ], 400 );

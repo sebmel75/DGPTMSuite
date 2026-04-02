@@ -224,9 +224,14 @@ $status_labels = [
                             <div class="dgptm-fe-choices-list">
                                 <?php
                                 $flat_choices = is_array($choices) && !isset($choices['rows']) ? $choices : [];
+                                $cwt = isset($validation['choices_with_text']) ? (array) $validation['choices_with_text'] : [];
                                 foreach ($flat_choices as $choice) : ?>
                                     <div class="dgptm-fe-choice-item">
                                         <input type="text" class="dgptm-fe-choice-input" value="<?php echo esc_attr($choice); ?>">
+                                        <label class="dgptm-fe-choice-text-toggle" title="Textfeld bei Auswahl anzeigen" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;cursor:pointer;margin:0 6px;">
+                                            <input type="checkbox" class="dgptm-fe-choice-has-text" <?php checked(in_array($choice, $cwt, true)); ?>>
+                                            <small>Textfeld</small>
+                                        </label>
                                         <button type="button" class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-btn-danger dgptm-fe-remove-choice">&times;</button>
                                     </div>
                                 <?php endforeach; ?>

@@ -308,6 +308,10 @@
                 $list.append(
                     '<div class="dgptm-fe-choice-item">' +
                     '<input type="text" class="dgptm-fe-choice-input" value="" placeholder="Option...">' +
+                    '<label class="dgptm-fe-choice-text-toggle" title="Textfeld bei Auswahl anzeigen" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;cursor:pointer;margin:0 6px;">' +
+                    '<input type="checkbox" class="dgptm-fe-choice-has-text">' +
+                    '<small>Textfeld</small>' +
+                    '</label>' +
                     '<button type="button" class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-btn-danger dgptm-fe-remove-choice">&times;</button>' +
                     '</div>'
                 );
@@ -481,14 +485,21 @@
                     parent_answer_value: ''
                 };
 
-                // Choices
+                // Choices + per-choice text fields
                 if (type === 'radio' || type === 'checkbox' || type === 'select') {
                     var choices = [];
-                    $item.find('.dgptm-fe-choice-input').each(function() {
-                        var val = $.trim($(this).val());
-                        if (val) choices.push(val);
+                    var choicesWithText = [];
+                    $item.find('.dgptm-fe-choice-item').each(function() {
+                        var val = $.trim($(this).find('.dgptm-fe-choice-input').val());
+                        if (val) {
+                            choices.push(val);
+                            if ($(this).find('.dgptm-fe-choice-has-text').is(':checked')) {
+                                choicesWithText.push(val);
+                            }
+                        }
                     });
                     if (choices.length > 0) q.choices = choices;
+                    if (choicesWithText.length > 0) validation.choices_with_text = choicesWithText;
                 }
 
                 // Matrix

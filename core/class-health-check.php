@@ -59,6 +59,12 @@ class DGPTM_Health_Check {
 			'permission_callback' => [ $this, 'check_auth' ],
 		] );
 
+		register_rest_route( 'dgptm/v1', '/fobi-repair', [
+			'methods'             => 'POST',
+			'callback'            => [ $this, 'handle_fobi_repair' ],
+			'permission_callback' => [ $this, 'check_auth' ],
+		] );
+
 		register_rest_route( 'dgptm/v1', '/fobi-attachment', [
 			'methods'             => 'GET',
 			'callback'            => [ $this, 'handle_fobi_attachment' ],
@@ -113,6 +119,85 @@ class DGPTM_Health_Check {
 			'meta_attachements' => $meta_val,
 			'meta__attachements' => $meta_underscore,
 			'all_attach_meta' => $all_attach_meta,
+		], 200 );
+	}
+
+	/**
+	 * Fobi Attachment Repair
+	 * POST /wp-json/dgptm/v1/fobi-repair
+	 */
+	public function handle_fobi_repair( $request ) {
+		global $wpdb;
+
+		$upload_dir = wp_upload_dir();
+		$protected_path = $upload_dir['basedir'] . '/fobi-protected';
+		$protected_url = $upload_dir['baseurl'] . '/fobi-protected';
+
+		if ( ! is_dir( $protected_path ) ) {
+			return new WP_REST_Response( [ 'error' => 'fobi-protected Ordner nicht gefunden' ], 404 );
+		}
+
+		// Alle Dateien im geschuetzten Ordner
+		$files = glob( $protected_path . '/*.*' );
+		$file_map = [];
+		foreach ( $files as $f ) {
+			$file_map[ basename( $f ) ] = $f;
+		}
+
+		// Alle Fortbildungen mit attachements = 0 oder leer
+		$broken = $wpdb->get_results(
+			"SELECT p.ID, p.post_title, pm.meta_value
+			 FROM {$wpdb->posts} p
+			 JOIN {$wpdb->postmeta} pm ON pm.post_id = p.ID AND pm.meta_key = 'attachements'
+			 WHERE p.post_type = 'fortbildung'
+			 AND (pm.meta_value = '0' OR pm.meta_value = '' OR pm.meta_value IS NULL)"
+		);
+
+		$repaired = 0;
+		$not_found = 0;
+		$details = [];
+
+		foreach ( $broken as $post ) {
+			$post_id = $post->ID;
+			$title = $post->post_title;
+
+			// Versuche Attachment ueber post_parent zu finden
+			$attachment = $wpdb->get_row( $wpdb->prepare(
+				"SELECT ID, guid FROM {$wpdb->posts} WHERE post_parent = %d AND post_type = 'attachment' LIMIT 1",
+				$post_id
+			) );
+
+			if ( $attachment ) {
+				$att_id = $attachment->ID;
+				$att_path = get_attached_file( $att_id );
+
+				// Pruefen ob Datei existiert (evtl. schon verschoben)
+				if ( ! $att_path || ! file_exists( $att_path ) ) {
+					// In fobi-protected suchen
+					$att_filename = basename( $attachment->guid );
+					if ( isset( $file_map[ $att_filename ] ) ) {
+						// Pfad in WP aktualisieren
+						update_attached_file( $att_id, $file_map[ $att_filename ] );
+						$att_path = $file_map[ $att_filename ];
+					}
+				}
+
+				// ACF-Feld auf Attachment-ID setzen (nicht URL!)
+				update_post_meta( $post_id, 'attachements', strval( $att_id ) );
+				$repaired++;
+				$details[] = [ 'post_id' => $post_id, 'title' => $title, 'att_id' => $att_id, 'status' => 'repaired' ];
+			} else {
+				$not_found++;
+				$details[] = [ 'post_id' => $post_id, 'title' => $title, 'status' => 'no_attachment' ];
+			}
+		}
+
+		return new WP_REST_Response( [
+			'broken_total' => count( $broken ),
+			'repaired' => $repaired,
+			'not_found' => $not_found,
+			'files_in_protected' => count( $files ),
+			'details_sample' => array_slice( $details, 0, 20 ),
 		], 200 );
 	}
 

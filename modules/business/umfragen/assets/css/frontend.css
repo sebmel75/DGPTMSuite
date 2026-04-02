@@ -778,3 +778,150 @@ select + .dgptm-other-text-input {
         padding: 40px 16px;
     }
 }
+
+/* ========================================
+   Sticky Navigation (Mobile + Desktop)
+   ======================================== */
+
+.dgptm-survey-nav {
+    position: sticky;
+    bottom: 0;
+    z-index: 50;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    padding: 12px 0;
+    border-top: 1px solid var(--dgptm-gray-200);
+    margin-top: 20px;
+}
+
+/* Scroll-to-Error Animation */
+.dgptm-question-error-state {
+    animation: dgptm-shake 0.4s ease;
+}
+
+@keyframes dgptm-shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-4px); }
+    40%, 80% { transform: translateX(4px); }
+}
+
+/* Fragen-Indikator */
+.dgptm-question-counter {
+    font-size: 12px;
+    color: var(--dgptm-gray-400);
+    margin-bottom: 4px;
+}
+
+/* Anonymitaets-Hinweis */
+.dgptm-anonymity-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: var(--dgptm-primary-light);
+    border-radius: var(--dgptm-radius-sm);
+    font-size: 13px;
+    color: var(--dgptm-gray-600);
+    margin-bottom: 20px;
+}
+
+.dgptm-anonymity-notice svg {
+    flex-shrink: 0;
+}
+
+/* ========================================
+   Dashboard-Integration (Forum-Vorbild)
+   ======================================== */
+
+.dgptm-dash .dgptm-survey-container { max-width: 100%; }
+
+/* Header kompakter */
+.dgptm-dash .dgptm-survey-header { margin-bottom: 16px; text-align: left; }
+.dgptm-dash .dgptm-survey-title { font-size: 16px; font-weight: 600; color: #1d2327; }
+.dgptm-dash .dgptm-survey-description { font-size: 13px; color: #888; max-width: 100%; margin: 0; }
+
+/* Progress bar subtiler */
+.dgptm-dash .dgptm-progress-bar { height: 4px; margin-bottom: 4px; }
+.dgptm-dash .dgptm-progress-fill { background: #0073aa; }
+.dgptm-dash .dgptm-progress-text { font-size: 11px; margin-bottom: 12px; }
+
+/* Group Cards: flach */
+.dgptm-dash .dgptm-group-card {
+    border: 1px solid #eee;
+    border-radius: 4px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    box-shadow: none;
+}
+.dgptm-dash .dgptm-group-card .dgptm-section-title {
+    font-size: 14px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+}
+
+/* Questions kompakter */
+.dgptm-dash .dgptm-question {
+    padding: 10px 0;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+    border-bottom: 1px solid #f0f0f0;
+}
+.dgptm-dash .dgptm-question:hover { box-shadow: none; }
+.dgptm-dash .dgptm-question-label { font-size: 13px; font-weight: 600; color: #1d2327; }
+.dgptm-dash .dgptm-question-help { font-size: 12px; }
+.dgptm-dash .dgptm-required { color: #dc3232; }
+
+/* Inputs: Forum-Stil */
+.dgptm-dash .dgptm-input {
+    padding: 8px !important;
+    border: 1px solid #ccc !important;
+    border-radius: 4px !important;
+    font-size: 13px !important;
+    box-shadow: none !important;
+}
+
+/* Radio/Checkbox kompakter */
+.dgptm-dash .dgptm-radio-label,
+.dgptm-dash .dgptm-checkbox-label {
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    border: 1px solid #eee;
+}
+
+/* Buttons: Forum-Stil */
+.dgptm-dash .dgptm-btn {
+    padding: 4px 10px !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+    font-weight: 400 !important;
+    box-shadow: none !important;
+    min-height: 0 !important;
+}
+.dgptm-dash .dgptm-btn-next,
+.dgptm-dash .dgptm-btn-submit,
+.dgptm-dash .dgptm-btn-primary { background: #0073aa !important; color: #fff !important; }
+.dgptm-dash .dgptm-btn-next:hover,
+.dgptm-dash .dgptm-btn-submit:hover { background: #005d8c !important; }
+.dgptm-dash .dgptm-btn-prev,
+.dgptm-dash .dgptm-btn-secondary { background: #f0f0f0 !important; color: #555 !important; }
+
+/* Sticky Nav im Dashboard */
+.dgptm-dash .dgptm-survey-nav {
+    background: rgba(255, 255, 255, 0.97);
+    border-top: 1px solid #eee;
+    padding: 8px 0;
+}
+
+/* Matrix-Tabelle */
+.dgptm-dash .dgptm-matrix-table th,
+.dgptm-dash .dgptm-matrix-table td { padding: 6px 8px; font-size: 12px; }
+
+/* Success */
+.dgptm-dash .dgptm-survey-success { padding: 24px; }
+.dgptm-dash .dgptm-survey-success h3 { font-size: 15px; }
+
+/* Anonymitaets-Hinweis */
+.dgptm-dash .dgptm-anonymity-notice { padding: 8px 12px; font-size: 12px; margin-bottom: 12px; }

@@ -54,6 +54,32 @@ if ($resume_data) {
         </div>
     <?php endif; ?>
 
+    <?php
+    // Anonymitaets-Hinweis basierend auf Zugangsart
+    $anonymity_msg = '';
+    if ($survey->access_mode === 'public' && $survey->duplicate_check !== 'none') {
+        $anonymity_msg = 'Ihre Antworten werden anonymisiert gespeichert. Zur Vermeidung von Doppelteilnahmen werden technische Daten temporaer erfasst.';
+    } elseif ($survey->access_mode === 'logged_in') {
+        $anonymity_msg = 'Ihre Antworten werden mit Ihrem Benutzerkonto verknuepft und sind nur fuer Administratoren einsehbar.';
+    } elseif ($survey->access_mode === 'public' && $survey->duplicate_check === 'none') {
+        $anonymity_msg = 'Ihre Antworten werden vollstaendig anonym gespeichert.';
+    }
+    if ($anonymity_msg) : ?>
+        <div class="dgptm-anonymity-notice">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <?php echo esc_html($anonymity_msg); ?>
+        </div>
+    <?php endif; ?>
+
+    <?php
+    // Gesamtanzahl sichtbarer Pflichtfragen zaehlen
+    $total_questions = count($questions);
+    $required_count = 0;
+    foreach ($questions as $q_count) {
+        if ($q_count->is_required) $required_count++;
+    }
+    ?>
+
     <form id="dgptm-survey-form-<?php echo esc_attr($survey->id); ?>" class="dgptm-survey-form" enctype="multipart/form-data">
         <input type="hidden" name="survey_id" value="<?php echo esc_attr($survey->id); ?>">
         <input type="hidden" name="response_id" value="<?php echo esc_attr($response_id); ?>">
@@ -70,7 +96,10 @@ if ($resume_data) {
                     <h3 class="dgptm-section-title"><?php echo esc_html($group_label); ?></h3>
                 <?php endif; ?>
 
-                <?php foreach ($group_questions as $q) :
+                <?php
+                static $question_counter = 0;
+                foreach ($group_questions as $q) :
+                    $question_counter++;
                     $choices = $q->choices ? json_decode($q->choices, true) : [];
                     $validation = $q->validation_rules ? json_decode($q->validation_rules, true) : [];
                     $skip = $q->skip_logic ? json_decode($q->skip_logic, true) : [];
@@ -93,6 +122,10 @@ if ($resume_data) {
                          data-required="<?php echo esc_attr($q->is_required); ?>"
                          <?php if ($skip) : ?>data-skip-logic="<?php echo esc_attr(wp_json_encode($skip)); ?>"<?php endif; ?>
                          <?php if ($is_nested) : ?>data-parent-id="<?php echo esc_attr($q->parent_question_id); ?>" data-parent-value="<?php echo esc_attr($q->parent_answer_value); ?>"<?php endif; ?>>
+
+                        <?php if (!$is_nested) : ?>
+                            <div class="dgptm-question-counter">Frage <?php echo $question_counter; ?> von <?php echo $total_questions; ?></div>
+                        <?php endif; ?>
 
                         <label class="dgptm-question-label">
                             <?php echo esc_html($q->question_text); ?>

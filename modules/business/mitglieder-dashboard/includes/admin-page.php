@@ -25,7 +25,7 @@ if (function_exists('acf_get_field_groups') && function_exists('acf_get_fields')
         if (!is_array($group_fields)) continue;
         foreach ($group_fields as $f) {
             if ($f['type'] === 'true_false' && !empty($f['name'])) {
-                $acf_fields[$f['name']] = $f['name'] . ' (' . $f['label'] . ')';
+                $acf_fields[$f['name']] = $f['label'];
             }
         }
     }

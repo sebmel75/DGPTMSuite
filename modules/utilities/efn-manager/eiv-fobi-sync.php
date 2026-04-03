@@ -1017,8 +1017,9 @@ add_action( 'init', function() {
  * ============================================================ */
 
 add_action( 'admin_menu', function() {
+    // Unter Fortbildungen CPT (nicht mehr unter Einstellungen)
     add_submenu_page(
-        'options-general.php',
+        'edit.php?post_type=fortbildung',
         'EIV-Fobi Sync',
         'EIV-Fobi Sync',
         'manage_options',
@@ -1445,13 +1446,14 @@ function dgptm_eiv_render_admin_page() {
                     var groups = resp.data.groups;
                     if (!groups.length) { $('#eiv-groups-container').html('<p>Keine Fortbildungen vorhanden.</p>'); return; }
 
-                    var html = '<p><strong>'+groups.length+' Veranstaltungsgruppen</strong></p>';
+                    var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><p style="margin:0;"><strong>'+groups.length+' Veranstaltungsgruppen</strong></p><div><button class="button eiv-bulk-delete" style="color:#d63638;" disabled>Ausgewaehlte loeschen</button> <label style="margin-left:8px;font-size:12px;"><input type="checkbox" id="eiv-select-all"> Alle</label></div></div>';
                     groups.forEach(function(g, idx){
                         var ids = g.entries.map(function(e){ return e.id; });
                         var badge = g.vnr ? '<span class="eiv-badge eiv-badge-vnr">VNR '+$('<span>').text(g.vnr).html()+'</span>' : '<span class="eiv-badge eiv-badge-no-vnr">Keine VNR</span>';
 
                         html += '<div class="eiv-group" data-idx="'+idx+'">';
                         html += '<div class="eiv-group-header" data-toggle="'+idx+'">';
+                        html += '<input type="checkbox" class="eiv-bulk-check" data-ids=\''+JSON.stringify(ids)+'\' style="margin-right:8px;" onclick="event.stopPropagation()">';
                         html += '<span class="eiv-group-title">'+$('<span>').text(g.title||'(Ohne Titel)').html()+'</span>';
                         html += '<span class="eiv-group-meta">'+g.count+' Einträge &middot; '+g.points+' Pkt. '+badge+'</span>';
                         html += '</div>';
@@ -1524,6 +1526,39 @@ function dgptm_eiv_render_admin_page() {
                 $.post(ajaxurl, { action:'dgptm_eiv_delete_group', _wpnonce:nonce, post_ids:ids }, function(r){
                     $btn.prop('disabled',false).text('Gelöscht');
                     if (r.success) { alert(r.data.deleted+' Einträge gelöscht.'); $('#eiv-load-groups').click(); }
+                    else alert('Fehler: '+(r.data?.message||''));
+                });
+            });
+
+            // Bulk: Select All
+            $gc.on('change', '#eiv-select-all', function(){
+                var checked = this.checked;
+                $gc.find('.eiv-bulk-check').prop('checked', checked);
+                $gc.find('.eiv-bulk-delete').prop('disabled', !checked);
+            });
+
+            // Bulk: Checkbox-Aenderung → Button aktivieren
+            $gc.on('change', '.eiv-bulk-check', function(){
+                var any = $gc.find('.eiv-bulk-check:checked').length > 0;
+                $gc.find('.eiv-bulk-delete').prop('disabled', !any);
+            });
+
+            // Bulk: Ausgewaehlte loeschen
+            $gc.on('click', '.eiv-bulk-delete', function(){
+                var allIds = [];
+                $gc.find('.eiv-bulk-check:checked').each(function(){
+                    var ids = $(this).data('ids');
+                    if (Array.isArray(ids)) allIds = allIds.concat(ids);
+                });
+                if (!allIds.length) return;
+                var count = $gc.find('.eiv-bulk-check:checked').length;
+                if (!confirm(count + ' Veranstaltungsgruppen mit insgesamt ' + allIds.length + ' Eintraegen unwiderruflich loeschen?')) return;
+
+                var $btn = $(this);
+                $btn.prop('disabled', true).text('Loesche...');
+                $.post(ajaxurl, { action:'dgptm_eiv_delete_group', _wpnonce:nonce, post_ids:allIds }, function(r){
+                    $btn.prop('disabled', false).text('Ausgewaehlte loeschen');
+                    if (r.success) { alert(r.data.deleted + ' Eintraege geloescht.'); $('#eiv-load-groups').click(); }
                     else alert('Fehler: '+(r.data?.message||''));
                 });
             });

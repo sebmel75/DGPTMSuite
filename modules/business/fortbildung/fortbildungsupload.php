@@ -509,15 +509,6 @@ add_action('admin_menu', function(){
         'fobi-ebcp-settings',
         'fobi_ebcp_settings_page_render'
     );
-    // Zusaetzlich unter DGPTM Suite (besser auffindbar)
-    add_submenu_page(
-        'dgptm-suite',
-        'Fortbildungsnachweis-Upload Einstellungen',
-        'Fobi-Upload (KI)',
-        'manage_options',
-        'fobi-ebcp-settings',
-        'fobi_ebcp_settings_page_render'
-    );
 });
 
 function fobi_ebcp_settings_page_render(){

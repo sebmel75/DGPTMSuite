@@ -53,6 +53,12 @@ class DGPTM_Health_Check {
 			'permission_callback' => [ $this, 'check_auth' ],
 		] );
 
+		register_rest_route( 'dgptm/v1', '/menu-diag', [
+			'methods'             => 'GET',
+			'callback'            => [ $this, 'handle_menu_diag' ],
+			'permission_callback' => [ $this, 'check_auth' ],
+		] );
+
 		register_rest_route( 'dgptm/v1', '/user-check', [
 			'methods'             => 'GET',
 			'callback'            => [ $this, 'handle_user_check' ],
@@ -500,6 +506,44 @@ class DGPTM_Health_Check {
 			'total' => count($posts), 'grouped' => $grouped,
 			'candidates' => $candidates, 'candidate_count' => count($candidates),
 		], 200 );
+	}
+
+	/**
+	 * Menu-Diagnose: zeigt registrierte Admin-Submenus
+	 */
+	public function handle_menu_diag( $request ) {
+		global $submenu;
+		$fobi_menu = $submenu['edit.php?post_type=fortbildung'] ?? [];
+		$suite_menu = $submenu['dgptm-suite'] ?? [];
+
+		$result = [
+			'fortbildung_submenu' => [],
+			'dgptm_suite_submenu' => [],
+			'function_exists' => [
+				'fobi_ebcp_settings_page_render' => function_exists('fobi_ebcp_settings_page_render'),
+				'fobi_aek_settings_page_render' => function_exists('fobi_aek_settings_page_render'),
+				'fobi_vnr_neubewertung_shortcode' => function_exists('fobi_vnr_neubewertung_shortcode'),
+			],
+			'file_loaded' => [
+				'fortbildungsupload' => defined('FOBI_EBCP_OPTION_KEY'),
+			],
+		];
+
+		foreach ($fobi_menu as $item) {
+			$result['fortbildung_submenu'][] = [
+				'title' => $item[0] ?? '',
+				'cap' => $item[1] ?? '',
+				'slug' => $item[2] ?? '',
+			];
+		}
+		foreach ($suite_menu as $item) {
+			$result['dgptm_suite_submenu'][] = [
+				'title' => $item[0] ?? '',
+				'slug' => $item[2] ?? '',
+			];
+		}
+
+		return new WP_REST_Response($result, 200);
 	}
 
 	/**

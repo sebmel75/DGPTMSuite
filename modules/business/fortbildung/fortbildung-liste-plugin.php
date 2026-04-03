@@ -1234,6 +1234,10 @@ function frp_admin_page_callback(){ ?>
 add_action('admin_menu','fobi_aek_add_settings_menu');
 function fobi_aek_add_settings_menu(){
     add_submenu_page('edit.php?post_type=fortbildung','Einstellungen (Fortbildungen)','Einstellungen','manage_options','fobi-aek-settings','fobi_aek_settings_page_render');
+    // Fobi-Upload (KI) — hier registriert weil in fortbildungsupload.php evtl. zu spaet
+    if (function_exists('fobi_ebcp_settings_page_render')) {
+        add_submenu_page('edit.php?post_type=fortbildung','Fobi-Upload (KI)','Fobi-Upload (KI)','manage_options','fobi-ebcp-settings','fobi_ebcp_settings_page_render');
+    }
 }
 function fobi_aek_settings_page_render() {
     if(function_exists('wp_enqueue_media')) wp_enqueue_media();

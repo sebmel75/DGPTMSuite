@@ -499,26 +499,7 @@ add_action('wp_ajax_fobi_migrate_protected', function(){
     ]);
 });
 
-add_action('admin_menu', function(){
-    // Unter Fortbildungen CPT
-    add_submenu_page(
-        'edit.php?post_type=fortbildung',
-        'Fortbildungsnachweis-Upload Einstellungen',
-        'Fobi-Upload (KI)',
-        'manage_options',
-        'fobi-ebcp-settings',
-        'fobi_ebcp_settings_page_render'
-    );
-    // Auch unter DGPTM Suite (Fallback falls CPT-Menu nicht sichtbar)
-    add_submenu_page(
-        'dgptm-suite',
-        'Fobi-Upload (KI)',
-        'Fobi-Upload (KI)',
-        'manage_options',
-        'fobi-ebcp-settings-suite',
-        'fobi_ebcp_settings_page_render'
-    );
-}, 30);
+// Menu-Registrierung erfolgt in fortbildung-liste-plugin.php (fobi_aek_add_settings_menu)
 
 function fobi_ebcp_settings_page_render(){
     if( ! current_user_can('manage_options')) wp_die('Keine Berechtigung.');

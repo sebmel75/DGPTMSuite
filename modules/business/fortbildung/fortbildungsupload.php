@@ -509,6 +509,15 @@ add_action('admin_menu', function(){
         'fobi-ebcp-settings',
         'fobi_ebcp_settings_page_render'
     );
+    // Auch unter DGPTM Suite (Fallback falls CPT-Menu nicht sichtbar)
+    add_submenu_page(
+        'dgptm-suite',
+        'Fobi-Upload (KI)',
+        'Fobi-Upload (KI)',
+        'manage_options',
+        'fobi-ebcp-settings-suite',
+        'fobi_ebcp_settings_page_render'
+    );
 }, 30);
 
 function fobi_ebcp_settings_page_render(){

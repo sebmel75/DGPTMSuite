@@ -504,12 +504,12 @@ add_action('admin_menu', function(){
     add_submenu_page(
         'edit.php?post_type=fortbildung',
         'Fortbildungsnachweis-Upload Einstellungen',
-        'Upload-Einstellungen',
+        'Fobi-Upload (KI)',
         'manage_options',
         'fobi-ebcp-settings',
         'fobi_ebcp_settings_page_render'
     );
-});
+}, 30);
 
 function fobi_ebcp_settings_page_render(){
     if( ! current_user_can('manage_options')) wp_die('Keine Berechtigung.');

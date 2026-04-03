@@ -1233,11 +1233,18 @@ function frp_admin_page_callback(){ ?>
  * ============================================================ */
 add_action('admin_menu','fobi_aek_add_settings_menu', 20);
 function fobi_aek_add_settings_menu(){
-    add_submenu_page('edit.php?post_type=fortbildung','Einstellungen (Fortbildungen)','Einstellungen','manage_options','fobi-aek-settings','fobi_aek_settings_page_render');
-    add_submenu_page('edit.php?post_type=fortbildung','Fobi-Upload (KI)','Fobi-Upload (KI)','manage_options','fobi-ebcp-settings', function() {
+    $parent = 'edit.php?post_type=fortbildung';
+    add_submenu_page($parent,'Einstellungen (Fortbildungen)','Einstellungen','manage_options','fobi-aek-settings','fobi_aek_settings_page_render');
+
+    $result = add_submenu_page($parent,'Fobi-Upload (KI)','Fobi-Upload (KI)','manage_options','dgptm-fobi-upload-ki', function() {
         if (function_exists('fobi_ebcp_settings_page_render')) { fobi_ebcp_settings_page_render(); }
         else { echo '<div class="wrap"><h1>Fobi-Upload (KI)</h1><p>Modul nicht geladen.</p></div>'; }
     });
+
+    // Debug: logge ob add_submenu_page erfolgreich war
+    if (!$result) {
+        error_log('[DGPTM] add_submenu_page fuer fobi-ebcp-settings hat false zurueckgegeben. Parent: ' . $parent);
+    }
 }
 function fobi_aek_settings_page_render() {
     if(function_exists('wp_enqueue_media')) wp_enqueue_media();

@@ -275,8 +275,10 @@ class DGPTM_Frontend_Page_Editor {
      * Speichere Seitenzuordnung
      */
     public function save_page_assignment($user_id) {
-        // Sicherheitsprüfung
-        if (!current_user_can('edit_user', $user_id)) {
+        // Nur Admins dürfen Seitenzuordnungen ändern (gleicher Check wie display_page_selector)
+        // WICHTIG: edit_user (Singular) reicht NICHT — das gilt auch für eigenes Profil,
+        // und ohne das Formularfeld wird die Zuweisung gelöscht!
+        if (!current_user_can('edit_users')) {
             return;
         }
 

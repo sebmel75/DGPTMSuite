@@ -186,7 +186,6 @@ class DGPTM_Suite_Role_Manager {
         $admin_only_fields = [
             'stellenanzeigen_anlegen',  // Stellenanzeigen-Berechtigung
             'umfragen',                 // Umfragen-Berechtigung
-            'editable_pages',           // Frontend Page Editor (ACF-Fallback)
         ];
 
         if (isset($field['name']) && in_array($field['name'], $admin_only_fields, true)) {

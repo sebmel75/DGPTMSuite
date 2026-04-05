@@ -250,6 +250,8 @@ class DGPTM_Frontend_Page_Editor {
      * Setzt die Edit-Session BEVOR WordPress Admin-Zugriff prueft
      */
     public function early_session_setup() {
+        error_log('[FPE-EARLY] init called, GET=' . json_encode($_GET));
+
         if (!isset($_GET['dgptm_edit_page'])) {
             return;
         }
@@ -257,16 +259,21 @@ class DGPTM_Frontend_Page_Editor {
         $page_id = intval($_GET['dgptm_edit_page']);
         $nonce = isset($_GET['nonce']) ? $_GET['nonce'] : '';
 
-        if (!$page_id || !$nonce) return;
-        if (!wp_verify_nonce($nonce, 'dgptm_edit_' . $page_id)) return;
-        if (!is_user_logged_in()) return;
+        error_log('[FPE-EARLY] page_id=' . $page_id . ' nonce=' . $nonce . ' logged_in=' . (is_user_logged_in() ? 'yes' : 'no'));
+
+        if (!$page_id || !$nonce) { error_log('[FPE-EARLY] BAIL: missing page_id or nonce'); return; }
+        if (!wp_verify_nonce($nonce, 'dgptm_edit_' . $page_id)) { error_log('[FPE-EARLY] BAIL: nonce invalid'); return; }
+        if (!is_user_logged_in()) { error_log('[FPE-EARLY] BAIL: not logged in'); return; }
 
         $user_id = get_current_user_id();
-        if (!$this->user_can_edit_page($user_id, $page_id)) return;
+        $can_edit = $this->user_can_edit_page($user_id, $page_id);
+        error_log('[FPE-EARLY] user=' . $user_id . ' can_edit=' . ($can_edit ? 'yes' : 'no'));
+        if (!$can_edit) { error_log('[FPE-EARLY] BAIL: no permission'); return; }
 
-        // Session SOFORT setzen — bevor template_redirect oder admin_init
+        // Session SOFORT setzen
         $timeout = $this->get_session_timeout();
         set_transient('dgptm_editing_' . $user_id, $page_id, $timeout);
+        error_log('[FPE-EARLY] SESSION SET user=' . $user_id . ' page=' . $page_id . ' timeout=' . $timeout);
     }
 
     /**

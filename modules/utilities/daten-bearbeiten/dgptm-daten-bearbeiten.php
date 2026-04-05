@@ -21,7 +21,7 @@ if (!class_exists('DGPTM_Daten_Bearbeiten')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '1.1.0';
+        private $version = '1.2.0';
 
         // Cache-Konstanten
         const CACHE_KEY_CLINICS = 'dgptm_clinics_cache';

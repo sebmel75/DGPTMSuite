@@ -370,12 +370,19 @@ jQuery(document).ready(function($) {
     $(document).on('submit', '#dgptm-daten-form', function(e) {
         e.preventDefault();
 
-        console.log('Form submitted');
+        console.log('[DatenBearbeiten] Form submitted');
+
+        // Defensive Pruefung: localized data verfuegbar?
+        if (typeof dgptmDatenBearbeiten === 'undefined') {
+            console.error('[DatenBearbeiten] dgptmDatenBearbeiten nicht definiert!');
+            alert('Fehler: Formular-Konfiguration nicht geladen. Bitte Seite neu laden.');
+            return;
+        }
 
         // Frische DOM-Referenzen (Dashboard-AJAX-kompatibel)
         var $btn = $('#submit-btn');
         var $msgs = $('#form-messages');
-        $btn.prop('disabled', true).text(dgptmDatenBearbeiten.strings.saving);
+        $btn.prop('disabled', true).text(dgptmDatenBearbeiten.strings.saving || 'Wird gespeichert...');
         $msgs.empty();
 
         // Determine employer value and whether it's manual
@@ -486,9 +493,18 @@ jQuery(document).ready(function($) {
     initDatenBearbeiten();
 
     // Re-init when dashboard loads this tab via AJAX
-    $(document).on('dgptm_tab_loaded', function() {
-        initDatenBearbeiten();
-        loadStudentStatus(); // Studistatus auch bei AJAX-Tab-Wechsel laden
+    $(document).on('dgptm_tab_loaded dgptm:ftab-switched', function() {
+        setTimeout(initDatenBearbeiten, 50);
+        loadStudentStatus();
+    });
+
+    // Fallback: Click-Handler auf Submit-Button (falls form-submit geblockt wird)
+    $(document).on('click', '#submit-btn', function(e) {
+        var $form = $('#dgptm-daten-form');
+        if ($form.length) {
+            console.log('[DatenBearbeiten] Submit-Button geklickt, triggere Form-Submit');
+            $form.trigger('submit');
+        }
     });
 
     // ============================================

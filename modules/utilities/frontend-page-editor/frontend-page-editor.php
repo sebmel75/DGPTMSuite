@@ -91,6 +91,10 @@ class DGPTM_Frontend_Page_Editor {
         // Heartbeat: Session verlaengern bei Aktivitaet
         add_filter('heartbeat_received', [$this, 'heartbeat_extend_session'], 10, 2);
 
+        // BYPASS: Frueher Hook um Session vor Admin-Load zu setzen
+        // init laeuft vor template_redirect UND vor admin-Checks
+        add_action('init', [$this, 'early_session_setup'], 1);
+
         // Settings-Seite
         add_action('admin_menu', [$this, 'register_settings_page'], 25);
         add_action('wp_ajax_dgptm_fpe_save_settings', [$this, 'ajax_save_settings']);
@@ -242,6 +246,30 @@ class DGPTM_Frontend_Page_Editor {
     }
 
     /**
+     * Fruehe Session-Einrichtung auf init (Priority 1)
+     * Setzt die Edit-Session BEVOR WordPress Admin-Zugriff prueft
+     */
+    public function early_session_setup() {
+        if (!isset($_GET['dgptm_edit_page'])) {
+            return;
+        }
+
+        $page_id = intval($_GET['dgptm_edit_page']);
+        $nonce = isset($_GET['nonce']) ? $_GET['nonce'] : '';
+
+        if (!$page_id || !$nonce) return;
+        if (!wp_verify_nonce($nonce, 'dgptm_edit_' . $page_id)) return;
+        if (!is_user_logged_in()) return;
+
+        $user_id = get_current_user_id();
+        if (!$this->user_can_edit_page($user_id, $page_id)) return;
+
+        // Session SOFORT setzen — bevor template_redirect oder admin_init
+        $timeout = $this->get_session_timeout();
+        set_transient('dgptm_editing_' . $user_id, $page_id, $timeout);
+    }
+
+    /**
      * Redirect Handler für Frontend Edit-Requests
      */
     public function handle_edit_redirect() {
@@ -306,11 +334,6 @@ class DGPTM_Frontend_Page_Editor {
      * Stattdessen arbeiten wir nur mit map_meta_cap für spezifische Posts.
      */
     public function grant_editing_capabilities($allcaps, $caps, $args, $user) {
-        // Nur im Admin-Bereich
-        if (!is_admin()) {
-            return $allcaps;
-        }
-
         // Admin hat schon alle Rechte
         if (!empty($allcaps['manage_options'])) {
             return $allcaps;
@@ -331,24 +354,24 @@ class DGPTM_Frontend_Page_Editor {
             return $allcaps;
         }
 
-        // Minimal notwendige Capabilities fuer die zugewiesene Seite
-        // Diese gelten NUR waehrend der aktiven Edit-Session
-        $allcaps['upload_files'] = true;
+        // BYPASS: read-Capability ist zwingend fuer wp-admin Zugang
+        // Muss IMMER gesetzt sein (nicht nur is_admin), weil WordPress
+        // die Cap vor dem Admin-Load prueft
         $allcaps['read'] = true;
+        $allcaps['upload_files'] = true;
 
-        // WordPress/Elementor brauchen diese primitiven Caps fuer den Editor-Zugang
-        // Ohne diese kommt "Sorry, you are not allowed to edit this item"
+        // Editor-Capabilities nur im Admin-Kontext
         $allcaps['edit_posts'] = true;
         $allcaps['edit_pages'] = true;
         $allcaps['edit_published_pages'] = true;
-        $allcaps['edit_others_pages'] = true;  // Noetig weil der User nicht Autor der Seite ist
+        $allcaps['edit_others_pages'] = true;
         $allcaps['publish_pages'] = true;
 
         // Elementor-spezifisch
         if (isset($_GET['action']) && $_GET['action'] === 'elementor') {
             $allcaps['elementor'] = true;
             $allcaps['edit_with_elementor'] = true;
-            $allcaps['unfiltered_html'] = true;  // Elementor Widgets brauchen das
+            $allcaps['unfiltered_html'] = true;
         }
 
         return $allcaps;
@@ -408,15 +431,14 @@ class DGPTM_Frontend_Page_Editor {
         // Prüfe ob User eine Edit-Session hat
         $editing_page = get_transient('dgptm_editing_' . $user_id);
         if (!$editing_page) {
-            // Keine Session - User sollte nicht im Admin sein
+            // Keine Session — nur blocken wenn User zugewiesene Seiten hat
+            // (sonst ist es ein normaler User der zufaellig im Admin ist)
             $assigned_pages = $this->get_assigned_pages($user_id);
             if (!empty($assigned_pages)) {
                 // User hat zugewiesene Seiten, aber keine aktive Session
-                wp_die(
-                    'Bitte nutzen Sie den Frontend-Editor-Link, um Ihre Seiten zu bearbeiten.',
-                    'Zugriff verweigert',
-                    ['back_link' => true]
-                );
+                // Redirect zum Frontend statt wp_die (freundlicher)
+                wp_redirect(home_url('/'));
+                exit;
             }
             return;
         }

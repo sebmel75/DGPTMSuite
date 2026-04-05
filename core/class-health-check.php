@@ -70,6 +70,11 @@ class DGPTM_Health_Check {
 					$result['fpe_has_FPE_EARLY'] = strpos($content, '[FPE-EARLY]') !== false;
 					$result['fpe_size'] = filesize($fpe_file);
 					$result['fpe_mtime'] = date('Y-m-d H:i:s', filemtime($fpe_file));
+					// Extract early_session_setup lines 250-285
+					$pos = strpos($content, 'function early_session_setup');
+					if ($pos !== false) {
+						$result['fn_snippet'] = substr($content, $pos, 800);
+					}
 				} else {
 					$result['fpe_file'] = 'NOT FOUND';
 				}

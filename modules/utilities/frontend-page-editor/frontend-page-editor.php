@@ -92,8 +92,23 @@ class DGPTM_Frontend_Page_Editor {
         add_filter('heartbeat_received', [$this, 'heartbeat_extend_session'], 10, 2);
 
         // BYPASS: Frueher Hook um Session vor Admin-Load zu setzen
-        // init laeuft vor template_redirect UND vor admin-Checks
         add_action('init', [$this, 'early_session_setup'], 1);
+
+        // Debug: Jeden Redirect loggen
+        add_filter('wp_redirect', function($location) {
+            $uid = get_current_user_id();
+            $editing = get_transient('dgptm_editing_' . $uid);
+            if ($editing) {
+                $dbg = WP_CONTENT_DIR . '/fpe-debug.log';
+                $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5);
+                $callers = [];
+                foreach ($trace as $t) {
+                    $callers[] = ($t['class'] ?? '') . ($t['type'] ?? '') . ($t['function'] ?? '?') . ':' . ($t['line'] ?? '?');
+                }
+                file_put_contents($dbg, date('H:i:s') . ' [REDIRECT] to=' . $location . ' uid=' . $uid . ' callers=' . implode(' < ', $callers) . "\n", FILE_APPEND);
+            }
+            return $location;
+        }, 1);
 
         // Settings-Seite
         add_action('admin_menu', [$this, 'register_settings_page'], 25);

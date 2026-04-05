@@ -1,8 +1,8 @@
 {
     "id": "frontend-page-editor",
     "name": "Frontend Seiteneditor",
-    "description": "Ermöglicht Benutzern ohne Admin-Rechte die Bearbeitung zugewiesener Seiten mit Elementor oder WordPress Editor (User Meta + ACF Fallback) - v4.1.0: CRITICAL Security Fix",
-    "version": "4.1.0",
+    "description": "Ermöglicht Benutzern ohne Admin-Rechte die Bearbeitung zugewiesener Seiten mit Elementor oder WordPress Editor. Konfigurierbarer Session-Timeout, Heartbeat-Verlängerung, Dashboard-kompatibel.",
+    "version": "4.2.0",
     "author": "Sebastian Melzer",
     "main_file": "frontend-page-editor.php",
     "dependencies": [],

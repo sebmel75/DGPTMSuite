@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM Frontend Seiteneditor
  * Description: Ermöglicht Benutzern die Bearbeitung ausgewählter Seiten mit Elementor oder WordPress Editor
- * Version: 4.1.0
+ * Version: 4.2.0
  * Author: Sebastian Melzer
  * Text Domain: dgptm-fpe
  *
@@ -27,6 +27,19 @@ if (!defined('ABSPATH')) {
 class DGPTM_Frontend_Page_Editor {
 
     private static $instance = null;
+    const OPT_KEY = 'dgptm_fpe_settings';
+    const DEFAULT_SESSION_TIMEOUT = 4800; // 80 Minuten
+
+    private function get_settings() {
+        return wp_parse_args(get_option(self::OPT_KEY, []), [
+            'session_timeout' => self::DEFAULT_SESSION_TIMEOUT,
+        ]);
+    }
+
+    private function get_session_timeout() {
+        $s = $this->get_settings();
+        return max(600, intval($s['session_timeout'])); // Minimum 10 Minuten
+    }
 
     public static function get_instance() {
         if (null === self::$instance) {
@@ -74,6 +87,13 @@ class DGPTM_Frontend_Page_Editor {
         // Capability Granting
         add_filter('user_has_cap', [$this, 'grant_editing_capabilities'], 999, 4);
         add_filter('map_meta_cap', [$this, 'map_page_capabilities'], 10, 4);
+
+        // Heartbeat: Session verlaengern bei Aktivitaet
+        add_filter('heartbeat_received', [$this, 'heartbeat_extend_session'], 10, 2);
+
+        // Settings-Seite
+        add_action('admin_menu', [$this, 'register_settings_page'], 25);
+        add_action('wp_ajax_dgptm_fpe_save_settings', [$this, 'ajax_save_settings']);
     }
 
     /**
@@ -253,8 +273,9 @@ class DGPTM_Frontend_Page_Editor {
             );
         }
 
-        // Session setzen (1 Stunde gültig)
-        set_transient('dgptm_editing_' . $user_id, $page_id, 3600);
+        // Session setzen (konfigurierbar, Default 4800s = 80min)
+        $timeout = $this->get_session_timeout();
+        set_transient('dgptm_editing_' . $user_id, $page_id, $timeout);
 
         // Prüfe ob Elementor-Seite
         $is_elementor = get_post_meta($page_id, '_elementor_edit_mode', true) === 'builder';
@@ -529,56 +550,14 @@ class DGPTM_Frontend_Page_Editor {
             return;
         }
 
-        // Inline JavaScript zum Blockieren von Navigation
-        ?>
-        <script>
-        jQuery(document).ready(function($) {
-            // Blockiere Klicks auf Admin-Links (außer Post-Editor)
-            $('a').on('click', function(e) {
-                var $link = $(this);
-
-                // WICHTIG: Elementor Panel und UI-Elemente NICHT blockieren
-                if ($link.closest('#elementor-panel, .elementor-panel, #elementor-navigator, .elementor-element, .elementor-editor-active, .e-route-panel').length > 0) {
-                    return; // Elementor UI-Elemente durchlassen
-                }
-
-                // Links ohne href oder mit # durchlassen (oft JavaScript-Navigation)
-                var href = $link.attr('href');
-                if (!href || href === '#' || href.indexOf('#') === 0) {
-                    return;
-                }
-
-                // Erlaube nur bestimmte URLs
-                var allowed = [
-                    'post.php',
-                    'admin-ajax.php',
-                    'async-upload.php',
-                    'media-upload.php',
-                    'elementor'
-                ];
-
-                var isAllowed = false;
-                for (var i = 0; i < allowed.length; i++) {
-                    if (href.indexOf(allowed[i]) !== -1) {
-                        isAllowed = true;
-                        break;
-                    }
-                }
-
-                // Externe Links und Frontend-Links erlauben
-                if (href.indexOf('wp-admin') === -1 || href.indexOf('<?php echo home_url(); ?>') !== -1) {
-                    isAllowed = true;
-                }
-
-                if (!isAllowed) {
-                    e.preventDefault();
-                    alert('Navigation im Admin-Bereich ist eingeschränkt. Sie können nur Ihre zugewiesene Seite bearbeiten.');
-                    return false;
-                }
-            });
-        });
-        </script>
-        <?php
+        wp_enqueue_script(
+            'dgptm-fpe-security',
+            plugin_dir_url(__FILE__) . 'js/security.js',
+            ['jquery'],
+            '4.2.0',
+            true
+        );
+        wp_localize_script('dgptm-fpe-security', 'dgptmFpeHomeUrl', home_url('/'));
     }
 
     /**
@@ -676,6 +655,95 @@ class DGPTM_Frontend_Page_Editor {
         </div>
         <?php
         return ob_get_clean();
+    }
+
+    /**
+     * Heartbeat: Edit-Session bei Aktivitaet verlaengern
+     */
+    public function heartbeat_extend_session($response, $data) {
+        if (!empty($data['dgptm_fpe_heartbeat'])) {
+            $user_id = get_current_user_id();
+            $editing_page = get_transient('dgptm_editing_' . $user_id);
+            if ($editing_page) {
+                $timeout = $this->get_session_timeout();
+                set_transient('dgptm_editing_' . $user_id, $editing_page, $timeout);
+                $response['dgptm_fpe_session'] = [
+                    'extended' => true,
+                    'remaining' => $timeout,
+                ];
+            } else {
+                $response['dgptm_fpe_session'] = ['expired' => true];
+            }
+        }
+        return $response;
+    }
+
+    /**
+     * Settings-Seite unter DGPTM Suite
+     */
+    public function register_settings_page() {
+        add_submenu_page(
+            'dgptm-suite',
+            'Frontend Page Editor',
+            'Seiteneditor',
+            'manage_options',
+            'dgptm-fpe-settings',
+            [$this, 'render_settings_page']
+        );
+    }
+
+    public function render_settings_page() {
+        if (!current_user_can('manage_options')) wp_die('Keine Berechtigung.');
+        $s = $this->get_settings();
+        ?>
+        <div class="wrap">
+            <h1>Frontend Seiteneditor — Einstellungen</h1>
+            <form method="post" id="dgptm-fpe-settings-form">
+                <?php wp_nonce_field('dgptm_fpe_save'); ?>
+                <table class="form-table">
+                    <tr>
+                        <th>Session-Timeout (Sekunden)</th>
+                        <td>
+                            <input type="number" name="session_timeout" value="<?php echo esc_attr($s['session_timeout']); ?>" min="600" max="28800" step="60" style="width:120px;">
+                            <p class="description">
+                                Wie lange eine Edit-Session aktiv bleibt (Default: <?php echo self::DEFAULT_SESSION_TIMEOUT; ?>s = <?php echo round(self::DEFAULT_SESSION_TIMEOUT / 60); ?> Min).
+                                Wird bei Aktivitaet per Heartbeat automatisch verlaengert.
+                                Minimum: 600s (10 Min), Maximum: 28800s (8 Std).
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+                <p class="submit">
+                    <button type="submit" class="button button-primary">Einstellungen speichern</button>
+                </p>
+            </form>
+            <script>
+            jQuery('#dgptm-fpe-settings-form').on('submit', function(e) {
+                e.preventDefault();
+                var data = {
+                    action: 'dgptm_fpe_save_settings',
+                    nonce: '<?php echo wp_create_nonce('dgptm_fpe_save'); ?>',
+                    session_timeout: jQuery('[name="session_timeout"]').val()
+                };
+                jQuery.post(ajaxurl, data, function(r) {
+                    if (r.success) alert('Gespeichert.');
+                    else alert(r.data || 'Fehler');
+                });
+            });
+            </script>
+        </div>
+        <?php
+    }
+
+    public function ajax_save_settings() {
+        check_ajax_referer('dgptm_fpe_save', 'nonce');
+        if (!current_user_can('manage_options')) wp_send_json_error('Keine Berechtigung.');
+
+        $settings = [
+            'session_timeout' => max(600, min(28800, intval($_POST['session_timeout'] ?? self::DEFAULT_SESSION_TIMEOUT))),
+        ];
+        update_option(self::OPT_KEY, $settings);
+        wp_send_json_success('Einstellungen gespeichert.');
     }
 }
 

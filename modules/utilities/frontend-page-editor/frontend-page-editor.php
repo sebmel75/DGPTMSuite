@@ -345,6 +345,7 @@ class DGPTM_Frontend_Page_Editor {
 
         // Prüfe ob User in einer Edit-Session ist
         $editing_page = get_transient('dgptm_editing_' . $user->ID);
+        error_log('[FPE] grant_caps User=' . $user->ID . ' editing_page=' . var_export($editing_page, true) . ' caps_requested=' . implode(',', $caps));
         if (!$editing_page) {
             return $allcaps;
         }

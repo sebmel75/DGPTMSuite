@@ -94,48 +94,45 @@ class DGPTM_Frontend_Page_Editor {
         // BYPASS: Frueher Hook um Session vor Admin-Load zu setzen
         add_action('init', [$this, 'early_session_setup'], 1);
 
-        // BYPASS: Members Plugin Admin Access komplett deaktivieren fuer Edit-Sessions
-        add_action('admin_init', function() {
+        // BYPASS: Members Plugin access_check bei aktiver Edit-Session komplett entfernen
+        // Muss auf plugins_loaded laufen (BEVOR admin_init)
+        add_action('plugins_loaded', function() {
+            if (!is_admin()) return;
+            if (!is_user_logged_in()) return;
             $uid = get_current_user_id();
-            if (!$uid) return;
             $editing = get_transient('dgptm_editing_' . $uid);
             if (!$editing) return;
 
-            // Members Plugin: Admin Access Check entfernen
-            $removed = remove_action('admin_init', 'Members\\AddOns\\AdminAccess\\access_check');
-            if (!$removed) {
-                // Alternative: ueber globale $wp_filter suchen
-                global $wp_filter;
-                if (isset($wp_filter['admin_init'])) {
-                    foreach ($wp_filter['admin_init']->callbacks as $priority => $callbacks) {
-                        foreach ($callbacks as $key => $callback) {
-                            if (is_string($key) && strpos($key, 'access_check') !== false) {
-                                unset($wp_filter['admin_init']->callbacks[$priority][$key]);
-                                $removed = true;
-                            }
+            // Members access_check aus admin_init entfernen
+            global $wp_filter;
+            if (isset($wp_filter['admin_init'])) {
+                foreach ($wp_filter['admin_init']->callbacks as $priority => &$callbacks) {
+                    foreach ($callbacks as $key => $callback) {
+                        $fn = $callback['function'] ?? null;
+                        $match = false;
+                        if (is_string($fn) && strpos($fn, 'access_check') !== false) $match = true;
+                        if (is_string($key) && strpos($key, 'access_check') !== false) $match = true;
+                        if ($match) {
+                            unset($callbacks[$key]);
+                            $dbg = WP_CONTENT_DIR . '/fpe-debug.log';
+                            file_put_contents($dbg, date('H:i:s') . " [MEMBERS-REMOVED] key=$key priority=$priority uid=$uid\n", FILE_APPEND);
                         }
                     }
                 }
             }
+        }, 999);
 
-            $dbg = WP_CONTENT_DIR . '/fpe-debug.log';
-            file_put_contents($dbg, date('H:i:s') . ' [MEMBERS-BYPASS] removed=' . ($removed ? 'Y' : 'N') . " uid=$uid editing=$editing\n", FILE_APPEND);
-        }, 0); // Priority 0 = vor Members
-
-        // Fallback: wp_redirect abfangen wenn Members oder andere Plugins zur Homepage redirecten
+        // Letzter Fallback: Redirect zur Homepage bei Edit-Session unterdruecken
         add_filter('wp_redirect', function($location, $status) {
             $uid = get_current_user_id();
             $editing = get_transient('dgptm_editing_' . $uid);
             if (!$editing) return $location;
 
-            // Wenn zur Homepage oder Login-Seite redirected wird → abbrechen
             $home = untrailingslashit(home_url());
-            $target = untrailingslashit($location);
-            if ($target === $home || $target === $home . '/' || strpos($location, 'wp-login.php') !== false) {
-                // Redirect komplett unterdruecken — wir sind im Editor
-                // Setze Header manuell zurueck und lade die Seite normal weiter
+            $target = untrailingslashit(rtrim($location, '/'));
+            if ($target === $home || strpos($location, 'wp-login.php') !== false) {
                 $dbg = WP_CONTENT_DIR . '/fpe-debug.log';
-                file_put_contents($dbg, date('H:i:s') . " [BYPASS] Blocked redirect to: $location\n", FILE_APPEND);
+                file_put_contents($dbg, date('H:i:s') . " [FALLBACK-BYPASS] Would redirect to: $location — blocked\n", FILE_APPEND);
                 return false;
             }
             return $location;

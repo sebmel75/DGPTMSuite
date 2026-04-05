@@ -447,14 +447,28 @@ class DGPTM_Frontend_Page_Editor {
         }
 
         $post_id = $args[0];
+        $post_obj = get_post($post_id);
+        if (!$post_obj) {
+            return $caps;
+        }
 
-        // Zugewiesene Seite in aktiver Session → erlauben
-        if ($editing_page == $post_id && $this->user_can_edit_page($user_id, $post_id)) {
+        // Revisionen/Autosaves: Prüfe Parent-Post statt Revision-ID
+        $check_id = $post_id;
+        if ($post_obj->post_type === 'revision') {
+            $check_id = $post_obj->post_parent;
+        }
+
+        // Zugewiesene Seite (oder deren Revision) → erlauben
+        if ($check_id == $editing_page && $this->user_can_edit_page($user_id, $editing_page)) {
             return ['exist'];
         }
 
+        // Attachments und andere CPTs nicht einschränken (Media-Upload etc.)
+        if ($post_obj->post_type !== 'page') {
+            return $caps;
+        }
+
         // Andere Seite bei aktiver Session → aktiv blockieren
-        // Verhindert dass breit gewährte Caps (edit_others_pages) Zugriff auf fremde Posts geben
         return ['do_not_allow'];
     }
 

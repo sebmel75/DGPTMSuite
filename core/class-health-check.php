@@ -53,6 +53,31 @@ class DGPTM_Health_Check {
 			'permission_callback' => [ $this, 'check_auth' ],
 		] );
 
+		register_rest_route( 'dgptm/v1', '/opcache-reset', [
+			'methods'             => 'POST',
+			'callback'            => function() {
+				$result = [];
+				if (function_exists('opcache_reset')) {
+					$result['opcache_reset'] = opcache_reset();
+				} else {
+					$result['opcache_reset'] = 'not available';
+				}
+				// Check file content to verify deploy
+				$fpe_file = DGPTM_SUITE_PATH . 'modules/utilities/frontend-page-editor/frontend-page-editor.php';
+				if (file_exists($fpe_file)) {
+					$content = file_get_contents($fpe_file);
+					$result['fpe_has_FPE2'] = strpos($content, '[FPE2]') !== false;
+					$result['fpe_has_FPE_EARLY'] = strpos($content, '[FPE-EARLY]') !== false;
+					$result['fpe_size'] = filesize($fpe_file);
+					$result['fpe_mtime'] = date('Y-m-d H:i:s', filemtime($fpe_file));
+				} else {
+					$result['fpe_file'] = 'NOT FOUND';
+				}
+				return new WP_REST_Response($result, 200);
+			},
+			'permission_callback' => [ $this, 'check_auth' ],
+		] );
+
 		register_rest_route( 'dgptm/v1', '/menu-diag', [
 			'methods'             => 'GET',
 			'callback'            => [ $this, 'handle_menu_diag' ],

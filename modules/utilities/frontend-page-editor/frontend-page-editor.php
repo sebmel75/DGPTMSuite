@@ -331,15 +331,24 @@ class DGPTM_Frontend_Page_Editor {
             return $allcaps;
         }
 
-        // SECURITY FIX: Gebe nur minimal notwendige Capabilities
-        // KEINE allgemeinen edit_pages/edit_published_pages mehr!
-        $allcaps['upload_files'] = true;  // Für Medien-Upload
-        $allcaps['read'] = true;  // Basis-Zugriff
+        // Minimal notwendige Capabilities fuer die zugewiesene Seite
+        // Diese gelten NUR waehrend der aktiven Edit-Session
+        $allcaps['upload_files'] = true;
+        $allcaps['read'] = true;
 
-        // Elementor-spezifisch (nur wenn Elementor-Editor geöffnet)
+        // WordPress/Elementor brauchen diese primitiven Caps fuer den Editor-Zugang
+        // Ohne diese kommt "Sorry, you are not allowed to edit this item"
+        $allcaps['edit_posts'] = true;
+        $allcaps['edit_pages'] = true;
+        $allcaps['edit_published_pages'] = true;
+        $allcaps['edit_others_pages'] = true;  // Noetig weil der User nicht Autor der Seite ist
+        $allcaps['publish_pages'] = true;
+
+        // Elementor-spezifisch
         if (isset($_GET['action']) && $_GET['action'] === 'elementor') {
             $allcaps['elementor'] = true;
             $allcaps['edit_with_elementor'] = true;
+            $allcaps['unfiltered_html'] = true;  // Elementor Widgets brauchen das
         }
 
         return $allcaps;
@@ -444,7 +453,7 @@ class DGPTM_Frontend_Page_Editor {
 
         // Erlaube nur post.php mit der richtigen Seite
         global $pagenow;
-        $allowed_pages = ['post.php', 'admin-ajax.php', 'async-upload.php', 'media-upload.php'];
+        $allowed_pages = ['post.php', 'admin-ajax.php', 'async-upload.php', 'media-upload.php', 'upload.php'];
 
         if (!in_array($pagenow, $allowed_pages)) {
             // Redirect zu zugewiesener Seite

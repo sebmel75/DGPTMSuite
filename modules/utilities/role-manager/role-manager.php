@@ -111,11 +111,17 @@ class DGPTM_Suite_Role_Manager {
             return;
         }
 
-        // Skip für post.php mit aktiver Edit-Session (Elementor/WP-Editor)
-        // WICHTIG: Prüfe IMMER $current_file === 'post.php', um Bypass via profile.php?action=edit zu verhindern
+        // Skip für post.php mit aktiver Edit-Session — NUR für die zugewiesene Seite
         $current_file = isset($_SERVER['SCRIPT_NAME']) ? basename($_SERVER['SCRIPT_NAME']) : '';
-        if ($current_file === 'post.php' && is_user_logged_in() && get_transient('dgptm_editing_' . get_current_user_id())) {
-            return;
+        if ($current_file === 'post.php' && is_user_logged_in()) {
+            $editing_page = get_transient('dgptm_editing_' . get_current_user_id());
+            if ($editing_page) {
+                $req_post = isset($_GET['post']) ? intval($_GET['post']) : (isset($_POST['post_ID']) ? intval($_POST['post_ID']) : 0);
+                if (!$req_post || $req_post == $editing_page) {
+                    return;
+                }
+                // Falsche Post-ID → nicht durchlassen, wird unten geblockt
+            }
         }
 
         // Skip für erlaubte Dateien

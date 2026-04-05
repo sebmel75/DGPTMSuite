@@ -434,22 +434,28 @@ class DGPTM_Frontend_Page_Editor {
             return $caps;
         }
 
-        $post_id = $args[0];
-
-        // Prüfe ob User diese Seite bearbeiten darf
-        if (!$this->user_can_edit_page($user_id, $post_id)) {
+        // Admins/Editoren nicht einschränken (rollenbasiert)
+        $user = get_userdata($user_id);
+        if ($user && (in_array('administrator', (array)$user->roles) || in_array('editor', (array)$user->roles))) {
             return $caps;
         }
 
         // Prüfe aktive Session
         $editing_page = get_transient('dgptm_editing_' . $user_id);
-        if ($editing_page != $post_id) {
+        if (!$editing_page) {
             return $caps;
         }
 
-        // Erlaube Zugriff auf diese spezifische Seite
-        // Setze nur 'exist' als Requirement (das hat jeder User)
-        return ['exist'];
+        $post_id = $args[0];
+
+        // Zugewiesene Seite in aktiver Session → erlauben
+        if ($editing_page == $post_id && $this->user_can_edit_page($user_id, $post_id)) {
+            return ['exist'];
+        }
+
+        // Andere Seite bei aktiver Session → aktiv blockieren
+        // Verhindert dass breit gewährte Caps (edit_others_pages) Zugriff auf fremde Posts geben
+        return ['do_not_allow'];
     }
 
     /**

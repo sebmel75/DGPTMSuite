@@ -66,6 +66,9 @@ class DGPTM_Suite_Role_Manager {
             add_action('wp_ajax_dgptm_update_role_capabilities', [$this, 'ajax_update_role_capabilities']);
             add_action('wp_ajax_dgptm_get_role_capabilities', [$this, 'ajax_get_role_capabilities']);
 
+            // SECURITY: Admin-only Profil-Felder für Nicht-Admins verstecken
+            add_filter('acf/prepare_field', [$this, 'hide_admin_only_profile_fields']);
+
             dgptm_log_info('Konstruktor erfolgreich abgeschlossen', 'role-manager');
         } catch (Exception $e) {
             dgptm_log_error('Fehler im Konstruktor - ' . $e->getMessage(), 'role-manager');
@@ -108,14 +111,8 @@ class DGPTM_Suite_Role_Manager {
             return;
         }
 
-        // Skip für Elementor-Editor und WP-Editor (Frontend Page Editor)
-        if (isset($_GET['action']) && in_array($_GET['action'], ['elementor', 'edit'])) {
-            if (is_user_logged_in() && get_transient('dgptm_editing_' . get_current_user_id())) {
-                return;
-            }
-        }
-
-        // Skip für post.php mit aktiver Edit-Session
+        // Skip für post.php mit aktiver Edit-Session (Elementor/WP-Editor)
+        // WICHTIG: Prüfe IMMER $current_file === 'post.php', um Bypass via profile.php?action=edit zu verhindern
         $current_file = isset($_SERVER['SCRIPT_NAME']) ? basename($_SERVER['SCRIPT_NAME']) : '';
         if ($current_file === 'post.php' && is_user_logged_in() && get_transient('dgptm_editing_' . get_current_user_id())) {
             return;
@@ -160,14 +157,10 @@ class DGPTM_Suite_Role_Manager {
             }
         }
 
-        // ZUSÄTZLICH: Prüfe ob User eine aktive Frontend-Editor Session hat
-        if (!$has_access) {
-            $editing_page = get_transient('dgptm_editing_' . $user->ID);
-            if ($editing_page) {
-                // User hat aktive Edit-Session → Zugriff erlauben
-                $has_access = true;
-            }
-        }
+        // SECURITY: Edit-Sessions erlauben KEINEN blanken Backend-Zugang mehr.
+        // post.php wird oben bereits separat erlaubt. Alle anderen Admin-Seiten
+        // (profile.php, edit.php, index.php etc.) bleiben für Session-User gesperrt.
+        // Upload/AJAX-Endpunkte werden über $allowed_files abgedeckt.
 
         // Kein Zugriff = Redirect zum Frontend
         if (!$has_access) {
@@ -175,6 +168,32 @@ class DGPTM_Suite_Role_Manager {
             wp_safe_redirect(home_url());
             exit;
         }
+    }
+
+    /**
+     * SECURITY: Admin-only ACF-Felder im Benutzerprofil verstecken
+     * Betrifft: Stellenanzeigen-Berechtigung, Umfragen etc.
+     * Herzzentrum-Felder haben bereits einen eigenen Filter in acf.php.
+     */
+    public function hide_admin_only_profile_fields($field) {
+        if (!is_admin() || !$field) return $field;
+
+        // Nur für Nicht-Admins einschränken (rollenbasiert)
+        $user = wp_get_current_user();
+        if (in_array('administrator', (array) $user->roles)) return $field;
+
+        // Admin-only Feldnamen auf Benutzerprofilen
+        $admin_only_fields = [
+            'stellenanzeigen_anlegen',  // Stellenanzeigen-Berechtigung
+            'umfragen',                 // Umfragen-Berechtigung
+            'editable_pages',           // Frontend Page Editor (ACF-Fallback)
+        ];
+
+        if (isset($field['name']) && in_array($field['name'], $admin_only_fields, true)) {
+            return false;
+        }
+
+        return $field;
     }
 
     /**

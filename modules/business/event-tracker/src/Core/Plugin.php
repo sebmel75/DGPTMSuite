@@ -304,7 +304,7 @@ class Plugin {
 	 * @param \WP_User $user User object.
 	 */
 	public function render_user_meta( $user ) {
-		if ( ! current_user_can( 'edit_user', $user->ID ) ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
 
@@ -337,7 +337,7 @@ class Plugin {
 	 * @param int $user_id User ID.
 	 */
 	public function save_user_meta( $user_id ) {
-		if ( ! current_user_can( 'edit_user', $user_id ) ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
 

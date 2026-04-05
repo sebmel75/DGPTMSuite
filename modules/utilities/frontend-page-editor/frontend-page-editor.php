@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM Frontend Seiteneditor
  * Description: Ermöglicht Benutzern die Bearbeitung ausgewählter Seiten mit Elementor oder WordPress Editor
- * Version: 4.2.0
+ * Version: 4.3.0
  * Author: Sebastian Melzer
  * Text Domain: dgptm-fpe
  *
@@ -30,6 +30,18 @@ class DGPTM_Frontend_Page_Editor {
     const OPT_KEY = 'dgptm_fpe_settings';
     const DEFAULT_SESSION_TIMEOUT = 4800; // 80 Minuten
 
+    /**
+     * Prüft ob der aktuelle User ein echte privilegierte Rolle hat (nicht dynamisch gewährt).
+     * WICHTIG: current_user_can() darf hier NICHT verwendet werden, da grant_editing_capabilities()
+     * Capabilities dynamisch vergibt und damit alle Security-Checks aushebelt.
+     */
+    private function is_privileged_user() {
+        $user = wp_get_current_user();
+        if (!$user || !$user->ID) return false;
+        $roles = (array) $user->roles;
+        return in_array('administrator', $roles) || in_array('editor', $roles);
+    }
+
     private function get_settings() {
         return wp_parse_args(get_option(self::OPT_KEY, []), [
             'session_timeout' => self::DEFAULT_SESSION_TIMEOUT,
@@ -55,7 +67,7 @@ class DGPTM_Frontend_Page_Editor {
         'dgptm-fpe-style', // Einzigartiger Name für dein Stylesheet
         plugin_dir_url(__FILE__) . 'css/frontend-page-editor.css', // Der Pfad zur CSS-Datei
         [], // Keine Abhängigkeiten
-        '4.2.0'
+        '4.3.0'
     );
 }
 
@@ -447,8 +459,8 @@ class DGPTM_Frontend_Page_Editor {
             return;
         }
 
-        // Admins und Editoren nicht einschränken
-        if (current_user_can('manage_options') || current_user_can('edit_others_pages')) {
+        // Admins und Editoren nicht einschränken (rollenbasiert, NICHT cap-basiert!)
+        if ($this->is_privileged_user()) {
             return;
         }
 
@@ -540,8 +552,8 @@ class DGPTM_Frontend_Page_Editor {
      * SECURITY: Verstecke Admin-Menüs für eingeschränkte User
      */
     public function hide_admin_menus() {
-        // Admins und Editoren nicht einschränken
-        if (current_user_can('manage_options') || current_user_can('edit_others_pages')) {
+        // Admins und Editoren nicht einschränken (rollenbasiert)
+        if ($this->is_privileged_user()) {
             return;
         }
 
@@ -566,8 +578,8 @@ class DGPTM_Frontend_Page_Editor {
      * SECURITY: Verstecke Admin Bar Items
      */
     public function hide_admin_bar_items() {
-        // Admins und Editoren nicht einschränken
-        if (current_user_can('manage_options') || current_user_can('edit_others_pages')) {
+        // Admins und Editoren nicht einschränken (rollenbasiert)
+        if ($this->is_privileged_user()) {
             return;
         }
 
@@ -594,8 +606,8 @@ class DGPTM_Frontend_Page_Editor {
      * SECURITY: JavaScript zum Blockieren von Navigation
      */
     public function enqueue_security_script() {
-        // Admins und Editoren nicht einschränken
-        if (current_user_can('manage_options') || current_user_can('edit_others_pages')) {
+        // Admins und Editoren nicht einschränken (rollenbasiert)
+        if ($this->is_privileged_user()) {
             return;
         }
 
@@ -614,7 +626,7 @@ class DGPTM_Frontend_Page_Editor {
             'dgptm-fpe-security',
             plugin_dir_url(__FILE__) . 'js/security.js',
             ['jquery'],
-            '4.2.0',
+            '4.3.0',
             true
         );
         wp_localize_script('dgptm-fpe-security', 'dgptmFpeHomeUrl', home_url('/'));

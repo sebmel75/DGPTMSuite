@@ -920,7 +920,7 @@ final class DGPTM_EFN_Labels {
 add_action( 'show_user_profile', 'dgptm_efn_user_profile_field' );
 add_action( 'edit_user_profile', 'dgptm_efn_user_profile_field' );
 function dgptm_efn_user_profile_field( $user ) {
-    if ( ! current_user_can( 'edit_user', $user->ID ) ) return;
+    if ( ! current_user_can( 'manage_options' ) ) return;
     $efn = get_user_meta( $user->ID, 'EFN', true ); ?>
     <h2>EFN (Einheitliche Fortbildungsnummer)</h2>
     <table class="form-table">
@@ -958,7 +958,7 @@ function dgptm_efn_user_profile_field( $user ) {
 add_action( 'personal_options_update', 'dgptm_efn_user_profile_save' );
 add_action( 'edit_user_profile_update', 'dgptm_efn_user_profile_save' );
 function dgptm_efn_user_profile_save( $user_id ) {
-    if ( ! current_user_can( 'edit_user', $user_id ) ) return;
+    if ( ! current_user_can( 'manage_options' ) ) return;
     if ( isset( $_POST['dgptm_efn'] ) ) {
         $val = preg_replace('/\D+/', '', (string) wp_unslash( $_POST['dgptm_efn'] ) );
         update_user_meta( $user_id, 'EFN', $val );

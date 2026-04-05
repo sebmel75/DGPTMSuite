@@ -94,28 +94,52 @@ class DGPTM_Frontend_Page_Editor {
         // BYPASS: Frueher Hook um Session vor Admin-Load zu setzen
         add_action('init', [$this, 'early_session_setup'], 1);
 
-        // BYPASS: Members Plugin Admin Access Check
-        // Members\AddOns\AdminAccess\access_check redirected User ohne Admin-Rolle
-        add_filter('members_admin_access_check', function($check) {
+        // BYPASS: Members Plugin Admin Access komplett deaktivieren fuer Edit-Sessions
+        add_action('admin_init', function() {
             $uid = get_current_user_id();
+            if (!$uid) return;
             $editing = get_transient('dgptm_editing_' . $uid);
-            if ($editing) return false; // false = kein Block
-            return $check;
-        }, 1);
+            if (!$editing) return;
 
-        // Fallback: wp_redirect abfangen wenn Members blockt
-        add_filter('wp_redirect', function($location) {
+            // Members Plugin: Admin Access Check entfernen
+            $removed = remove_action('admin_init', 'Members\\AddOns\\AdminAccess\\access_check');
+            if (!$removed) {
+                // Alternative: ueber globale $wp_filter suchen
+                global $wp_filter;
+                if (isset($wp_filter['admin_init'])) {
+                    foreach ($wp_filter['admin_init']->callbacks as $priority => $callbacks) {
+                        foreach ($callbacks as $key => $callback) {
+                            if (is_string($key) && strpos($key, 'access_check') !== false) {
+                                unset($wp_filter['admin_init']->callbacks[$priority][$key]);
+                                $removed = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            $dbg = WP_CONTENT_DIR . '/fpe-debug.log';
+            file_put_contents($dbg, date('H:i:s') . ' [MEMBERS-BYPASS] removed=' . ($removed ? 'Y' : 'N') . " uid=$uid editing=$editing\n", FILE_APPEND);
+        }, 0); // Priority 0 = vor Members
+
+        // Fallback: wp_redirect abfangen wenn Members oder andere Plugins zur Homepage redirecten
+        add_filter('wp_redirect', function($location, $status) {
             $uid = get_current_user_id();
             $editing = get_transient('dgptm_editing_' . $uid);
-            // Wenn User eine Edit-Session hat und zur Homepage redirected wird → blocken
-            if ($editing && $location === home_url('/')) {
-                return false; // Redirect abbrechen
-            }
-            if ($editing && $location === home_url()) {
+            if (!$editing) return $location;
+
+            // Wenn zur Homepage oder Login-Seite redirected wird → abbrechen
+            $home = untrailingslashit(home_url());
+            $target = untrailingslashit($location);
+            if ($target === $home || $target === $home . '/' || strpos($location, 'wp-login.php') !== false) {
+                // Redirect komplett unterdruecken — wir sind im Editor
+                // Setze Header manuell zurueck und lade die Seite normal weiter
+                $dbg = WP_CONTENT_DIR . '/fpe-debug.log';
+                file_put_contents($dbg, date('H:i:s') . " [BYPASS] Blocked redirect to: $location\n", FILE_APPEND);
                 return false;
             }
             return $location;
-        }, 1);
+        }, 0, 2);
 
         // Debug: Jeden Redirect loggen
         add_filter('wp_redirect', function($location) {

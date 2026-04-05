@@ -100,6 +100,9 @@ class DGPTM_Frontend_Page_Editor {
         add_filter('user_has_cap', [$this, 'grant_editing_capabilities'], 999, 4);
         add_filter('map_meta_cap', [$this, 'map_page_capabilities'], 10, 4);
 
+        // Safety-Net: Verhindere stille Degradierung auf "pending" für zugewiesene Seiten
+        add_filter('wp_insert_post_data', [$this, 'prevent_status_degradation'], 999, 2);
+
         // Heartbeat: Session verlaengern bei Aktivitaet
         add_filter('heartbeat_received', [$this, 'heartbeat_extend_session'], 10, 2);
 
@@ -397,25 +400,17 @@ class DGPTM_Frontend_Page_Editor {
             return $allcaps;
         }
 
-        // BYPASS: read-Capability ist zwingend fuer wp-admin Zugang
-        // Muss IMMER gesetzt sein (nicht nur is_admin), weil WordPress
-        // die Cap vor dem Admin-Load prueft
+        // Alle nötigen Caps für Page-Editing (Elementor + WP Editor)
         $allcaps['read'] = true;
         $allcaps['upload_files'] = true;
-
-        // Editor-Capabilities nur im Admin-Kontext
         $allcaps['edit_posts'] = true;
         $allcaps['edit_pages'] = true;
         $allcaps['edit_published_pages'] = true;
         $allcaps['edit_others_pages'] = true;
         $allcaps['publish_pages'] = true;
-
-        // Elementor-spezifisch
-        if (isset($_GET['action']) && $_GET['action'] === 'elementor') {
-            $allcaps['elementor'] = true;
-            $allcaps['edit_with_elementor'] = true;
-            $allcaps['unfiltered_html'] = true;
-        }
+        $allcaps['unfiltered_html'] = true;
+        $allcaps['elementor'] = true;
+        $allcaps['edit_with_elementor'] = true;
 
         return $allcaps;
     }
@@ -470,6 +465,32 @@ class DGPTM_Frontend_Page_Editor {
 
         // Andere Seite bei aktiver Session → aktiv blockieren
         return ['do_not_allow'];
+    }
+
+    /**
+     * Safety-Net: WordPress degradiert publish → pending wenn publish_pages fehlt.
+     * Dieser Filter fängt das ab und stellt den Original-Status wieder her.
+     */
+    public function prevent_status_degradation($data, $postarr) {
+        if ($data['post_type'] !== 'page') return $data;
+        if ($data['post_status'] !== 'pending') return $data;
+
+        $user_id = get_current_user_id();
+        if (!$user_id) return $data;
+
+        $editing_page = get_transient('dgptm_editing_' . $user_id);
+        if (!$editing_page) return $data;
+
+        $post_id = isset($postarr['ID']) ? intval($postarr['ID']) : 0;
+        if ($post_id != $editing_page) return $data;
+
+        // Original-Status der Seite beibehalten
+        $original = get_post($post_id);
+        if ($original && $original->post_status === 'publish') {
+            $data['post_status'] = 'publish';
+        }
+
+        return $data;
     }
 
     /**

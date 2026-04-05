@@ -55,7 +55,7 @@ class DGPTM_Frontend_Page_Editor {
         'dgptm-fpe-style', // Einzigartiger Name für dein Stylesheet
         plugin_dir_url(__FILE__) . 'css/frontend-page-editor.css', // Der Pfad zur CSS-Datei
         [], // Keine Abhängigkeiten
-        '4.1.0' // Versionsnummer, gut für Cache-Aktualisierungen
+        '4.2.0'
     );
 }
 

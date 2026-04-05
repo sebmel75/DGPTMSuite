@@ -262,7 +262,9 @@ class DGPTM_Frontend_Page_Editor {
         error_log('[FPE-EARLY] page_id=' . $page_id . ' nonce=' . $nonce . ' logged_in=' . (is_user_logged_in() ? 'yes' : 'no'));
 
         if (!$page_id || !$nonce) { error_log('[FPE-EARLY] BAIL: missing page_id or nonce'); return; }
-        if (!wp_verify_nonce($nonce, 'dgptm_edit_' . $page_id)) { error_log('[FPE-EARLY] BAIL: nonce invalid'); return; }
+        $nonce_valid = wp_verify_nonce($nonce, 'dgptm_edit_' . $page_id);
+        error_log('[FPE-EARLY] nonce_check=' . var_export($nonce_valid, true) . ' action=dgptm_edit_' . $page_id);
+        if (!$nonce_valid) { error_log('[FPE-EARLY] BAIL: nonce invalid — generiere neue Nonce und pruefe'); return; }
         if (!is_user_logged_in()) { error_log('[FPE-EARLY] BAIL: not logged in'); return; }
 
         $user_id = get_current_user_id();

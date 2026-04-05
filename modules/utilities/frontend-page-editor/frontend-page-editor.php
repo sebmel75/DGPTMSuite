@@ -94,6 +94,29 @@ class DGPTM_Frontend_Page_Editor {
         // BYPASS: Frueher Hook um Session vor Admin-Load zu setzen
         add_action('init', [$this, 'early_session_setup'], 1);
 
+        // BYPASS: Members Plugin Admin Access Check
+        // Members\AddOns\AdminAccess\access_check redirected User ohne Admin-Rolle
+        add_filter('members_admin_access_check', function($check) {
+            $uid = get_current_user_id();
+            $editing = get_transient('dgptm_editing_' . $uid);
+            if ($editing) return false; // false = kein Block
+            return $check;
+        }, 1);
+
+        // Fallback: wp_redirect abfangen wenn Members blockt
+        add_filter('wp_redirect', function($location) {
+            $uid = get_current_user_id();
+            $editing = get_transient('dgptm_editing_' . $uid);
+            // Wenn User eine Edit-Session hat und zur Homepage redirected wird → blocken
+            if ($editing && $location === home_url('/')) {
+                return false; // Redirect abbrechen
+            }
+            if ($editing && $location === home_url()) {
+                return false;
+            }
+            return $location;
+        }, 1);
+
         // Debug: Jeden Redirect loggen
         add_filter('wp_redirect', function($location) {
             $uid = get_current_user_id();

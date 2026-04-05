@@ -250,7 +250,9 @@ class DGPTM_Frontend_Page_Editor {
      * Setzt die Edit-Session BEVOR WordPress Admin-Zugriff prueft
      */
     public function early_session_setup() {
-        error_log('[FPE-EARLY] init called, GET=' . json_encode($_GET));
+        // Debug: in eigene Datei schreiben (umgeht OPcache-Probleme bei error_log)
+        $dbg = WP_CONTENT_DIR . '/fpe-debug.log';
+        file_put_contents($dbg, date('H:i:s') . ' init GET=' . json_encode($_GET) . "\n", FILE_APPEND);
 
         if (!isset($_GET['dgptm_edit_page'])) {
             return;
@@ -259,7 +261,23 @@ class DGPTM_Frontend_Page_Editor {
         $page_id = intval($_GET['dgptm_edit_page']);
         $nonce = isset($_GET['nonce']) ? $_GET['nonce'] : '';
 
-        error_log('[FPE2] page=' . $page_id . ' nonce=' . $nonce);
+        file_put_contents($dbg, date('H:i:s') . ' page=' . $page_id . ' nonce=' . $nonce . "\n", FILE_APPEND);
+
+        if (!$page_id || !$nonce) { file_put_contents($dbg, date('H:i:s') . " BAIL:empty\n", FILE_APPEND); return; }
+
+        $nv = wp_verify_nonce($nonce, 'dgptm_edit_' . $page_id);
+        file_put_contents($dbg, date('H:i:s') . ' nonce_valid=' . $nv . "\n", FILE_APPEND);
+        if (!$nv) { file_put_contents($dbg, date('H:i:s') . " BAIL:nonce\n", FILE_APPEND); return; }
+
+        $li = is_user_logged_in();
+        $uid = get_current_user_id();
+        file_put_contents($dbg, date('H:i:s') . ' logged=' . ($li?'Y':'N') . ' uid=' . $uid . ' cookies=' . implode(',', array_keys($_COOKIE)) . "\n", FILE_APPEND);
+        if (!$li) { file_put_contents($dbg, date('H:i:s') . " BAIL:login\n", FILE_APPEND); return; }
+
+        $ce = $this->user_can_edit_page($uid, $page_id);
+        $assigned = $this->get_assigned_pages($uid);
+        file_put_contents($dbg, date('H:i:s') . ' can_edit=' . ($ce?'Y':'N') . ' assigned=' . json_encode($assigned) . "\n", FILE_APPEND);
+        if (!$ce) { file_put_contents($dbg, date('H:i:s') . " BAIL:perm\n", FILE_APPEND); return; }
 
         if (!$page_id || !$nonce) { error_log('[FPE2] BAIL: empty'); return; }
 

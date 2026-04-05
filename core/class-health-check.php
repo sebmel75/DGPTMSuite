@@ -83,6 +83,16 @@ class DGPTM_Health_Check {
 			'permission_callback' => [ $this, 'check_auth' ],
 		] );
 
+		register_rest_route( 'dgptm/v1', '/fpe-debug', [
+			'methods'             => 'GET',
+			'callback'            => function() {
+				$file = WP_CONTENT_DIR . '/fpe-debug.log';
+				$content = file_exists($file) ? file_get_contents($file) : 'File not found';
+				return new WP_REST_Response(['log' => $content, 'size' => file_exists($file) ? filesize($file) : 0], 200);
+			},
+			'permission_callback' => [ $this, 'check_auth' ],
+		] );
+
 		register_rest_route( 'dgptm/v1', '/menu-diag', [
 			'methods'             => 'GET',
 			'callback'            => [ $this, 'handle_menu_diag' ],

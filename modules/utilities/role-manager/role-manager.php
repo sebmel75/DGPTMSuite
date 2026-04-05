@@ -171,9 +171,6 @@ class DGPTM_Suite_Role_Manager {
 
         // Kein Zugriff = Redirect zum Frontend
         if (!$has_access) {
-            $transient_check = get_transient('dgptm_editing_' . $user->ID);
-            $dbg = WP_CONTENT_DIR . '/fpe-debug.log';
-            file_put_contents($dbg, date('H:i:s') . ' [RM-BLOCK] uid=' . $user->ID . ' roles=' . implode(',', $user_roles) . ' transient=' . var_export($transient_check, true) . ' pagenow=' . ($pagenow ?? '?') . ' script=' . $current_file . ' GET=' . json_encode($_GET) . "\n", FILE_APPEND);
             dgptm_log_warning('Backend-Zugriff verweigert für User ' . $user->ID . ' mit Rollen: ' . implode(', ', $user_roles), 'role-manager');
             wp_safe_redirect(home_url());
             exit;

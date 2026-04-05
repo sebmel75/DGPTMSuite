@@ -94,13 +94,11 @@ class DGPTM_Frontend_Page_Editor {
         // BYPASS: Frueher Hook um Session vor Admin-Load zu setzen
         add_action('init', [$this, 'early_session_setup'], 1);
 
-        // BYPASS: Members Plugin access_check bei aktiver Edit-Session komplett entfernen
-        // Muss auf plugins_loaded laufen (BEVOR admin_init)
+        // BYPASS: Members Plugin + andere Admin-Blocker bei aktiver Edit-Session
         add_action('plugins_loaded', function() {
             if (!is_admin()) return;
             if (!is_user_logged_in()) return;
-            $uid = get_current_user_id();
-            $editing = get_transient('dgptm_editing_' . $uid);
+            $editing = get_transient('dgptm_editing_' . get_current_user_id());
             if (!$editing) return;
 
             // Members access_check aus admin_init entfernen
@@ -108,51 +106,27 @@ class DGPTM_Frontend_Page_Editor {
             if (isset($wp_filter['admin_init'])) {
                 foreach ($wp_filter['admin_init']->callbacks as $priority => &$callbacks) {
                     foreach ($callbacks as $key => $callback) {
-                        $fn = $callback['function'] ?? null;
-                        $match = false;
-                        if (is_string($fn) && strpos($fn, 'access_check') !== false) $match = true;
-                        if (is_string($key) && strpos($key, 'access_check') !== false) $match = true;
-                        if ($match) {
+                        if ((is_string($key) && strpos($key, 'access_check') !== false) ||
+                            (is_string($callback['function'] ?? null) && strpos($callback['function'], 'access_check') !== false)) {
                             unset($callbacks[$key]);
-                            $dbg = WP_CONTENT_DIR . '/fpe-debug.log';
-                            file_put_contents($dbg, date('H:i:s') . " [MEMBERS-REMOVED] key=$key priority=$priority uid=$uid\n", FILE_APPEND);
                         }
                     }
                 }
             }
         }, 999);
 
-        // Letzter Fallback: Redirect zur Homepage bei Edit-Session unterdruecken
+        // Fallback: Homepage-Redirects bei aktiver Edit-Session unterdruecken
         add_filter('wp_redirect', function($location, $status) {
-            $uid = get_current_user_id();
-            $editing = get_transient('dgptm_editing_' . $uid);
+            $editing = get_transient('dgptm_editing_' . get_current_user_id());
             if (!$editing) return $location;
 
             $home = untrailingslashit(home_url());
             $target = untrailingslashit(rtrim($location, '/'));
             if ($target === $home || strpos($location, 'wp-login.php') !== false) {
-                $dbg = WP_CONTENT_DIR . '/fpe-debug.log';
-                file_put_contents($dbg, date('H:i:s') . " [FALLBACK-BYPASS] Would redirect to: $location — blocked\n", FILE_APPEND);
                 return false;
             }
             return $location;
         }, 0, 2);
-
-        // Debug: Jeden Redirect loggen
-        add_filter('wp_redirect', function($location) {
-            $uid = get_current_user_id();
-            $editing = get_transient('dgptm_editing_' . $uid);
-            if ($editing) {
-                $dbg = WP_CONTENT_DIR . '/fpe-debug.log';
-                $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5);
-                $callers = [];
-                foreach ($trace as $t) {
-                    $callers[] = ($t['class'] ?? '') . ($t['type'] ?? '') . ($t['function'] ?? '?') . ':' . ($t['line'] ?? '?');
-                }
-                file_put_contents($dbg, date('H:i:s') . ' [REDIRECT] to=' . $location . ' uid=' . $uid . ' callers=' . implode(' < ', $callers) . "\n", FILE_APPEND);
-            }
-            return $location;
-        }, 1);
 
         // Settings-Seite
         add_action('admin_menu', [$this, 'register_settings_page'], 25);
@@ -309,54 +283,19 @@ class DGPTM_Frontend_Page_Editor {
      * Setzt die Edit-Session BEVOR WordPress Admin-Zugriff prueft
      */
     public function early_session_setup() {
-        // Debug: in eigene Datei schreiben (umgeht OPcache-Probleme bei error_log)
-        $dbg = WP_CONTENT_DIR . '/fpe-debug.log';
-        file_put_contents($dbg, date('H:i:s') . ' init GET=' . json_encode($_GET) . "\n", FILE_APPEND);
-
-        if (!isset($_GET['dgptm_edit_page'])) {
-            return;
-        }
+        if (!isset($_GET['dgptm_edit_page'])) return;
 
         $page_id = intval($_GET['dgptm_edit_page']);
         $nonce = isset($_GET['nonce']) ? $_GET['nonce'] : '';
 
-        file_put_contents($dbg, date('H:i:s') . ' page=' . $page_id . ' nonce=' . $nonce . "\n", FILE_APPEND);
+        if (!$page_id || !$nonce) return;
+        if (!wp_verify_nonce($nonce, 'dgptm_edit_' . $page_id)) return;
+        if (!is_user_logged_in()) return;
 
-        if (!$page_id || !$nonce) { file_put_contents($dbg, date('H:i:s') . " BAIL:empty\n", FILE_APPEND); return; }
+        $user_id = get_current_user_id();
+        if (!$this->user_can_edit_page($user_id, $page_id)) return;
 
-        $nv = wp_verify_nonce($nonce, 'dgptm_edit_' . $page_id);
-        file_put_contents($dbg, date('H:i:s') . ' nonce_valid=' . $nv . "\n", FILE_APPEND);
-        if (!$nv) { file_put_contents($dbg, date('H:i:s') . " BAIL:nonce\n", FILE_APPEND); return; }
-
-        $li = is_user_logged_in();
-        $uid = get_current_user_id();
-        file_put_contents($dbg, date('H:i:s') . ' logged=' . ($li?'Y':'N') . ' uid=' . $uid . ' cookies=' . implode(',', array_keys($_COOKIE)) . "\n", FILE_APPEND);
-        if (!$li) { file_put_contents($dbg, date('H:i:s') . " BAIL:login\n", FILE_APPEND); return; }
-
-        $ce = $this->user_can_edit_page($uid, $page_id);
-        $assigned = $this->get_assigned_pages($uid);
-        file_put_contents($dbg, date('H:i:s') . ' can_edit=' . ($ce?'Y':'N') . ' assigned=' . json_encode($assigned) . "\n", FILE_APPEND);
-        if (!$ce) { file_put_contents($dbg, date('H:i:s') . " BAIL:perm\n", FILE_APPEND); return; }
-
-        if (!$page_id || !$nonce) { error_log('[FPE2] BAIL: empty'); return; }
-
-        $nv = wp_verify_nonce($nonce, 'dgptm_edit_' . $page_id);
-        error_log('[FPE2] nonce_valid=' . $nv);
-        if (!$nv) { error_log('[FPE2] BAIL: bad nonce'); return; }
-
-        $li = is_user_logged_in();
-        $uid = get_current_user_id();
-        error_log('[FPE2] logged_in=' . ($li ? 'Y' : 'N') . ' uid=' . $uid . ' cookies=' . implode(',', array_keys($_COOKIE)));
-        if (!$li) { error_log('[FPE2] BAIL: not logged in'); return; }
-
-        $ce = $this->user_can_edit_page($uid, $page_id);
-        $assigned = $this->get_assigned_pages($uid);
-        error_log('[FPE2] can_edit=' . ($ce ? 'Y' : 'N') . ' assigned=' . json_encode($assigned));
-        if (!$ce) { error_log('[FPE2] BAIL: no perm'); return; }
-
-        $timeout = $this->get_session_timeout();
-        set_transient('dgptm_editing_' . $uid, $page_id, $timeout);
-        error_log('[FPE2] SESSION SET uid=' . $uid . ' page=' . $page_id);
+        set_transient('dgptm_editing_' . $user_id, $page_id, $this->get_session_timeout());
     }
 
     /**
@@ -435,7 +374,6 @@ class DGPTM_Frontend_Page_Editor {
 
         // Prüfe ob User in einer Edit-Session ist
         $editing_page = get_transient('dgptm_editing_' . $user->ID);
-        error_log('[FPE] grant_caps User=' . $user->ID . ' editing_page=' . var_export($editing_page, true) . ' caps_requested=' . implode(',', $caps));
         if (!$editing_page) {
             return $allcaps;
         }

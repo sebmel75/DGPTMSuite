@@ -259,28 +259,27 @@ class DGPTM_Frontend_Page_Editor {
         $page_id = intval($_GET['dgptm_edit_page']);
         $nonce = isset($_GET['nonce']) ? $_GET['nonce'] : '';
 
-        error_log('[FPE-EARLY] page_id=' . $page_id . ' nonce=' . $nonce . ' logged_in=' . (is_user_logged_in() ? 'yes' : 'no'));
+        error_log('[FPE2] page=' . $page_id . ' nonce=' . $nonce);
 
-        if (!$page_id || !$nonce) { error_log('[FPE-EARLY] BAIL: missing page_id or nonce'); return; }
-        $nonce_valid = wp_verify_nonce($nonce, 'dgptm_edit_' . $page_id);
-        error_log('[FPE-EARLY] nonce_check=' . var_export($nonce_valid, true) . ' action=dgptm_edit_' . $page_id);
-        if (!$nonce_valid) { error_log('[FPE-EARLY] BAIL: nonce invalid'); return; }
+        if (!$page_id || !$nonce) { error_log('[FPE2] BAIL: empty'); return; }
 
-        $logged_in = is_user_logged_in();
+        $nv = wp_verify_nonce($nonce, 'dgptm_edit_' . $page_id);
+        error_log('[FPE2] nonce_valid=' . $nv);
+        if (!$nv) { error_log('[FPE2] BAIL: bad nonce'); return; }
+
+        $li = is_user_logged_in();
         $uid = get_current_user_id();
-        error_log('[FPE-EARLY] logged_in=' . ($logged_in ? 'yes' : 'NO') . ' user_id=' . $uid);
-        if (!$logged_in) { error_log('[FPE-EARLY] BAIL: not logged in — cookies=' . json_encode(array_keys($_COOKIE))); return; }
-        if (!is_user_logged_in()) { error_log('[FPE-EARLY] BAIL: not logged in'); return; }
+        error_log('[FPE2] logged_in=' . ($li ? 'Y' : 'N') . ' uid=' . $uid . ' cookies=' . implode(',', array_keys($_COOKIE)));
+        if (!$li) { error_log('[FPE2] BAIL: not logged in'); return; }
 
-        $user_id = get_current_user_id();
-        $can_edit = $this->user_can_edit_page($user_id, $page_id);
-        error_log('[FPE-EARLY] user=' . $user_id . ' can_edit=' . ($can_edit ? 'yes' : 'no'));
-        if (!$can_edit) { error_log('[FPE-EARLY] BAIL: no permission'); return; }
+        $ce = $this->user_can_edit_page($uid, $page_id);
+        $assigned = $this->get_assigned_pages($uid);
+        error_log('[FPE2] can_edit=' . ($ce ? 'Y' : 'N') . ' assigned=' . json_encode($assigned));
+        if (!$ce) { error_log('[FPE2] BAIL: no perm'); return; }
 
-        // Session SOFORT setzen
         $timeout = $this->get_session_timeout();
-        set_transient('dgptm_editing_' . $user_id, $page_id, $timeout);
-        error_log('[FPE-EARLY] SESSION SET user=' . $user_id . ' page=' . $page_id . ' timeout=' . $timeout);
+        set_transient('dgptm_editing_' . $uid, $page_id, $timeout);
+        error_log('[FPE2] SESSION SET uid=' . $uid . ' page=' . $page_id);
     }
 
     /**

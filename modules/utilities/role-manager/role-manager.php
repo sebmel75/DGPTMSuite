@@ -108,13 +108,21 @@ class DGPTM_Suite_Role_Manager {
             return;
         }
 
-        // Skip für Elementor-Editor (Frontend Page Editor)
-        if (isset($_GET['action']) && $_GET['action'] === 'elementor') {
+        // Skip für Elementor-Editor und WP-Editor (Frontend Page Editor)
+        if (isset($_GET['action']) && in_array($_GET['action'], ['elementor', 'edit'])) {
+            if (is_user_logged_in() && get_transient('dgptm_editing_' . get_current_user_id())) {
+                return;
+            }
+        }
+
+        // Skip für post.php mit aktiver Edit-Session
+        $current_file = isset($_SERVER['SCRIPT_NAME']) ? basename($_SERVER['SCRIPT_NAME']) : '';
+        if ($current_file === 'post.php' && is_user_logged_in() && get_transient('dgptm_editing_' . get_current_user_id())) {
             return;
         }
 
         // Skip für erlaubte Dateien
-        $allowed_files = ['admin-ajax.php', 'admin-post.php'];
+        $allowed_files = ['admin-ajax.php', 'admin-post.php', 'async-upload.php', 'media-upload.php', 'upload.php'];
         $current_file = isset($_SERVER['SCRIPT_NAME']) ? basename($_SERVER['SCRIPT_NAME']) : '';
         if (in_array($current_file, $allowed_files)) {
             return;
@@ -153,13 +161,11 @@ class DGPTM_Suite_Role_Manager {
         }
 
         // ZUSÄTZLICH: Prüfe ob User eine aktive Frontend-Editor Session hat
-        if (!$has_access && class_exists('DGPTM_Frontend_Page_Editor')) {
-            $fpe = DGPTM_Frontend_Page_Editor::get_instance();
-            if (method_exists($fpe, 'user_has_page_access')) {
-                if ($fpe->user_has_page_access($user->ID)) {
-                    // User hat Seiten zugewiesen = Zugriff erlauben für Elementor
-                    $has_access = true;
-                }
+        if (!$has_access) {
+            $editing_page = get_transient('dgptm_editing_' . $user->ID);
+            if ($editing_page) {
+                // User hat aktive Edit-Session → Zugriff erlauben
+                $has_access = true;
             }
         }
 

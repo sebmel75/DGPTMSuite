@@ -837,13 +837,13 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             $body = json_decode($raw, true);
 
             if (isset($body['data']) && !empty($body['data'])) {
-                dgptm_log_error('DEBUG SEARCH: ' . $field . '=' . $value . ' -> GEFUNDEN: ' . $body['data'][0]['id'], 'mitgliedsantrag');
+                dgptm_log_info('Search: ' . $field . '=' . $value . ' -> gefunden: ' . $body['data'][0]['id'], 'mitgliedsantrag');
                 return $body['data'][0];
             }
 
             // HTTP 204 = nicht gefunden (normal), alles andere loggen
             if ($http_code !== 204) {
-                dgptm_log_error('DEBUG SEARCH: ' . $field . '=' . $value . ' -> HTTP ' . $http_code . ' | ' . substr($raw, 0, 300), 'mitgliedsantrag');
+                dgptm_log_warning('Search: ' . $field . '=' . $value . ' -> HTTP ' . $http_code . ' | ' . substr($raw, 0, 300), 'mitgliedsantrag');
             }
 
             return false;
@@ -1519,9 +1519,9 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             );
 
             if ($existing_contact) {
-                dgptm_log_error('DEBUG SEARCH: Kontakt gefunden: ' . $existing_contact['id'] . ' (' . ($existing_contact['First_Name'] ?? '') . ' ' . ($existing_contact['Last_Name'] ?? '') . ') -> UPDATE', 'mitgliedsantrag');
+                dgptm_log_info('Kontakt gefunden: ' . $existing_contact['id'] . ' (' . ($existing_contact['First_Name'] ?? '') . ' ' . ($existing_contact['Last_Name'] ?? '') . ') -> UPDATE', 'mitgliedsantrag');
             } else {
-                dgptm_log_error('DEBUG SEARCH: Kein Kontakt gefunden fuer ' . $data['email1'] . ' / ' . $data['vorname'] . ' ' . $data['nachname'] . ' -> CREATE', 'mitgliedsantrag');
+                dgptm_log_info('Kein Kontakt gefunden fuer ' . $data['email1'] . ' / ' . $data['vorname'] . ' ' . $data['nachname'] . ' -> CREATE', 'mitgliedsantrag');
             }
 
             // Check if contact has existing application or membership
@@ -1608,8 +1608,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 $contact_data['Bemerkung'] .= ' | Qualifikationsnachweis (' . $data['qualifikation_typ'] . '): ' . $file_url;
             }
 
-            // TEMP: Error-Level damit Payload im Health-Check sichtbar ist
-            dgptm_log_error('DEBUG PAYLOAD: ' . substr(wp_json_encode($contact_data), 0, 2000), 'mitgliedsantrag');
+            dgptm_log_info('Contact payload: ' . substr(wp_json_encode($contact_data), 0, 2000), 'mitgliedsantrag');
 
             if ($existing_contact) {
                 // Update existing contact
@@ -1659,10 +1658,10 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             if (isset($body['data'][0]['details']['id'])) {
                 $contact_id = $body['data'][0]['details']['id'];
-                dgptm_log_error('DEBUG RESULT: Contact ' . ($existing_contact ? 'UPDATED' : 'CREATED') . ': ' . $contact_id, 'mitgliedsantrag');
+                dgptm_log_info('Contact ' . ($existing_contact ? 'updated' : 'created') . ': ' . $contact_id, 'mitgliedsantrag');
             } elseif (isset($body['data'][0]['code']) && $body['data'][0]['code'] === 'SUCCESS') {
                 $contact_id = $existing_contact['id'] ?? false;
-                dgptm_log_error('DEBUG RESULT: Contact UPDATED (no new ID): ' . $contact_id, 'mitgliedsantrag');
+                dgptm_log_info('Contact updated (no new ID): ' . $contact_id, 'mitgliedsantrag');
             } else {
                 $zoho_code = $body['data'][0]['code'] ?? ($body['code'] ?? 'UNKNOWN');
                 $zoho_msg = $body['data'][0]['message'] ?? ($body['message'] ?? '');
@@ -1692,7 +1691,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
                         if ($retry_code >= 200 && $retry_code < 300) {
                             $contact_id = $dup_id;
-                            dgptm_log_error('DEBUG RESULT: DUPLICATE_DATA Fallback UPDATE erfolgreich: ' . $contact_id, 'mitgliedsantrag');
+                            dgptm_log_info('DUPLICATE_DATA Fallback UPDATE erfolgreich: ' . $contact_id, 'mitgliedsantrag');
                             // Weiter mit dem normalen Flow (File-Uploads etc.)
                         } else {
                             dgptm_log_error('DUPLICATE_DATA Fallback UPDATE fehlgeschlagen (HTTP ' . $retry_code . '): ' . wp_remote_retrieve_body($retry), 'mitgliedsantrag');
@@ -2029,8 +2028,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
          * Benachrichtigungs-E-Mail an Geschaeftsstelle senden
          */
         private function send_notification_email($data, $contact_id) {
-            // TODO: nach Test zurueck auf geschaeftsstelle@dgptm.de
-            $to = 's.melzer@dgptm.de';
+            $to = 'geschaeftsstelle@dgptm.de';
             $subject = 'Neuer Mitgliedsantrag: ' . ($data['vorname'] ?? '') . ' ' . ($data['nachname'] ?? '');
 
             $mitgliedsart_map = [

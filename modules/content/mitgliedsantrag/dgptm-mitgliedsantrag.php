@@ -713,37 +713,39 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             }
 
             // Step 2: Search by name + email combination using criteria query
-            $criteria = '((First_Name:equals:' . urlencode($first_name) . ')and(Last_Name:equals:' . urlencode($last_name) . '))';
+            // Fallback: Name+Email Kombination per COQL
+            $query = "SELECT id, First_Name, Last_Name, Email, Secondary_Email, Third_Email, DGPTMMail, "
+                   . "Membership_Type, Membership_Status, Antragsstatus, Lead_Status, "
+                   . "Bemerkung, Modified_Time, Salutation, Contact_Status "
+                   . "FROM Contacts WHERE First_Name = '" . addslashes($first_name) . "' AND Last_Name = '" . addslashes($last_name) . "' LIMIT 5";
 
-            $response = wp_remote_get(
-                'https://www.zohoapis.eu/crm/v2/Contacts/search?criteria=' . $criteria,
-                [
-                    'headers' => [
-                        'Authorization' => 'Zoho-oauthtoken ' . $token
-                    ],
-                    'timeout' => 30
-                ]
-            );
+            $response = wp_remote_post('https://www.zohoapis.eu/crm/v5/coql', [
+                'headers' => [
+                    'Authorization' => 'Zoho-oauthtoken ' . $token,
+                    'Content-Type'  => 'application/json'
+                ],
+                'body'    => wp_json_encode(['select_query' => $query]),
+                'timeout' => 30
+            ]);
 
             if (!is_wp_error($response)) {
                 $body = json_decode(wp_remote_retrieve_body($response), true);
 
                 if (isset($body['data']) && !empty($body['data'])) {
-                    // Check if any of these contacts have matching email
                     foreach ($body['data'] as $contact) {
                         $contact_emails = [
                             strtolower($contact['Email'] ?? ''),
                             strtolower($contact['Secondary_Email'] ?? ''),
-                            strtolower($contact['Third_Email'] ?? '')
+                            strtolower($contact['Third_Email'] ?? ''),
+                            strtolower($contact['DGPTMMail'] ?? '')
                         ];
 
                         if (in_array(strtolower($email), $contact_emails)) {
-                            $this->log('Contact found by name+email combination: ' . $contact['id']);
+                            $this->log('Contact found by name+email (COQL): ' . $contact['id']);
                             return $contact;
                         }
                     }
 
-                    // If we found contacts with same name but different email, log warning
                     $this->log('WARNING: Found contacts with same name but different email addresses');
                 }
             }
@@ -795,7 +797,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         }
 
         private function search_by_name($name, $token) {
-            // Fuzzy name matching - split input and try different combinations
+            // Name-Suche per COQL (zuverlaessiger als Search API)
             $name_parts = preg_split('/\s+/', trim($name));
 
             if (count($name_parts) < 2) {
@@ -803,15 +805,23 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 return false;
             }
 
-            // Try exact match first
-            $response = wp_remote_get(
-                'https://www.zohoapis.eu/crm/v2/Contacts/search?criteria=(First_Name:equals:' . urlencode($name_parts[0]) . ')and(Last_Name:equals:' . urlencode(end($name_parts)) . ')',
-                [
-                    'headers' => [
-                        'Authorization' => 'Zoho-oauthtoken ' . $token
-                    ]
-                ]
-            );
+            $first = addslashes($name_parts[0]);
+            $last = addslashes(end($name_parts));
+
+            // Exakte Suche
+            $query = "SELECT id, First_Name, Last_Name, Email, Secondary_Email, Third_Email, DGPTMMail, "
+                   . "Membership_Type, Membership_Status, Antragsstatus, Lead_Status, "
+                   . "Bemerkung, Modified_Time, Salutation, Contact_Status "
+                   . "FROM Contacts WHERE First_Name = '" . $first . "' AND Last_Name = '" . $last . "' LIMIT 5";
+
+            $response = wp_remote_post('https://www.zohoapis.eu/crm/v5/coql', [
+                'headers' => [
+                    'Authorization' => 'Zoho-oauthtoken ' . $token,
+                    'Content-Type'  => 'application/json'
+                ],
+                'body'    => wp_json_encode(['select_query' => $query]),
+                'timeout' => 30
+            ]);
 
             if (!is_wp_error($response)) {
                 $body = json_decode(wp_remote_retrieve_body($response), true);
@@ -820,26 +830,28 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 }
             }
 
-            // Try fuzzy matching with contains
-            $response = wp_remote_get(
-                'https://www.zohoapis.eu/crm/v2/Contacts/search?criteria=(Last_Name:contains:' . urlencode(end($name_parts)) . ')',
-                [
-                    'headers' => [
-                        'Authorization' => 'Zoho-oauthtoken ' . $token
-                    ]
-                ]
-            );
+            // Fuzzy: nur Nachname
+            $query2 = "SELECT id, First_Name, Last_Name, Email, Secondary_Email, Third_Email, DGPTMMail, "
+                    . "Membership_Type, Membership_Status, Antragsstatus, Lead_Status, "
+                    . "Bemerkung, Modified_Time, Salutation, Contact_Status "
+                    . "FROM Contacts WHERE Last_Name = '" . $last . "' LIMIT 10";
 
-            if (!is_wp_error($response)) {
-                $body = json_decode(wp_remote_retrieve_body($response), true);
-                if (isset($body['data']) && !empty($body['data'])) {
-                    // Find best match by comparing names
-                    foreach ($body['data'] as $contact) {
-                        $full_name = strtolower($contact['First_Name'] . ' ' . $contact['Last_Name']);
-                        $input_lower = strtolower($name);
+            $response2 = wp_remote_post('https://www.zohoapis.eu/crm/v5/coql', [
+                'headers' => [
+                    'Authorization' => 'Zoho-oauthtoken ' . $token,
+                    'Content-Type'  => 'application/json'
+                ],
+                'body'    => wp_json_encode(['select_query' => $query2]),
+                'timeout' => 30
+            ]);
 
-                        similar_text($full_name, $input_lower, $percent);
-                        if ($percent > 70) { // 70% similarity threshold
+            if (!is_wp_error($response2)) {
+                $body2 = json_decode(wp_remote_retrieve_body($response2), true);
+                if (isset($body2['data']) && !empty($body2['data'])) {
+                    foreach ($body2['data'] as $contact) {
+                        $full_name = strtolower(($contact['First_Name'] ?? '') . ' ' . ($contact['Last_Name'] ?? ''));
+                        similar_text($full_name, strtolower($name), $percent);
+                        if ($percent > 70) {
                             return $contact;
                         }
                     }
@@ -851,8 +863,9 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
         private function search_by_field($field, $value, $token) {
             // COQL-Query statt Search API (Suchindex kann veraltet sein, COQL ist immer aktuell)
+            // Nur Felder die in Zoho existieren (Application_Status gibt es NICHT)
             $query = "SELECT id, First_Name, Last_Name, Email, Secondary_Email, Third_Email, DGPTMMail, "
-                   . "Membership_Type, Membership_Status, Application_Status, Antragsstatus, Lead_Status, "
+                   . "Membership_Type, Membership_Status, Antragsstatus, Lead_Status, "
                    . "Bemerkung, Modified_Time, Salutation, Contact_Status "
                    . "FROM Contacts WHERE " . $field . " = '" . addslashes($value) . "' LIMIT 1";
 
@@ -938,8 +951,8 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             }
 
             // Check for pending application
-            // Common fields that indicate pending application status
-            $application_status = $contact['Application_Status'] ?? '';
+            // Contact_Status aus Blueprint ist die primaere Quelle
+            $contact_status = $contact['Contact_Status'] ?? '';
             $antragsstatus = $contact['Antragsstatus'] ?? '';
             $lead_status = $contact['Lead_Status'] ?? '';
 
@@ -956,7 +969,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             // Check all possible status fields
             $status_fields = [
-                'Application_Status' => $application_status,
+                'Contact_Status' => $contact_status,
                 'Antragsstatus' => $antragsstatus,
                 'Lead_Status' => $lead_status
             ];

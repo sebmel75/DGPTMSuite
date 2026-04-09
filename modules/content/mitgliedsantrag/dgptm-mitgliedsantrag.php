@@ -1629,7 +1629,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 $contact_data['Bemerkung'] .= ' | Qualifikationsnachweis (' . $data['qualifikation_typ'] . '): ' . $file_url;
             }
 
-            $this->log('Contact data prepared: ' . wp_json_encode($contact_data));
+            dgptm_log_info('Contact payload: ' . substr(wp_json_encode($contact_data), 0, 2000), 'mitgliedsantrag');
 
             if ($existing_contact) {
                 // Update existing contact
@@ -1944,11 +1944,30 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 dgptm_log_info('Blueprint GET (verfuegbare Transitions): ' . substr($bp_body, 0, 2000), 'mitgliedsantrag');
             }
 
+            // Blueprint-Pflichtfelder aus Kontaktdaten befuellen
+            $bp_data = [];
+
+            // Kontakt abrufen fuer Pflichtfelder
+            $contact_resp = wp_remote_get(
+                'https://www.zohoapis.eu/crm/v2/Contacts/' . $contact_id,
+                ['headers' => ['Authorization' => 'Zoho-oauthtoken ' . $token], 'timeout' => 15]
+            );
+
+            if (!is_wp_error($contact_resp)) {
+                $contact_body = json_decode(wp_remote_retrieve_body($contact_resp), true);
+                $contact_data = $contact_body['data'][0] ?? [];
+                $bp_data['Last_Name'] = $contact_data['Last_Name'] ?? '';
+                $bp_data['Salutation'] = $contact_data['Salutation'] ?? '';
+                if (empty($bp_data['Salutation'])) {
+                    $bp_data['Salutation'] = '-None-';
+                }
+            }
+
             $payload = [
                 'blueprint' => [
                     [
                         'transition_id' => $transition_id,
-                        'data' => (object) []
+                        'data' => $bp_data
                     ]
                 ]
             ];

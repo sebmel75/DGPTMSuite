@@ -850,15 +850,23 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         }
 
         private function search_by_field($field, $value, $token) {
-            $url = 'https://www.zohoapis.eu/crm/v2/Contacts/search?criteria=(' . $field . ':equals:' . urlencode($value) . ')';
+            // COQL-Query statt Search API (Suchindex kann veraltet sein, COQL ist immer aktuell)
+            $query = "SELECT id, First_Name, Last_Name, Email, Secondary_Email, Third_Email, DGPTMMail, "
+                   . "Membership_Type, Membership_Status, Application_Status, Antragsstatus, Lead_Status, "
+                   . "Bemerkung, Modified_Time, Salutation, Contact_Status "
+                   . "FROM Contacts WHERE " . $field . " = '" . addslashes($value) . "' LIMIT 1";
 
-            $response = wp_remote_get($url, [
-                'headers' => ['Authorization' => 'Zoho-oauthtoken ' . $token],
+            $response = wp_remote_post('https://www.zohoapis.eu/crm/v5/coql', [
+                'headers' => [
+                    'Authorization' => 'Zoho-oauthtoken ' . $token,
+                    'Content-Type'  => 'application/json'
+                ],
+                'body'    => wp_json_encode(['select_query' => $query]),
                 'timeout' => 30
             ]);
 
             if (is_wp_error($response)) {
-                dgptm_log_error('DEBUG SEARCH_BY_FIELD: WP_Error bei ' . $field . '=' . $value . ': ' . $response->get_error_message(), 'mitgliedsantrag');
+                dgptm_log_error('COQL WP_Error bei ' . $field . '=' . $value . ': ' . $response->get_error_message(), 'mitgliedsantrag');
                 return false;
             }
 
@@ -866,14 +874,12 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             $raw = wp_remote_retrieve_body($response);
             $body = json_decode($raw, true);
 
-            if ($http_code !== 200 || !isset($body['data'])) {
-                dgptm_log_error('DEBUG SEARCH_BY_FIELD: ' . $field . '=' . $value . ' -> HTTP ' . $http_code . ' | ' . substr($raw, 0, 500), 'mitgliedsantrag');
-            }
-
             if (isset($body['data']) && !empty($body['data'])) {
+                dgptm_log_error('DEBUG COQL: ' . $field . '=' . $value . ' -> GEFUNDEN: ' . $body['data'][0]['id'], 'mitgliedsantrag');
                 return $body['data'][0];
             }
 
+            dgptm_log_error('DEBUG COQL: ' . $field . '=' . $value . ' -> HTTP ' . $http_code . ' | ' . substr($raw, 0, 300), 'mitgliedsantrag');
             return false;
         }
 

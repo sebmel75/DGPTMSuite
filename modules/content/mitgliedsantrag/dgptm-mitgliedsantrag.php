@@ -142,25 +142,28 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 $contact = $contact_body['data'][0] ?? null;
 
                 if ($contact) {
-                    $result['contact'] = [
-                        'id'               => $contact['id'] ?? null,
-                        'First_Name'       => $contact['First_Name'] ?? null,
-                        'Last_Name'        => $contact['Last_Name'] ?? null,
-                        'Email'            => $contact['Email'] ?? null,
-                        'Secondary_Email'  => $contact['Secondary_Email'] ?? null,
-                        'Third_Email'      => $contact['Third_Email'] ?? null,
-                        'Membership_Type'  => $contact['Membership_Type'] ?? null,
-                        'Membership_Status'=> $contact['Membership_Status'] ?? null,
-                        'Application_Status' => $contact['Application_Status'] ?? null,
-                        'Antragsstatus'    => $contact['Antragsstatus'] ?? null,
-                        'Lead_Status'      => $contact['Lead_Status'] ?? null,
-                        'Bemerkung'        => $contact['Bemerkung'] ?? null,
-                        'Other_Street'     => $contact['Other_Street'] ?? null,
-                        'Other_City'       => $contact['Other_City'] ?? null,
-                        'Other_Zip'        => $contact['Other_Zip'] ?? null,
-                        'Freigestellt_bis' => $contact['Freigestellt_bis'] ?? null,
-                        'Modified_Time'    => $contact['Modified_Time'] ?? null,
-                    ];
+                    // Alle nicht-null Felder anzeigen + kritische Felder immer
+                    $always_show = ['id','First_Name','Last_Name','Email','Secondary_Email','Third_Email',
+                        'Membership_Type','Membership_Status','Contact_Status','Bemerkung',
+                        'Other_Street','Other_City','Other_Zip','Other_State','Other_Country',
+                        'Mailing_Street','Mailing_City','Mailing_Zip','Mailing_State','Mailing_Country',
+                        'Guarantor_Name_1','Guarantor_Mail_1','Guarantor_Status_1',
+                        'Guarantor_Name_2','Guarantor_Mail_2','Guarantor_Status_2',
+                        'employer_name','Freigestellt_bis','profession',
+                        'Salutation','Academic_Title','Phone','Work_Phone',
+                        'SatzungAkzeptiert','BeitragAkzeptiert','Datenschutzakzeptiert',
+                        'Modified_Time'];
+                    $result['contact'] = [];
+                    foreach ($always_show as $key) {
+                        $result['contact'][$key] = $contact[$key] ?? null;
+                    }
+                    // Zusaetzlich alle nicht-null Custom-Felder
+                    $result['contact_extra'] = [];
+                    foreach ($contact as $key => $val) {
+                        if ($val !== null && $val !== '' && !in_array($key, $always_show) && !is_array($val)) {
+                            $result['contact_extra'][$key] = $val;
+                        }
+                    }
                 } else {
                     $result['contact'] = ['error' => 'Kontakt nicht gefunden', 'raw' => $contact_body];
                 }
@@ -1629,7 +1632,8 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 $contact_data['Bemerkung'] .= ' | Qualifikationsnachweis (' . $data['qualifikation_typ'] . '): ' . $file_url;
             }
 
-            dgptm_log_info('Contact payload: ' . substr(wp_json_encode($contact_data), 0, 2000), 'mitgliedsantrag');
+            // TEMP: Error-Level damit Payload im Health-Check sichtbar ist
+            dgptm_log_error('DEBUG PAYLOAD: ' . substr(wp_json_encode($contact_data), 0, 2000), 'mitgliedsantrag');
 
             if ($existing_contact) {
                 // Update existing contact

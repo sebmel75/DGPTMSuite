@@ -1450,7 +1450,11 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 $token
             );
 
-            $this->log('Creating contact data. Existing contact: ' . ($existing_contact ? $existing_contact['id'] : 'none'));
+            if ($existing_contact) {
+                dgptm_log_info('Kontakt gefunden: ' . $existing_contact['id'] . ' (' . ($existing_contact['First_Name'] ?? '') . ' ' . ($existing_contact['Last_Name'] ?? '') . ') -> UPDATE', 'mitgliedsantrag');
+            } else {
+                dgptm_log_info('Kein Kontakt gefunden fuer ' . $data['email1'] . ' / ' . $data['vorname'] . ' ' . $data['nachname'] . ' -> CREATE', 'mitgliedsantrag');
+            }
 
             // Check if contact has existing application or membership
             if ($existing_contact) {

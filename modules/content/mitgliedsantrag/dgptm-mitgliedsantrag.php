@@ -1666,15 +1666,51 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             } else {
                 $zoho_code = $body['data'][0]['code'] ?? ($body['code'] ?? 'UNKNOWN');
                 $zoho_msg = $body['data'][0]['message'] ?? ($body['message'] ?? '');
-                $zoho_details = isset($body['data'][0]['details']) ? wp_json_encode($body['data'][0]['details']) : '';
-                $zoho_status = $body['data'][0]['status'] ?? '';
-                $log_msg = 'Zoho API Error (HTTP ' . $http_code . '): ' . $zoho_code . ' - ' . $zoho_msg;
-                if ($zoho_details) {
-                    $log_msg .= ' | Details: ' . $zoho_details;
+                $zoho_details = $body['data'][0]['details'] ?? [];
+
+                // DUPLICATE_DATA: Kontakt existiert - ID aus Fehler extrahieren und UPDATE
+                if ($zoho_code === 'DUPLICATE_DATA' && !empty($zoho_details['duplicate_record']['id'])) {
+                    $dup_id = $zoho_details['duplicate_record']['id'];
+                    dgptm_log_error('DUPLICATE_DATA erkannt -> Fallback UPDATE auf ' . $dup_id, 'mitgliedsantrag');
+
+                    $retry = wp_remote_request(
+                        'https://www.zohoapis.eu/crm/v8/Contacts/' . $dup_id,
+                        [
+                            'method' => 'PUT',
+                            'headers' => [
+                                'Authorization' => 'Zoho-oauthtoken ' . $token,
+                                'Content-Type' => 'application/json'
+                            ],
+                            'body' => wp_json_encode(['data' => [$contact_data]]),
+                            'timeout' => 30
+                        ]
+                    );
+
+                    if (!is_wp_error($retry)) {
+                        $retry_code = wp_remote_retrieve_response_code($retry);
+                        $retry_body = json_decode(wp_remote_retrieve_body($retry), true);
+
+                        if ($retry_code >= 200 && $retry_code < 300) {
+                            $contact_id = $dup_id;
+                            dgptm_log_error('DEBUG RESULT: DUPLICATE_DATA Fallback UPDATE erfolgreich: ' . $contact_id, 'mitgliedsantrag');
+                            // Weiter mit dem normalen Flow (File-Uploads etc.)
+                        } else {
+                            dgptm_log_error('DUPLICATE_DATA Fallback UPDATE fehlgeschlagen (HTTP ' . $retry_code . '): ' . wp_remote_retrieve_body($retry), 'mitgliedsantrag');
+                            return false;
+                        }
+                    } else {
+                        dgptm_log_error('DUPLICATE_DATA Fallback WP_Error: ' . $retry->get_error_message(), 'mitgliedsantrag');
+                        return false;
+                    }
+                } else {
+                    $log_msg = 'Zoho API Error (HTTP ' . $http_code . '): ' . $zoho_code . ' - ' . $zoho_msg;
+                    if ($zoho_details) {
+                        $log_msg .= ' | Details: ' . wp_json_encode($zoho_details);
+                    }
+                    dgptm_log_error($log_msg, 'mitgliedsantrag');
+                    dgptm_log_error('Zoho full response: ' . substr($raw_body, 0, 2000), 'mitgliedsantrag');
+                    return false;
                 }
-                dgptm_log_error($log_msg, 'mitgliedsantrag');
-                dgptm_log_error('Zoho full response: ' . substr($raw_body, 0, 2000), 'mitgliedsantrag');
-                return false;
             }
 
             // Upload files to CRM file fields

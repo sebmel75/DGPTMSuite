@@ -1542,9 +1542,9 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             );
 
             if ($existing_contact) {
-                dgptm_log_info('Kontakt gefunden: ' . $existing_contact['id'] . ' (' . ($existing_contact['First_Name'] ?? '') . ' ' . ($existing_contact['Last_Name'] ?? '') . ') -> UPDATE', 'mitgliedsantrag');
+                dgptm_log_error('DEBUG SEARCH: Kontakt gefunden: ' . $existing_contact['id'] . ' (' . ($existing_contact['First_Name'] ?? '') . ' ' . ($existing_contact['Last_Name'] ?? '') . ') -> UPDATE', 'mitgliedsantrag');
             } else {
-                dgptm_log_info('Kein Kontakt gefunden fuer ' . $data['email1'] . ' / ' . $data['vorname'] . ' ' . $data['nachname'] . ' -> CREATE', 'mitgliedsantrag');
+                dgptm_log_error('DEBUG SEARCH: Kein Kontakt gefunden fuer ' . $data['email1'] . ' / ' . $data['vorname'] . ' ' . $data['nachname'] . ' -> CREATE', 'mitgliedsantrag');
             }
 
             // Check if contact has existing application or membership
@@ -1682,10 +1682,10 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             if (isset($body['data'][0]['details']['id'])) {
                 $contact_id = $body['data'][0]['details']['id'];
-                dgptm_log_info('Contact ' . ($existing_contact ? 'updated' : 'created') . ': ' . $contact_id, 'mitgliedsantrag');
+                dgptm_log_error('DEBUG RESULT: Contact ' . ($existing_contact ? 'UPDATED' : 'CREATED') . ': ' . $contact_id, 'mitgliedsantrag');
             } elseif (isset($body['data'][0]['code']) && $body['data'][0]['code'] === 'SUCCESS') {
                 $contact_id = $existing_contact['id'] ?? false;
-                dgptm_log_info('Contact updated (no new ID): ' . $contact_id, 'mitgliedsantrag');
+                dgptm_log_error('DEBUG RESULT: Contact UPDATED (no new ID): ' . $contact_id, 'mitgliedsantrag');
             } else {
                 $zoho_code = $body['data'][0]['code'] ?? ($body['code'] ?? 'UNKNOWN');
                 $zoho_msg = $body['data'][0]['message'] ?? ($body['message'] ?? '');

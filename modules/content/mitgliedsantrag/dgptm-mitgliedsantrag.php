@@ -1483,11 +1483,11 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 'Academic_Title' => 'akad_titel',
                 'greeting' => 'ansprache',
                 'Date_of_Birth' => 'geburtsdatum',
-                'Other_Street' => 'strasse',
-                'Other_City' => 'stadt',
-                'Other_State' => 'bundesland',
-                'Other_Zip' => 'plz',
-                'Other_Country' => 'land',
+                'Mailing_Street' => 'strasse',
+                'Mailing_City' => 'stadt',
+                'Mailing_State' => 'bundesland',
+                'Mailing_Zip' => 'plz',
+                'Mailing_Country' => 'land',
                 'Email' => 'email1',
                 'Secondary_Email' => 'email2',
                 'Third_Email' => 'email3',
@@ -2029,7 +2029,8 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
          * Benachrichtigungs-E-Mail an Geschaeftsstelle senden
          */
         private function send_notification_email($data, $contact_id) {
-            $to = 'geschaeftsstelle@dgptm.de';
+            // TODO: nach Test zurueck auf geschaeftsstelle@dgptm.de
+            $to = 's.melzer@dgptm.de';
             $subject = 'Neuer Mitgliedsantrag: ' . ($data['vorname'] ?? '') . ' ' . ($data['nachname'] ?? '');
 
             $mitgliedsart_map = [
@@ -2039,27 +2040,66 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             ];
             $mitgliedsart = $mitgliedsart_map[$data['mitgliedsart'] ?? ''] ?? ($data['mitgliedsart'] ?? '-');
 
-            $body  = "Ein neuer Mitgliedsantrag wurde ueber das Online-Formular eingereicht.\n\n";
-            $body .= "Name: " . ($data['akad_titel'] ?? '') . ' ' . ($data['vorname'] ?? '') . ' ' . ($data['nachname'] ?? '') . "\n";
-            $body .= "E-Mail: " . ($data['email1'] ?? '') . "\n";
-            $body .= "Mitgliedsart: " . $mitgliedsart . "\n";
-            $body .= "Zoho Contact-ID: " . $contact_id . "\n";
+            $name = trim(($data['akad_titel'] ?? '') . ' ' . ($data['vorname'] ?? '') . ' ' . ($data['nachname'] ?? ''));
+            $adresse = trim(($data['strasse'] ?? '') . ', ' . ($data['plz'] ?? '') . ' ' . ($data['stadt'] ?? ''));
+            if ($adresse === ',') $adresse = '-';
+            $crm_link = 'https://crm.zoho.eu/crm/dgptm/tab/Contacts/' . $contact_id;
 
-            if (!empty($data['arbeitgeber_name'])) {
-                $body .= "Arbeitgeber: " . $data['arbeitgeber_name'] . "\n";
+            $rows = '';
+            $rows .= $this->mail_row('Name', esc_html($name));
+            $rows .= $this->mail_row('E-Mail', esc_html($data['email1'] ?? ''));
+            $rows .= $this->mail_row('Mitgliedsart', esc_html($mitgliedsart));
+            $rows .= $this->mail_row('Adresse', esc_html($adresse));
+            if (!empty($data['arbeitgeber'])) {
+                $rows .= $this->mail_row('Arbeitgeber', esc_html($data['arbeitgeber']));
             }
-
             if (!empty($data['buerge1_name'])) {
-                $body .= "\nBuerge 1: " . $data['buerge1_name'] . " (" . ($data['buerge1_email'] ?? '') . ")\n";
+                $rows .= $this->mail_row('Bürge 1', esc_html($data['buerge1_name']) . ' (' . esc_html($data['buerge1_email'] ?? '') . ')');
             }
             if (!empty($data['buerge2_name'])) {
-                $body .= "Buerge 2: " . $data['buerge2_name'] . " (" . ($data['buerge2_email'] ?? '') . ")\n";
+                $rows .= $this->mail_row('Bürge 2', esc_html($data['buerge2_name']) . ' (' . esc_html($data['buerge2_email'] ?? '') . ')');
             }
+            $rows .= $this->mail_row('Zoho CRM', '<a href="' . esc_url($crm_link) . '" style="color:#2393BB">' . esc_html($contact_id) . '</a>');
 
-            $body .= "\nDer Blueprint-Workflow wurde im CRM gestartet.\n";
-            $body .= "Zoho CRM: https://crm.zoho.eu/crm/dgptm/tab/Contacts/" . $contact_id . "\n";
+            $body = '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta content="width=device-width" name="viewport"></head><body>'
+                . '<div style="width:700px;margin:0 auto">'
+                // Header
+                . '<table width="700" border="0" cellpadding="0" cellspacing="0" align="center"><tr>'
+                . '<td style="padding:20px 0 20px 20px" align="left"><a href="https://dgptm.de/"><img src="https://perfusiologie.de/nichtwordpress/logo.png" alt="DGPTM" style="display:block;border:0;height:50px"></a></td>'
+                . '<td style="padding:20px 20px 20px 0" align="right">'
+                . '<a href="https://perfusiologie.de" style="font-size:12px;font-weight:500;text-transform:uppercase;color:#525252;text-decoration:none;padding:0 15px">Website</a>'
+                . '<a href="https://perfusiologie.de/veranstaltungen" style="font-size:12px;font-weight:500;text-transform:uppercase;color:#525252;text-decoration:none;padding:0 15px">Veranstaltungen</a>'
+                . '</td></tr></table>'
+                // Banner
+                . '<table height="150" width="700" border="0" cellpadding="0" cellspacing="0" align="center" style="background-color:#2393BB" background="https://perfusiologie.de/nichtwordpress/bg-mail-header.jpg"><tr>'
+                . '<td align="center" valign="middle"><h1 style="margin:0;font-size:22px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#fff;font-family:Calibri,Candara,Segoe UI,Arial,sans-serif">Neuer Mitgliedsantrag</h1></td>'
+                . '</tr></table>'
+                // Content
+                . '<br><table width="600" border="0" cellpadding="0" cellspacing="0" align="center" style="font-size:14px;font-family:Calibri,Candara,Segoe UI,Arial,sans-serif"><tr><td>'
+                . '<table border="0" cellpadding="0" cellspacing="0" width="100%"><tr><td height="25"></td></tr>'
+                . '<tr><td style="font-size:16px;font-weight:600;color:#3c3c3c">Ein neuer Mitgliedsantrag wurde über das Online-Formular eingereicht.</td></tr>'
+                . '<tr><td height="20"></td></tr></table>'
+                // Data Table
+                . '<table width="100%" border="0" cellpadding="8" cellspacing="0" style="font-size:14px;border-collapse:collapse">'
+                . $rows
+                . '</table>'
+                . '<br><p style="font-size:14px;color:#3c3c3c;margin:15px 0">Der Blueprint-Workflow wurde im CRM gestartet.</p>'
+                . '</td></tr></table>'
+                // Footer
+                . '<table width="600" align="center" border="0" cellpadding="0" cellspacing="0" style="margin-top:25px;text-align:center"><tr>'
+                . '<td style="font-size:11pt;color:#242424;text-align:left;font-family:Calibri,Candara,Segoe UI,Arial,sans-serif">'
+                . '<p style="margin:0">Beste Grüße,</p>'
+                . '<p style="margin:0">die Deutsche Gesellschaft für Perfusiologie und Technische Medizin.</p>'
+                . '</td></tr><tr>'
+                . '<td style="border-top:1px solid #2492BA;padding-top:15px;font-size:12px;color:#000">'
+                . '<p style="margin:0"><a href="https://perfusiologie.de/impressum/" style="text-decoration:none;color:#000">Impressum</a> | '
+                . '<a href="https://perfusiologie.de/datenschutz/" style="text-decoration:none;color:#000">Datenschutz</a> | '
+                . '<a href="tel:004934123805268" style="text-decoration:none;color:#000">Telefon: +49 341 2380 5268</a></p>'
+                . '<p style="margin:12px 0 0 0">&copy; Deutsche Gesellschaft für Perfusiologie und Technische Medizin. Alle Rechte vorbehalten.</p>'
+                . '</td></tr></table>'
+                . '</div></body></html>';
 
-            $headers = ['Content-Type: text/plain; charset=UTF-8'];
+            $headers = ['Content-Type: text/html; charset=UTF-8'];
 
             $sent = wp_mail($to, $subject, $body, $headers);
 
@@ -2068,6 +2108,11 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             } else {
                 dgptm_log_warning('Infomail an ' . $to . ' fehlgeschlagen fuer Contact ' . $contact_id, 'mitgliedsantrag');
             }
+        }
+
+        private function mail_row($label, $value) {
+            return '<tr><td style="padding:6px 8px;font-weight:600;color:#3c3c3c;border-bottom:1px solid #eee;width:140px;vertical-align:top">' . $label . '</td>'
+                 . '<td style="padding:6px 8px;color:#3c3c3c;border-bottom:1px solid #eee">' . $value . '</td></tr>';
         }
 
         public function ajax_test_webhook() {

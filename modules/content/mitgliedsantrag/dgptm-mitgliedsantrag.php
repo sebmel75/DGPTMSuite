@@ -88,12 +88,19 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         }
 
         public function register_rest_routes() {
-            // Temporaerer Diagnose-Endpoint (nur fuer Admins)
+            // Temporaerer Diagnose-Endpoint (Health-Check-Token oder Admin)
             register_rest_route('dgptm/v1', '/diagnose-contact/(?P<id>\d+)', [
                 'methods' => 'GET',
                 'callback' => [$this, 'rest_diagnose_contact'],
-                'permission_callback' => function() {
-                    return current_user_can('manage_options');
+                'permission_callback' => function($request) {
+                    if (current_user_can('manage_options')) return true;
+                    $auth = $request->get_header('Authorization');
+                    if ($auth && strpos($auth, 'Bearer ') === 0) {
+                        $token = substr($auth, 7);
+                        return $token === get_option('dgptm_health_check_token', '');
+                    }
+                    $token = $request->get_param('token');
+                    return $token && $token === get_option('dgptm_health_check_token', '');
                 },
                 'args' => [
                     'id' => ['validate_callback' => function($param) { return is_numeric($param); }]

@@ -761,10 +761,10 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
          * @return array|false Contact data or false
          */
         private function search_by_email($email, $token) {
-            $this->log('Searching for email in main email fields only: ' . $email);
+            $this->log('Searching for email in all email fields: ' . $email);
 
-            // Search in all three email fields explicitly
-            $email_fields = ['Email', 'Secondary_Email', 'Third_Email'];
+            // Alle E-Mail-Felder durchsuchen inkl. DGPTMMail
+            $email_fields = ['Email', 'Secondary_Email', 'Third_Email', 'DGPTMMail'];
             $email_lower = strtolower($email);
 
             foreach ($email_fields as $field) {
@@ -772,26 +772,25 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 $contact = $this->search_by_field($field, $email, $token);
 
                 if ($contact) {
-                    // Verify the email is REALLY in one of the three main fields
-                    // and NOT just in guarantor fields
+                    // Verify the email is in one of the known email fields
                     $contact_emails = [
                         strtolower($contact['Email'] ?? ''),
                         strtolower($contact['Secondary_Email'] ?? ''),
-                        strtolower($contact['Third_Email'] ?? '')
+                        strtolower($contact['Third_Email'] ?? ''),
+                        strtolower($contact['DGPTMMail'] ?? '')
                     ];
 
                     if (in_array($email_lower, $contact_emails)) {
                         $this->log('Email found in field ' . $field . ' - Contact ID: ' . $contact['id']);
                         return $contact;
                     } else {
-                        // Email might be in Guarantor fields - skip this result
-                        $this->log('WARNING: Email found but not in main email fields - skipping (might be in Guarantor_Mail fields)');
+                        $this->log('WARNING: Email found but not in known email fields - skipping (might be in Guarantor_Mail fields)');
                         continue;
                     }
                 }
             }
 
-            $this->log('Email not found in any main email field');
+            $this->log('Email not found in any email field');
             return false;
         }
 

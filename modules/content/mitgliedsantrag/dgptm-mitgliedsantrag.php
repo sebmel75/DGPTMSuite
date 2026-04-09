@@ -88,6 +88,18 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         }
 
         public function register_rest_routes() {
+            // Temporaerer Diagnose-Endpoint (nur fuer Admins)
+            register_rest_route('dgptm/v1', '/diagnose-contact/(?P<id>\d+)', [
+                'methods' => 'GET',
+                'callback' => [$this, 'rest_diagnose_contact'],
+                'permission_callback' => function() {
+                    return current_user_can('manage_options');
+                },
+                'args' => [
+                    'id' => ['validate_callback' => function($param) { return is_numeric($param); }]
+                ]
+            ]);
+
             register_rest_route('dgptm/v1', '/delete-certificate/(?P<id>\d+)', [
                 'methods' => 'GET',
                 'callback' => [$this, 'rest_delete_certificate'],
@@ -100,6 +112,76 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                     ]
                 ]
             ]);
+        }
+
+        public function rest_diagnose_contact($request) {
+            $contact_id = $request->get_param('id');
+            $token = $this->get_access_token();
+
+            if (!$token) {
+                return new WP_REST_Response(['error' => 'Kein OAuth-Token'], 500);
+            }
+
+            $result = [];
+
+            // 1. Kontakt abrufen
+            $contact_resp = wp_remote_get(
+                'https://www.zohoapis.eu/crm/v2/Contacts/' . $contact_id,
+                ['headers' => ['Authorization' => 'Zoho-oauthtoken ' . $token], 'timeout' => 30]
+            );
+
+            if (!is_wp_error($contact_resp)) {
+                $contact_body = json_decode(wp_remote_retrieve_body($contact_resp), true);
+                $contact = $contact_body['data'][0] ?? null;
+
+                if ($contact) {
+                    $result['contact'] = [
+                        'id'               => $contact['id'] ?? null,
+                        'First_Name'       => $contact['First_Name'] ?? null,
+                        'Last_Name'        => $contact['Last_Name'] ?? null,
+                        'Email'            => $contact['Email'] ?? null,
+                        'Secondary_Email'  => $contact['Secondary_Email'] ?? null,
+                        'Third_Email'      => $contact['Third_Email'] ?? null,
+                        'Membership_Type'  => $contact['Membership_Type'] ?? null,
+                        'Membership_Status'=> $contact['Membership_Status'] ?? null,
+                        'Application_Status' => $contact['Application_Status'] ?? null,
+                        'Antragsstatus'    => $contact['Antragsstatus'] ?? null,
+                        'Lead_Status'      => $contact['Lead_Status'] ?? null,
+                        'Bemerkung'        => $contact['Bemerkung'] ?? null,
+                        'Other_Street'     => $contact['Other_Street'] ?? null,
+                        'Other_City'       => $contact['Other_City'] ?? null,
+                        'Other_Zip'        => $contact['Other_Zip'] ?? null,
+                        'Freigestellt_bis' => $contact['Freigestellt_bis'] ?? null,
+                        'Modified_Time'    => $contact['Modified_Time'] ?? null,
+                    ];
+                } else {
+                    $result['contact'] = ['error' => 'Kontakt nicht gefunden', 'raw' => $contact_body];
+                }
+            } else {
+                $result['contact'] = ['error' => $contact_resp->get_error_message()];
+            }
+
+            // 2. Blueprint-Status abfragen
+            $bp_resp = wp_remote_get(
+                'https://www.zohoapis.eu/crm/v2/Contacts/' . $contact_id . '/actions/blueprint',
+                ['headers' => ['Authorization' => 'Zoho-oauthtoken ' . $token], 'timeout' => 30]
+            );
+
+            if (!is_wp_error($bp_resp)) {
+                $result['blueprint'] = [
+                    'http_code' => wp_remote_retrieve_response_code($bp_resp),
+                    'response'  => json_decode(wp_remote_retrieve_body($bp_resp), true)
+                ];
+            } else {
+                $result['blueprint'] = ['error' => $bp_resp->get_error_message()];
+            }
+
+            // 3. Check application status
+            if (isset($contact)) {
+                $result['application_check'] = $this->check_application_status($contact);
+            }
+
+            return new WP_REST_Response($result, 200);
         }
 
         public function rest_delete_certificate($request) {

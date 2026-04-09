@@ -1581,8 +1581,15 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 dgptm_log_info('Contact updated (no new ID): ' . $contact_id, 'mitgliedsantrag');
             } else {
                 $zoho_code = $body['data'][0]['code'] ?? ($body['code'] ?? 'UNKNOWN');
-                $zoho_msg = $body['data'][0]['message'] ?? ($body['message'] ?? $raw_body);
-                dgptm_log_error('Zoho API Error (HTTP ' . $http_code . '): ' . $zoho_code . ' - ' . $zoho_msg, 'mitgliedsantrag');
+                $zoho_msg = $body['data'][0]['message'] ?? ($body['message'] ?? '');
+                $zoho_details = isset($body['data'][0]['details']) ? wp_json_encode($body['data'][0]['details']) : '';
+                $zoho_status = $body['data'][0]['status'] ?? '';
+                $log_msg = 'Zoho API Error (HTTP ' . $http_code . '): ' . $zoho_code . ' - ' . $zoho_msg;
+                if ($zoho_details) {
+                    $log_msg .= ' | Details: ' . $zoho_details;
+                }
+                dgptm_log_error($log_msg, 'mitgliedsantrag');
+                dgptm_log_error('Zoho full response: ' . substr($raw_body, 0, 2000), 'mitgliedsantrag');
                 return false;
             }
 

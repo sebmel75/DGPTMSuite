@@ -1479,7 +1479,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 return ($value === true || $value === 'true' || $value === '1' || $value === 1);
             };
 
-            // Zoho Date-Felder: leere Strings verursachen INVALID_DATA
+            // Zoho Date-Felder: leere/ungueltige Werte verursachen INVALID_DATA
             $zoho_date_fields = ['Freigestellt_bis', 'Date_of_Birth'];
 
             // Map form data to CRM fields
@@ -1487,9 +1487,12 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 if (isset($data[$form_field])) {
                     $value = $data[$form_field];
 
-                    // Leere Werte bei Date-Feldern nicht senden
-                    if (in_array($crm_field, $zoho_date_fields) && empty($value)) {
-                        continue;
+                    // Date-Felder: nur gueltige YYYY-MM-DD Werte senden
+                    if (in_array($crm_field, $zoho_date_fields)) {
+                        if (empty($value) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+                            dgptm_log_info('Skipping date field ' . $crm_field . ' (value: "' . $value . '")', 'mitgliedsantrag');
+                            continue;
+                        }
                     }
 
                     // Special handling for confirmation checkbox fields

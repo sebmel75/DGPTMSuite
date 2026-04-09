@@ -133,7 +133,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             // 1. Kontakt abrufen
             $contact_resp = wp_remote_get(
-                'https://www.zohoapis.eu/crm/v2/Contacts/' . $contact_id,
+                'https://www.zohoapis.eu/crm/v8/Contacts/' . $contact_id,
                 ['headers' => ['Authorization' => 'Zoho-oauthtoken ' . $token], 'timeout' => 30]
             );
 
@@ -173,7 +173,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             // 2. Blueprint-Status abfragen
             $bp_resp = wp_remote_get(
-                'https://www.zohoapis.eu/crm/v2/Contacts/' . $contact_id . '/actions/blueprint',
+                'https://www.zohoapis.eu/crm/v8/Contacts/' . $contact_id . '/actions/blueprint',
                 ['headers' => ['Authorization' => 'Zoho-oauthtoken ' . $token], 'timeout' => 30]
             );
 
@@ -713,20 +713,12 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             }
 
             // Step 2: Search by name + email combination using criteria query
-            // Fallback: Name+Email Kombination per COQL
-            $query = "SELECT id, First_Name, Last_Name, Email, Secondary_Email, Third_Email, DGPTMMail, "
-                   . "Membership_Type, Membership_Status, Antragsstatus, Lead_Status, "
-                   . "Bemerkung, Modified_Time, Salutation, Contact_Status "
-                   . "FROM Contacts WHERE First_Name = '" . addslashes($first_name) . "' AND Last_Name = '" . addslashes($last_name) . "' LIMIT 5";
-
-            $response = wp_remote_post('https://www.zohoapis.eu/crm/v5/coql', [
-                'headers' => [
-                    'Authorization' => 'Zoho-oauthtoken ' . $token,
-                    'Content-Type'  => 'application/json'
-                ],
-                'body'    => wp_json_encode(['select_query' => $query]),
-                'timeout' => 30
-            ]);
+            // Fallback: Name-Suche, dann Email abgleichen
+            $criteria = '((First_Name:equals:' . urlencode($first_name) . ')and(Last_Name:equals:' . urlencode($last_name) . '))';
+            $response = wp_remote_get(
+                'https://www.zohoapis.eu/crm/v8/Contacts/search?criteria=' . $criteria,
+                ['headers' => ['Authorization' => 'Zoho-oauthtoken ' . $token], 'timeout' => 30]
+            );
 
             if (!is_wp_error($response)) {
                 $body = json_decode(wp_remote_retrieve_body($response), true);
@@ -741,7 +733,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                         ];
 
                         if (in_array(strtolower($email), $contact_emails)) {
-                            $this->log('Contact found by name+email (COQL): ' . $contact['id']);
+                            $this->log('Contact found by name+email: ' . $contact['id']);
                             return $contact;
                         }
                     }
@@ -797,7 +789,6 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         }
 
         private function search_by_name($name, $token) {
-            // Name-Suche per COQL (zuverlaessiger als Search API)
             $name_parts = preg_split('/\s+/', trim($name));
 
             if (count($name_parts) < 2) {
@@ -805,23 +796,12 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 return false;
             }
 
-            $first = addslashes($name_parts[0]);
-            $last = addslashes(end($name_parts));
-
             // Exakte Suche
-            $query = "SELECT id, First_Name, Last_Name, Email, Secondary_Email, Third_Email, DGPTMMail, "
-                   . "Membership_Type, Membership_Status, Antragsstatus, Lead_Status, "
-                   . "Bemerkung, Modified_Time, Salutation, Contact_Status "
-                   . "FROM Contacts WHERE First_Name = '" . $first . "' AND Last_Name = '" . $last . "' LIMIT 5";
-
-            $response = wp_remote_post('https://www.zohoapis.eu/crm/v5/coql', [
-                'headers' => [
-                    'Authorization' => 'Zoho-oauthtoken ' . $token,
-                    'Content-Type'  => 'application/json'
-                ],
-                'body'    => wp_json_encode(['select_query' => $query]),
-                'timeout' => 30
-            ]);
+            $criteria = '((First_Name:equals:' . urlencode($name_parts[0]) . ')and(Last_Name:equals:' . urlencode(end($name_parts)) . '))';
+            $response = wp_remote_get(
+                'https://www.zohoapis.eu/crm/v8/Contacts/search?criteria=' . $criteria,
+                ['headers' => ['Authorization' => 'Zoho-oauthtoken ' . $token], 'timeout' => 30]
+            );
 
             if (!is_wp_error($response)) {
                 $body = json_decode(wp_remote_retrieve_body($response), true);
@@ -831,19 +811,10 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             }
 
             // Fuzzy: nur Nachname
-            $query2 = "SELECT id, First_Name, Last_Name, Email, Secondary_Email, Third_Email, DGPTMMail, "
-                    . "Membership_Type, Membership_Status, Antragsstatus, Lead_Status, "
-                    . "Bemerkung, Modified_Time, Salutation, Contact_Status "
-                    . "FROM Contacts WHERE Last_Name = '" . $last . "' LIMIT 10";
-
-            $response2 = wp_remote_post('https://www.zohoapis.eu/crm/v5/coql', [
-                'headers' => [
-                    'Authorization' => 'Zoho-oauthtoken ' . $token,
-                    'Content-Type'  => 'application/json'
-                ],
-                'body'    => wp_json_encode(['select_query' => $query2]),
-                'timeout' => 30
-            ]);
+            $response2 = wp_remote_get(
+                'https://www.zohoapis.eu/crm/v8/Contacts/search?criteria=(Last_Name:equals:' . urlencode(end($name_parts)) . ')',
+                ['headers' => ['Authorization' => 'Zoho-oauthtoken ' . $token], 'timeout' => 30]
+            );
 
             if (!is_wp_error($response2)) {
                 $body2 = json_decode(wp_remote_retrieve_body($response2), true);
@@ -862,24 +833,15 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         }
 
         private function search_by_field($field, $value, $token) {
-            // COQL-Query statt Search API (Suchindex kann veraltet sein, COQL ist immer aktuell)
-            // Nur Felder die in Zoho existieren (Application_Status gibt es NICHT)
-            $query = "SELECT id, First_Name, Last_Name, Email, Secondary_Email, Third_Email, DGPTMMail, "
-                   . "Membership_Type, Membership_Status, Antragsstatus, Lead_Status, "
-                   . "Bemerkung, Modified_Time, Salutation, Contact_Status "
-                   . "FROM Contacts WHERE " . $field . " = '" . addslashes($value) . "' LIMIT 1";
+            $url = 'https://www.zohoapis.eu/crm/v8/Contacts/search?criteria=(' . $field . ':equals:' . urlencode($value) . ')';
 
-            $response = wp_remote_post('https://www.zohoapis.eu/crm/v5/coql', [
-                'headers' => [
-                    'Authorization' => 'Zoho-oauthtoken ' . $token,
-                    'Content-Type'  => 'application/json'
-                ],
-                'body'    => wp_json_encode(['select_query' => $query]),
+            $response = wp_remote_get($url, [
+                'headers' => ['Authorization' => 'Zoho-oauthtoken ' . $token],
                 'timeout' => 30
             ]);
 
             if (is_wp_error($response)) {
-                dgptm_log_error('COQL WP_Error bei ' . $field . '=' . $value . ': ' . $response->get_error_message(), 'mitgliedsantrag');
+                dgptm_log_error('Search WP_Error: ' . $field . '=' . $value . ': ' . $response->get_error_message(), 'mitgliedsantrag');
                 return false;
             }
 
@@ -888,11 +850,15 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             $body = json_decode($raw, true);
 
             if (isset($body['data']) && !empty($body['data'])) {
-                dgptm_log_error('DEBUG COQL: ' . $field . '=' . $value . ' -> GEFUNDEN: ' . $body['data'][0]['id'], 'mitgliedsantrag');
+                dgptm_log_error('DEBUG SEARCH: ' . $field . '=' . $value . ' -> GEFUNDEN: ' . $body['data'][0]['id'], 'mitgliedsantrag');
                 return $body['data'][0];
             }
 
-            dgptm_log_error('DEBUG COQL: ' . $field . '=' . $value . ' -> HTTP ' . $http_code . ' | ' . substr($raw, 0, 300), 'mitgliedsantrag');
+            // HTTP 204 = nicht gefunden (normal), alles andere loggen
+            if ($http_code !== 204) {
+                dgptm_log_error('DEBUG SEARCH: ' . $field . '=' . $value . ' -> HTTP ' . $http_code . ' | ' . substr($raw, 0, 300), 'mitgliedsantrag');
+            }
+
             return false;
         }
 
@@ -1220,7 +1186,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             );
 
             $response = wp_remote_get(
-                'https://www.zohoapis.eu/crm/v2/Contacts/search?criteria=' . urlencode($search_query),
+                'https://www.zohoapis.eu/crm/v8/Contacts/search?criteria=' . urlencode($search_query),
                 [
                     'headers' => [
                         'Authorization' => 'Zoho-oauthtoken ' . $token
@@ -1664,7 +1630,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 $this->log('Updating existing contact: ' . $contact_id);
 
                 $response = wp_remote_request(
-                    'https://www.zohoapis.eu/crm/v2/Contacts/' . $contact_id,
+                    'https://www.zohoapis.eu/crm/v8/Contacts/' . $contact_id,
                     [
                         'method' => 'PUT',
                         'headers' => [
@@ -1680,7 +1646,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 $this->log('Creating new contact');
 
                 $response = wp_remote_post(
-                    'https://www.zohoapis.eu/crm/v2/Contacts',
+                    'https://www.zohoapis.eu/crm/v8/Contacts',
                     [
                         'headers' => [
                             'Authorization' => 'Zoho-oauthtoken ' . $token,
@@ -1795,7 +1761,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             // Step 1: Upload file to /crm/v2/files endpoint
             $this->log('Step 1: Uploading to /crm/v2/files endpoint');
             $response = wp_remote_post(
-                'https://www.zohoapis.eu/crm/v2/files',
+                'https://www.zohoapis.eu/crm/v8/files',
                 [
                     'headers' => [
                         'Authorization' => 'Zoho-oauthtoken ' . $token,
@@ -1834,7 +1800,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             ];
 
             $response = wp_remote_request(
-                'https://www.zohoapis.eu/crm/v2/Contacts/' . $contact_id,
+                'https://www.zohoapis.eu/crm/v8/Contacts/' . $contact_id,
                 [
                     'method' => 'PUT',
                     'headers' => [
@@ -1956,7 +1922,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             // Erst verfuegbare Transitions + Pflichtfelder abfragen
             $bp_info = wp_remote_get(
-                'https://www.zohoapis.eu/crm/v2/Contacts/' . $contact_id . '/actions/blueprint',
+                'https://www.zohoapis.eu/crm/v8/Contacts/' . $contact_id . '/actions/blueprint',
                 [
                     'headers' => [
                         'Authorization' => 'Zoho-oauthtoken ' . $token,
@@ -1976,7 +1942,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             // Kontakt abrufen fuer Pflichtfelder
             $contact_resp = wp_remote_get(
-                'https://www.zohoapis.eu/crm/v2/Contacts/' . $contact_id,
+                'https://www.zohoapis.eu/crm/v8/Contacts/' . $contact_id,
                 ['headers' => ['Authorization' => 'Zoho-oauthtoken ' . $token], 'timeout' => 15]
             );
 
@@ -2000,7 +1966,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             ];
 
             $response = wp_remote_request(
-                'https://www.zohoapis.eu/crm/v2/Contacts/' . $contact_id . '/actions/blueprint',
+                'https://www.zohoapis.eu/crm/v8/Contacts/' . $contact_id . '/actions/blueprint',
                 [
                     'method'  => 'PUT',
                     'headers' => [
@@ -2674,7 +2640,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
          */
         private function get_contact_details($contact_id, $token) {
             $response = wp_remote_get(
-                'https://www.zohoapis.eu/crm/v2/Contacts/' . $contact_id,
+                'https://www.zohoapis.eu/crm/v8/Contacts/' . $contact_id,
                 [
                     'headers' => [
                         'Authorization' => 'Zoho-oauthtoken ' . $token
@@ -2728,7 +2694,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
                     foreach ($file_ids as $file_id) {
                         // Download-URL generieren
-                        $download_url = 'https://www.zohoapis.eu/crm/v2/Contacts/' . $contact_id . '/Attachments/' . $file_id;
+                        $download_url = 'https://www.zohoapis.eu/crm/v8/Contacts/' . $contact_id . '/Attachments/' . $file_id;
 
                         $attachments[] = [
                             'id' => $file_id,
@@ -2741,7 +2707,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             // Auch allgemeine Attachments pruefen
             $attachments_response = wp_remote_get(
-                'https://www.zohoapis.eu/crm/v2/Contacts/' . $contact_id . '/Attachments',
+                'https://www.zohoapis.eu/crm/v8/Contacts/' . $contact_id . '/Attachments',
                 [
                     'headers' => [
                         'Authorization' => 'Zoho-oauthtoken ' . $token
@@ -2758,7 +2724,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                         $attachments[] = [
                             'id' => $att['id'],
                             'name' => $att['File_Name'] ?? $att['$file_name'] ?? 'Dokument',
-                            'url' => 'https://www.zohoapis.eu/crm/v2/Contacts/' . $contact_id . '/Attachments/' . $att['id'] . '?oauth_token=' . $token
+                            'url' => 'https://www.zohoapis.eu/crm/v8/Contacts/' . $contact_id . '/Attachments/' . $att['id'] . '?oauth_token=' . $token
                         ];
                     }
                 }
@@ -2885,7 +2851,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             // Update im CRM ausfuehren
             $response = wp_remote_request(
-                'https://www.zohoapis.eu/crm/v2/Contacts/' . $antragsteller_id,
+                'https://www.zohoapis.eu/crm/v8/Contacts/' . $antragsteller_id,
                 [
                     'method' => 'PUT',
                     'headers' => [

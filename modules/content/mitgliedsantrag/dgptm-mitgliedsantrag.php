@@ -1915,7 +1915,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             }
 
             $body .= "\nDer Blueprint-Workflow wurde im CRM gestartet.\n";
-            $body .= "Zoho CRM: https://crm.zoho.eu/crm/org20065498498/tab/Contacts/" . $contact_id . "\n";
+            $body .= "Zoho CRM: https://crm.zoho.eu/crm/dgptm/tab/Contacts/" . $contact_id . "\n";
 
             $headers = ['Content-Type: text/plain; charset=UTF-8'];
 

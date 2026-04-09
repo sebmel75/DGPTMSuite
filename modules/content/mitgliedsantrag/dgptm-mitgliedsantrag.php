@@ -1863,9 +1863,14 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             $http_code = wp_remote_retrieve_response_code($response);
             $body = wp_remote_retrieve_body($response);
 
-            $this->log('Blueprint response (HTTP ' . $http_code . '): ' . $body);
-
             $success = $http_code >= 200 && $http_code < 300;
+
+            if ($success) {
+                dgptm_log_info('Blueprint triggered for contact ' . $contact_id . ' (transition ' . $transition_id . ')', 'mitgliedsantrag');
+            } else {
+                dgptm_log_warning('Blueprint failed (HTTP ' . $http_code . ') for contact ' . $contact_id . ': ' . substr($body, 0, 1000), 'mitgliedsantrag');
+            }
+
             return [
                 'success'       => $success,
                 'http_code'     => $http_code,
@@ -1913,9 +1918,9 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             $sent = wp_mail($to, $subject, $body, $headers);
 
             if ($sent) {
-                $this->log('Notification email sent to ' . $to);
+                dgptm_log_info('Infomail gesendet an ' . $to . ' fuer Contact ' . $contact_id, 'mitgliedsantrag');
             } else {
-                $this->log('WARNING: Notification email to ' . $to . ' failed');
+                dgptm_log_warning('Infomail an ' . $to . ' fehlgeschlagen fuer Contact ' . $contact_id, 'mitgliedsantrag');
             }
         }
 

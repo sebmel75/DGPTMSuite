@@ -152,6 +152,29 @@ $has_token = !empty($options['access_token'] ?? '');
                     </tr>
                 </table>
 
+                <h3>Zoho Blueprint</h3>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">
+                            <label for="blueprint_transition_id">Blueprint Transition ID</label>
+                        </th>
+                        <td>
+                            <input type="text"
+                                   id="blueprint_transition_id"
+                                   name="dgptm_mitgliedsantrag_options[blueprint_transition_id]"
+                                   value="<?php echo esc_attr($options['blueprint_transition_id'] ?? ''); ?>"
+                                   class="regular-text"
+                                   placeholder="548256000025337019">
+                            <p class="description">
+                                ID der Blueprint-Transition, die nach erfolgreicher Kontakt-Erstellung/-Aktualisierung im CRM ausgeloest wird.
+                                <br>Startet den Mitgliedsantrag-Workflow in Zoho CRM.
+                                <br>API: <code>PUT /crm/v2/Contacts/{id}/actions/blueprint</code>
+                                <br>Leer lassen, um keinen Blueprint auszuloesen.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+
                 <h3>Feldmapping (Erweitert)</h3>
                 <p>Hier können Sie das Standard-Feldmapping zwischen Formular und Zoho CRM anpassen. JSON-Format erforderlich.</p>
                 <table class="form-table">

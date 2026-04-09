@@ -315,6 +315,9 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             if (isset($input['webhook_test_mode'])) {
                 $sanitized['webhook_test_mode'] = (bool) $input['webhook_test_mode'];
             }
+            if (isset($input['blueprint_transition_id'])) {
+                $sanitized['blueprint_transition_id'] = sanitize_text_field($input['blueprint_transition_id']);
+            }
             if (isset($input['default_country_code'])) {
                 $sanitized['default_country_code'] = sanitize_text_field($input['default_country_code']);
             }
@@ -1290,16 +1293,18 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             $contact_id = $contact_result;
             dgptm_log_verbose('Contact created/updated with ID: ' . $contact_id, 'mitgliedsantrag');
 
-            // Trigger webhook
-            dgptm_log_verbose('Triggering webhook', 'mitgliedsantrag');
-            $webhook_result = $this->trigger_webhook($data, $contact_id, $studienbescheinigung_id, $qualifikation_nachweis_id);
+            // Blueprint-Transition ausloesen (startet CRM-Workflow)
+            dgptm_log_verbose('Triggering blueprint transition', 'mitgliedsantrag');
+            $blueprint_result = $this->trigger_blueprint($contact_id, $token);
 
-            if (!$webhook_result['success']) {
-                dgptm_log_warning('Webhook failed: ' . $webhook_result['message'], 'mitgliedsantrag');
-                // Don't fail the whole application, just log the warning
+            if (!$blueprint_result['success'] && empty($blueprint_result['skipped'])) {
+                dgptm_log_warning('Blueprint trigger failed: ' . $blueprint_result['message'], 'mitgliedsantrag');
             } else {
-                dgptm_log_verbose('Webhook triggered successfully', 'mitgliedsantrag');
+                dgptm_log_verbose('Blueprint triggered successfully', 'mitgliedsantrag');
             }
+
+            // Infomail an Geschaeftsstelle
+            $this->send_notification_email($data, $contact_id);
 
             // Schedule deletion of uploaded certificates after 10 minutes
             if ($studienbescheinigung_id > 0) {
@@ -1316,8 +1321,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             wp_send_json_success([
                 'message' => 'Ihr Mitgliedsantrag wurde erfolgreich eingereicht!',
-                'contact_id' => $contact_id,
-                'webhook_result' => $webhook_result
+                'contact_id' => $contact_id
             ]);
         }
 
@@ -1792,6 +1796,106 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 'message' => $success ? 'Webhook triggered successfully' : 'Webhook returned error code: ' . $http_code,
                 'response_body' => $body
             ];
+        }
+
+        /**
+         * Zoho CRM Blueprint-Transition ausloesen
+         * Startet den Mitgliedsantrag-Workflow im CRM nach Contact Create/Update
+         */
+        private function trigger_blueprint($contact_id, $token) {
+            $options = dgptm_ma_get_options();
+            $transition_id = $options['blueprint_transition_id'] ?? '548256000001478468';
+
+            if (empty($transition_id)) {
+                $this->log('Blueprint skipped: Keine Transition-ID konfiguriert');
+                return ['success' => true, 'message' => 'No blueprint configured', 'skipped' => true];
+            }
+
+            $this->log('Triggering blueprint transition ' . $transition_id . ' for contact ' . $contact_id);
+
+            $payload = [
+                'blueprint' => [
+                    [
+                        'transition_id' => $transition_id
+                    ]
+                ]
+            ];
+
+            $response = wp_remote_request(
+                'https://www.zohoapis.eu/crm/v2/Contacts/' . $contact_id . '/actions/blueprint',
+                [
+                    'method'  => 'PUT',
+                    'headers' => [
+                        'Authorization' => 'Zoho-oauthtoken ' . $token,
+                        'Content-Type'  => 'application/json'
+                    ],
+                    'body'    => wp_json_encode($payload),
+                    'timeout' => 30
+                ]
+            );
+
+            if (is_wp_error($response)) {
+                $this->log('ERROR: Blueprint trigger failed: ' . $response->get_error_message());
+                return ['success' => false, 'message' => $response->get_error_message()];
+            }
+
+            $http_code = wp_remote_retrieve_response_code($response);
+            $body = wp_remote_retrieve_body($response);
+
+            $this->log('Blueprint response (HTTP ' . $http_code . '): ' . $body);
+
+            $success = $http_code >= 200 && $http_code < 300;
+            return [
+                'success'       => $success,
+                'http_code'     => $http_code,
+                'message'       => $success ? 'Blueprint triggered' : 'Blueprint failed (HTTP ' . $http_code . ')',
+                'response_body' => $body
+            ];
+        }
+
+        /**
+         * Benachrichtigungs-E-Mail an Geschaeftsstelle senden
+         */
+        private function send_notification_email($data, $contact_id) {
+            $to = 'geschaeftsstelle@dgptm.de';
+            $subject = 'Neuer Mitgliedsantrag: ' . ($data['vorname'] ?? '') . ' ' . ($data['nachname'] ?? '');
+
+            $mitgliedsart_map = [
+                'ordentliches'       => 'Ordentliches Mitglied',
+                'außerordentliches'  => 'Außerordentliches Mitglied',
+                'förderndes'         => 'Förderndes Mitglied'
+            ];
+            $mitgliedsart = $mitgliedsart_map[$data['mitgliedsart'] ?? ''] ?? ($data['mitgliedsart'] ?? '-');
+
+            $body  = "Ein neuer Mitgliedsantrag wurde ueber das Online-Formular eingereicht.\n\n";
+            $body .= "Name: " . ($data['akad_titel'] ?? '') . ' ' . ($data['vorname'] ?? '') . ' ' . ($data['nachname'] ?? '') . "\n";
+            $body .= "E-Mail: " . ($data['email1'] ?? '') . "\n";
+            $body .= "Mitgliedsart: " . $mitgliedsart . "\n";
+            $body .= "Zoho Contact-ID: " . $contact_id . "\n";
+
+            if (!empty($data['arbeitgeber_name'])) {
+                $body .= "Arbeitgeber: " . $data['arbeitgeber_name'] . "\n";
+            }
+
+            if (!empty($data['buerge1_name'])) {
+                $body .= "\nBuerge 1: " . $data['buerge1_name'] . " (" . ($data['buerge1_email'] ?? '') . ")\n";
+            }
+            if (!empty($data['buerge2_name'])) {
+                $body .= "Buerge 2: " . $data['buerge2_name'] . " (" . ($data['buerge2_email'] ?? '') . ")\n";
+            }
+
+            $body .= "\nDer Blueprint-Workflow wurde im CRM gestartet.\n";
+            $body .= "Zoho CRM: https://crm.zoho.eu/crm/org20065498498/tab/Contacts/" . $contact_id . "\n";
+
+            $headers = ['Content-Type: text/plain; charset=UTF-8'];
+
+            $sent = wp_mail($to, $subject, $body, $headers);
+
+            if ($sent) {
+                $this->log('Notification email sent to ' . $to);
+            } else {
+                $this->log('WARNING: Notification email to ' . $to . ' failed');
+            }
         }
 
         public function ajax_test_webhook() {

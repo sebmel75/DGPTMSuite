@@ -1479,10 +1479,18 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 return ($value === true || $value === 'true' || $value === '1' || $value === 1);
             };
 
+            // Zoho Date-Felder: leere Strings verursachen INVALID_DATA
+            $zoho_date_fields = ['Freigestellt_bis', 'Date_of_Birth'];
+
             // Map form data to CRM fields
             foreach ($mapping as $crm_field => $form_field) {
                 if (isset($data[$form_field])) {
                     $value = $data[$form_field];
+
+                    // Leere Werte bei Date-Feldern nicht senden
+                    if (in_array($crm_field, $zoho_date_fields) && empty($value)) {
+                        continue;
+                    }
 
                     // Special handling for confirmation checkbox fields
                     if (in_array($form_field, ['satzung_akzeptiert', 'beitrag_akzeptiert', 'dsgvo_akzeptiert'])) {

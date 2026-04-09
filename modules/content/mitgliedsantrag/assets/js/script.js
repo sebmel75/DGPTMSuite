@@ -714,35 +714,33 @@
                 clearTimeout(verificationTimers[guarantorNum]);
             }
 
-            // Reset status
-            $('.guarantor-status[data-guarantor="' + guarantorNum + '"]').removeClass('verifying verified not-found not-member');
-            $('#buerge' + guarantorNum + '_info').removeClass('success error warning').text('');
+            const $status = $('.guarantor-status[data-guarantor="' + guarantorNum + '"]');
+            const $info = $('#buerge' + guarantorNum + '_info');
 
+            // Bei leerem Feld: alles zuruecksetzen
             if (value.length < 3) {
+                $status.removeClass('verifying verified not-found not-member');
+                $info.removeClass('success error warning').text('');
+                if (guarantorNum === '1') { guarantor1Valid = false; } else { guarantor2Valid = false; }
                 return;
             }
 
-            // Check if same as other guarantor (real-time check before verification)
+            // Check if same as other guarantor (sofort, ohne AJAX)
             const otherGuarantorNum = guarantorNum === '1' ? '2' : '1';
             const otherGuarantorValue = $('#buerge' + otherGuarantorNum + '_input').val().trim();
 
-            // Check if entering same text as other guarantor
             if (otherGuarantorValue && value.toLowerCase() === otherGuarantorValue.toLowerCase()) {
-                $('.guarantor-status[data-guarantor="' + guarantorNum + '"]').addClass('not-member');
-                $('#buerge' + guarantorNum + '_info').addClass('warning').text('⚠ Dies ist die gleiche Eingabe wie bei Bürge ' + otherGuarantorNum + '. Bitte wählen Sie einen anderen Bürgen.');
-
-                if (guarantorNum === '1') {
-                    guarantor1Valid = false;
-                } else {
-                    guarantor2Valid = false;
-                }
+                $status.removeClass('verifying verified not-found').addClass('not-member');
+                $info.removeClass('success error').addClass('warning').text('⚠ Dies ist die gleiche Eingabe wie bei Bürge ' + otherGuarantorNum + '. Bitte wählen Sie einen anderen Bürgen.');
+                if (guarantorNum === '1') { guarantor1Valid = false; } else { guarantor2Valid = false; }
                 return;
             }
 
-            // Set verifying status
-            $('.guarantor-status[data-guarantor="' + guarantorNum + '"]').addClass('verifying');
+            // Sofort "Suche laeuft..." anzeigen — KEIN Reset auf "nicht gefunden"
+            $status.removeClass('verified not-found not-member').addClass('verifying');
+            $info.removeClass('success error warning').text('Suche läuft...');
 
-            // Debounce verification
+            // Debounce: AJAX erst nach 800ms Tipp-Pause
             verificationTimers[guarantorNum] = setTimeout(function() {
                 verifyGuarantor(value, guarantorNum);
             }, 800);

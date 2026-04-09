@@ -1562,24 +1562,27 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             }
 
             if (is_wp_error($response)) {
-                $this->log('ERROR: Contact creation/update failed: ' . $response->get_error_message());
+                dgptm_log_error('Zoho API WP_Error: ' . $response->get_error_message(), 'mitgliedsantrag');
                 return false;
             }
 
             $http_code = wp_remote_retrieve_response_code($response);
-            $body = json_decode(wp_remote_retrieve_body($response), true);
+            $raw_body = wp_remote_retrieve_body($response);
+            $body = json_decode($raw_body, true);
 
             $this->log('Zoho CRM HTTP Code: ' . $http_code);
-            $this->log('Zoho CRM response: ' . wp_json_encode($body));
+            $this->log('Zoho CRM response: ' . $raw_body);
 
             if (isset($body['data'][0]['details']['id'])) {
                 $contact_id = $body['data'][0]['details']['id'];
-                $this->log('SUCCESS: Contact ID: ' . $contact_id);
+                dgptm_log_info('Contact ' . ($existing_contact ? 'updated' : 'created') . ': ' . $contact_id, 'mitgliedsantrag');
             } elseif (isset($body['data'][0]['code']) && $body['data'][0]['code'] === 'SUCCESS') {
                 $contact_id = $existing_contact['id'] ?? false;
-                $this->log('SUCCESS: Updated contact ID: ' . $contact_id);
+                dgptm_log_info('Contact updated (no new ID): ' . $contact_id, 'mitgliedsantrag');
             } else {
-                $this->log('ERROR: Unexpected response format');
+                $zoho_code = $body['data'][0]['code'] ?? ($body['code'] ?? 'UNKNOWN');
+                $zoho_msg = $body['data'][0]['message'] ?? ($body['message'] ?? $raw_body);
+                dgptm_log_error('Zoho API Error (HTTP ' . $http_code . '): ' . $zoho_code . ' - ' . $zoho_msg, 'mitgliedsantrag');
                 return false;
             }
 

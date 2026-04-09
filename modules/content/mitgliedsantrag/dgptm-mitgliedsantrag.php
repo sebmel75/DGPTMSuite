@@ -850,20 +850,25 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         }
 
         private function search_by_field($field, $value, $token) {
-            $response = wp_remote_get(
-                'https://www.zohoapis.eu/crm/v2/Contacts/search?criteria=(' . $field . ':equals:' . urlencode($value) . ')',
-                [
-                    'headers' => [
-                        'Authorization' => 'Zoho-oauthtoken ' . $token
-                    ]
-                ]
-            );
+            $url = 'https://www.zohoapis.eu/crm/v2/Contacts/search?criteria=(' . $field . ':equals:' . urlencode($value) . ')';
+
+            $response = wp_remote_get($url, [
+                'headers' => ['Authorization' => 'Zoho-oauthtoken ' . $token],
+                'timeout' => 30
+            ]);
 
             if (is_wp_error($response)) {
+                dgptm_log_error('DEBUG SEARCH_BY_FIELD: WP_Error bei ' . $field . '=' . $value . ': ' . $response->get_error_message(), 'mitgliedsantrag');
                 return false;
             }
 
-            $body = json_decode(wp_remote_retrieve_body($response), true);
+            $http_code = wp_remote_retrieve_response_code($response);
+            $raw = wp_remote_retrieve_body($response);
+            $body = json_decode($raw, true);
+
+            if ($http_code !== 200 || !isset($body['data'])) {
+                dgptm_log_error('DEBUG SEARCH_BY_FIELD: ' . $field . '=' . $value . ' -> HTTP ' . $http_code . ' | ' . substr($raw, 0, 500), 'mitgliedsantrag');
+            }
 
             if (isset($body['data']) && !empty($body['data'])) {
                 return $body['data'][0];

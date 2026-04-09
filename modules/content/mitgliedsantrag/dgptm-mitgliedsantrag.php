@@ -766,21 +766,8 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 $contact = $this->search_by_field($field, $email, $token);
 
                 if ($contact) {
-                    // Verify the email is in one of the known email fields
-                    $contact_emails = [
-                        strtolower($contact['Email'] ?? ''),
-                        strtolower($contact['Secondary_Email'] ?? ''),
-                        strtolower($contact['Third_Email'] ?? ''),
-                        strtolower($contact['DGPTMMail'] ?? '')
-                    ];
-
-                    if (in_array($email_lower, $contact_emails)) {
-                        $this->log('Email found in field ' . $field . ' - Contact ID: ' . $contact['id']);
-                        return $contact;
-                    } else {
-                        $this->log('WARNING: Email found but not in known email fields - skipping (might be in Guarantor_Mail fields)');
-                        continue;
-                    }
+                    $this->log('Email found via ' . $field . ' - Contact ID: ' . $contact['id']);
+                    return $contact;
                 }
             }
 

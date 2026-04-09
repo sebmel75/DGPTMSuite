@@ -1838,10 +1838,28 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             $this->log('Triggering blueprint transition ' . $transition_id . ' for contact ' . $contact_id);
 
+            // Erst verfuegbare Transitions + Pflichtfelder abfragen
+            $bp_info = wp_remote_get(
+                'https://www.zohoapis.eu/crm/v2/Contacts/' . $contact_id . '/actions/blueprint',
+                [
+                    'headers' => [
+                        'Authorization' => 'Zoho-oauthtoken ' . $token,
+                        'Content-Type'  => 'application/json'
+                    ],
+                    'timeout' => 30
+                ]
+            );
+
+            if (!is_wp_error($bp_info)) {
+                $bp_body = wp_remote_retrieve_body($bp_info);
+                dgptm_log_info('Blueprint GET (verfuegbare Transitions): ' . substr($bp_body, 0, 2000), 'mitgliedsantrag');
+            }
+
             $payload = [
                 'blueprint' => [
                     [
-                        'transition_id' => $transition_id
+                        'transition_id' => $transition_id,
+                        'data' => (object) []
                     ]
                 ]
             ];

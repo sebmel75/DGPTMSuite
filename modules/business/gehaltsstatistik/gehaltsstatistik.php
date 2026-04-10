@@ -543,6 +543,33 @@ JS;
         }
     }
 
+    /**
+     * AJAX-kompatibles Script-Loading:
+     * Normaler Page-Load -> wp_enqueue_script (Standard-WordPress)
+     * AJAX-Kontext (Dashboard) -> Inline <script>-Tags im HTML
+     */
+    private function maybe_enqueue_or_inline(): void {
+        if ( wp_doing_ajax() ) {
+            // AJAX: Scripts als inline Tags ausgeben (Dashboard-kompatibel)
+            if ( ! $this->ajax_scripts_output ) {
+                $this->ajax_scripts_output = true;
+                $ajax_data = wp_json_encode( [
+                    'ajax_url'     => admin_url( 'admin-ajax.php' ),
+                    'delete_nonce' => wp_create_nonce( 'gb_delete_nonce' ),
+                    'region_nonce' => wp_create_nonce( 'gb_region_nonce' ),
+                    'min_entries'  => (int) $this->get_setting( 'min_entries_per_region', 3 ),
+                ] );
+                echo '<script>var gb_ajax_obj = ' . $ajax_data . ';</script>';
+                echo '<script>' . $this->get_inline_js() . '</script>';
+            }
+        } else {
+            wp_enqueue_script( 'gb-map-script' );
+        }
+    }
+
+    /** @var bool Verhindert doppelte Script-Ausgabe im AJAX-Kontext */
+    private $ajax_scripts_output = false;
+
     private function get_inline_js(): string {
         return <<<JS
 jQuery(function($){
@@ -1215,7 +1242,7 @@ JS;
     /* --------------------------------------------------------------------- */
 
     public function render_gehaltsbarometer(): string {
-        wp_enqueue_script( 'gb-map-script' );
+        $this->maybe_enqueue_or_inline();
 
         $intro = str_replace( '{jahr}', gmdate( 'Y' ), (string) $this->get_setting( 'form_intro', '' ) );
 
@@ -1245,6 +1272,10 @@ JS;
         } else {
             if ( class_exists( 'FrmForm' ) ) {
                 echo do_shortcode( '[formidable id=24]' );
+                // Formidable Forms im AJAX-Kontext: Scripts nachladen
+                if ( wp_doing_ajax() && class_exists( 'FrmFormsController' ) ) {
+                    echo '<script>if(typeof frmFrontForm!=="undefined"){frmFrontForm.init();}</script>';
+                }
             } else {
                 echo '<p><strong>Fehler:</strong> Formidable Forms ist nicht aktiv.</p>';
             }
@@ -1263,7 +1294,7 @@ JS;
     }
 
     public function render_gehaltsbarometer_chart(): string {
-        wp_enqueue_script( 'gb-map-script' );
+        $this->maybe_enqueue_or_inline();
 
         global $wpdb;
         $year_now = (int) gmdate( 'Y' );
@@ -1441,7 +1472,7 @@ JS;
     /* --------------------------------------------------------------------- */
 
     public function render_statistik(): string {
-        wp_enqueue_script( 'gb-map-script' );
+        $this->maybe_enqueue_or_inline();
 
         if ( ! current_user_can( 'manage_options' ) ) {
             return '<p>Keine Berechtigung.</p>';

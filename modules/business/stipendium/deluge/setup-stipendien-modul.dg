@@ -1,165 +1,352 @@
 // ============================================================
 // DGPTM Stipendien — Custom Module Setup
 // ============================================================
-// VORBEREITUNG: Custom Module "Stipendien" manuell anlegen:
+//
+// SCHRITT 1: Custom Module "Stipendien" manuell anlegen
 //   Zoho CRM > Setup > Customization > Modules and Fields
 //   > Create New Module > Name: "Stipendien" > Singular: "Stipendium"
 //
-// Danach dieses Skript als Custom Function (standalone) ausfuehren.
-// Es erstellt alle Felder im Modul "Stipendien".
+// SCHRITT 2: Connection "zohocrm" anlegen (falls nicht vorhanden)
+//   Zoho CRM > Setup > Developer Space > Connections
+//   > Create Connection > Service: "Zoho CRM"
+//   > Connection Name: "zohocrm"
+//   > Scopes: ZohoCRM.settings.fields.ALL, ZohoCRM.modules.ALL
+//   > Create & Connect
+//
+// SCHRITT 3: Lookup-Feld "Bewerber" manuell anlegen
+//   Stipendien-Modul > Layout > Neues Feld > Lookup
+//   > Name: "Bewerber" > Zielmodul: "Contacts"
+//   (Lookup-Felder koennen nicht per API erstellt werden)
+//
+// SCHRITT 4: Dieses Skript als Custom Function (standalone) ausfuehren
+//
+// HINWEIS: Falls die Fields API in Ihrer Zoho-Edition nicht verfuegbar ist,
+// finden Sie am Ende dieses Skripts eine Anleitung zur manuellen Erstellung.
 // ============================================================
 
 module_api_name = "Stipendien";
+api_base = "https://www.zohoapis.eu/crm/v8/settings/fields?module=" + module_api_name;
+connection_name = "zohocrm";
 
-// --- Lookup: Bewerber (Contact) ---
-// Manuell anlegen: Lookup-Feld "Bewerber" → Contacts
-// (Lookup-Felder koennen nicht per API erstellt werden)
+// ─── Hilfsfunktion: Feld erstellen ───
+// (Deluge hat keine echten Funktionen, daher als Inline-Logik)
 
-// --- Picklist: Stipendientyp ---
-field_stipendientyp = Map();
-field_stipendientyp.put("field_label", "Stipendientyp");
-field_stipendientyp.put("data_type", "picklist");
-field_stipendientyp.put("pick_list_values", [
-    {"display_value": "Promotionsstipendium"},
-    {"display_value": "Josef Guettler Stipendium"}
-]);
-resp = zoho.crm.invokeConnector("crm.post", {
-    "url": "https://www.zohoapis.eu/crm/v8/settings/fields?module=" + module_api_name,
-    "body": {"fields": [field_stipendientyp]}
-});
-info "Stipendientyp: " + resp;
+errors = List();
+success_count = 0;
 
-// --- Single Line: Runde ---
-field_runde = Map();
-field_runde.put("field_label", "Runde");
-field_runde.put("data_type", "text");
-field_runde.put("length", 100);
-resp = zoho.crm.invokeConnector("crm.post", {
-    "url": "https://www.zohoapis.eu/crm/v8/settings/fields?module=" + module_api_name,
-    "body": {"fields": [field_runde]}
-});
-info "Runde: " + resp;
+// ═══════════════════════════════════════
+// 1. Picklist: Stipendientyp
+// ═══════════════════════════════════════
+payload = Map();
+payload.put("fields", {{"field_label":"Stipendientyp","data_type":"picklist","pick_list_values":{{"display_value":"Promotionsstipendium"},{"display_value":"Josef Guettler Stipendium"}}}});
 
-// --- Picklist: Status ---
-field_status = Map();
-field_status.put("field_label", "Status");
-field_status.put("data_type", "picklist");
-field_status.put("pick_list_values", [
-    {"display_value": "Eingegangen"},
-    {"display_value": "Freigegeben"},
-    {"display_value": "In Bewertung"},
-    {"display_value": "Abgeschlossen"},
-    {"display_value": "Abgelehnt"},
-    {"display_value": "Archiviert"}
-]);
-resp = zoho.crm.invokeConnector("crm.post", {
-    "url": "https://www.zohoapis.eu/crm/v8/settings/fields?module=" + module_api_name,
-    "body": {"fields": [field_status]}
-});
-info "Status: " + resp;
-
-// --- Date-Felder ---
-date_fields = List();
-date_fields.add({"field_label": "Eingangsdatum", "data_type": "date"});
-date_fields.add({"field_label": "Freigabedatum", "data_type": "date"});
-date_fields.add({"field_label": "Vergabedatum", "data_type": "date"});
-date_fields.add({"field_label": "Stipendium_Abschluss", "data_type": "date"});
-date_fields.add({"field_label": "Runde_Enddatum", "data_type": "date"});
-date_fields.add({"field_label": "Loeschfrist", "data_type": "date"});
-date_fields.add({"field_label": "DSGVO_Einwilligung_Datum", "data_type": "datetime"});
-
-for each df in date_fields
+resp = invokeurl
+[
+    url: api_base
+    type: POST
+    parameters: payload.toString()
+    headers: {"Content-Type":"application/json"}
+    connection: connection_name
+];
+if (resp.get("fields") != null)
 {
-    resp = zoho.crm.invokeConnector("crm.post", {
-        "url": "https://www.zohoapis.eu/crm/v8/settings/fields?module=" + module_api_name,
-        "body": {"fields": [df]}
-    });
-    info df.get("field_label") + ": " + resp;
+    success_count = success_count + 1;
+    info "OK: Stipendientyp";
+}
+else
+{
+    errors.add("Stipendientyp: " + resp);
+    info "FEHLER: Stipendientyp — " + resp;
 }
 
-// --- URL-Felder (WorkDrive-Links) ---
-url_fields = List();
-url_fields.add("Lebenslauf_URL");
-url_fields.add("Motivationsschreiben_URL");
-url_fields.add("Empfehlungsschreiben_URL");
-url_fields.add("Studienleistungen_URL");
-url_fields.add("Publikationen_URL");
-url_fields.add("Zusatzqualifikationen_URL");
+// ═══════════════════════════════════════
+// 2. Picklist: Status
+// ═══════════════════════════════════════
+payload = Map();
+payload.put("fields", {{"field_label":"Stipendium_Status","data_type":"picklist","pick_list_values":{{"display_value":"Eingegangen"},{"display_value":"Freigegeben"},{"display_value":"In Bewertung"},{"display_value":"Abgeschlossen"},{"display_value":"Abgelehnt"},{"display_value":"Archiviert"}}}});
 
-for each uf in url_fields
+resp = invokeurl
+[
+    url: api_base
+    type: POST
+    parameters: payload.toString()
+    headers: {"Content-Type":"application/json"}
+    connection: connection_name
+];
+if (resp.get("fields") != null)
 {
-    field = Map();
-    field.put("field_label", uf);
-    field.put("data_type", "website");
-    resp = zoho.crm.invokeConnector("crm.post", {
-        "url": "https://www.zohoapis.eu/crm/v8/settings/fields?module=" + module_api_name,
-        "body": {"fields": [field]}
-    });
-    info uf + ": " + resp;
+    success_count = success_count + 1;
+    info "OK: Status";
+}
+else
+{
+    errors.add("Status: " + resp);
+    info "FEHLER: Status — " + resp;
 }
 
-// --- Text-Felder ---
-text_fields = List();
-text_fields.add("WorkDrive_Folder_ID");
-text_fields.add("DSGVO_Einwilligung_Hash");
+// ═══════════════════════════════════════
+// 3. Single Line: Runde
+// ═══════════════════════════════════════
+payload = Map();
+payload.put("fields", {{"field_label":"Runde","data_type":"text","length":100}});
 
-for each tf in text_fields
+resp = invokeurl
+[
+    url: api_base
+    type: POST
+    parameters: payload.toString()
+    headers: {"Content-Type":"application/json"}
+    connection: connection_name
+];
+if (resp.get("fields") != null)
 {
-    field = Map();
-    field.put("field_label", tf);
-    field.put("data_type", "text");
-    field.put("length", 255);
-    resp = zoho.crm.invokeConnector("crm.post", {
-        "url": "https://www.zohoapis.eu/crm/v8/settings/fields?module=" + module_api_name,
-        "body": {"fields": [field]}
-    });
-    info tf + ": " + resp;
+    success_count = success_count + 1;
+    info "OK: Runde";
+}
+else
+{
+    errors.add("Runde: " + resp);
+    info "FEHLER: Runde — " + resp;
 }
 
-// --- Decimal-Felder ---
-field_score = Map();
-field_score.put("field_label", "Gesamtscore_Mittelwert");
-field_score.put("data_type", "decimal");
-field_score.put("decimal_place", 2);
-resp = zoho.crm.invokeConnector("crm.post", {
-    "url": "https://www.zohoapis.eu/crm/v8/settings/fields?module=" + module_api_name,
-    "body": {"fields": [field_score]}
-});
+// ═══════════════════════════════════════
+// 4. Date-Felder (Batch)
+// ═══════════════════════════════════════
+date_labels = {"Eingangsdatum","Freigabedatum","Vergabedatum","Stipendium_Abschluss","Runde_Enddatum","Loeschfrist"};
+
+for each dl in date_labels
+{
+    payload = Map();
+    payload.put("fields", {{"field_label":dl,"data_type":"date"}});
+    resp = invokeurl
+    [
+        url: api_base
+        type: POST
+        parameters: payload.toString()
+        headers: {"Content-Type":"application/json"}
+        connection: connection_name
+    ];
+    if (resp.get("fields") != null)
+    {
+        success_count = success_count + 1;
+        info "OK: " + dl;
+    }
+    else
+    {
+        errors.add(dl + ": " + resp);
+        info "FEHLER: " + dl + " — " + resp;
+    }
+}
+
+// DateTime: DSGVO Einwilligung
+payload = Map();
+payload.put("fields", {{"field_label":"DSGVO_Einwilligung_Datum","data_type":"datetime"}});
+resp = invokeurl
+[
+    url: api_base
+    type: POST
+    parameters: payload.toString()
+    headers: {"Content-Type":"application/json"}
+    connection: connection_name
+];
+if (resp.get("fields") != null)
+{
+    success_count = success_count + 1;
+}
+else
+{
+    errors.add("DSGVO_Einwilligung_Datum: " + resp);
+}
+info "DSGVO_Einwilligung_Datum: " + resp;
+
+// ═══════════════════════════════════════
+// 5. URL-Felder (WorkDrive-Links)
+// ═══════════════════════════════════════
+url_labels = {"Lebenslauf_URL","Motivationsschreiben_URL","Empfehlungsschreiben_URL","Studienleistungen_URL","Publikationen_URL","Zusatzqualifikationen_URL"};
+
+for each ul in url_labels
+{
+    payload = Map();
+    payload.put("fields", {{"field_label":ul,"data_type":"website"}});
+    resp = invokeurl
+    [
+        url: api_base
+        type: POST
+        parameters: payload.toString()
+        headers: {"Content-Type":"application/json"}
+        connection: connection_name
+    ];
+    if (resp.get("fields") != null)
+    {
+        success_count = success_count + 1;
+        info "OK: " + ul;
+    }
+    else
+    {
+        errors.add(ul + ": " + resp);
+        info "FEHLER: " + ul + " — " + resp;
+    }
+}
+
+// ═══════════════════════════════════════
+// 6. Text-Felder
+// ═══════════════════════════════════════
+text_labels = {"WorkDrive_Folder_ID","DSGVO_Einwilligung_Hash"};
+
+for each tl in text_labels
+{
+    payload = Map();
+    payload.put("fields", {{"field_label":tl,"data_type":"text","length":255}});
+    resp = invokeurl
+    [
+        url: api_base
+        type: POST
+        parameters: payload.toString()
+        headers: {"Content-Type":"application/json"}
+        connection: connection_name
+    ];
+    if (resp.get("fields") != null)
+    {
+        success_count = success_count + 1;
+        info "OK: " + tl;
+    }
+    else
+    {
+        errors.add(tl + ": " + resp);
+        info "FEHLER: " + tl + " — " + resp;
+    }
+}
+
+// ═══════════════════════════════════════
+// 7. Decimal: Gesamtscore_Mittelwert
+// ═══════════════════════════════════════
+payload = Map();
+payload.put("fields", {{"field_label":"Gesamtscore_Mittelwert","data_type":"decimal","decimal_place":2}});
+resp = invokeurl
+[
+    url: api_base
+    type: POST
+    parameters: payload.toString()
+    headers: {"Content-Type":"application/json"}
+    connection: connection_name
+];
+if (resp.get("fields") != null) { success_count = success_count + 1; }
+else { errors.add("Gesamtscore_Mittelwert: " + resp); }
 info "Gesamtscore_Mittelwert: " + resp;
 
-// --- Integer-Felder ---
-int_fields = List();
-int_fields.add("Rang");
-int_fields.add("Anzahl_Bewertungen");
+// ═══════════════════════════════════════
+// 8. Integer-Felder
+// ═══════════════════════════════════════
+int_labels = {"Rang","Anzahl_Bewertungen"};
 
-for each intf in int_fields
+for each il in int_labels
 {
-    field = Map();
-    field.put("field_label", intf);
-    field.put("data_type", "integer");
-    resp = zoho.crm.invokeConnector("crm.post", {
-        "url": "https://www.zohoapis.eu/crm/v8/settings/fields?module=" + module_api_name,
-        "body": {"fields": [field]}
-    });
-    info intf + ": " + resp;
+    payload = Map();
+    payload.put("fields", {{"field_label":il,"data_type":"integer"}});
+    resp = invokeurl
+    [
+        url: api_base
+        type: POST
+        parameters: payload.toString()
+        headers: {"Content-Type":"application/json"}
+        connection: connection_name
+    ];
+    if (resp.get("fields") != null)
+    {
+        success_count = success_count + 1;
+        info "OK: " + il;
+    }
+    else
+    {
+        errors.add(il + ": " + resp);
+        info "FEHLER: " + il + " — " + resp;
+    }
 }
 
-// --- Boolean-Felder ---
-bool_fields = List();
-bool_fields.add("Foerderfaehig");
-bool_fields.add("Vergeben");
-bool_fields.add("DSGVO_Einwilligung");
+// ═══════════════════════════════════════
+// 9. Checkbox-Felder (Boolean)
+// ═══════════════════════════════════════
+bool_labels = {"Foerderfaehig","Vergeben","DSGVO_Einwilligung"};
 
-for each bf in bool_fields
+for each bl in bool_labels
 {
-    field = Map();
-    field.put("field_label", bf);
-    field.put("data_type", "boolean");
-    resp = zoho.crm.invokeConnector("crm.post", {
-        "url": "https://www.zohoapis.eu/crm/v8/settings/fields?module=" + module_api_name,
-        "body": {"fields": [field]}
-    });
-    info bf + ": " + resp;
+    payload = Map();
+    payload.put("fields", {{"field_label":bl,"data_type":"checkbox"}});
+    resp = invokeurl
+    [
+        url: api_base
+        type: POST
+        parameters: payload.toString()
+        headers: {"Content-Type":"application/json"}
+        connection: connection_name
+    ];
+    if (resp.get("fields") != null)
+    {
+        success_count = success_count + 1;
+        info "OK: " + bl;
+    }
+    else
+    {
+        errors.add(bl + ": " + resp);
+        info "FEHLER: " + bl + " — " + resp;
+    }
 }
 
-info "=== Stipendien-Modul Setup abgeschlossen ===";
+// ═══════════════════════════════════════
+// Zusammenfassung
+// ═══════════════════════════════════════
+info "=== ERGEBNIS: " + success_count + " Felder erstellt, " + errors.size() + " Fehler ===";
+if (errors.size() > 0)
+{
+    info "Fehler-Details:";
+    for each e in errors
+    {
+        info "  - " + e;
+    }
+    info "";
+    info "TIPP: Falls alle Felder fehlschlagen, pruefen Sie:";
+    info "1. Connection 'zohocrm' vorhanden? (Setup > Developer Space > Connections)";
+    info "2. Scopes: ZohoCRM.settings.fields.ALL, ZohoCRM.modules.ALL";
+    info "3. Modul 'Stipendien' existiert? (API-Name exakt pruefen)";
+    info "4. Zoho CRM Edition: Fields API erfordert Enterprise oder hoeher";
+    info "";
+    info "FALLBACK: Felder manuell anlegen (siehe Anleitung unten)";
+}
+
+// ============================================================
+// MANUELLE ANLEITUNG (falls API nicht verfuegbar)
+// ============================================================
+// Zoho CRM > Setup > Customization > Modules > Stipendien > Layout
+//
+// LOOKUP-FELDER (zuerst):
+//   - "Bewerber" → Contacts
+//
+// PICKLIST-FELDER:
+//   - "Stipendientyp": Promotionsstipendium | Josef Guettler Stipendium
+//   - "Stipendium_Status": Eingegangen | Freigegeben | In Bewertung | Abgeschlossen | Abgelehnt | Archiviert
+//
+// SINGLE LINE TEXT:
+//   - "Runde" (max 100 Zeichen)
+//   - "WorkDrive_Folder_ID" (max 255 Zeichen)
+//   - "DSGVO_Einwilligung_Hash" (max 255 Zeichen)
+//
+// DATE-FELDER:
+//   - Eingangsdatum, Freigabedatum, Vergabedatum
+//   - Stipendium_Abschluss, Runde_Enddatum, Loeschfrist
+//
+// DATETIME-FELD:
+//   - DSGVO_Einwilligung_Datum
+//
+// URL/WEBSITE-FELDER:
+//   - Lebenslauf_URL, Motivationsschreiben_URL, Empfehlungsschreiben_URL
+//   - Studienleistungen_URL, Publikationen_URL, Zusatzqualifikationen_URL
+//
+// DEZIMALZAHL (2 Nachkommastellen):
+//   - Gesamtscore_Mittelwert
+//
+// GANZZAHL:
+//   - Rang, Anzahl_Bewertungen
+//
+// CHECKBOX:
+//   - Foerderfaehig, Vergeben, DSGVO_Einwilligung
+// ============================================================

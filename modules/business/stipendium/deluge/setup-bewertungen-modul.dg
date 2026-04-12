@@ -1,111 +1,191 @@
 // ============================================================
 // DGPTM Stipendien_Bewertungen — Custom Module Setup
 // ============================================================
-// VORBEREITUNG: Custom Module "Stipendien_Bewertungen" manuell anlegen:
+//
+// SCHRITT 1: Custom Module "Stipendien_Bewertungen" manuell anlegen
 //   Zoho CRM > Setup > Customization > Modules and Fields
 //   > Create New Module > Name: "Stipendien_Bewertungen"
 //   > Singular: "Stipendien_Bewertung"
 //
-// Lookup-Felder manuell anlegen:
-//   1. "Stipendium" → Stipendien
-//   2. "Gutachter" → Contacts
+// SCHRITT 2: Connection "zohocrm" muss vorhanden sein
+//   (Siehe setup-stipendien-modul.dg fuer Details)
 //
-// Danach dieses Skript als Custom Function (standalone) ausfuehren.
+// SCHRITT 3: Lookup-Felder manuell anlegen
+//   - "Stipendium" → Stipendien
+//   - "Gutachter" → Contacts
+//
+// SCHRITT 4: Dieses Skript als Custom Function (standalone) ausfuehren
 // ============================================================
 
 module_api_name = "Stipendien_Bewertungen";
+api_base = "https://www.zohoapis.eu/crm/v8/settings/fields?module=" + module_api_name;
+connection_name = "zohocrm";
 
-// --- Noten-Felder (Integer 1-10) ---
-// A: Wissenschaftlicher Wert
-note_fields = List();
-note_fields.add("A1_Note");
-note_fields.add("A2_Note");
-note_fields.add("A3_Note");
-note_fields.add("B1_Note");
-note_fields.add("B2_Note");
-note_fields.add("B3_Note");
-note_fields.add("C1_Note");
-note_fields.add("C2_Note");
-note_fields.add("C3_Note");
-note_fields.add("D1_Note");
-note_fields.add("D2_Note");
-note_fields.add("D3_Note");
+errors = List();
+success_count = 0;
 
-for each nf in note_fields
+// ═══════════════════════════════════════
+// 1. Noten-Felder (Integer, je 1-10)
+// ═══════════════════════════════════════
+note_labels = {"A1_Note","A2_Note","A3_Note","B1_Note","B2_Note","B3_Note","C1_Note","C2_Note","C3_Note","D1_Note","D2_Note","D3_Note"};
+
+for each nl in note_labels
 {
-    field = Map();
-    field.put("field_label", nf);
-    field.put("data_type", "integer");
-    resp = zoho.crm.invokeConnector("crm.post", {
-        "url": "https://www.zohoapis.eu/crm/v8/settings/fields?module=" + module_api_name,
-        "body": {"fields": [field]}
-    });
-    info nf + ": " + resp;
+    payload = Map();
+    payload.put("fields", {{"field_label":nl,"data_type":"integer"}});
+    resp = invokeurl
+    [
+        url: api_base
+        type: POST
+        parameters: payload.toString()
+        headers: {"Content-Type":"application/json"}
+        connection: connection_name
+    ];
+    if (resp.get("fields") != null)
+    {
+        success_count = success_count + 1;
+        info "OK: " + nl;
+    }
+    else
+    {
+        errors.add(nl + ": " + resp);
+        info "FEHLER: " + nl + " — " + resp;
+    }
 }
 
-// --- Kommentar-Felder (Multi Line) ---
-comment_fields = List();
-comment_fields.add("A_Kommentar");
-comment_fields.add("B_Kommentar");
-comment_fields.add("C_Kommentar");
-comment_fields.add("D_Kommentar");
-comment_fields.add("Gesamtanmerkungen");
+// ═══════════════════════════════════════
+// 2. Kommentar-Felder (Multi Line / Textarea)
+// ═══════════════════════════════════════
+comment_labels = {"A_Kommentar","B_Kommentar","C_Kommentar","D_Kommentar","Gesamtanmerkungen"};
 
-for each cf in comment_fields
+for each cl in comment_labels
 {
-    field = Map();
-    field.put("field_label", cf);
-    field.put("data_type", "textarea");
-    resp = zoho.crm.invokeConnector("crm.post", {
-        "url": "https://www.zohoapis.eu/crm/v8/settings/fields?module=" + module_api_name,
-        "body": {"fields": [field]}
-    });
-    info cf + ": " + resp;
+    payload = Map();
+    payload.put("fields", {{"field_label":cl,"data_type":"textarea"}});
+    resp = invokeurl
+    [
+        url: api_base
+        type: POST
+        parameters: payload.toString()
+        headers: {"Content-Type":"application/json"}
+        connection: connection_name
+    ];
+    if (resp.get("fields") != null)
+    {
+        success_count = success_count + 1;
+        info "OK: " + cl;
+    }
+    else
+    {
+        errors.add(cl + ": " + resp);
+        info "FEHLER: " + cl + " — " + resp;
+    }
 }
 
-// --- Gewichtete Score-Felder (Decimal) ---
-score_fields = List();
-score_fields.add("A_Gewichtet");
-score_fields.add("B_Gewichtet");
-score_fields.add("C_Gewichtet");
-score_fields.add("D_Gewichtet");
-score_fields.add("Gesamtscore");
+// ═══════════════════════════════════════
+// 3. Gewichtete Score-Felder (Decimal, 2 Nachkommastellen)
+// ═══════════════════════════════════════
+score_labels = {"A_Gewichtet","B_Gewichtet","C_Gewichtet","D_Gewichtet","Gesamtscore"};
 
-for each sf in score_fields
+for each sl in score_labels
 {
-    field = Map();
-    field.put("field_label", sf);
-    field.put("data_type", "decimal");
-    field.put("decimal_place", 2);
-    resp = zoho.crm.invokeConnector("crm.post", {
-        "url": "https://www.zohoapis.eu/crm/v8/settings/fields?module=" + module_api_name,
-        "body": {"fields": [field]}
-    });
-    info sf + ": " + resp;
+    payload = Map();
+    payload.put("fields", {{"field_label":sl,"data_type":"decimal","decimal_place":2}});
+    resp = invokeurl
+    [
+        url: api_base
+        type: POST
+        parameters: payload.toString()
+        headers: {"Content-Type":"application/json"}
+        connection: connection_name
+    ];
+    if (resp.get("fields") != null)
+    {
+        success_count = success_count + 1;
+        info "OK: " + sl;
+    }
+    else
+    {
+        errors.add(sl + ": " + resp);
+        info "FEHLER: " + sl + " — " + resp;
+    }
 }
 
-// --- DateTime: Bewertungsdatum ---
-field_datum = Map();
-field_datum.put("field_label", "Bewertungsdatum");
-field_datum.put("data_type", "datetime");
-resp = zoho.crm.invokeConnector("crm.post", {
-    "url": "https://www.zohoapis.eu/crm/v8/settings/fields?module=" + module_api_name,
-    "body": {"fields": [field_datum]}
-});
+// ═══════════════════════════════════════
+// 4. DateTime: Bewertungsdatum
+// ═══════════════════════════════════════
+payload = Map();
+payload.put("fields", {{"field_label":"Bewertungsdatum","data_type":"datetime"}});
+resp = invokeurl
+[
+    url: api_base
+    type: POST
+    parameters: payload.toString()
+    headers: {"Content-Type":"application/json"}
+    connection: connection_name
+];
+if (resp.get("fields") != null) { success_count = success_count + 1; }
+else { errors.add("Bewertungsdatum: " + resp); }
 info "Bewertungsdatum: " + resp;
 
-// --- Picklist: Status ---
-field_status = Map();
-field_status.put("field_label", "Status");
-field_status.put("data_type", "picklist");
-field_status.put("pick_list_values", [
-    {"display_value": "Entwurf"},
-    {"display_value": "Abgeschlossen"}
-]);
-resp = zoho.crm.invokeConnector("crm.post", {
-    "url": "https://www.zohoapis.eu/crm/v8/settings/fields?module=" + module_api_name,
-    "body": {"fields": [field_status]}
-});
+// ═══════════════════════════════════════
+// 5. Picklist: Status
+// ═══════════════════════════════════════
+payload = Map();
+payload.put("fields", {{"field_label":"Bewertung_Status","data_type":"picklist","pick_list_values":{{"display_value":"Entwurf"},{"display_value":"Abgeschlossen"}}}});
+resp = invokeurl
+[
+    url: api_base
+    type: POST
+    parameters: payload.toString()
+    headers: {"Content-Type":"application/json"}
+    connection: connection_name
+];
+if (resp.get("fields") != null) { success_count = success_count + 1; }
+else { errors.add("Status: " + resp); }
 info "Status: " + resp;
 
-info "=== Stipendien_Bewertungen-Modul Setup abgeschlossen ===";
+// ═══════════════════════════════════════
+// Zusammenfassung
+// ═══════════════════════════════════════
+info "=== ERGEBNIS: " + success_count + " Felder erstellt, " + errors.size() + " Fehler ===";
+if (errors.size() > 0)
+{
+    info "Fehler-Details:";
+    for each e in errors
+    {
+        info "  - " + e;
+    }
+    info "";
+    info "FALLBACK: Felder manuell anlegen (siehe Anleitung unten)";
+}
+
+// ============================================================
+// MANUELLE ANLEITUNG (falls API nicht verfuegbar)
+// ============================================================
+// Zoho CRM > Setup > Customization > Modules > Stipendien_Bewertungen > Layout
+//
+// LOOKUP-FELDER (zuerst):
+//   - "Stipendium" → Stipendien
+//   - "Gutachter" → Contacts
+//
+// GANZZAHL-FELDER (Noten 1-10):
+//   - A1_Note, A2_Note, A3_Note
+//   - B1_Note, B2_Note, B3_Note
+//   - C1_Note, C2_Note, C3_Note
+//   - D1_Note, D2_Note, D3_Note
+//
+// MEHRZEILIGER TEXT:
+//   - A_Kommentar, B_Kommentar, C_Kommentar, D_Kommentar
+//   - Gesamtanmerkungen
+//
+// DEZIMALZAHL (2 Nachkommastellen):
+//   - A_Gewichtet, B_Gewichtet, C_Gewichtet, D_Gewichtet
+//   - Gesamtscore
+//
+// DATETIME:
+//   - Bewertungsdatum
+//
+// PICKLIST:
+//   - "Bewertung_Status": Entwurf | Abgeschlossen
+// ============================================================

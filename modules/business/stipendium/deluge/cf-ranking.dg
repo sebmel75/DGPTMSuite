@@ -1,0 +1,61 @@
+// ============================================================
+// Custom Function: stipendium_ranking
+// Typ: Custom Button auf Stipendien-Listenansicht
+// ============================================================
+// Setup: Zoho CRM > Setup > Customization > Modules > Stipendien
+//   > Links & Buttons > Create Button
+//   > Name: "Ranking berechnen"
+//   > Placement: List View (selected records)
+//   > Action: Custom Function > Diesen Code einfuegen
+// ============================================================
+
+// Parameter: ids (List von Stipendien-IDs, uebergeben vom Button)
+// Alternativ: runde und typ als Parameter (wenn standalone)
+
+// Aus dem ersten Record Runde und Typ ermitteln
+if (ids.size() == 0)
+{
+    return "Keine Records ausgewaehlt.";
+}
+
+first_record = zoho.crm.getRecordById("Stipendien", ids.get(0));
+runde = first_record.get("Runde");
+typ = first_record.get("Stipendientyp");
+
+// Alle foerderfaehigen Stipendien dieser Runde und dieses Typs holen
+stipendien = zoho.crm.searchRecords("Stipendien",
+    "(Runde:equals:" + runde + ") and (Stipendientyp:equals:" + typ + ") and (Foerderfaehig:equals:true)");
+
+if (stipendien.size() == 0)
+{
+    return "Keine foerderfaehigen Bewerbungen in Runde '" + runde + "' gefunden.";
+}
+
+// Nach Gesamtscore absteigend sortieren
+sorted = stipendien.sort("Gesamtscore_Mittelwert", false);
+
+rang = 1;
+prev_score = -1.0;
+same_rank_count = 0;
+
+for each stip in sorted
+{
+    score = stip.get("Gesamtscore_Mittelwert").toDecimal();
+
+    if (score != prev_score)
+    {
+        current_rang = rang;
+        same_rank_count = 0;
+    }
+    else
+    {
+        // Gleichstand: gleicher Rang
+        same_rank_count = same_rank_count + 1;
+    }
+
+    zoho.crm.updateRecord("Stipendien", stip.get("id"), {"Rang": current_rang});
+    prev_score = score;
+    rang = rang + 1;
+}
+
+return "Ranking berechnet: " + sorted.size() + " foerderfaehige Bewerbungen in '" + runde + "'.";

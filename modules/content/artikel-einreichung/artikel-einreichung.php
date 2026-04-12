@@ -22,6 +22,7 @@ require_once __DIR__ . '/includes/class-upload-token.php';
 require_once __DIR__ . '/includes/class-reviewer-shortcode.php';
 require_once __DIR__ . '/includes/class-crm-reviewer.php';
 require_once __DIR__ . '/includes/class-role-manager.php';
+require_once __DIR__ . '/includes/class-artikel-freigabe.php';
 
 // Initialize database tables
 register_activation_hook(__FILE__, array('DGPTM_Artikel_DB_Installer', 'install'));
@@ -30,6 +31,11 @@ add_action('plugins_loaded', array('DGPTM_Artikel_DB_Installer', 'install'));
 // Initialize reviewer shortcode
 add_action('init', function() {
     new DGPTM_Artikel_Reviewer_Shortcode();
+});
+
+// Initialize Freigabe-Dokument shortcode
+add_action('init', function() {
+    new DGPTM_Artikel_Freigabe(plugin_dir_path(__FILE__), plugin_dir_url(__FILE__));
 });
 
 // Schedule token cleanup

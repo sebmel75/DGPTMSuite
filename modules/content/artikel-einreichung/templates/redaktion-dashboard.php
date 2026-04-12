@@ -13,9 +13,10 @@ if (!defined('ABSPATH')) exit;
 $plugin = DGPTM_Artikel_Einreichung::get_instance();
 $user_id = get_current_user_id();
 
-// Check permission
-$is_redaktion = $plugin->is_redaktion($user_id);
-$is_editor = $plugin->is_editor_in_chief($user_id);
+// Check permission (Testmodus ueberspringt Pruefung)
+$is_test_mode = !empty($GLOBALS['dgptm_artikel_test_mode']);
+$is_redaktion = $is_test_mode || $plugin->is_redaktion($user_id);
+$is_editor = $is_test_mode || $plugin->is_editor_in_chief($user_id);
 
 if (!$is_redaktion && !$is_editor) {
     echo '<div class="dgptm-artikel-notice notice-error"><p>Sie haben keine Berechtigung für diesen Bereich.</p></div>';

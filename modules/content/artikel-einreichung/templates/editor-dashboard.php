@@ -15,8 +15,9 @@ if (!defined('ABSPATH')) exit;
 $plugin = DGPTM_Artikel_Einreichung::get_instance();
 $user_id = get_current_user_id();
 
-// Check permission
-if (!$plugin->is_editor_in_chief($user_id)) {
+// Check permission (Testmodus ueberspringt Pruefung)
+$is_test_mode = !empty($GLOBALS['dgptm_artikel_test_mode']);
+if (!$is_test_mode && !$plugin->is_editor_in_chief($user_id)) {
     echo '<div class="dgptm-artikel-notice notice-error"><p>Sie haben keine Berechtigung für diesen Bereich.</p></div>';
     return;
 }

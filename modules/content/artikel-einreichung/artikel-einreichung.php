@@ -3486,11 +3486,16 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
                 </div>';
             }
 
+            // Flag fuer Templates: Rollenpruefung ueberspringen
+            $GLOBALS['dgptm_artikel_test_mode'] = true;
+
             ob_start();
             echo '<div class="dgptm-artikel-notice notice-info" style="background:#fff3cd;border-left:4px solid #ffc107;padding:10px 15px;margin-bottom:15px;border-radius:4px;">';
             echo '<strong>Testmodus:</strong> Dieses Dashboard wird ohne Rollenpruefung angezeigt. Im Produktivbetrieb ist es nur fuer die Redaktion sichtbar.';
             echo '</div>';
             include DGPTM_ARTIKEL_PATH . 'templates/redaktion-dashboard.php';
+
+            unset($GLOBALS['dgptm_artikel_test_mode']);
             return ob_get_clean();
         }
 
@@ -3505,11 +3510,16 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
                 </div>';
             }
 
+            // Flag fuer Templates: Rollenpruefung ueberspringen
+            $GLOBALS['dgptm_artikel_test_mode'] = true;
+
             ob_start();
             echo '<div class="dgptm-artikel-notice notice-info" style="background:#fff3cd;border-left:4px solid #ffc107;padding:10px 15px;margin-bottom:15px;border-radius:4px;">';
             echo '<strong>Testmodus:</strong> Dieses Dashboard wird ohne Rollenpruefung angezeigt. Im Produktivbetrieb ist es nur fuer den Chefredakteur sichtbar.';
             echo '</div>';
             include DGPTM_ARTIKEL_PATH . 'templates/editor-dashboard.php';
+
+            unset($GLOBALS['dgptm_artikel_test_mode']);
             return ob_get_clean();
         }
 

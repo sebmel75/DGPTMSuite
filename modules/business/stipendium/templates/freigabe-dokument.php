@@ -127,20 +127,24 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
         <div class="dgptm-freigabe-feedback-banner">
             <div class="dgptm-freigabe-feedback-banner-icon">&#128221;</div>
             <div>
-                <div class="dgptm-freigabe-feedback-banner-title">Eingearbeitete Rueckmeldungen (12. April 2026)</div>
+                <div class="dgptm-freigabe-feedback-banner-title">Status der Rueckmeldungen (Stand: 12. April 2026, 21 Kommentare)</div>
                 <div class="dgptm-freigabe-feedback-banner-text">
-                    Folgende Punkte aus den Kommentaren von frmuench, dbuchwald, jaheller und Sebastian Melzer wurden eingearbeitet:
+                    Auswertung aller Kommentare. Punkte ohne inhaltlichen Aenderungsbedarf (Bestaetigungen, Lob, interne Diskussion) sind nicht aufgefuehrt.
                 </div>
                 <ul class="dgptm-freigabe-feedback-list">
-                    <li><strong>Timeline:</strong> Digitales System ab 2027. Bewertungsschema kann 2026 bereits auf Papier/PDF genutzt werden. <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
-                    <li><strong>Geschaeftsstelle vorgeschaltet:</strong> GS (Madeleine) erhaelt Bewerbung zuerst, prueft Vollstaendigkeit, DANN Weiterleitung an Vorsitzenden. <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
-                    <li><strong>Befangenheitspruefung:</strong> Vorsitzender prueft vorab auf Befangenheit, bevor Gutachter freigeschaltet werden. <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
-                    <li><strong>Gutachter-Unabhaengigkeit:</strong> Gutachter koennen waehrend der Begutachtung die Bewertungen anderer NICHT einsehen. Erst nach Abschluss und Entscheidung. <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
-                    <li><strong>Externe Gutachter:</strong> Zugang auch fuer Nicht-Mitglieder ueber persoenlichen Einladungslink (Token). <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
-                    <li><strong>Expose/Exzerpt:</strong> Als neues Pflichtdokument hinzugefuegt. Muster-Expose wird erstellt. <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
-                    <li><strong>E-Mail-Kette:</strong> GS bekommt erste Benachrichtigung, prueft, dann erst Bestaetigung an Bewerber. <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
-                    <li><strong>Guettler-Stipendium:</strong> Eigene Fragestellungen und Gewichtungen erforderlich. Wird von dbuchwald erarbeitet. <span class="dgptm-badge-offen">offen</span></li>
-                    <li><strong>Geschaeftsordnung:</strong> Gremium soll alle 3 Jahre ueberprueft werden &mdash; Vorschlag zur Aufnahme. <span class="dgptm-badge-offen">offen</span></li>
+                    <li><strong>Timeline ab 2027:</strong> Digitales System wird nicht ueberstuerzt. Bewertungsschema kann 2026 papierbasiert genutzt werden. &rarr; <em>Abschnitt 1, Zeitplan-Hinweis</em> <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
+                    <li><strong>GS vorgeschaltet:</strong> Geschaeftsstelle (Madeleine) erhaelt Bewerbung zuerst, prueft Vollstaendigkeit, dann Weiterleitung. &rarr; <em>Abschnitt 2 (neue Rolle), Abschnitt 3 (Phase 2), Abschnitt 8 (E-Mail-Kette)</em> <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
+                    <li><strong>Befangenheitspruefung:</strong> Vorsitzender prueft vorab, bevor Gutachter freigeschaltet werden. &rarr; <em>Abschnitt 3 (Phase 3, Schritt 7)</em> <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
+                    <li><strong>Gutachter-Unabhaengigkeit:</strong> Gutachter sehen Bewertungen anderer waehrend des Prozesses NICHT. Erst nach Abschluss. &rarr; <em>Abschnitt 2 (Rollen-Tabelle), Abschnitt 3 (Phase 4, Schritt 9+12)</em> <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
+                    <li><strong>Externe Gutachter:</strong> Token-basierter Zugang fuer Nicht-Mitglieder. &rarr; <em>Abschnitt 2 (Hinweis-Box)</em> <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
+                    <li><strong>Expose/Exzerpt:</strong> Als Pflichtdokument hinzugefuegt. &rarr; <em>Abschnitt 5 (Tabelle + Hinweis)</em> <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
+                    <li><strong>GS-Rolle bei Gutachterverwaltung:</strong> GS kann in Ruecksprache Gutachter freischalten. &rarr; <em>Abschnitt 7 (Hinweis-Box)</em> <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
+                    <li><strong>Termin 2. Juni 2026:</strong> Finale Besprechung und Deadline. &rarr; <em>Countdown + Abschnitt 9</em> <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
+                    <li><strong>ORCID-ID automatisch abfragen:</strong> Historie des Bewerbers automatisch abrufen. &rarr; <em>Abschnitt 5</em> <span class="dgptm-badge-offen">offen</span></li>
+                    <li><strong>Konkrete Fristen definieren:</strong> Bewertungsfristen, Einreichungsfristen pro Phase. <span class="dgptm-badge-offen">offen &mdash; in Sitzung am 2.6. klaeren</span></li>
+                    <li><strong>Muster-Expose erstellen:</strong> Vorlage fuer strukturierte Projektbeschreibungen (jaheller). <span class="dgptm-badge-offen">offen</span></li>
+                    <li><strong>Guettler-Stipendium:</strong> Eigene Fragestellungen und Gewichtungen (dbuchwald, in Bearbeitung). <span class="dgptm-badge-offen">offen</span></li>
+                    <li><strong>Geschaeftsordnung:</strong> 3-Jahres-Pruefung des Gremiums aufnehmen. <span class="dgptm-badge-offen">offen &mdash; in Sitzung am 2.6. klaeren</span></li>
                 </ul>
             </div>
         </div>
@@ -475,7 +479,8 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
             </table>
 
             <div class="dgptm-freigabe-highlight green">
-                <strong>Neu: Expose/Exzerpt</strong> als Pflichtdokument hinzugefuegt. Ein <strong>Muster-Expose</strong> soll als Vorlage bereitgestellt werden, um eine einheitliche Struktur der Projektbeschreibungen zu gewaehrleisten. <span class="dgptm-badge-offen">Muster wird erstellt</span>
+                <strong>Neu: Expose/Exzerpt</strong> als Pflichtdokument hinzugefuegt. Ein <strong>Muster-Expose</strong> soll als Vorlage bereitgestellt werden (jaheller). <span class="dgptm-badge-offen">Muster wird erstellt</span><br>
+                <strong>Geplant: ORCID-ID</strong> &mdash; Bei der Einreichung soll die ORCID-ID abgefragt und die Publikationshistorie automatisch abgerufen werden. <span class="dgptm-badge-offen">offen</span>
             </div>
 
             <?php $render_section_comments('section-dokumente'); ?>

@@ -268,7 +268,7 @@ class DGPTM_Artikel_Freigabe {
             $headers[] = 'Bcc: ' . $email;
         }
 
-        wp_mail('noreply@perfusiologie.de', $subject, $body, $headers);
+        wp_mail('nichtantworten@dgptm.de', $subject, $body, $headers);
     }
 
     /* ──────────────────────────────────────────────

@@ -332,7 +332,6 @@ class DGPTM_Stipendium_Freigabe {
      * ────────────────────────────────────────────── */
 
     private function notify_participants($author, $comment, $dokument_name) {
-        // Alle eindeutigen User-IDs sammeln (Kommentatoren + Freigebende)
         $participant_ids = [];
 
         foreach ($this->get_comments() as $c) {
@@ -342,12 +341,9 @@ class DGPTM_Stipendium_Freigabe {
             $participant_ids[(int) $a['user_id']] = true;
         }
 
-        // Autor des aktuellen Kommentars ausschliessen
         unset($participant_ids[$author->ID]);
-
         if (empty($participant_ids)) return;
 
-        // E-Mails der Beteiligten sammeln
         $recipients = [];
         foreach (array_keys($participant_ids) as $uid) {
             $u = get_userdata($uid);
@@ -355,27 +351,82 @@ class DGPTM_Stipendium_Freigabe {
                 $recipients[] = $u->user_email;
             }
         }
-
         if (empty($recipients)) return;
 
         $subject = 'DGPTM ' . $dokument_name . ': Neuer Kommentar von ' . $author->display_name;
+        $body = $this->build_notification_html($author, $comment, $dokument_name);
 
-        $body  = "Hallo,\n\n";
-        $body .= $author->display_name . " hat einen neuen Kommentar im Freigabe-Dokument \"" . $dokument_name . "\" hinterlassen:\n\n";
-        $body .= "---\n";
-        $body .= $comment['text'] . "\n";
-        $body .= "---\n\n";
-        $body .= "Bitte pruefen Sie den Kommentar im Mitgliederbereich.\n\n";
-        $body .= "Mit freundlichen Gruessen\nIhr DGPTM-System";
-
-        $headers = ['Content-Type: text/plain; charset=UTF-8'];
-
-        // BCC an alle Beteiligten (Datenschutz: Empfaenger sehen sich nicht gegenseitig)
+        $headers = ['Content-Type: text/html; charset=UTF-8'];
         foreach ($recipients as $email) {
             $headers[] = 'Bcc: ' . $email;
         }
 
         wp_mail('nichtantworten@dgptm.de', $subject, $body, $headers);
+    }
+
+    private function build_notification_html($author, $comment, $dokument_name) {
+        $date = date_i18n('d.m.Y, H:i', strtotime($comment['timestamp']));
+        $text = nl2br(esc_html($comment['text']));
+        $author_name = esc_html($author->display_name);
+        $doc_name = esc_html($dokument_name);
+
+        return '<!DOCTYPE html>
+<html lang="de">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:24px 0;">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+
+  <!-- Header -->
+  <tr>
+    <td style="background:#003366;padding:20px 30px;">
+      <table width="100%"><tr>
+        <td style="color:#ffffff;font-size:20px;font-weight:700;">DGPTM</td>
+        <td align="right" style="color:#8bb8e8;font-size:13px;">' . $doc_name . '</td>
+      </tr></table>
+    </td>
+  </tr>
+
+  <!-- Titel -->
+  <tr>
+    <td style="padding:28px 30px 12px;">
+      <h2 style="margin:0;font-size:18px;color:#1a1a1a;">Neuer Kommentar</h2>
+      <p style="margin:6px 0 0;font-size:14px;color:#6b7280;">von <strong>' . $author_name . '</strong> am ' . $date . '</p>
+    </td>
+  </tr>
+
+  <!-- Kommentar -->
+  <tr>
+    <td style="padding:8px 30px 24px;">
+      <div style="background:#f0f5fa;border-left:4px solid #003366;border-radius:0 8px 8px 0;padding:16px 20px;font-size:15px;line-height:1.6;color:#1a1a1a;">
+        ' . $text . '
+      </div>
+    </td>
+  </tr>
+
+  <!-- CTA -->
+  <tr>
+    <td align="center" style="padding:0 30px 28px;">
+      <a href="' . esc_url(home_url('/mitgliederbereich/')) . '" style="display:inline-block;background:#003366;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">Im Mitgliederbereich ansehen</a>
+    </td>
+  </tr>
+
+  <!-- Footer -->
+  <tr>
+    <td style="background:#f9fafb;padding:16px 30px;border-top:1px solid #e5e7eb;">
+      <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">
+        Diese Nachricht wurde automatisch gesendet, weil Sie am Freigabe-Prozess &bdquo;' . $doc_name . '&ldquo; beteiligt sind.<br>
+        Deutsche Gesellschaft fuer Perfusiologie und Technische Medizin e.V.
+      </p>
+    </td>
+  </tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>';
     }
 
     /* ──────────────────────────────────────────────

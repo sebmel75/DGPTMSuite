@@ -120,7 +120,29 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
         <div class="dgptm-freigabe-header">
             <h2>Digitale Stipendienvergabe</h2>
             <p class="dgptm-freigabe-subtitle">Konzept zur Digitalisierung des Bewerbungs- und Bewertungsverfahrens</p>
-            <p class="dgptm-freigabe-meta">DGPTM | Stand: April 2026 | Zur Freigabe durch den Stipendiumsrat</p>
+            <p class="dgptm-freigabe-meta">DGPTM | Stand: 12. April 2026 | Aktualisiert nach Rueckmeldungen vom 12.04.2026</p>
+        </div>
+
+        <!-- Rueckmeldungen-Banner -->
+        <div class="dgptm-freigabe-feedback-banner">
+            <div class="dgptm-freigabe-feedback-banner-icon">&#128221;</div>
+            <div>
+                <div class="dgptm-freigabe-feedback-banner-title">Eingearbeitete Rueckmeldungen (12. April 2026)</div>
+                <div class="dgptm-freigabe-feedback-banner-text">
+                    Folgende Punkte aus den Kommentaren von frmuench, dbuchwald, jaheller und Sebastian Melzer wurden eingearbeitet:
+                </div>
+                <ul class="dgptm-freigabe-feedback-list">
+                    <li><strong>Timeline:</strong> Digitales System ab 2027. Bewertungsschema kann 2026 bereits auf Papier/PDF genutzt werden. <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
+                    <li><strong>Geschaeftsstelle vorgeschaltet:</strong> GS (Madeleine) erhaelt Bewerbung zuerst, prueft Vollstaendigkeit, DANN Weiterleitung an Vorsitzenden. <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
+                    <li><strong>Befangenheitspruefung:</strong> Vorsitzender prueft vorab auf Befangenheit, bevor Gutachter freigeschaltet werden. <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
+                    <li><strong>Gutachter-Unabhaengigkeit:</strong> Gutachter koennen waehrend der Begutachtung die Bewertungen anderer NICHT einsehen. Erst nach Abschluss und Entscheidung. <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
+                    <li><strong>Externe Gutachter:</strong> Zugang auch fuer Nicht-Mitglieder ueber persoenlichen Einladungslink (Token). <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
+                    <li><strong>Expose/Exzerpt:</strong> Als neues Pflichtdokument hinzugefuegt. Muster-Expose wird erstellt. <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
+                    <li><strong>E-Mail-Kette:</strong> GS bekommt erste Benachrichtigung, prueft, dann erst Bestaetigung an Bewerber. <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
+                    <li><strong>Guettler-Stipendium:</strong> Eigene Fragestellungen und Gewichtungen erforderlich. Wird von dbuchwald erarbeitet. <span class="dgptm-badge-offen">offen</span></li>
+                    <li><strong>Geschaeftsordnung:</strong> Gremium soll alle 3 Jahre ueberprueft werden &mdash; Vorschlag zur Aufnahme. <span class="dgptm-badge-offen">offen</span></li>
+                </ul>
+            </div>
         </div>
 
         <!-- Abschnitt 1 -->
@@ -146,7 +168,11 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
             </table>
 
             <div class="dgptm-freigabe-highlight green">
-                <strong>Mehrere Stipendientypen:</strong> Das System unterstuetzt verschiedene Stipendien (aktuell: Promotionsstipendium und Josef Guettler Stipendium). Jedes Stipendium hat einen eigenen Bewerbungszeitraum. Das Bewertungsverfahren ist fuer alle Typen identisch.
+                <strong>Mehrere Stipendientypen:</strong> Das System unterstuetzt verschiedene Stipendien (aktuell: Promotionsstipendium und Josef Guettler Stipendium). Jedes Stipendium hat einen eigenen Bewerbungszeitraum und eigene Bewertungskriterien.
+            </div>
+
+            <div class="dgptm-freigabe-highlight orange">
+                <strong>Zeitplan:</strong> Das digitale System wird <strong>ab 2027</strong> eingesetzt. Die laufende Runde 2026 wird nicht umgestellt. Das standardisierte Bewertungsschema (Gutachterleitfaden + Punktesystem) kann jedoch bereits 2026 <strong>papier- oder PDF-basiert</strong> genutzt werden. Finale Besprechung am <strong>2. Juni 2026</strong>.
             </div>
 
             <?php $render_section_comments('section-aenderungen'); ?>
@@ -166,17 +192,23 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
                         <td>Bewerbungsformular auf der Homepage ausfuellen und Unterlagen hochladen</td>
                     </tr>
                     <tr>
-                        <td><strong>Ratsmitglied</strong> (Gutachter/in)</td>
-                        <td>Bewerbungen im Mitgliederbereich einsehen und ueber den digitalen Bewertungsbogen bewerten</td>
+                        <td><strong>Geschaeftsstelle (GS)</strong></td>
+                        <td>Erhaelt eingehende Bewerbungen <strong>zuerst</strong>. Prueft Vollstaendigkeit der Unterlagen, stellt Rueckfragen an Bewerbende, leitet vollstaendige Bewerbungen an den Vorsitzenden weiter.</td>
                     </tr>
                     <tr>
                         <td><strong>Vorsitzende/r</strong> des Stipendiumsrats</td>
-                        <td>Alles was Ratsmitglieder koennen, plus: Bewerbungen freigeben, Gesamtauswertung einsehen, PDF-Export erstellen, Stipendium vergeben, Runde archivieren</td>
+                        <td>Prueft Bewerbungen auf <strong>Befangenheit</strong>, gibt sie fuer die Gutachter frei. Sieht Gesamtauswertung, erstellt PDF-Export, vergibt Stipendium. Kann erst nach Abschluss alle Gutachten einsehen.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Gutachter/in</strong></td>
+                        <td>Bewertet freigegebene Bewerbungen ueber den digitalen Bewertungsbogen. <strong>Kann die Bewertungen anderer Gutachter waehrend des Prozesses NICHT einsehen</strong> (Unabhaengigkeit). Auch Nicht-Mitglieder koennen als Gutachter eingeladen werden (Zugang ueber persoenlichen Einladungslink).</td>
                     </tr>
                 </tbody>
             </table>
 
-            <p>Die Zugehoerigkeit zum Stipendiumsrat wird im Benutzerprofil hinterlegt. Der Stipendien-Reiter im Mitgliederbereich ist <strong>nur fuer Ratsmitglieder sichtbar</strong>.</p>
+            <div class="dgptm-freigabe-highlight blue">
+                <strong>Zugang fuer externe Gutachter:</strong> Nicht alle Gutachter muessen DGPTM-Mitglieder sein. Externe Gutachter erhalten einen <strong>persoenlichen Einladungslink</strong> (Token-basiert), ueber den sie direkt auf die Bewerbungsunterlagen und den Bewertungsbogen zugreifen koennen &mdash; ohne eigenes Benutzerkonto.
+            </div>
 
             <?php $render_section_comments('section-rollen'); ?>
         </div>
@@ -185,7 +217,7 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
         <div class="dgptm-freigabe-section" id="section-ablauf">
             <h3>3. Ablauf im Ueberblick</h3>
 
-            <p>Das Verfahren gliedert sich in vier Phasen:</p>
+            <p>Das Verfahren gliedert sich in fuenf Phasen:</p>
 
             <div class="dgptm-freigabe-flow">
 
@@ -203,7 +235,7 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
                         </div>
                         <div class="dgptm-freigabe-step">
                             <span class="step-num">3</span>
-                            <div>System sendet automatisch eine <strong>Eingangsbestaetigung per E-Mail</strong> und benachrichtigt den Vorsitzenden. <span class="step-actor">Automatisch</span></div>
+                            <div>System sendet automatisch eine <strong>Eingangsbestaetigung an die Geschaeftsstelle (GS)</strong>. <span class="step-actor">Automatisch</span></div>
                         </div>
                     </div>
                 </div>
@@ -211,19 +243,15 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
                 <div class="dgptm-freigabe-flow-arrow">&darr;</div>
 
                 <div class="dgptm-freigabe-phase">
-                    <div class="dgptm-freigabe-phase-header">Phase 2: Freigabe &amp; Zugang</div>
+                    <div class="dgptm-freigabe-phase-header">Phase 2: Vorpruefung durch die Geschaeftsstelle</div>
                     <div class="dgptm-freigabe-phase-body">
                         <div class="dgptm-freigabe-step">
                             <span class="step-num">4</span>
-                            <div>Bewerbungsunterlagen werden sicher in der Cloud gespeichert (Zoho WorkDrive, EU-Rechenzentrum). <span class="step-actor">Automatisch</span></div>
+                            <div>Die <strong>Geschaeftsstelle prueft die Vollstaendigkeit</strong> der Unterlagen (Pflichtdokumente vorhanden, Formate korrekt, Erklaerungen vollstaendig). <span class="step-actor">Geschaeftsstelle</span></div>
                         </div>
                         <div class="dgptm-freigabe-step">
                             <span class="step-num">5</span>
-                            <div>Der Vorsitzende <strong>gibt die Bewerbung fuer alle Ratsmitglieder frei</strong> (oder: alle sehen sie sofort &mdash; konfigurierbar). <span class="step-actor">Vorsitzende/r</span></div>
-                        </div>
-                        <div class="dgptm-freigabe-step">
-                            <span class="step-num">6</span>
-                            <div>Alle Ratsmitglieder erhalten eine <strong>E-Mail-Benachrichtigung</strong>. <span class="step-actor">Automatisch</span></div>
+                            <div>Bei Maengeln: <strong>Rueckfrage an Bewerbende/n</strong> per E-Mail. Bei Vollstaendigkeit: <strong>Bestaetigung an Bewerbende/n</strong> und Weiterleitung an den Vorsitzenden. <span class="step-actor">Geschaeftsstelle</span></div>
                         </div>
                     </div>
                 </div>
@@ -231,18 +259,38 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
                 <div class="dgptm-freigabe-flow-arrow">&darr;</div>
 
                 <div class="dgptm-freigabe-phase">
-                    <div class="dgptm-freigabe-phase-header">Phase 3: Bewertung durch Gutachter</div>
+                    <div class="dgptm-freigabe-phase-header">Phase 3: Freigabe durch den Vorsitzenden</div>
                     <div class="dgptm-freigabe-phase-body">
                         <div class="dgptm-freigabe-step">
+                            <span class="step-num">6</span>
+                            <div>Bewerbungsunterlagen werden sicher in der Cloud gespeichert (Zoho WorkDrive, EU-Rechenzentrum). <span class="step-actor">Automatisch</span></div>
+                        </div>
+                        <div class="dgptm-freigabe-step">
                             <span class="step-num">7</span>
-                            <div>Jedes Ratsmitglied liest die Unterlagen und fuellt den <strong>digitalen Bewertungsbogen</strong> aus. <span class="step-actor">Ratsmitglied</span></div>
+                            <div>Der Vorsitzende sieht die Bewerbung und prueft auf <strong>moegliche Befangenheit</strong> der Gutachter. <span class="step-actor">Vorsitzende/r</span></div>
                         </div>
                         <div class="dgptm-freigabe-step">
                             <span class="step-num">8</span>
-                            <div>Bewertungsbogen: <strong>4 Rubriken</strong> (A&ndash;D) mit je 3 Leitfragen, Noten 1&ndash;10, optionale Kommentare. Kann als <strong>Entwurf gespeichert</strong> werden. <span class="step-actor">Ratsmitglied</span></div>
+                            <div>Der Vorsitzende <strong>gibt die Bewerbung fuer die Gutachter frei</strong>. Alle Gutachter erhalten eine E-Mail-Benachrichtigung (inkl. externer Gutachter ueber Einladungslink). <span class="step-actor">Vorsitzende/r</span></div>
                         </div>
+                    </div>
+                </div>
+
+                <div class="dgptm-freigabe-flow-arrow">&darr;</div>
+
+                <div class="dgptm-freigabe-phase">
+                    <div class="dgptm-freigabe-phase-header">Phase 4: Bewertung durch Gutachter</div>
+                    <div class="dgptm-freigabe-phase-body">
                         <div class="dgptm-freigabe-step">
                             <span class="step-num">9</span>
+                            <div>Jeder Gutachter liest die Unterlagen und fuellt den <strong>digitalen Bewertungsbogen</strong> aus. <strong>Die Bewertungen der anderen Gutachter sind waehrend des Prozesses nicht sichtbar</strong> (Unabhaengigkeit). <span class="step-actor">Gutachter/in</span></div>
+                        </div>
+                        <div class="dgptm-freigabe-step">
+                            <span class="step-num">10</span>
+                            <div>Bewertungsbogen: <strong>4 Rubriken</strong> (A&ndash;D) mit je 3 Leitfragen, Noten 1&ndash;10, optionale Kommentare. Kann als <strong>Entwurf gespeichert</strong> werden. <span class="step-actor">Gutachter/in</span></div>
+                        </div>
+                        <div class="dgptm-freigabe-step">
+                            <span class="step-num">11</span>
                             <div>System berechnet automatisch den <strong>gewichteten Gesamtscore</strong>. Vorsitzender wird informiert. <span class="step-actor">Automatisch</span></div>
                         </div>
                     </div>
@@ -251,19 +299,19 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
                 <div class="dgptm-freigabe-flow-arrow">&darr;</div>
 
                 <div class="dgptm-freigabe-phase">
-                    <div class="dgptm-freigabe-phase-header">Phase 4: Auswertung &amp; Vergabe</div>
+                    <div class="dgptm-freigabe-phase-header">Phase 5: Auswertung &amp; Vergabe</div>
                     <div class="dgptm-freigabe-phase-body">
                         <div class="dgptm-freigabe-step">
-                            <span class="step-num">10</span>
-                            <div>Sobald alle Gutachter bewertet haben, erscheint die <strong>Gesamtauswertung mit Ranking</strong>. <span class="step-actor">Automatisch</span></div>
-                        </div>
-                        <div class="dgptm-freigabe-step">
-                            <span class="step-num">11</span>
-                            <div>Vorsitzender sieht Einzelbewertungen, erstellt <strong>PDF-Export</strong> (Vorlage fuer den Vorstand) und vergibt das Stipendium. <span class="step-actor">Vorsitzende/r</span></div>
-                        </div>
-                        <div class="dgptm-freigabe-step">
                             <span class="step-num">12</span>
-                            <div>Runde wird <strong>archiviert</strong>. Nicht vergebene Bewerbungen werden nach Loeschfrist geloescht. <span class="step-actor">Vorsitzende/r</span></div>
+                            <div>Sobald alle Gutachter bewertet haben, erscheint die <strong>Gesamtauswertung mit Ranking</strong>. Erst jetzt kann der Vorsitzende <strong>alle Einzelbewertungen einsehen</strong>. <span class="step-actor">Automatisch</span></div>
+                        </div>
+                        <div class="dgptm-freigabe-step">
+                            <span class="step-num">13</span>
+                            <div>Vorsitzender erstellt <strong>PDF-Export</strong> (Vorlage fuer den Vorstand) und vergibt das Stipendium. <span class="step-actor">Vorsitzende/r</span></div>
+                        </div>
+                        <div class="dgptm-freigabe-step">
+                            <span class="step-num">14</span>
+                            <div>Runde wird <strong>archiviert</strong>. Nach Abschluss koennen alle Gutachter die Bewertungen der anderen einsehen. <span class="step-actor">Vorsitzende/r</span></div>
                         </div>
                     </div>
                 </div>
@@ -277,7 +325,13 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
         <div class="dgptm-freigabe-section" id="section-bewertungsbogen">
             <h3>4. Der digitale Bewertungsbogen</h3>
 
-            <p>Der Bewertungsbogen bildet den bestehenden Gutachterleitfaden exakt ab. Jede Bewerbung wird anhand von vier Rubriken bewertet:</p>
+            <p>Der Bewertungsbogen bildet den bestehenden Gutachterleitfaden exakt ab. Jede Bewerbung wird anhand von vier Rubriken bewertet.</p>
+
+            <div class="dgptm-freigabe-highlight orange">
+                <strong>Hinweis Guettler-Stipendium:</strong> Die folgenden Rubriken und Gewichtungen gelten fuer das <strong>Promotionsstipendium</strong>. Fuer das Josef-Guettler-Stipendium werden <strong>eigene Fragestellungen und Gewichtungen</strong> erarbeitet (dbuchwald, in Bearbeitung). Das System unterstuetzt pro Stipendientyp unterschiedliche Bewertungskonfigurationen. <span class="dgptm-badge-offen">offen</span>
+            </div>
+
+            <h4>Promotionsstipendium &mdash; Rubriken und Gewichtung</h4>
 
             <div class="dgptm-freigabe-rubrik">
                 <div class="rubrik-title">A. Wissenschaftlicher Wert der Fragestellung <span class="rubrik-weight">30 %</span></div>
@@ -412,12 +466,17 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
                 <tbody>
                     <tr><td>Tabellarischer Lebenslauf</td><td>Ja</td></tr>
                     <tr><td>Motivationsschreiben / Bewerbungsschreiben</td><td>Ja</td></tr>
+                    <tr><td><strong>Expose / Exzerpt</strong> (Projektbeschreibung)</td><td>Ja</td></tr>
                     <tr><td>Empfehlungsschreiben</td><td>Ja</td></tr>
                     <tr><td>Nachweise ueber Studienleistungen / Abschluss</td><td>Ja</td></tr>
                     <tr><td>Publikationen oder geplante wissenschaftliche Aktivitaeten</td><td>Nein (optional)</td></tr>
                     <tr><td>Ehrenamtliche Taetigkeiten oder Zusatzqualifikationen</td><td>Nein (optional)</td></tr>
                 </tbody>
             </table>
+
+            <div class="dgptm-freigabe-highlight green">
+                <strong>Neu: Expose/Exzerpt</strong> als Pflichtdokument hinzugefuegt. Ein <strong>Muster-Expose</strong> soll als Vorlage bereitgestellt werden, um eine einheitliche Struktur der Projektbeschreibungen zu gewaehrleisten. <span class="dgptm-badge-offen">Muster wird erstellt</span>
+            </div>
 
             <?php $render_section_comments('section-dokumente'); ?>
         </div>
@@ -496,6 +555,14 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
                 </tbody>
             </table>
 
+            <div class="dgptm-freigabe-highlight blue">
+                <strong>Gutachter-Verwaltung:</strong> Die Geschaeftsstelle kann in Ruecksprache mit dem Praesidenten und dem Vorsitzenden des Stipendiumsrats Gutachter freischalten und verwalten.
+            </div>
+
+            <div class="dgptm-freigabe-highlight orange">
+                <strong>Vorschlag fuer die Geschaeftsordnung:</strong> Das Gutachtergremium soll alle <strong>3 Jahre ueberprueft</strong> und ggf. angepasst werden. <span class="dgptm-badge-offen">noch abzustimmen</span>
+            </div>
+
             <?php $render_section_comments('section-einstellungen'); ?>
         </div>
 
@@ -508,8 +575,9 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
                     <tr><th>Ereignis</th><th>Empfaenger</th></tr>
                 </thead>
                 <tbody>
-                    <tr><td>Bewerbung eingereicht</td><td>Bewerbende/r (Bestaetigung) + Vorsitzende/r</td></tr>
-                    <tr><td>Bewerbung freigegeben</td><td>Alle Ratsmitglieder</td></tr>
+                    <tr><td>Bewerbung eingereicht</td><td><strong>Geschaeftsstelle</strong> (automatische Benachrichtigung)</td></tr>
+                    <tr><td>Vorpruefung abgeschlossen</td><td>Bewerbende/r (Bestaetigung: Unterlagen vollstaendig) + Vorsitzende/r</td></tr>
+                    <tr><td>Bewerbung fuer Gutachter freigegeben</td><td>Alle Gutachter (inkl. externen ueber Einladungslink)</td></tr>
                     <tr><td>Bewertung abgeschlossen</td><td>Vorsitzende/r</td></tr>
                     <tr><td>Alle Bewertungen komplett</td><td>Vorsitzende/r (Auswertung bereit)</td></tr>
                     <tr><td>Loeschfrist naht</td><td>Vorsitzende/r (30-Tage-Vorwarnung)</td></tr>
@@ -524,20 +592,22 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
             <h3>9. Naechste Schritte</h3>
 
             <ol class="dgptm-freigabe-steps-list">
-                <li><strong>Freigabe durch den Stipendiumsrat</strong> &mdash; Dieses Dokument pruefen und freigeben</li>
-                <li><strong>Datenschutzerklaerung ergaenzen</strong> &mdash; Abschnitt zur Stipendienverarbeitung hinzufuegen</li>
-                <li><strong>Technische Umsetzung</strong> &mdash; WordPress-Modul + Zoho CRM-Konfiguration</li>
+                <li><strong>Laufende Feedbackrunde abschliessen</strong> &mdash; Offene Punkte klaeren (Guettler-Gewichtung, Geschaeftsordnung)</li>
+                <li><strong>Finale Besprechung am 2. Juni 2026</strong> &mdash; Letzte Abstimmung und Terminierung der weiteren Schritte</li>
+                <li><strong>2026: Papierbasierte Bewertung nach neuem Schema</strong> &mdash; Gutachterleitfaden + Bewertungsmatrix bereits fuer laufende Runde nutzen</li>
+                <li><strong>Sommer 2026: Muster-Expose erstellen</strong> &mdash; Vorlage fuer strukturierte Projektbeschreibungen</li>
+                <li><strong>Ab Sommer 2026: Technische Umsetzung</strong> &mdash; WordPress-Modul + Zoho CRM-Konfiguration</li>
                 <li><strong>Testphase</strong> &mdash; Probelauf mit dem Stipendiumsrat</li>
-                <li><strong>Go-Live</strong> &mdash; Aktivierung fuer die naechste Bewerbungsrunde</li>
+                <li><strong>Ab 2027: Go-Live</strong> &mdash; Digitales System fuer die Runde 2027</li>
             </ol>
 
             <div class="dgptm-freigabe-highlight orange">
-                <strong>Vor Go-Live zu klaeren:</strong>
+                <strong>Offene Punkte:</strong>
                 <ul>
-                    <li>Datenschutzerklaerung auf der Homepage anpassen</li>
-                    <li>Bewerbungszeitraum fuer die erste Runde festlegen</li>
-                    <li>Ratsmitglieder im System hinterlegen</li>
-                    <li>WorkDrive-Ordnerstruktur einmalig einrichten</li>
+                    <li>Bewertungskriterien und Gewichtungen fuer das <strong>Guettler-Stipendium</strong> (dbuchwald)</li>
+                    <li>Aufnahme der <strong>3-Jahres-Pruefung</strong> des Gremiums in die Geschaeftsordnung</li>
+                    <li>Muster-Expose erstellen (jaheller)</li>
+                    <li>Datenschutzerklaerung auf der Homepage ergaenzen</li>
                 </ul>
             </div>
 

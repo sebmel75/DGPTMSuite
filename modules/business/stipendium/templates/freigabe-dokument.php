@@ -68,12 +68,12 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
 <div class="dgptm-freigabe-wrapper">
 
     <!-- Countdown -->
-    <div class="dgptm-freigabe-countdown" id="dgptm-freigabe-countdown" data-deadline="2026-04-19T23:59:59">
+    <div class="dgptm-freigabe-countdown" id="dgptm-freigabe-countdown" data-deadline="2026-06-02T23:59:59">
         <span class="countdown-icon">&#9200;</span>
         <div>
             <div class="countdown-label">Frist zur Rueckmeldung</div>
             <div class="countdown-value">wird berechnet...</div>
-            <div class="countdown-deadline" style="font-size:12px;color:#888;">Deadline: 19. April 2026</div>
+            <div class="countdown-deadline" style="font-size:12px;color:#888;">Deadline: 2. Juni 2026</div>
         </div>
     </div>
 

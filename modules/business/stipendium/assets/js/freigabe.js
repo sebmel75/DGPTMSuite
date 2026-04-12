@@ -151,7 +151,7 @@
                 $comment.find('.dgptm-freigabe-comment-delete').remove();
             } else {
                 alert(res.data || 'Fehler.');
-                $btn.prop('disabled', false).html('&#10003; einlesen');
+                $btn.prop('disabled', false).html('&#10003; eingelesen');
             }
         });
     });

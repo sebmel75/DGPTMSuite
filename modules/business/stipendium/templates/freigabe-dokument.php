@@ -48,7 +48,7 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
                                 <button type="button" class="dgptm-freigabe-comment-delete" data-id="<?php echo esc_attr($c['id']); ?>" title="Kommentar loeschen">&times;</button>
                             <?php endif; ?>
                             <?php if (current_user_can('manage_options') && !$is_read) : ?>
-                                <button type="button" class="dgptm-freigabe-comment-mark-read" data-id="<?php echo esc_attr($c['id']); ?>" title="Als eingelesen markieren">&#10003; einlesen</button>
+                                <button type="button" class="dgptm-freigabe-comment-mark-read" data-id="<?php echo esc_attr($c['id']); ?>" title="Als eingelesen markieren">&#10003; eingelesen</button>
                             <?php endif; ?>
                         </div>
                         <div class="dgptm-freigabe-comment-text"><?php echo nl2br(esc_html($c['text'])); ?></div>

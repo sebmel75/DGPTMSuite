@@ -505,6 +505,20 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
         <div class="dgptm-freigabe-section" id="section-naechste-schritte">
             <h3>9. Naechste Schritte</h3>
 
+            <h4>Testseiten zum Ausprobieren</h4>
+
+            <div class="dgptm-freigabe-highlight green">
+                <strong>Die folgenden Links fuehren zu den Testseiten des Systems.</strong> Sie koennen sich dort selbst einen Eindruck vom aktuellen Stand verschaffen:
+                <ul style="margin:10px 0 0 20px;list-style:none;padding:0;">
+                    <li style="margin-bottom:8px;">&#128221; <a href="https://perfusiologie.de/fachzeitschrift/artikel-einreichen" target="_blank" style="color:#1565c0;font-weight:600;">Einreichungsformular</a> &mdash; So sieht das Formular fuer Autoren aus</li>
+                    <li style="margin-bottom:8px;">&#128188; <a href="https://perfusiologie.de/fachzeitschrift/editor-in-chief/" target="_blank" style="color:#1565c0;font-weight:600;">Editor-in-Chief Dashboard</a> &mdash; Sicht des Chefredakteurs (Gutachter zuweisen, Entscheidungen treffen)</li>
+                    <li style="margin-bottom:8px;">&#128100; <a href="https://perfusiologie.de/fachzeitschrift/artikel-dashboard/?autor_token=a41e933936a5105aff2ba210e0da252c72d85f2e65c04f9bdff9d5da0f36294a" target="_blank" style="color:#1565c0;font-weight:600;">Autoren-Dashboard</a> &mdash; So sieht der Autor den Status seiner Einreichung</li>
+                    <li style="margin-bottom:8px;">&#128240; <a href="https://perfusiologie.de/fachzeitschrift/redaktion/" target="_blank" style="color:#1565c0;font-weight:600;">Redaktions-Dashboard</a> &mdash; Sicht der Redaktion (formale Pruefung, Workflow)</li>
+                </ul>
+            </div>
+
+            <h4>Weitere Schritte</h4>
+
             <ol class="dgptm-freigabe-steps-list">
                 <li><strong>Freigabe durch die Redaktion</strong> &mdash; Dieses Konzeptdokument pruefen und freigeben</li>
                 <li><strong>E-Mail-Vorlagen konfigurieren</strong> &mdash; Texte fuer alle automatischen Benachrichtigungen festlegen</li>

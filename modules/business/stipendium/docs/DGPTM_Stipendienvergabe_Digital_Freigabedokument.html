@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DGPTM - Digitale Stipendienvergabe - Freigabedokument</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 20mm 18mm 25mm 18mm;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.55;
+            color: #1a1a1a;
+            max-width: 190mm;
+            margin: 0 auto;
+            padding: 15mm;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #003366;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 15pt;
+            color: #003366;
+            font-weight: 700;
+        }
+        .header .subtitle {
+            font-size: 10pt;
+            color: #666;
+            margin-top: 2px;
+        }
+        .header .logo-text {
+            font-size: 13pt;
+            font-weight: 700;
+            color: #003366;
+            text-align: right;
+        }
+
+        /* Sections */
+        h2 {
+            font-size: 13pt;
+            color: #003366;
+            border-left: 4px solid #003366;
+            padding-left: 10px;
+            margin: 24px 0 10px 0;
+            page-break-after: avoid;
+        }
+        h3 {
+            font-size: 11.5pt;
+            color: #444;
+            margin: 16px 0 6px 0;
+            page-break-after: avoid;
+        }
+        p { margin-bottom: 8px; }
+
+        /* Info Box */
+        .info-box {
+            background: #f0f5fa;
+            border: 1px solid #c0d4e8;
+            border-radius: 6px;
+            padding: 14px 16px;
+            margin: 14px 0;
+        }
+        .info-box strong { color: #003366; }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0 16px 0;
+            font-size: 10pt;
+        }
+        th {
+            background: #003366;
+            color: white;
+            padding: 7px 10px;
+            text-align: left;
+            font-weight: 600;
+        }
+        td {
+            padding: 6px 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        tr:nth-child(even) { background: #f8f9fa; }
+
+        /* Flow Diagram */
+        .flow-container {
+            margin: 16px 0;
+            page-break-inside: avoid;
+        }
+        .flow-diagram {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+        }
+        .flow-phase {
+            width: 100%;
+            margin-bottom: 4px;
+        }
+        .phase-header {
+            background: #003366;
+            color: white;
+            padding: 8px 14px;
+            border-radius: 8px 8px 0 0;
+            font-weight: 700;
+            font-size: 11pt;
+        }
+        .phase-body {
+            border: 2px solid #003366;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            padding: 12px 14px;
+            background: white;
+        }
+        .flow-arrow {
+            text-align: center;
+            font-size: 20pt;
+            color: #003366;
+            line-height: 1.2;
+            margin: 2px 0;
+        }
+        .flow-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+        .flow-step .icon {
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            background: #e8f0f8;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14pt;
+            margin-top: 1px;
+        }
+        .flow-step .text { flex: 1; }
+        .flow-step .actor {
+            display: inline-block;
+            background: #e8f0f8;
+            color: #003366;
+            font-size: 9pt;
+            font-weight: 600;
+            padding: 1px 8px;
+            border-radius: 10px;
+            margin-left: 4px;
+        }
+
+        /* Highlight boxes */
+        .highlight-green {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 10px 14px;
+            margin: 10px 0;
+            border-radius: 0 6px 6px 0;
+        }
+        .highlight-blue {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 10px 14px;
+            margin: 10px 0;
+            border-radius: 0 6px 6px 0;
+        }
+        .highlight-orange {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 10px 14px;
+            margin: 10px 0;
+            border-radius: 0 6px 6px 0;
+        }
+        .highlight-red {
+            background: #fce4ec;
+            border-left: 4px solid #e53935;
+            padding: 10px 14px;
+            margin: 10px 0;
+            border-radius: 0 6px 6px 0;
+        }
+
+        /* Lists */
+        ul, ol { margin: 6px 0 10px 22px; }
+        li { margin-bottom: 3px; }
+
+        /* Footer */
+        .footer {
+            margin-top: 30px;
+            padding-top: 12px;
+            border-top: 1px solid #ccc;
+            font-size: 9pt;
+            color: #888;
+            text-align: center;
+        }
+
+        /* Page breaks */
+        .page-break { page-break-before: always; }
+
+        /* Signature block */
+        .signature-block {
+            margin-top: 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+        .sig-line {
+            border-top: 1px solid #333;
+            padding-top: 4px;
+            font-size: 10pt;
+            color: #666;
+            margin-top: 50px;
+        }
+
+        /* Bewertungsbogen Vorschau */
+        .rubrik-preview {
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 10px 14px;
+            margin: 8px 0;
+            background: #fafafa;
+        }
+        .rubrik-preview .rubrik-title {
+            font-weight: 700;
+            color: #003366;
+            margin-bottom: 4px;
+        }
+        .rubrik-preview .weight {
+            float: right;
+            background: #003366;
+            color: white;
+            font-size: 9pt;
+            padding: 1px 8px;
+            border-radius: 10px;
+        }
+        .scale-bar {
+            display: flex;
+            gap: 2px;
+            margin: 4px 0;
+        }
+        .scale-bar .cell {
+            flex: 1;
+            text-align: center;
+            padding: 3px 0;
+            font-size: 8pt;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        .scale-bar .cell.active { background: #003366; color: white; }
+
+        @media print {
+            body { padding: 0; }
+            .page-break { page-break-before: always; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- SEITE 1: Titelseite & Einleitung -->
+<div class="header">
+    <div>
+        <h1>Digitale Stipendienvergabe</h1>
+        <div class="subtitle">Konzept zur Freigabe durch den Stipendiumsrat | Stand: April 2026</div>
+    </div>
+    <div class="logo-text">DGPTM</div>
+</div>
+
+<div class="info-box">
+    <strong>Zweck dieses Dokuments:</strong> Dieses Dokument beschreibt den geplanten digitalen Ablauf der Stipendienvergabe. Es richtet sich an die Mitglieder des Stipendiumsrats und dient als Grundlage fuer die Freigabe der Umsetzung. Technische Details sind bewusst vereinfacht dargestellt.
+</div>
+
+<h2>1. Was aendert sich?</h2>
+
+<p>Bisher laeuft das Bewerbungsverfahren per E-Mail: Bewerbende senden ihre Unterlagen an den Vorsitzenden, der sie manuell weiterleitet. Feedback wird per E-Mail gesammelt, ein standardisiertes Ranking gibt es nicht.</p>
+
+<p><strong>Kuenftig</strong> wird das Verfahren vollstaendig digital abgebildet:</p>
+
+<table>
+    <tr>
+        <th style="width:45%">Bisher (per E-Mail)</th>
+        <th style="width:45%">Kuenftig (digital)</th>
+    </tr>
+    <tr>
+        <td>Bewerbung per E-Mail an den Vorsitzenden</td>
+        <td>Strukturiertes Upload-Formular auf perfusiologie.de</td>
+    </tr>
+    <tr>
+        <td>Manuelle Weiterleitung der Unterlagen</td>
+        <td>Automatischer Zugang im Mitgliederbereich</td>
+    </tr>
+    <tr>
+        <td>Keine Eingangsbestaetigung</td>
+        <td>Automatische Bestaetigungs-E-Mail</td>
+    </tr>
+    <tr>
+        <td>Subjektives Feedback per E-Mail</td>
+        <td>Standardisierter digitaler Bewertungsbogen</td>
+    </tr>
+    <tr>
+        <td>Kein automatisches Ranking</td>
+        <td>Automatisches Ranking mit Mittelwert aller Gutachter</td>
+    </tr>
+    <tr>
+        <td>Kein Export</td>
+        <td>PDF-Dokument als Vorlage fuer den Vorstand</td>
+    </tr>
+</table>
+
+<div class="highlight-green">
+    <strong>Mehrere Stipendientypen:</strong> Das System unterstuetzt verschiedene Stipendien (aktuell: Promotionsstipendium und Josef Guettler Stipendium). Jedes Stipendium hat einen eigenen Bewerbungszeitraum und kann unabhaengig verwaltet werden. Das Bewertungsverfahren ist fuer alle Typen identisch.
+</div>
+
+<h2>2. Wer ist beteiligt?</h2>
+
+<table>
+    <tr>
+        <th>Rolle</th>
+        <th>Was kann diese Person?</th>
+    </tr>
+    <tr>
+        <td><strong>Bewerbende/r</strong></td>
+        <td>Bewerbungsformular auf der Homepage ausfuellen und Unterlagen hochladen</td>
+    </tr>
+    <tr>
+        <td><strong>Ratsmitglied</strong><br>(Gutachter/in)</td>
+        <td>Bewerbungen im Mitgliederbereich einsehen und bewerten (digitaler Bewertungsbogen)</td>
+    </tr>
+    <tr>
+        <td><strong>Vorsitzende/r</strong><br>des Stipendiumsrats</td>
+        <td>Alles was Ratsmitglieder koennen, plus: Bewerbungen freigeben, Gesamtauswertung einsehen, PDF-Export erstellen, Stipendium vergeben, Runde archivieren</td>
+    </tr>
+</table>
+
+<p>Die Zugehoerigkeit zum Stipendiumsrat wird im Benutzerprofil hinterlegt. Der Stipendien-Reiter im Mitgliederbereich ist <strong>nur fuer Ratsmitglieder sichtbar</strong>.</p>
+
+<!-- SEITE 2: Ablaufdiagramm -->
+<div class="page-break"></div>
+
+<h2>3. Ablauf im Ueberblick</h2>
+
+<p>Das Verfahren gliedert sich in vier Phasen. Das folgende Diagramm zeigt den kompletten Ablauf von der Bewerbung bis zur Vergabeentscheidung:</p>
+
+<div class="flow-container">
+    <div class="flow-diagram">
+
+        <!-- Phase 1 -->
+        <div class="flow-phase">
+            <div class="phase-header">Phase 1: Bewerbungseingang</div>
+            <div class="phase-body">
+                <div class="flow-step">
+                    <div class="icon">1</div>
+                    <div class="text">
+                        Bewerbende/r oeffnet die Stipendien-Seite auf perfusiologie.de und klickt <strong>"Jetzt bewerben"</strong>
+                        <span class="actor">Bewerbende/r</span>
+                        <br><em style="font-size:9pt;color:#888;">Der Button ist nur waehrend des aktiven Bewerbungszeitraums sichtbar.</em>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="icon">2</div>
+                    <div class="text">
+                        Strukturiertes Formular in 4 Schritten ausfuellen:<br>
+                        <strong>Schritt 1:</strong> Persoenliche Daten &rarr; <strong>Schritt 2:</strong> Dokumente hochladen &rarr; <strong>Schritt 3:</strong> Datenschutz-Einwilligung &rarr; <strong>Schritt 4:</strong> Einreichen
+                        <span class="actor">Bewerbende/r</span>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="icon">3</div>
+                    <div class="text">
+                        System sendet automatisch eine <strong>Eingangsbestaetigung per E-Mail</strong> an die bewerbende Person und benachrichtigt den Vorsitzenden.
+                        <span class="actor">Automatisch</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flow-arrow">&darr;</div>
+
+        <!-- Phase 2 -->
+        <div class="flow-phase">
+            <div class="phase-header">Phase 2: Freigabe & Zugang</div>
+            <div class="phase-body">
+                <div class="flow-step">
+                    <div class="icon">4</div>
+                    <div class="text">
+                        Bewerbungsunterlagen werden sicher in der Cloud gespeichert (Zoho WorkDrive, EU-Rechenzentrum). Ein eigener Ordner wird pro Bewerbung angelegt.
+                        <span class="actor">Automatisch</span>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="icon">5</div>
+                    <div class="text">
+                        Der Vorsitzende sieht die neue Bewerbung im Mitgliederbereich und <strong>gibt sie fuer alle Ratsmitglieder frei</strong> (oder: alle sehen sie sofort &mdash; konfigurierbar).
+                        <span class="actor">Vorsitzende/r</span>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="icon">6</div>
+                    <div class="text">
+                        Alle Ratsmitglieder erhalten eine <strong>E-Mail-Benachrichtigung</strong>, dass eine neue Bewerbung zur Bewertung bereitsteht.
+                        <span class="actor">Automatisch</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flow-arrow">&darr;</div>
+
+        <!-- Phase 3 -->
+        <div class="flow-phase">
+            <div class="phase-header">Phase 3: Bewertung durch Gutachter</div>
+            <div class="phase-body">
+                <div class="flow-step">
+                    <div class="icon">7</div>
+                    <div class="text">
+                        Jedes Ratsmitglied oeffnet die Bewerbung im Mitgliederbereich, liest die Unterlagen (direkte Links zu den Dokumenten) und fuellt den <strong>digitalen Bewertungsbogen</strong> aus.
+                        <span class="actor">Ratsmitglied</span>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="icon">8</div>
+                    <div class="text">
+                        Der Bewertungsbogen entspricht dem bestehenden Gutachterleitfaden: <strong>4 Rubriken</strong> (A&ndash;D) mit je 3 Leitfragen, Noten 1&ndash;10, optionale Kommentare. Bewertungen koennen als <strong>Entwurf gespeichert</strong> und spaeter fortgesetzt werden.
+                        <span class="actor">Ratsmitglied</span>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="icon">9</div>
+                    <div class="text">
+                        Nach Abschluss der Bewertung berechnet das System automatisch den <strong>gewichteten Gesamtscore</strong>. Der Vorsitzende wird per E-Mail informiert.
+                        <span class="actor">Automatisch</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flow-arrow">&darr;</div>
+
+        <!-- Phase 4 -->
+        <div class="flow-phase">
+            <div class="phase-header">Phase 4: Auswertung & Vergabe</div>
+            <div class="phase-body">
+                <div class="flow-step">
+                    <div class="icon">10</div>
+                    <div class="text">
+                        Sobald alle Gutachter bewertet haben, wird der Vorsitzende benachrichtigt. Im Mitgliederbereich erscheint die <strong>Gesamtauswertung mit Ranking</strong>.
+                        <span class="actor">Automatisch</span>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="icon">11</div>
+                    <div class="text">
+                        Der Vorsitzende kann die Einzelbewertungen aller Gutachter einsehen, ein <strong>PDF-Dokument exportieren</strong> (Vorlage fuer den Vorstand) und das Stipendium offiziell vergeben.
+                        <span class="actor">Vorsitzende/r</span>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="icon">12</div>
+                    <div class="text">
+                        Nach der Vergabe wird die Runde <strong>archiviert</strong>. Nicht vergebene Bewerbungen werden nach Ablauf der Loeschfrist automatisch geloescht.
+                        <span class="actor">Vorsitzende/r</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- SEITE 3: Bewertungsbogen & Berechnung -->
+<div class="page-break"></div>
+
+<h2>4. Der digitale Bewertungsbogen</h2>
+
+<p>Der Bewertungsbogen im Mitgliederbereich bildet den bestehenden Gutachterleitfaden exakt ab. Jede Bewerbung wird anhand von vier Rubriken bewertet:</p>
+
+<div class="rubrik-preview">
+    <div class="rubrik-title">A. Wissenschaftlicher Wert der Fragestellung <span class="weight">Gewichtung: 30 %</span></div>
+    <p style="font-size:10pt;margin:4px 0">Drei Leitfragen, jeweils mit einer Note von 1 bis 10:</p>
+    <ol style="font-size:10pt;margin-left:18px">
+        <li>Ist die Fragestellung wissenschaftlich relevant?</li>
+        <li>Ist sie klar formuliert und forschungslogisch hergeleitet?</li>
+        <li>Ist ein echter Erkenntnisfortschritt zu erwarten?</li>
+    </ol>
+    <p style="font-size:9pt;color:#666;margin-top:4px">+ Optionales Kommentarfeld</p>
+</div>
+
+<div class="rubrik-preview">
+    <div class="rubrik-title">B. Relevanz fuer die Weiterentwicklung der Perfusiologie <span class="weight">Gewichtung: 30 %</span></div>
+    <ol style="font-size:10pt;margin-left:18px">
+        <li>Leistet das Projekt einen erkennbaren Beitrag zur Weiterentwicklung des Fachs?</li>
+        <li>Hat das Vorhaben Potenzial, wissenschaftliche oder praxisrelevante Impulse zu setzen?</li>
+        <li>Ist der Bezug zum Berufsfeld klar und substanziell?</li>
+    </ol>
+</div>
+
+<div class="rubrik-preview">
+    <div class="rubrik-title">C. Projektbeschreibung <span class="weight">Gewichtung: 25 %</span></div>
+    <ol style="font-size:10pt;margin-left:18px">
+        <li>Ist das Projekt methodisch ueberzeugend?</li>
+        <li>Ist die Umsetzung im Promotionszeitraum realistisch?</li>
+        <li>Sind Aufbau, Argumentation und Planung nachvollziehbar?</li>
+    </ol>
+</div>
+
+<div class="rubrik-preview">
+    <div class="rubrik-title">D. Eingereichte Leistungsnachweise <span class="weight">Gewichtung: 15 %</span></div>
+    <ol style="font-size:10pt;margin-left:18px">
+        <li>Lassen die bisherigen Leistungen eine erfolgreiche Promotion erwarten?</li>
+        <li>Liegen relevante fachliche und wissenschaftliche Kompetenzen vor?</li>
+        <li>Ist ein erkennbares Profil fuer das beantragte Thema vorhanden?</li>
+    </ol>
+</div>
+
+<h3>So wird berechnet:</h3>
+
+<div class="info-box">
+    <strong>Rechenbeispiel</strong> &mdash; Ein Gutachter vergibt folgende Noten:<br><br>
+    <table style="margin:0">
+        <tr><th>Rubrik</th><th>Frage 1</th><th>Frage 2</th><th>Frage 3</th><th>Durchschnitt</th><th>Gewichtung</th><th>Gewichtet</th></tr>
+        <tr><td>A</td><td>8</td><td>7</td><td>9</td><td>8,0</td><td>&times; 30 %</td><td><strong>2,40</strong></td></tr>
+        <tr><td>B</td><td>7</td><td>8</td><td>7</td><td>7,3</td><td>&times; 30 %</td><td><strong>2,20</strong></td></tr>
+        <tr><td>C</td><td>6</td><td>7</td><td>8</td><td>7,0</td><td>&times; 25 %</td><td><strong>1,75</strong></td></tr>
+        <tr><td>D</td><td>8</td><td>8</td><td>7</td><td>7,7</td><td>&times; 15 %</td><td><strong>1,15</strong></td></tr>
+        <tr style="background:#e8f0f8"><td colspan="5"></td><td><strong>Gesamt:</strong></td><td><strong>7,50 / 10</strong></td></tr>
+    </table>
+    <br>
+    Der <strong>Gesamtscore</strong> ist die Summe der gewichteten Rubrik-Durchschnitte (maximal 10,0).<br>
+    Bei mehreren Gutachtern wird der <strong>Mittelwert</strong> aller Gesamtscores gebildet.<br>
+    Bewerbungen mit einem Mittelwert <strong>unter 6,0</strong> gelten als <strong>nicht foerderfaehig</strong>.
+</div>
+
+<h3>Bewertungsskala</h3>
+
+<table>
+    <tr><th>Note</th><th>Bedeutung</th><th>Interpretation</th></tr>
+    <tr><td style="text-align:center"><strong>10</strong></td><td>Ueberragend</td><td>Aussergewoehnlich stark, wissenschaftlich exzellent</td></tr>
+    <tr><td style="text-align:center"><strong>9</strong></td><td>Exzellent</td><td>Sehr hohe Qualitaet, nur minimale Schwaechen</td></tr>
+    <tr><td style="text-align:center"><strong>8</strong></td><td>Sehr gut</td><td>Klar ueberdurchschnittlich, ueberzeugend</td></tr>
+    <tr><td style="text-align:center"><strong>7</strong></td><td>Gut</td><td>Solide bis stark, kleinere Schwaechen</td></tr>
+    <tr><td style="text-align:center;background:#e8f5e9"><strong>6</strong></td><td>Ausreichend</td><td>Tragfaehig, aber mit erkennbaren Defiziten <em>(Mindestgrenze)</em></td></tr>
+    <tr><td style="text-align:center;background:#fff3e0"><strong>5</strong></td><td>Grenzwertig</td><td>Schwaechen deutlich, nur eingeschraenkt ueberzeugend</td></tr>
+    <tr><td style="text-align:center;background:#fce4ec"><strong>4&ndash;1</strong></td><td>Mangelhaft bis ungenuegend</td><td>Wesentliche bis gravierende Defizite</td></tr>
+</table>
+
+<!-- SEITE 4: Datenschutz & Konfiguration -->
+<div class="page-break"></div>
+
+<h2>5. Datenschutz (DSGVO)</h2>
+
+<p>Das Verfahren verarbeitet personenbezogene Daten (Lebenslauf, Qualifikationsnachweise, etc.). Folgende Massnahmen stellen die DSGVO-Konformitaet sicher:</p>
+
+<div class="highlight-blue">
+    <strong>Einwilligung:</strong> Bewerbende muessen im Formular aktiv eine Datenschutz-Checkbox ankreuzen, bevor sie einreichen koennen. Der genaue Text verweist auf die Datenschutzerklaerung der DGPTM.
+</div>
+
+<div class="highlight-blue">
+    <strong>Speicherort:</strong> Alle Daten werden in Zoho CRM und Zoho WorkDrive gespeichert &mdash; beides in EU-Rechenzentren. Es besteht bereits ein Auftragsverarbeitungsvertrag mit Zoho. Auf dem Webserver (perfusiologie.de) werden <strong>keine</strong> Bewerbungsunterlagen dauerhaft gespeichert.
+</div>
+
+<div class="highlight-blue">
+    <strong>Zugriff:</strong> Nur Mitglieder des Stipendiumsrats koennen die Bewerbungen und Bewertungen einsehen. Die Berechtigung wird individuell im Benutzerprofil hinterlegt.
+</div>
+
+<h3>Loeschfristen</h3>
+
+<div class="highlight-orange">
+    <strong>Wichtige Unterscheidung nach Vergabestatus:</strong>
+</div>
+
+<table>
+    <tr>
+        <th>Situation</th>
+        <th>Loeschfrist</th>
+        <th>Begruendung</th>
+    </tr>
+    <tr>
+        <td>Bewerbung <strong>nicht erfolgreich</strong><br>(abgelehnt / nicht foerderfaehig)</td>
+        <td>12 Monate nach Ende der Bewerbungsrunde<br><em>(konfigurierbar)</em></td>
+        <td>Zweck erfuellt, keine weitere Speicherung noetig</td>
+    </tr>
+    <tr>
+        <td>Bewerbung <strong>zurueckgezogen</strong></td>
+        <td>Sofort nach Bestaetigung</td>
+        <td>Widerruf der Einwilligung</td>
+    </tr>
+    <tr>
+        <td>Stipendium <strong>vergeben und laufend</strong></td>
+        <td>Keine Loeschung waehrend der Laufzeit</td>
+        <td>Laufendes Vertragsverhaeltnis</td>
+    </tr>
+    <tr>
+        <td>Stipendium <strong>vergeben und abgeschlossen</strong></td>
+        <td><strong>10 Jahre</strong> nach Abschluss</td>
+        <td>Dokumentationspflicht, Nachweisfuehrung</td>
+    </tr>
+</table>
+
+<p>30 Tage vor Ablauf einer Loeschfrist erhaelt der Vorsitzende eine Erinnerung per E-Mail. Die Loeschung kann automatisch oder manuell erfolgen (konfigurierbar). Bei der Loeschung werden <strong>alle zugehoerigen Daten</strong> entfernt: Bewerbungsdaten, Bewertungen und hochgeladene Dokumente.</p>
+
+<h2>6. Konfigurierbare Einstellungen</h2>
+
+<p>Folgende Einstellungen koennen im Backend angepasst werden, ohne dass Programmieraenderungen noetig sind:</p>
+
+<table>
+    <tr><th>Einstellung</th><th>Standardwert</th><th>Bedeutung</th></tr>
+    <tr><td>Bewerbungszeitraum</td><td>&mdash;</td><td>Start- und Enddatum pro Stipendientyp</td></tr>
+    <tr><td>Freigabe-Modus</td><td>Freigabe durch Vorsitzenden</td><td>Ob Bewerbungen erst vom Vorsitzenden freigegeben werden muessen</td></tr>
+    <tr><td>Gleichstand-Regel</td><td>Rubrik A entscheidet</td><td>Was bei identischem Gesamtscore passiert</td></tr>
+    <tr><td>Loeschfrist (nicht vergeben)</td><td>12 Monate</td><td>Wie lange Daten nach Rundenende aufbewahrt werden</td></tr>
+    <tr><td>Loeschfrist (vergeben)</td><td>10 Jahre</td><td>Wie lange Daten nach Stipendiums-Abschluss aufbewahrt werden</td></tr>
+    <tr><td>Automatische Loeschung</td><td>Nein (nur Erinnerung)</td><td>Ob Daten automatisch geloescht oder nur erinnert wird</td></tr>
+    <tr><td>Bestaetigungsmail-Text</td><td>Vorlage</td><td>Text der Eingangsbestaetigung an Bewerbende</td></tr>
+</table>
+
+<h2>7. Welche Dokumente werden von Bewerbenden hochgeladen?</h2>
+
+<table>
+    <tr><th>Dokument</th><th>Pflicht?</th></tr>
+    <tr><td>Tabellarischer Lebenslauf</td><td>Ja</td></tr>
+    <tr><td>Motivationsschreiben / Bewerbungsschreiben</td><td>Ja</td></tr>
+    <tr><td>Empfehlungsschreiben</td><td>Ja</td></tr>
+    <tr><td>Nachweise ueber Studienleistungen / Abschluss</td><td>Ja</td></tr>
+    <tr><td>Publikationen oder geplante wissenschaftliche Aktivitaeten</td><td>Nein (optional)</td></tr>
+    <tr><td>Ehrenamtliche Taetigkeiten oder Zusatzqualifikationen</td><td>Nein (optional)</td></tr>
+</table>
+
+<h2>8. E-Mail-Benachrichtigungen</h2>
+
+<p>Das System versendet automatisch folgende Benachrichtigungen:</p>
+
+<table>
+    <tr><th>Ereignis</th><th>Empfaenger</th></tr>
+    <tr><td>Bewerbung eingereicht</td><td>Bewerbende/r (Eingangsbestaetigung) + Vorsitzende/r</td></tr>
+    <tr><td>Bewerbung freigegeben</td><td>Alle Ratsmitglieder</td></tr>
+    <tr><td>Bewertung abgeschlossen</td><td>Vorsitzende/r</td></tr>
+    <tr><td>Alle Bewertungen komplett</td><td>Vorsitzende/r (Auswertung bereit)</td></tr>
+    <tr><td>Loeschfrist naht</td><td>Vorsitzende/r (30-Tage-Vorwarnung)</td></tr>
+</table>
+
+<!-- SEITE 5: Freigabe -->
+<div class="page-break"></div>
+
+<h2>9. Naechste Schritte</h2>
+
+<ol>
+    <li><strong>Freigabe durch den Stipendiumsrat</strong> &mdash; Dieses Dokument pruefen und genehmigen</li>
+    <li><strong>Datenschutzerklaerung ergaenzen</strong> &mdash; Die Datenschutzerklaerung auf perfusiologie.de muss um den Abschnitt zur Stipendienverarbeitung erweitert werden</li>
+    <li><strong>Technische Umsetzung</strong> &mdash; Entwicklung des Systems (WordPress-Modul + Zoho CRM-Konfiguration)</li>
+    <li><strong>Testphase</strong> &mdash; Probelauf mit dem Stipendiumsrat vor dem Live-Betrieb</li>
+    <li><strong>Go-Live</strong> &mdash; Aktivierung auf perfusiologie.de fuer die naechste Bewerbungsrunde</li>
+</ol>
+
+<div class="highlight-red">
+    <strong>Vor Go-Live zu klaeren:</strong>
+    <ul style="margin-top:6px">
+        <li>Datenschutzerklaerung auf der Homepage anpassen</li>
+        <li>Bewerbungszeitraum fuer die erste Runde festlegen</li>
+        <li>Ratsmitglieder im System hinterlegen (Benutzerprofile)</li>
+        <li>WorkDrive-Ordnerstruktur einmalig einrichten</li>
+    </ul>
+</div>
+
+<h2>10. Freigabe</h2>
+
+<p>Mit der Unterschrift erklaeren die Mitglieder des Stipendiumsrats, dass sie den beschriebenen digitalen Ablauf der Stipendienvergabe zur Kenntnis genommen haben und der technischen Umsetzung zustimmen.</p>
+
+<div class="signature-block">
+    <div>
+        <div class="sig-line">Name, Datum</div>
+        <p style="font-size:9pt;color:#888;margin-top:2px">Vorsitzende/r des Stipendiumsrats</p>
+    </div>
+    <div>
+        <div class="sig-line">Name, Datum</div>
+        <p style="font-size:9pt;color:#888;margin-top:2px">Ratsmitglied</p>
+    </div>
+    <div>
+        <div class="sig-line">Name, Datum</div>
+        <p style="font-size:9pt;color:#888;margin-top:2px">Ratsmitglied</p>
+    </div>
+    <div>
+        <div class="sig-line">Name, Datum</div>
+        <p style="font-size:9pt;color:#888;margin-top:2px">Ratsmitglied</p>
+    </div>
+</div>
+
+<div class="footer">
+    DGPTM &mdash; Deutsche Gesellschaft fuer Perfusiologie und Technische Medizin e.V. | Digitale Stipendienvergabe &mdash; Freigabedokument | April 2026
+</div>
+
+</body>
+</html>

@@ -1,0 +1,522 @@
+/* ──────────────────────────────────────────────
+ * DGPTM Stipendium Freigabe — Styles
+ * ────────────────────────────────────────────── */
+
+.dgptm-freigabe-wrapper {
+    max-width: 900px;
+    margin: 0 auto;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #1a1a1a;
+    padding-bottom: 80px; /* Platz fuer sticky footer */
+}
+
+/* Countdown */
+.dgptm-freigabe-countdown {
+    background: linear-gradient(135deg, #e3f2fd 0%, #f0f5fa 100%);
+    border: 2px solid #1976d2;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.dgptm-freigabe-countdown .countdown-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+}
+.dgptm-freigabe-countdown .countdown-label {
+    font-weight: 600;
+    color: #1565c0;
+    font-size: 14px;
+}
+.dgptm-freigabe-countdown .countdown-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #0d47a1;
+}
+.dgptm-freigabe-countdown.warning {
+    border-color: #f57c00;
+    background: linear-gradient(135deg, #fff3e0 0%, #fff8f0 100%);
+}
+.dgptm-freigabe-countdown.warning .countdown-label { color: #e65100; }
+.dgptm-freigabe-countdown.warning .countdown-value { color: #bf360c; }
+.dgptm-freigabe-countdown.urgent {
+    border-color: #d32f2f;
+    background: linear-gradient(135deg, #ffebee 0%, #fff5f5 100%);
+    animation: pulse-border 2s ease-in-out infinite;
+}
+.dgptm-freigabe-countdown.urgent .countdown-label { color: #c62828; }
+.dgptm-freigabe-countdown.urgent .countdown-value { color: #b71c1c; }
+.dgptm-freigabe-countdown.expired {
+    border-color: #9e9e9e;
+    background: #f5f5f5;
+}
+.dgptm-freigabe-countdown.expired .countdown-value { color: #757575; }
+
+@keyframes pulse-border {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.3); }
+    50% { box-shadow: 0 0 0 6px rgba(211, 47, 47, 0); }
+}
+
+/* Status Banner */
+.dgptm-freigabe-status-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    padding: 14px 20px;
+    margin-bottom: 16px;
+}
+.dgptm-freigabe-status-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+}
+.dgptm-freigabe-status-icon { font-size: 22px; }
+
+/* Approve Buttons */
+.dgptm-freigabe-approve-btn {
+    background: #1565c0;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.dgptm-freigabe-approve-btn:hover { background: #0d47a1; }
+.dgptm-freigabe-approve-btn:disabled {
+    background: #90caf9;
+    cursor: not-allowed;
+}
+
+.dgptm-freigabe-approved-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #2e7d32;
+    font-weight: 600;
+}
+.dgptm-freigabe-revoke-btn {
+    background: none;
+    border: 1px solid #c62828;
+    color: #c62828;
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 12px;
+    cursor: pointer;
+}
+.dgptm-freigabe-revoke-btn:hover { background: #ffebee; }
+
+/* Approvals List */
+.dgptm-freigabe-approvals-list {
+    background: #e8f5e9;
+    border: 1px solid #a5d6a7;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+}
+.dgptm-freigabe-approval-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 14px;
+}
+.dgptm-freigabe-approval-check {
+    color: #2e7d32;
+    font-weight: 700;
+}
+.dgptm-freigabe-approval-date {
+    color: #666;
+    font-size: 13px;
+    margin-left: auto;
+}
+
+/* Dokument Header */
+.dgptm-freigabe-header {
+    text-align: center;
+    padding: 30px 0 20px;
+    border-bottom: 3px solid #1565c0;
+    margin-bottom: 24px;
+}
+.dgptm-freigabe-header h2 {
+    font-size: 26px;
+    color: #1565c0;
+    margin: 0 0 6px;
+}
+.dgptm-freigabe-subtitle {
+    font-size: 16px;
+    color: #555;
+    margin: 0 0 4px;
+}
+.dgptm-freigabe-meta {
+    font-size: 13px;
+    color: #888;
+    margin: 0;
+}
+
+/* Sections */
+.dgptm-freigabe-section {
+    margin-bottom: 28px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+.dgptm-freigabe-section h3 {
+    font-size: 20px;
+    color: #1565c0;
+    border-left: 4px solid #1565c0;
+    padding-left: 12px;
+    margin: 0 0 12px;
+}
+.dgptm-freigabe-section h4 {
+    font-size: 16px;
+    color: #333;
+    margin: 16px 0 8px;
+}
+.dgptm-freigabe-section p { margin: 0 0 10px; }
+
+/* Tables */
+.dgptm-freigabe-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 14px;
+}
+.dgptm-freigabe-table th {
+    background: #1565c0;
+    color: #fff;
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 600;
+}
+.dgptm-freigabe-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #e0e0e0;
+}
+.dgptm-freigabe-table tr:nth-child(even) { background: #f8f9fa; }
+
+/* Highlight Boxes */
+.dgptm-freigabe-highlight {
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin: 12px 0;
+    font-size: 14px;
+}
+.dgptm-freigabe-highlight.green {
+    background: #e8f5e9;
+    border-left: 4px solid #4caf50;
+}
+.dgptm-freigabe-highlight.blue {
+    background: #e3f2fd;
+    border-left: 4px solid #1976d2;
+}
+.dgptm-freigabe-highlight.orange {
+    background: #fff3e0;
+    border-left: 4px solid #ff9800;
+}
+.dgptm-freigabe-highlight ul {
+    margin: 6px 0 0 20px;
+    padding: 0;
+}
+.dgptm-freigabe-highlight li { margin-bottom: 3px; }
+
+/* Rubriken */
+.dgptm-freigabe-rubrik {
+    background: #fafafa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 10px 0;
+}
+.dgptm-freigabe-rubrik .rubrik-title {
+    font-weight: 700;
+    color: #1565c0;
+    margin-bottom: 6px;
+}
+.dgptm-freigabe-rubrik .rubrik-weight {
+    float: right;
+    background: #1565c0;
+    color: #fff;
+    font-size: 12px;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+}
+.dgptm-freigabe-rubrik ol {
+    margin: 4px 0 0 20px;
+    padding: 0;
+    font-size: 14px;
+}
+.dgptm-freigabe-rubrik li { margin-bottom: 2px; }
+
+/* Flow Diagram */
+.dgptm-freigabe-flow { margin: 14px 0; }
+.dgptm-freigabe-phase { margin-bottom: 4px; }
+.dgptm-freigabe-phase-header {
+    background: #1565c0;
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 10px 10px 0 0;
+    font-weight: 700;
+    font-size: 16px;
+}
+.dgptm-freigabe-phase-body {
+    border: 2px solid #1565c0;
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    padding: 14px 16px;
+    background: #fff;
+}
+.dgptm-freigabe-flow-arrow {
+    text-align: center;
+    font-size: 24px;
+    color: #1565c0;
+    line-height: 1.2;
+    margin: 4px 0;
+}
+.dgptm-freigabe-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+.dgptm-freigabe-step:last-child { margin-bottom: 0; }
+.step-num {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    background: #e3f2fd;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #1565c0;
+    font-size: 14px;
+    margin-top: 2px;
+}
+.step-actor {
+    display: inline-block;
+    background: #e3f2fd;
+    color: #1565c0;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 8px;
+    border-radius: 10px;
+    margin-left: 6px;
+    white-space: nowrap;
+}
+.step-note {
+    font-size: 13px;
+    color: #888;
+}
+
+.dgptm-freigabe-steps-list { margin: 8px 0 8px 20px; }
+.dgptm-freigabe-steps-list li { margin-bottom: 6px; }
+
+/* Hinweis (nicht eingeloggt / keine Rolle) */
+.dgptm-freigabe-hinweis {
+    background: #fff3e0;
+    border: 1px solid #ffe0b2;
+    border-radius: 8px;
+    padding: 16px 20px;
+    text-align: center;
+    color: #e65100;
+    font-weight: 600;
+}
+
+/* ──────────────────────────────────────────────
+ * Kommentare
+ * ────────────────────────────────────────────── */
+
+.dgptm-freigabe-comments-block {
+    margin-top: 12px;
+}
+.dgptm-freigabe-comments-toggle {
+    background: none;
+    border: 1px solid #bdbdbd;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 13px;
+    color: #555;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+.dgptm-freigabe-comments-toggle:hover {
+    border-color: #1565c0;
+    color: #1565c0;
+}
+.dgptm-freigabe-comments-toggle.open {
+    border-color: #1565c0;
+    color: #1565c0;
+    background: #e3f2fd;
+}
+.dgptm-freigabe-comments-count {
+    background: #e0e0e0;
+    color: #555;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 10px;
+    min-width: 18px;
+    text-align: center;
+}
+.dgptm-freigabe-comments-toggle.open .dgptm-freigabe-comments-count {
+    background: #1565c0;
+    color: #fff;
+}
+
+.dgptm-freigabe-comments-panel {
+    margin-top: 8px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 14px;
+    background: #fafafa;
+}
+.dgptm-freigabe-comments-list {
+    margin-bottom: 12px;
+}
+.dgptm-freigabe-comment {
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+}
+.dgptm-freigabe-comment:last-child { margin-bottom: 0; }
+.dgptm-freigabe-comment-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    margin-bottom: 4px;
+}
+.dgptm-freigabe-comment-date {
+    color: #999;
+    font-size: 12px;
+}
+.dgptm-freigabe-comment-delete {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: #bbb;
+    font-size: 18px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 4px;
+}
+.dgptm-freigabe-comment-delete:hover { color: #c62828; }
+.dgptm-freigabe-comment-text {
+    font-size: 14px;
+    color: #333;
+    line-height: 1.5;
+}
+
+/* Comment Form */
+.dgptm-freigabe-comment-form {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    border-top: 1px solid #eee;
+    padding-top: 12px;
+}
+.dgptm-freigabe-comment-input {
+    flex: 1;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 38px;
+}
+.dgptm-freigabe-comment-input:focus {
+    outline: none;
+    border-color: #1565c0;
+    box-shadow: 0 0 0 2px rgba(21, 101, 192, 0.15);
+}
+.dgptm-freigabe-comment-submit {
+    background: #1565c0;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.dgptm-freigabe-comment-submit:hover { background: #0d47a1; }
+.dgptm-freigabe-comment-submit:disabled { background: #90caf9; }
+
+/* ──────────────────────────────────────────────
+ * Sticky Footer
+ * ────────────────────────────────────────────── */
+
+.dgptm-freigabe-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border-top: 2px solid #1565c0;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    z-index: 999;
+    padding: 12px 0;
+}
+.dgptm-freigabe-footer-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.dgptm-freigabe-footer-left {
+    font-size: 14px;
+    color: #555;
+}
+.dgptm-freigabe-approved-badge {
+    background: #e8f5e9;
+    color: #2e7d32;
+    font-weight: 600;
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+/* ──────────────────────────────────────────────
+ * Responsive
+ * ────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+    .dgptm-freigabe-status-banner {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+    .dgptm-freigabe-footer-inner {
+        flex-direction: column;
+        gap: 8px;
+        text-align: center;
+    }
+    .dgptm-freigabe-comment-form {
+        flex-direction: column;
+    }
+    .dgptm-freigabe-countdown {
+        flex-direction: column;
+        text-align: center;
+    }
+}

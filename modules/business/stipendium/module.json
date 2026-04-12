@@ -1,0 +1,18 @@
+{
+    "id": "stipendium",
+    "name": "Stipendienvergabe",
+    "description": "Digitales Bewerbungs- und Bewertungsverfahren für DGPTM-Stipendien",
+    "version": "0.1.0",
+    "author": "Sebastian Melzer",
+    "main_file": "dgptm-stipendium.php",
+    "dependencies": [],
+    "optional_dependencies": ["crm-abruf", "mitglieder-dashboard"],
+    "wp_dependencies": {},
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "business",
+    "icon": "dashicons-awards",
+    "active": false,
+    "can_export": true,
+    "critical": false
+}

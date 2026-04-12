@@ -172,6 +172,9 @@ class DGPTM_Stipendium_Freigabe {
         $comments[] = $comment;
         update_option(self::OPT_COMMENTS, $comments, false);
 
+        // Alle Beteiligten per E-Mail benachrichtigen
+        $this->notify_participants($user, $comment, 'Stipendium-Freigabe');
+
         wp_send_json_success([
             'comment' => $comment,
             'html'    => $this->render_comment_html($comment, $user->ID),
@@ -322,6 +325,57 @@ class DGPTM_Stipendium_Freigabe {
         update_option(self::OPT_COMMENTS, $comments, false);
 
         wp_send_json_success(['marked' => $marked]);
+    }
+
+    /* ──────────────────────────────────────────────
+     * E-Mail: Beteiligte benachrichtigen
+     * ────────────────────────────────────────────── */
+
+    private function notify_participants($author, $comment, $dokument_name) {
+        // Alle eindeutigen User-IDs sammeln (Kommentatoren + Freigebende)
+        $participant_ids = [];
+
+        foreach ($this->get_comments() as $c) {
+            $participant_ids[(int) $c['user_id']] = true;
+        }
+        foreach ($this->get_approvals() as $a) {
+            $participant_ids[(int) $a['user_id']] = true;
+        }
+
+        // Autor des aktuellen Kommentars ausschliessen
+        unset($participant_ids[$author->ID]);
+
+        if (empty($participant_ids)) return;
+
+        // E-Mails der Beteiligten sammeln
+        $recipients = [];
+        foreach (array_keys($participant_ids) as $uid) {
+            $u = get_userdata($uid);
+            if ($u && !empty($u->user_email)) {
+                $recipients[] = $u->user_email;
+            }
+        }
+
+        if (empty($recipients)) return;
+
+        $subject = 'DGPTM ' . $dokument_name . ': Neuer Kommentar von ' . $author->display_name;
+
+        $body  = "Hallo,\n\n";
+        $body .= $author->display_name . " hat einen neuen Kommentar im Freigabe-Dokument \"" . $dokument_name . "\" hinterlassen:\n\n";
+        $body .= "---\n";
+        $body .= $comment['text'] . "\n";
+        $body .= "---\n\n";
+        $body .= "Bitte pruefen Sie den Kommentar im Mitgliederbereich.\n\n";
+        $body .= "Mit freundlichen Gruessen\nIhr DGPTM-System";
+
+        $headers = ['Content-Type: text/plain; charset=UTF-8'];
+
+        // BCC an alle Beteiligten (Datenschutz: Empfaenger sehen sich nicht gegenseitig)
+        foreach ($recipients as $email) {
+            $headers[] = 'Bcc: ' . $email;
+        }
+
+        wp_mail('noreply@perfusiologie.de', $subject, $body, $headers);
     }
 
     /* ──────────────────────────────────────────────

@@ -119,6 +119,9 @@ class DGPTM_Artikel_Freigabe {
         $comments[] = $comment;
         update_option(self::OPT_COMMENTS, $comments, false);
 
+        // Alle Beteiligten per E-Mail benachrichtigen
+        $this->notify_participants($user, $comment, 'Workflow Zeitschrift');
+
         wp_send_json_success([
             'comment' => $comment,
             'html'    => $this->render_comment_html($comment, $user->ID),
@@ -219,6 +222,53 @@ class DGPTM_Artikel_Freigabe {
         wp_send_json_success([
             'total' => count($approvals),
         ]);
+    }
+
+    /* ──────────────────────────────────────────────
+     * E-Mail: Beteiligte benachrichtigen
+     * ────────────────────────────────────────────── */
+
+    private function notify_participants($author, $comment, $dokument_name) {
+        $participant_ids = [];
+
+        foreach ($this->get_comments() as $c) {
+            $participant_ids[(int) $c['user_id']] = true;
+        }
+        foreach ($this->get_approvals() as $a) {
+            $participant_ids[(int) $a['user_id']] = true;
+        }
+
+        unset($participant_ids[$author->ID]);
+
+        if (empty($participant_ids)) return;
+
+        $recipients = [];
+        foreach (array_keys($participant_ids) as $uid) {
+            $u = get_userdata($uid);
+            if ($u && !empty($u->user_email)) {
+                $recipients[] = $u->user_email;
+            }
+        }
+
+        if (empty($recipients)) return;
+
+        $subject = 'DGPTM ' . $dokument_name . ': Neuer Kommentar von ' . $author->display_name;
+
+        $body  = "Hallo,\n\n";
+        $body .= $author->display_name . " hat einen neuen Kommentar im Freigabe-Dokument \"" . $dokument_name . "\" hinterlassen:\n\n";
+        $body .= "---\n";
+        $body .= $comment['text'] . "\n";
+        $body .= "---\n\n";
+        $body .= "Bitte pruefen Sie den Kommentar im Mitgliederbereich.\n\n";
+        $body .= "Mit freundlichen Gruessen\nIhr DGPTM-System";
+
+        $headers = ['Content-Type: text/plain; charset=UTF-8'];
+
+        foreach ($recipients as $email) {
+            $headers[] = 'Bcc: ' . $email;
+        }
+
+        wp_mail('noreply@perfusiologie.de', $subject, $body, $headers);
     }
 
     /* ──────────────────────────────────────────────

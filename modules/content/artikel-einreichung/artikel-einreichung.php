@@ -906,6 +906,10 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             add_shortcode('artikel_review', [$this, 'render_reviewer_dashboard']);
             add_shortcode('artikel_redaktion', [$this, 'render_redaktion_dashboard']);
             add_shortcode('artikel_editor_dashboard', [$this, 'render_editor_dashboard']);
+
+            // Test-Shortcodes ohne Rollenpruefung (zum Testen)
+            add_shortcode('artikel_redaktion_test', [$this, 'render_redaktion_dashboard_test']);
+            add_shortcode('artikel_editor_dashboard_test', [$this, 'render_editor_dashboard_test']);
         }
 
         /**
@@ -3467,6 +3471,44 @@ if (!class_exists('DGPTM_Artikel_Einreichung')) {
             }
 
             ob_start();
+            include DGPTM_ARTIKEL_PATH . 'templates/editor-dashboard.php';
+            return ob_get_clean();
+        }
+
+        /**
+         * Test-Version: Redaktions-Dashboard ohne Rollenpruefung.
+         * Nur Login erforderlich — fuer Entwicklungs- und Testzwecke.
+         */
+        public function render_redaktion_dashboard_test($atts) {
+            if (!is_user_logged_in()) {
+                return '<div class="dgptm-artikel-notice notice-warning">
+                    <p>Bitte <a href="' . esc_url(wp_login_url(get_permalink())) . '">melden Sie sich an</a>.</p>
+                </div>';
+            }
+
+            ob_start();
+            echo '<div class="dgptm-artikel-notice notice-info" style="background:#fff3cd;border-left:4px solid #ffc107;padding:10px 15px;margin-bottom:15px;border-radius:4px;">';
+            echo '<strong>Testmodus:</strong> Dieses Dashboard wird ohne Rollenpruefung angezeigt. Im Produktivbetrieb ist es nur fuer die Redaktion sichtbar.';
+            echo '</div>';
+            include DGPTM_ARTIKEL_PATH . 'templates/redaktion-dashboard.php';
+            return ob_get_clean();
+        }
+
+        /**
+         * Test-Version: Editor-Dashboard ohne Rollenpruefung.
+         * Nur Login erforderlich — fuer Entwicklungs- und Testzwecke.
+         */
+        public function render_editor_dashboard_test($atts) {
+            if (!is_user_logged_in()) {
+                return '<div class="dgptm-artikel-notice notice-warning">
+                    <p>Bitte <a href="' . esc_url(wp_login_url(get_permalink())) . '">melden Sie sich an</a>.</p>
+                </div>';
+            }
+
+            ob_start();
+            echo '<div class="dgptm-artikel-notice notice-info" style="background:#fff3cd;border-left:4px solid #ffc107;padding:10px 15px;margin-bottom:15px;border-radius:4px;">';
+            echo '<strong>Testmodus:</strong> Dieses Dashboard wird ohne Rollenpruefung angezeigt. Im Produktivbetrieb ist es nur fuer den Chefredakteur sichtbar.';
+            echo '</div>';
             include DGPTM_ARTIKEL_PATH . 'templates/editor-dashboard.php';
             return ob_get_clean();
         }

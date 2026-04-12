@@ -478,7 +478,7 @@
 .dgptm-freigabe-comment-read .dgptm-freigabe-comment-text {
     color: #666;
 }
-.dgptm-badge-eingelesen {
+.dgptm-badge-eingelesen, .dgptm-badge-eingearbeitet {
     display: inline-block;
     background: #4caf50;
     color: #fff;

@@ -263,7 +263,7 @@ class DGPTM_Stipendium_Freigabe {
 
         foreach ($comments as &$c) {
             if (in_array($c['id'], $comment_ids)) {
-                $c['status'] = 'eingelesen';
+                $c['status'] = 'eingearbeitet';
                 $c['read_at'] = current_time('mysql');
                 $marked++;
             }

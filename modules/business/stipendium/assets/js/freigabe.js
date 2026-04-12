@@ -146,12 +146,12 @@
         }, function (res) {
             if (res.success) {
                 $comment.addClass('dgptm-freigabe-comment-read');
-                $btn.replaceWith('<span class="dgptm-badge-eingelesen">eingelesen</span>');
+                $btn.replaceWith('<span class="dgptm-badge-eingelesen">eingearbeitet</span>');
                 // Loeschen-Button entfernen
                 $comment.find('.dgptm-freigabe-comment-delete').remove();
             } else {
                 alert(res.data || 'Fehler.');
-                $btn.prop('disabled', false).html('&#10003; eingelesen');
+                $btn.prop('disabled', false).html('&#10003; eingearbeitet');
             }
         });
     });

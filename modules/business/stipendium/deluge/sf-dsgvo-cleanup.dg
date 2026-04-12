@@ -1,0 +1,116 @@
+// ============================================================
+// Scheduled Function: stipendium_dsgvo_cleanup
+// Ausfuehrung: Taeglich um 02:00 Uhr
+// ============================================================
+// Setup: Zoho CRM > Setup > Automation > Schedules > Create Schedule
+//   Name: stipendium_dsgvo_cleanup
+//   Frequency: Daily, 02:00
+//   Function: Diesen Code einfuegen
+// ============================================================
+
+today = zoho.currentdate;
+warn_date = today.addDay(30);
+
+// --- 1. Vorsitzenden ermitteln ---
+vorsitz_search = zoho.crm.searchRecords("Contacts", "(Stipendiumsrat_Vorsitz:equals:true)");
+if (vorsitz_search == null || vorsitz_search.size() == 0)
+{
+    info "WARNUNG: Kein Vorsitzender mit Stipendiumsrat_Vorsitz=true gefunden.";
+    return;
+}
+vorsitzender_email = vorsitz_search.get(0).get("Email");
+vorsitzender_name = vorsitz_search.get(0).get("Full_Name");
+
+// --- 2. Erinnerung: Loeschfrist naht (30 Tage vorher) ---
+bald_faellig = zoho.crm.searchRecords("Stipendien",
+    "((Loeschfrist:greater_equal:" + today.toString("yyyy-MM-dd") + ") and (Loeschfrist:less_equal:" + warn_date.toString("yyyy-MM-dd") + "))");
+
+if (bald_faellig != null && bald_faellig.size() > 0)
+{
+    mail_body = "Sehr geehrte/r " + vorsitzender_name + ",\n\n";
+    mail_body = mail_body + "fuer folgende Stipendien-Bewerbungen naehert sich die Loeschfrist:\n\n";
+
+    for each stip in bald_faellig
+    {
+        bewerber = stip.get("Bewerber");
+        bewerber_name = ifnull(bewerber, Map()).get("name");
+        if (bewerber_name == null) { bewerber_name = "(unbekannt)"; }
+
+        mail_body = mail_body + "- " + bewerber_name;
+        mail_body = mail_body + " | Runde: " + ifnull(stip.get("Runde"), "-");
+        mail_body = mail_body + " | Loeschfrist: " + stip.get("Loeschfrist").toString("dd.MM.yyyy");
+        mail_body = mail_body + "\n";
+    }
+
+    mail_body = mail_body + "\nBitte pruefen Sie, ob eine Verlaengerung noetig ist.\n";
+    mail_body = mail_body + "\nMit freundlichen Gruessen\nIhr DGPTM-System";
+
+    sendmail
+    [
+        from: zoho.adminuserid
+        to: vorsitzender_email
+        subject: "DGPTM DSGVO-Hinweis: " + bald_faellig.size() + " Stipendien-Loeschfrist(en) in 30 Tagen"
+        message: mail_body
+    ];
+
+    info "Erinnerung gesendet: " + bald_faellig.size() + " Records an " + vorsitzender_email;
+}
+
+// --- 3. Automatische Loeschung (nur archivierte Records mit abgelaufener Frist) ---
+loesch_faellig = zoho.crm.searchRecords("Stipendien",
+    "((Loeschfrist:less_than:" + today.toString("yyyy-MM-dd") + ") and (Status:equals:Archiviert))");
+
+if (loesch_faellig != null && loesch_faellig.size() > 0)
+{
+    geloescht_count = 0;
+
+    for each stip in loesch_faellig
+    {
+        stip_id = stip.get("id");
+
+        // WorkDrive-Ordner loeschen
+        folder_id = stip.get("WorkDrive_Folder_ID");
+        if (folder_id != null && folder_id != "")
+        {
+            try
+            {
+                zoho.workdrive.deleteFile(folder_id);
+                info "WorkDrive Ordner geloescht: " + folder_id;
+            }
+            catch (e)
+            {
+                info "WARNUNG: WorkDrive-Loeschung fehlgeschlagen fuer " + folder_id + ": " + e;
+            }
+        }
+
+        // Alle zugehoerigen Bewertungen loeschen
+        bewertungen = zoho.crm.getRelatedRecords("Stipendien_Bewertungen", "Stipendien", stip_id);
+        if (bewertungen != null)
+        {
+            for each bew in bewertungen
+            {
+                zoho.crm.deleteRecord("Stipendien_Bewertungen", bew.get("id"));
+            }
+            info "Bewertungen geloescht fuer Stipendium " + stip_id + ": " + bewertungen.size();
+        }
+
+        // Stipendien-Record loeschen
+        zoho.crm.deleteRecord("Stipendien", stip_id);
+        geloescht_count = geloescht_count + 1;
+    }
+
+    // Bestaetigungsmail an Vorsitzenden
+    sendmail
+    [
+        from: zoho.adminuserid
+        to: vorsitzender_email
+        subject: "DGPTM DSGVO: " + geloescht_count + " Stipendien-Datensaetze geloescht"
+        message: "Es wurden " + geloescht_count + " archivierte Stipendien-Datensaetze inkl. Bewertungen und Dokumente automatisch geloescht (Loeschfrist abgelaufen)."
+    ];
+
+    info "DSGVO Cleanup abgeschlossen: " + geloescht_count + " Records geloescht.";
+}
+else
+{
+    info "DSGVO Cleanup: Keine loeschfaelligen Records.";
+}

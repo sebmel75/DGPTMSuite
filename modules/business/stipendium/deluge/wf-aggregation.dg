@@ -1,0 +1,47 @@
+// ============================================================
+// Workflow Rule: stipendium_aggregation
+// Modul: Stipendien_Bewertungen
+// Trigger: On Edit — Bedingung: Gesamtscore is not empty
+// ============================================================
+// Dieses Skript wird NACH der Score-Berechnung ausgefuehrt.
+// Es aggregiert alle abgeschlossenen Bewertungen eines Stipendiums
+// und aktualisiert den Stipendien-Record.
+// ============================================================
+
+// Stipendien-Record ID aus Lookup holen
+stip_id = input.Stipendium.id;
+
+if (stip_id == null)
+{
+    info "Fehler: Kein Stipendium verknuepft fuer Bewertung " + input.id;
+    return;
+}
+
+// Alle Bewertungen fuer dieses Stipendium holen
+bewertungen = zoho.crm.getRelatedRecords("Stipendien_Bewertungen", "Stipendien", stip_id);
+
+sum_score = 0.0;
+count = 0;
+
+for each bew in bewertungen
+{
+    if (bew.get("Status") == "Abgeschlossen" && bew.get("Gesamtscore") != null)
+    {
+        sum_score = sum_score + bew.get("Gesamtscore").toDecimal();
+        count = count + 1;
+    }
+}
+
+if (count > 0)
+{
+    mittelwert = (sum_score / count).round(2);
+    foerderfaehig = mittelwert >= 6.0;
+
+    update_map = Map();
+    update_map.put("Gesamtscore_Mittelwert", mittelwert);
+    update_map.put("Anzahl_Bewertungen", count);
+    update_map.put("Foerderfaehig", foerderfaehig);
+
+    resp = zoho.crm.updateRecord("Stipendien", stip_id, update_map);
+    info "Aggregation fuer Stipendium " + stip_id + ": Mittelwert=" + mittelwert + " (n=" + count + ") — " + resp;
+}

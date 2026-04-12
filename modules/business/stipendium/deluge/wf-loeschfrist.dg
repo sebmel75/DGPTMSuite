@@ -1,0 +1,34 @@
+// ============================================================
+// Workflow Rule: stipendium_loeschfrist
+// Modul: Stipendien
+// Trigger: On Edit — Bedingung: Status oder Vergeben geaendert
+// ============================================================
+
+frist = null;
+
+if (input.Vergeben == true)
+{
+    if (input.Stipendium_Abschluss != null)
+    {
+        // Abgeschlossenes Stipendium: 10 Jahre nach Abschluss
+        frist = input.Stipendium_Abschluss.addYear(10);
+    }
+    // else: Laufendes Stipendium — keine Loeschfrist (frist bleibt null)
+}
+else if (input.Status == "Abgeschlossen" || input.Status == "Archiviert")
+{
+    // Nicht vergeben: 12 Monate nach Rundenende (konfigurierbar)
+    runden_ende = input.Runde_Enddatum;
+    if (runden_ende != null)
+    {
+        frist = runden_ende.addMonth(12);
+    }
+    else
+    {
+        // Fallback: 12 Monate ab jetzt
+        frist = zoho.currentdate.addMonth(12);
+    }
+}
+
+zoho.crm.updateRecord("Stipendien", input.id, {"Loeschfrist": frist});
+info "Loeschfrist fuer Stipendium " + input.id + " gesetzt: " + frist;

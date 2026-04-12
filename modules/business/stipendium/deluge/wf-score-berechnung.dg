@@ -1,0 +1,39 @@
+// ============================================================
+// Workflow Rule: stipendium_score_berechnen
+// Modul: Stipendien_Bewertungen
+// Trigger: On Edit — Bedingung: Status == "Abgeschlossen"
+// ============================================================
+// Setup in Zoho CRM:
+//   Automation > Workflow Rules > Create Rule
+//   Module: Stipendien_Bewertungen
+//   When: A record is edited
+//   Condition: Status is "Abgeschlossen"
+//   Instant Action: Custom Function > Diesen Code einfuegen
+// ============================================================
+
+// Rubrik-Durchschnitte berechnen
+a_avg = (input.A1_Note + input.A2_Note + input.A3_Note) / 3.0;
+b_avg = (input.B1_Note + input.B2_Note + input.B3_Note) / 3.0;
+c_avg = (input.C1_Note + input.C2_Note + input.C3_Note) / 3.0;
+d_avg = (input.D1_Note + input.D2_Note + input.D3_Note) / 3.0;
+
+// Gewichtung anwenden (A:30%, B:30%, C:25%, D:15%)
+a_gew = (a_avg * 0.30).round(2);
+b_gew = (b_avg * 0.30).round(2);
+c_gew = (c_avg * 0.25).round(2);
+d_gew = (d_avg * 0.15).round(2);
+
+// Gesamtscore (max 10.0)
+gesamt = (a_gew + b_gew + c_gew + d_gew).round(2);
+
+// Bewertungs-Record aktualisieren
+update_map = Map();
+update_map.put("A_Gewichtet", a_gew);
+update_map.put("B_Gewichtet", b_gew);
+update_map.put("C_Gewichtet", c_gew);
+update_map.put("D_Gewichtet", d_gew);
+update_map.put("Gesamtscore", gesamt);
+update_map.put("Bewertungsdatum", zoho.currenttime);
+
+resp = zoho.crm.updateRecord("Stipendien_Bewertungen", input.id, update_map);
+info "Score berechnet fuer Bewertung " + input.id + ": " + gesamt + " — " + resp;

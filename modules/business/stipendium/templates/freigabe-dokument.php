@@ -68,6 +68,23 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
         </div>
     </div>
 
+    <!-- Umgesetzte Rueckmeldungen Banner -->
+    <div class="dgptm-freigabe-feedback-banner">
+        <div class="dgptm-freigabe-feedback-banner-icon">&#9989;</div>
+        <div>
+            <div class="dgptm-freigabe-feedback-banner-title">Rueckmeldungen eingearbeitet (Stand: 12. April 2026)</div>
+            <div class="dgptm-freigabe-feedback-banner-text">
+                Folgende Punkte aus der ersten Feedbackrunde wurden in das Konzept uebernommen:
+            </div>
+            <ul class="dgptm-freigabe-feedback-list">
+                <li><strong>Gleichstandsregelung definiert</strong> &mdash; Stufenweise Aufloesung ueber Rubrik A &rarr; B &rarr; C &rarr; Gremiumsentscheidung <span class="dgptm-badge-umgesetzt">umgesetzt</span></li>
+                <li><strong>Anonymisierung nicht erforderlich</strong> &mdash; Bewusste Entscheidung: Person und perfusiologisches Engagement sollen in die Bewertung einfliessen. Vollstaendige Anonymisierung waere bei Empfehlungsschreiben kaum durchsetzbar. <span class="dgptm-badge-umgesetzt">umgesetzt</span></li>
+                <li><strong>Ausschlusskriterium &lt; 60 Punkte</strong> &mdash; Bewerbungen unter 60 Gesamtpunkten werden automatisch ausgeschlossen, auch wenn keine andere Bewerbung vorliegt. <span class="dgptm-badge-umgesetzt">umgesetzt</span></li>
+                <li><strong>Bewertungsmatrix mit variabler Gutachterzahl</strong> &mdash; Das System bildet die Excel-Bewertungsmatrix digital ab. Die Anzahl der Gutachter ist nicht auf 2 festgelegt, sondern variabel (z.B. 3 oder mehr). <span class="dgptm-badge-umgesetzt">umgesetzt</span></li>
+            </ul>
+        </div>
+    </div>
+
     <!-- Freigabe-Status Banner -->
     <div class="dgptm-freigabe-status-banner">
         <div class="dgptm-freigabe-status-info">
@@ -305,8 +322,87 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
                 </ol>
             </div>
 
+            <h4>Berechnung der Gesamtpunktzahl</h4>
+
             <div class="dgptm-freigabe-highlight blue">
-                <strong>Berechnung:</strong> Pro Rubrik wird der Durchschnitt der 3 Noten gebildet und mit der Gewichtung multipliziert. Die Summe aller gewichteten Rubriken ergibt den Gesamtscore (maximal 10,0). Bei mehreren Gutachtern wird der Mittelwert aller Gesamtscores gebildet. Bewerbungen mit einem Mittelwert <strong>unter 6,0</strong> gelten als nicht foerderfaehig.
+                <strong>Schritt 1 &mdash; Einzelbewertung:</strong> Jeder Gutachter vergibt pro Leitfrage eine Note von 1 bis 10. Pro Rubrik wird der Durchschnitt der 3 Noten gebildet und mit der Gewichtung multipliziert. Die Summe aller gewichteten Rubriken ergibt den <strong>Gesamtscore des Gutachters</strong> (maximal 10,0 Punkte bzw. 100 Gesamtpunkte).
+            </div>
+
+            <div class="dgptm-freigabe-highlight blue">
+                <strong>Schritt 2 &mdash; Gesamtbewertung der Bewerbung:</strong> Die Gesamtpunktzahl einer Bewerbung ergibt sich aus dem <strong>arithmetischen Mittel aller Gutachterbewertungen</strong>:<br>
+                <em>Gesamtpunktzahl = (Summe aller Gutachterbewertungen) / Anzahl der vorliegenden Bewertungen</em><br>
+                Die Anzahl der Gutachter ist <strong>variabel</strong> (nicht auf 2 festgelegt).
+            </div>
+
+            <div class="dgptm-freigabe-highlight orange" style="border-left-color:#e53935;background:#fce4ec;">
+                <strong>Ausschlusskriterium:</strong> Bewerbungen mit einer Gesamtpunktzahl <strong>unter 60 Punkten</strong> (entspricht einem Score unter 6,0) werden <strong>automatisch ausgeschlossen</strong> &mdash; auch wenn in einer Runde keine andere Bewerbung die Schwelle erreicht. In diesem Fall wird das Stipendium in dieser Runde nicht vergeben.
+            </div>
+
+            <h4>Gleichstandsregelung</h4>
+
+            <div class="dgptm-freigabe-highlight green">
+                <strong>Bei identischer Gesamtpunktzahl</strong> erfolgt die Rangbildung in folgender Reihenfolge:
+                <ol style="margin:8px 0 0 20px;">
+                    <li>Hoehere Punktzahl in <strong>Rubrik A</strong> (Wissenschaftlicher Wert)</li>
+                    <li>Falls weiterhin gleich: Hoehere Punktzahl in <strong>Rubrik B</strong> (Relevanz fuer die Perfusiologie)</li>
+                    <li>Falls weiterhin gleich: Hoehere Punktzahl in <strong>Rubrik C</strong> (Projektbeschreibung)</li>
+                    <li>Danach: <strong>Entscheidung im Gremium</strong></li>
+                </ol>
+            </div>
+
+            <h4>Bewertungsmatrix</h4>
+
+            <p>Das System bildet die bekannte Excel-Bewertungsmatrix vollstaendig digital ab:</p>
+
+            <table class="dgptm-freigabe-table">
+                <thead>
+                    <tr>
+                        <th>Bewerber/in</th>
+                        <th>Gutachter/in</th>
+                        <th>A (30%)</th>
+                        <th>B (30%)</th>
+                        <th>C (25%)</th>
+                        <th>D (15%)</th>
+                        <th>Gesamt</th>
+                        <th>Punkte</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td rowspan="3">Beispiel</td>
+                        <td>Gutachter 1</td>
+                        <td>8,0</td><td>7,0</td><td>6,0</td><td>9,0</td>
+                        <td>7,45</td><td>74,5</td>
+                    </tr>
+                    <tr>
+                        <td>Gutachter 2</td>
+                        <td>9,0</td><td>8,0</td><td>7,0</td><td>8,0</td>
+                        <td>8,15</td><td>81,5</td>
+                    </tr>
+                    <tr>
+                        <td>Gutachter 3</td>
+                        <td>7,0</td><td>8,0</td><td>8,0</td><td>7,0</td>
+                        <td>7,55</td><td>75,5</td>
+                    </tr>
+                    <tr style="background:#e3f2fd;font-weight:600;">
+                        <td colspan="2">Mittelwert</td>
+                        <td>8,0</td><td>7,7</td><td>7,0</td><td>8,0</td>
+                        <td>7,72</td><td>77,2</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p style="font-size:13px;color:#666;">Die Anzahl der Gutachter kann pro Runde variieren. Das System berechnet den Mittelwert automatisch, unabhaengig davon ob 2, 3 oder mehr Gutachten vorliegen.</p>
+
+            <h4>Anonymisierung</h4>
+
+            <div class="dgptm-freigabe-highlight green">
+                <strong>Bewusste Entscheidung: Keine Anonymisierung.</strong> Die Bewerbungen werden den Gutachtern <strong>nicht anonymisiert</strong> vorgelegt. Begruendung:
+                <ul style="margin:6px 0 0 20px;">
+                    <li>Eine vollstaendige Anonymisierung ist bei Empfehlungsschreiben und Lebenslaeufen kaum durchsetzbar &mdash; Hinweise auf Herkunft, Klinik oder betreuende Hochschule lassen sich nicht vollstaendig eliminieren.</li>
+                    <li>Die Person und ihr bisheriges Engagement im perfusiologischen Umfeld (z.B. durch Vortraege) sollen bewusst in die Bewertung einfliessen koennen.</li>
+                    <li>Die standardisierte Bewertung ueber den Gutachterleitfaden und das gewichtete Punktesystem stellt dennoch eine nachvollziehbare, kriteriengeleitete Entscheidung sicher.</li>
+                </ul>
             </div>
 
             <?php $render_section_comments('section-bewertungsbogen'); ?>
@@ -392,12 +488,15 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
 
             <table class="dgptm-freigabe-table">
                 <thead>
-                    <tr><th>Einstellung</th><th>Standardwert</th><th>Bedeutung</th></tr>
+                    <tr><th>Einstellung</th><th>Wert</th><th>Bedeutung</th></tr>
                 </thead>
                 <tbody>
-                    <tr><td>Bewerbungszeitraum</td><td>&mdash;</td><td>Start- und Enddatum pro Stipendientyp</td></tr>
+                    <tr><td>Bewerbungszeitraum</td><td>Pro Typ einstellbar</td><td>Start- und Enddatum pro Stipendientyp</td></tr>
                     <tr><td>Freigabe-Modus</td><td>Freigabe durch Vorsitzenden</td><td>Ob Bewerbungen erst vom Vorsitzenden freigegeben werden muessen</td></tr>
-                    <tr><td>Gleichstand-Regel</td><td>Rubrik A entscheidet</td><td>Was bei identischem Gesamtscore passiert</td></tr>
+                    <tr><td>Ausschlusskriterium</td><td>&lt; 60 Punkte</td><td>Bewerbungen unter 60 Gesamtpunkten werden ausgeschlossen <span class="dgptm-badge-umgesetzt">fest</span></td></tr>
+                    <tr><td>Gleichstandsregelung</td><td>A &rarr; B &rarr; C &rarr; Gremium</td><td>Stufenweise Aufloesung bei identischer Punktzahl <span class="dgptm-badge-umgesetzt">fest</span></td></tr>
+                    <tr><td>Anzahl Gutachter</td><td>Variabel</td><td>Pro Runde frei waehlbar (2, 3 oder mehr)</td></tr>
+                    <tr><td>Anonymisierung</td><td>Nein</td><td>Bewerbungen werden nicht anonymisiert vorgelegt <span class="dgptm-badge-umgesetzt">fest</span></td></tr>
                     <tr><td>Loeschfrist (nicht vergeben)</td><td>12 Monate</td><td>Aufbewahrung nach Rundenende</td></tr>
                     <tr><td>Loeschfrist (vergeben)</td><td>10 Jahre</td><td>Aufbewahrung nach Stipendiums-Abschluss</td></tr>
                     <tr><td>Automatische Loeschung</td><td>Nein (nur Erinnerung)</td><td>Ob Daten automatisch geloescht werden</td></tr>

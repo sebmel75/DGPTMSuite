@@ -12,6 +12,63 @@
     padding-bottom: 80px; /* Platz fuer sticky footer */
 }
 
+/* Feedback-Banner (umgesetzte Rueckmeldungen) */
+.dgptm-freigabe-feedback-banner {
+    background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+    border: 2px solid #4caf50;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+}
+.dgptm-freigabe-feedback-banner-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+.dgptm-freigabe-feedback-banner-title {
+    font-weight: 700;
+    color: #2e7d32;
+    font-size: 15px;
+    margin-bottom: 4px;
+}
+.dgptm-freigabe-feedback-banner-text {
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 8px;
+}
+.dgptm-freigabe-feedback-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.dgptm-freigabe-feedback-list li {
+    padding: 6px 0;
+    border-bottom: 1px solid #c8e6c9;
+    font-size: 13px;
+    line-height: 1.5;
+}
+.dgptm-freigabe-feedback-list li:last-child {
+    border-bottom: none;
+}
+
+/* Umgesetzt/Fest Badge */
+.dgptm-badge-umgesetzt {
+    display: inline-block;
+    background: #2e7d32;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 8px;
+    border-radius: 10px;
+    margin-left: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    vertical-align: middle;
+}
+
 /* Countdown */
 .dgptm-freigabe-countdown {
     background: linear-gradient(135deg, #e3f2fd 0%, #f0f5fa 100%);

@@ -129,6 +129,34 @@
     }
 
     /* ──────────────────────────────────────────────
+     * Kommentare: Als eingelesen markieren (nur Admin)
+     * ────────────────────────────────────────────── */
+
+    $(document).on('click', '.dgptm-freigabe-comment-mark-read', function () {
+        var $btn = $(this);
+        var commentId = $btn.data('id');
+        var $comment = $btn.closest('.dgptm-freigabe-comment');
+
+        $btn.prop('disabled', true).text('...');
+
+        $.post(config.ajaxUrl, {
+            action:      'dgptm_freigabe_mark_read',
+            nonce:       config.nonce,
+            comment_ids: JSON.stringify([commentId])
+        }, function (res) {
+            if (res.success) {
+                $comment.addClass('dgptm-freigabe-comment-read');
+                $btn.replaceWith('<span class="dgptm-badge-eingelesen">eingelesen</span>');
+                // Loeschen-Button entfernen
+                $comment.find('.dgptm-freigabe-comment-delete').remove();
+            } else {
+                alert(res.data || 'Fehler.');
+                $btn.prop('disabled', false).html('&#10003; einlesen');
+            }
+        });
+    });
+
+    /* ──────────────────────────────────────────────
      * Freigabe: Erteilen
      * ────────────────────────────────────────────── */
 

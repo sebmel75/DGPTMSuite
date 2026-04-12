@@ -32,14 +32,23 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
                 <?php foreach ($section_comments as $c) : ?>
                     <?php
                     $can_delete = ((int) $c['user_id'] === $current_user_id) || current_user_can('manage_options');
+                    $is_read = !empty($c['status']) && $c['status'] === 'eingelesen';
                     $ts = date_i18n('d.m.Y, H:i', strtotime($c['timestamp']));
+                    $read_ts = $is_read && !empty($c['read_at']) ? date_i18n('d.m.Y', strtotime($c['read_at'])) : '';
+                    $comment_class = 'dgptm-freigabe-comment' . ($is_read ? ' dgptm-freigabe-comment-read' : '');
                     ?>
-                    <div class="dgptm-freigabe-comment" data-comment-id="<?php echo esc_attr($c['id']); ?>">
+                    <div class="<?php echo $comment_class; ?>" data-comment-id="<?php echo esc_attr($c['id']); ?>">
                         <div class="dgptm-freigabe-comment-meta">
                             <strong><?php echo esc_html($c['user_name']); ?></strong>
                             <span class="dgptm-freigabe-comment-date"><?php echo esc_html($ts); ?></span>
-                            <?php if ($can_delete) : ?>
+                            <?php if ($is_read) : ?>
+                                <span class="dgptm-badge-eingelesen" title="Eingelesen am <?php echo esc_attr($read_ts); ?>">eingelesen</span>
+                            <?php endif; ?>
+                            <?php if ($can_delete && !$is_read) : ?>
                                 <button type="button" class="dgptm-freigabe-comment-delete" data-id="<?php echo esc_attr($c['id']); ?>" title="Kommentar loeschen">&times;</button>
+                            <?php endif; ?>
+                            <?php if (current_user_can('manage_options') && !$is_read) : ?>
+                                <button type="button" class="dgptm-freigabe-comment-mark-read" data-id="<?php echo esc_attr($c['id']); ?>" title="Als eingelesen markieren">&#10003; einlesen</button>
                             <?php endif; ?>
                         </div>
                         <div class="dgptm-freigabe-comment-text"><?php echo nl2br(esc_html($c['text'])); ?></div>

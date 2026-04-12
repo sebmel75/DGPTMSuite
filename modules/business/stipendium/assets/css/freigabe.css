@@ -468,6 +468,41 @@
     padding: 0 4px;
 }
 .dgptm-freigabe-comment-delete:hover { color: #c62828; }
+
+/* Eingelesen-Status */
+.dgptm-freigabe-comment-read {
+    background: #f5f5f5;
+    border-color: #e0e0e0;
+    opacity: 0.85;
+}
+.dgptm-freigabe-comment-read .dgptm-freigabe-comment-text {
+    color: #666;
+}
+.dgptm-badge-eingelesen {
+    display: inline-block;
+    background: #4caf50;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 8px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    vertical-align: middle;
+}
+.dgptm-freigabe-comment-mark-read {
+    background: none;
+    border: 1px solid #4caf50;
+    color: #4caf50;
+    font-size: 11px;
+    padding: 1px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-left: auto;
+}
+.dgptm-freigabe-comment-mark-read:hover {
+    background: #e8f5e9;
+}
 .dgptm-freigabe-comment-text {
     font-size: 14px;
     color: #333;

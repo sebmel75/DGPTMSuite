@@ -32,6 +32,10 @@ class DGPTM_Stipendium_Freigabe {
         add_action('wp_ajax_dgptm_freigabe_delete_comment', [$this, 'ajax_delete_comment']);
         add_action('wp_ajax_dgptm_freigabe_approve',    [$this, 'ajax_approve']);
         add_action('wp_ajax_dgptm_freigabe_revoke',     [$this, 'ajax_revoke']);
+
+        // Admin-Endpoints (nur manage_options)
+        add_action('wp_ajax_dgptm_freigabe_export',     [$this, 'ajax_export_comments']);
+        add_action('wp_ajax_dgptm_freigabe_mark_read',  [$this, 'ajax_mark_comments_read']);
     }
 
     /* ──────────────────────────────────────────────
@@ -219,6 +223,56 @@ class DGPTM_Stipendium_Freigabe {
         wp_send_json_success([
             'total' => count($approvals),
         ]);
+    }
+
+    /* ──────────────────────────────────────────────
+     * Admin: Kommentare exportieren (JSON)
+     * ────────────────────────────────────────────── */
+
+    public function ajax_export_comments() {
+        check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Nur Administratoren.', 403);
+        }
+
+        wp_send_json_success([
+            'comments'  => $this->get_comments(),
+            'approvals' => $this->get_approvals(),
+        ]);
+    }
+
+    /* ──────────────────────────────────────────────
+     * Admin: Kommentare als "eingelesen" markieren
+     * ────────────────────────────────────────────── */
+
+    public function ajax_mark_comments_read() {
+        check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Nur Administratoren.', 403);
+        }
+
+        $comment_ids = json_decode(wp_unslash($_POST['comment_ids'] ?? '[]'), true);
+        if (!is_array($comment_ids)) {
+            wp_send_json_error('Ungueltige IDs.');
+        }
+
+        $comments = $this->get_comments();
+        $marked = 0;
+
+        foreach ($comments as &$c) {
+            if (in_array($c['id'], $comment_ids)) {
+                $c['status'] = 'eingelesen';
+                $c['read_at'] = current_time('mysql');
+                $marked++;
+            }
+        }
+        unset($c);
+
+        update_option(self::OPT_COMMENTS, $comments, false);
+
+        wp_send_json_success(['marked' => $marked]);
     }
 
     /* ──────────────────────────────────────────────

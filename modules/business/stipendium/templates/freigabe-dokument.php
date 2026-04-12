@@ -77,22 +77,6 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
         </div>
     </div>
 
-    <!-- Umgesetzte Rueckmeldungen Banner -->
-    <div class="dgptm-freigabe-feedback-banner">
-        <div class="dgptm-freigabe-feedback-banner-icon">&#9989;</div>
-        <div>
-            <div class="dgptm-freigabe-feedback-banner-title">Rueckmeldungen eingearbeitet (Stand: 12. April 2026)</div>
-            <div class="dgptm-freigabe-feedback-banner-text">
-                Folgende Punkte aus der ersten Feedbackrunde wurden in das Konzept uebernommen:
-            </div>
-            <ul class="dgptm-freigabe-feedback-list">
-                <li><strong>Gleichstandsregelung definiert</strong> &mdash; Stufenweise Aufloesung ueber Rubrik A &rarr; B &rarr; C &rarr; Gremiumsentscheidung <span class="dgptm-badge-umgesetzt">umgesetzt</span></li>
-                <li><strong>Anonymisierung nicht erforderlich</strong> &mdash; Bewusste Entscheidung: Person und perfusiologisches Engagement sollen in die Bewertung einfliessen. Vollstaendige Anonymisierung waere bei Empfehlungsschreiben kaum durchsetzbar. <span class="dgptm-badge-umgesetzt">umgesetzt</span></li>
-                <li><strong>Ausschlusskriterium &lt; 60 Punkte</strong> &mdash; Bewerbungen unter 60 Gesamtpunkten werden automatisch ausgeschlossen, auch wenn keine andere Bewerbung vorliegt. <span class="dgptm-badge-umgesetzt">umgesetzt</span></li>
-                <li><strong>Bewertungsmatrix mit variabler Gutachterzahl</strong> &mdash; Das System bildet die Excel-Bewertungsmatrix digital ab. Die Anzahl der Gutachter ist nicht auf 2 festgelegt, sondern variabel (z.B. 3 oder mehr). <span class="dgptm-badge-umgesetzt">umgesetzt</span></li>
-            </ul>
-        </div>
-    </div>
 
     <!-- Freigabe-Status Banner -->
     <div class="dgptm-freigabe-status-banner">

@@ -22,11 +22,12 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
     });
     ?>
     <div class="dgptm-freigabe-comments-block" data-section="<?php echo esc_attr($section_id); ?>">
-        <button type="button" class="dgptm-freigabe-comments-toggle">
-            Kommentare
+        <div class="dgptm-freigabe-comments-cta">
+            <span class="dgptm-freigabe-comments-cta-icon">&#128172;</span>
+            <span class="dgptm-freigabe-comments-cta-text">Haben Sie Anmerkungen oder Aenderungswuensche zu diesem Abschnitt? Bitte kommentieren Sie hier:</span>
             <span class="dgptm-freigabe-comments-count"><?php echo count($section_comments); ?></span>
-        </button>
-        <div class="dgptm-freigabe-comments-panel" style="display:none;">
+        </div>
+        <div class="dgptm-freigabe-comments-panel">
             <div class="dgptm-freigabe-comments-list">
                 <?php foreach ($section_comments as $c) : ?>
                     <?php

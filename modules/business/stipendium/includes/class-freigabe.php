@@ -25,6 +25,7 @@ class DGPTM_Stipendium_Freigabe {
         $this->plugin_url  = $plugin_url;
 
         add_shortcode('dgptm_stipendium_freigabe', [$this, 'render_shortcode']);
+        add_shortcode('dgptm_stipendium_freigabe_export', [$this, 'render_export_shortcode']);
         add_action('wp_enqueue_scripts', [$this, 'register_assets']);
 
         // AJAX-Endpoints (nur fuer eingeloggte User)
@@ -56,6 +57,54 @@ class DGPTM_Stipendium_Freigabe {
             '0.1.0',
             true
         );
+    }
+
+    /* ──────────────────────────────────────────────
+     * Export-Shortcode (Admin-only, Klartext)
+     * ────────────────────────────────────────────── */
+
+    public function render_export_shortcode($atts) {
+        if (!current_user_can('manage_options')) {
+            return '<p>Nur fuer Administratoren.</p>';
+        }
+
+        $comments  = $this->get_comments();
+        $approvals = $this->get_approvals();
+
+        $sections = [
+            'section-aenderungen'       => '1. Was aendert sich?',
+            'section-rollen'            => '2. Wer ist beteiligt?',
+            'section-ablauf'            => '3. Ablauf im Ueberblick',
+            'section-bewertungsbogen'   => '4. Der digitale Bewertungsbogen',
+            'section-dokumente'         => '5. Welche Dokumente werden hochgeladen?',
+            'section-datenschutz'       => '6. Datenschutz (DSGVO)',
+            'section-einstellungen'     => '7. Konfigurierbare Einstellungen',
+            'section-benachrichtigungen'=> '8. E-Mail-Benachrichtigungen',
+            'section-naechste-schritte' => '9. Naechste Schritte',
+        ];
+
+        ob_start();
+        echo '<div style="font-family:monospace;font-size:13px;background:#f5f5f5;padding:20px;border-radius:8px;white-space:pre-wrap;">';
+
+        echo "=== FREIGABEN (" . count($approvals) . ") ===\n";
+        foreach ($approvals as $a) {
+            echo "  " . esc_html($a['user_name']) . " — " . esc_html($a['timestamp']) . "\n";
+        }
+
+        echo "\n=== KOMMENTARE (" . count($comments) . ") ===\n";
+        foreach ($sections as $sid => $label) {
+            $sc = array_filter($comments, function($c) use ($sid) { return $c['section'] === $sid; });
+            if (empty($sc)) continue;
+            echo "\n--- " . $label . " ---\n";
+            foreach ($sc as $c) {
+                $status = !empty($c['status']) ? ' [' . $c['status'] . ']' : '';
+                echo "  [" . esc_html($c['timestamp']) . "] " . esc_html($c['user_name']) . $status . ":\n";
+                echo "  " . esc_html($c['text']) . "\n\n";
+            }
+        }
+
+        echo '</div>';
+        return ob_get_clean();
     }
 
     /* ──────────────────────────────────────────────

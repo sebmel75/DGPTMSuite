@@ -88,16 +88,67 @@ $rubriken = [
             Sie wurden eingeladen, die folgende Bewerbung fuer das
             <?php echo esc_html($stipendientyp); ?> der DGPTM zu begutachten.
         </p>
-        <div class="dgptm-gutachten-bewerber">
-            <span class="dgptm-gutachten-bewerber-label">Bewerber/in:</span>
-            <span class="dgptm-gutachten-bewerber-name"><?php echo esc_html($bewerber_name); ?></span>
-        </div>
     </div>
 
-    <!-- Dokumente -->
+    <!-- Bewerber-Informationen -->
+    <div class="dgptm-gutachten-bewerber-info">
+        <h4>Angaben zum/zur Bewerber/in</h4>
+        <table class="dgptm-gutachten-info-table">
+            <tr>
+                <td><strong>Name:</strong></td>
+                <td><?php echo esc_html($bewerber_name); ?></td>
+            </tr>
+            <?php if (!empty($stipendium['bewerber_institution'])) : ?>
+            <tr>
+                <td><strong>Institution:</strong></td>
+                <td><?php echo esc_html($stipendium['bewerber_institution']); ?></td>
+            </tr>
+            <?php endif; ?>
+            <?php if (!empty($stipendium['bewerber_orcid'])) : ?>
+            <tr>
+                <td><strong>ORCID:</strong></td>
+                <td><a href="https://orcid.org/<?php echo esc_attr($stipendium['bewerber_orcid']); ?>" target="_blank" rel="noopener"><?php echo esc_html($stipendium['bewerber_orcid']); ?></a></td>
+            </tr>
+            <?php endif; ?>
+            <?php if (!empty($stipendium['Eingangsdatum'])) : ?>
+            <tr>
+                <td><strong>Eingangsdatum:</strong></td>
+                <td><?php echo esc_html(date_i18n('d.m.Y', strtotime($stipendium['Eingangsdatum']))); ?></td>
+            </tr>
+            <?php endif; ?>
+        </table>
+    </div>
+
+    <!-- Projektuebersicht -->
+    <?php if (!empty($stipendium['projekt_titel'])) : ?>
+    <div class="dgptm-gutachten-projekt">
+        <h4>Projektuebersicht</h4>
+
+        <div class="dgptm-gutachten-projekt-titel">
+            <?php echo esc_html($stipendium['projekt_titel']); ?>
+        </div>
+
+        <?php if (!empty($stipendium['projekt_zusammenfassung'])) : ?>
+        <div class="dgptm-gutachten-projekt-block">
+            <strong>Zusammenfassung:</strong>
+            <p><?php echo nl2br(esc_html($stipendium['projekt_zusammenfassung'])); ?></p>
+        </div>
+        <?php endif; ?>
+
+        <?php if (!empty($stipendium['projekt_methodik'])) : ?>
+        <div class="dgptm-gutachten-projekt-block">
+            <strong>Methodik:</strong>
+            <p><?php echo nl2br(esc_html($stipendium['projekt_methodik'])); ?></p>
+        </div>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
+
+    <!-- Eingereichte Unterlagen -->
     <?php if (!empty($dokumente)) : ?>
     <div class="dgptm-gutachten-dokumente">
         <h4>Eingereichte Unterlagen</h4>
+        <p style="font-size:13px;color:#666;margin:0 0 10px;">Bitte lesen Sie die Unterlagen sorgfaeltig, bevor Sie Ihre Bewertung abgeben.</p>
         <div class="dgptm-gutachten-dokumente-list">
             <?php foreach ($dokumente as $dok) : ?>
                 <a href="<?php echo esc_url($dok['url']); ?>" target="_blank" rel="noopener" class="dgptm-gutachten-dok-link">
@@ -108,6 +159,8 @@ $rubriken = [
         </div>
     </div>
     <?php endif; ?>
+
+    <hr style="margin:24px 0;border:none;border-top:2px solid #003366;"><?php // Trennlinie vor dem Bewertungsbogen ?>
 
     <!-- Bewertungsbogen -->
     <form id="dgptm-gutachten-form" class="dgptm-gutachten-form" novalidate>

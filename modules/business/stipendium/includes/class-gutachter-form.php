@@ -331,8 +331,26 @@ class DGPTM_Stipendium_Gutachter_Form {
      * @return array Stipendium-Daten
      */
     private function get_stipendium_data($stipendium_id) {
-        if (!$this->zoho) {
-            return ['Name' => 'Demo-Bewerbung', 'Stipendientyp' => 'Promotionsstipendium', 'Runde' => 'Ausschreibung 2026'];
+        // Demo-Modus: Vollstaendige Testdaten liefern
+        if (!$this->zoho || strpos($stipendium_id, 'DEMO') === 0) {
+            return [
+                'Name'                      => 'Demo-Bewerbung',
+                'Bewerber'                  => ['name' => 'Dr. Max Mustermann'],
+                'Stipendientyp'             => 'Promotionsstipendium',
+                'Runde'                     => 'Ausschreibung 2026 (Demo)',
+                'Eingangsdatum'             => '2026-04-01',
+                'bewerber_institution'      => 'Universitaetsklinikum Beispielstadt',
+                'bewerber_orcid'            => '0000-0002-1234-5678',
+                'bewerber_email'            => 'max.mustermann@example.de',
+                'projekt_titel'             => 'Einfluss der minimalinvasiven extrakorporalen Zirkulation auf die postoperative kognitive Funktion bei aelteren Patienten',
+                'projekt_zusammenfassung'   => 'Diese Promotionsarbeit untersucht den Einfluss verschiedener Perfusionsstrategien auf die postoperative kognitive Funktion bei Patienten ueber 70 Jahre. Im Fokus steht der Vergleich zwischen konventioneller und minimalinvasiver extrakorporaler Zirkulation (MiECC) hinsichtlich inflammatorischer Marker, Mikroembolisation und neurokognitiver Outcomes. Die Studie wird als prospektive, randomisierte Untersuchung an 120 Patienten durchgefuehrt.',
+                'projekt_methodik'          => 'Prospektiv, randomisiert, monozentrisch. 120 Patienten (60 MiECC vs. 60 konventionell). Neurokognitive Testbatterie praeoperativ, 7 Tage und 3 Monate postoperativ. Inflammationsmarker (IL-6, TNF-alpha, S100B) intraoperativ und bis 48h postoperativ. Transkranielle Dopplersonographie zur Detektion von Mikroembolien.',
+                'Lebenslauf_URL'            => 'https://perfusiologie.de/wp-content/uploads/demo/lebenslauf-mustermann.pdf',
+                'Motivationsschreiben_URL'  => 'https://perfusiologie.de/wp-content/uploads/demo/motivationsschreiben-mustermann.pdf',
+                'Empfehlungsschreiben_URL'  => 'https://perfusiologie.de/wp-content/uploads/demo/empfehlungsschreiben-mustermann.pdf',
+                'Studienleistungen_URL'     => 'https://perfusiologie.de/wp-content/uploads/demo/studienleistungen-mustermann.pdf',
+                'Publikationen_URL'         => 'https://perfusiologie.de/wp-content/uploads/demo/publikationen-mustermann.pdf',
+            ];
         }
 
         $cache_key = 'dgptm_stip_detail_' . $stipendium_id;

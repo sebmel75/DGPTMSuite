@@ -209,6 +209,37 @@
     });
 
     /* ──────────────────────────────────────────────
+     * Demo-Bewertung starten
+     * ────────────────────────────────────────────── */
+
+    $(document).on('click', '#dgptm-demo-bewertung-btn', function () {
+        var $btn = $(this);
+        var $status = $('#dgptm-demo-bewertung-status');
+
+        $btn.prop('disabled', true).text('Wird gesendet...');
+        $status.text('');
+
+        $.post(config.ajaxUrl, {
+            action: 'dgptm_freigabe_demo_bewertung',
+            nonce:  config.nonce
+        }, function (res) {
+            if (res.success) {
+                $btn.text('E-Mail gesendet!').css('background', '#4caf50');
+                $status.html('<strong>Bitte pruefen Sie Ihr E-Mail-Postfach.</strong> Sie erhalten in Kuerze eine Einladung zur Begutachtung einer fiktiven Bewerbung.');
+                setTimeout(function () {
+                    $btn.prop('disabled', false).text('Bewertungs-Demo starten').css('background', '#2e7d32');
+                }, 10000);
+            } else {
+                $btn.prop('disabled', false).text('Bewertungs-Demo starten');
+                $status.text('Fehler: ' + (res.data || 'Bitte spaeter erneut versuchen.'));
+            }
+        }).fail(function () {
+            $btn.prop('disabled', false).text('Bewertungs-Demo starten');
+            $status.text('Verbindungsfehler. Bitte erneut versuchen.');
+        });
+    });
+
+    /* ──────────────────────────────────────────────
      * Init
      * ────────────────────────────────────────────── */
 

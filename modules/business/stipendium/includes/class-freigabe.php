@@ -37,6 +37,9 @@ class DGPTM_Stipendium_Freigabe {
         // Admin-Endpoints (nur manage_options)
         add_action('wp_ajax_dgptm_freigabe_export',     [$this, 'ajax_export_comments']);
         add_action('wp_ajax_dgptm_freigabe_mark_read',  [$this, 'ajax_mark_comments_read']);
+
+        // Demo-Bewertung
+        add_action('wp_ajax_dgptm_freigabe_demo_bewertung', [$this, 'ajax_demo_bewertung']);
     }
 
     /* ──────────────────────────────────────────────
@@ -331,6 +334,57 @@ class DGPTM_Stipendium_Freigabe {
         update_option(self::OPT_COMMENTS, $comments, false);
 
         wp_send_json_success(['marked' => $marked]);
+    }
+
+    /* ──────────────────────────────────────────────
+     * AJAX: Demo-Bewertung starten
+     * ────────────────────────────────────────────── */
+
+    public function ajax_demo_bewertung() {
+        check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+        if (!$this->user_can_interact()) {
+            wp_send_json_error('Keine Berechtigung.', 403);
+        }
+
+        $user = wp_get_current_user();
+
+        // Token-Manager pruefen
+        if (!class_exists('DGPTM_Stipendium_Gutachter_Token')) {
+            wp_send_json_error('Token-System noch nicht verfuegbar. Bitte Modul-Update abwarten.');
+        }
+
+        $token_manager = new DGPTM_Stipendium_Gutachter_Token();
+
+        // Demo-Token fuer fiktive Bewerbung generieren
+        $token_data = $token_manager->generate('DEMO-2026-001', [
+            'gutachter_name'  => $user->display_name,
+            'gutachter_email' => $user->user_email,
+            'expires_in'      => 28,
+        ]);
+
+        if (is_wp_error($token_data)) {
+            wp_send_json_error('Token konnte nicht erstellt werden: ' . $token_data->get_error_message());
+        }
+
+        // Einladungsmail senden
+        if (class_exists('DGPTM_Stipendium_Mail_Templates')) {
+            $gutachten_url = home_url('/stipendium/gutachten/?token=' . $token_data['token']);
+
+            DGPTM_Stipendium_Mail_Templates::send_einladung(
+                $user->user_email,
+                $user->display_name,
+                'Dr. Max Mustermann (Demo-Bewerbung)',
+                'Promotionsstipendium',
+                'Ausschreibung 2026 (Demo)',
+                $gutachten_url,
+                date_i18n('d.m.Y', strtotime('+28 days'))
+            );
+        }
+
+        wp_send_json_success([
+            'message' => 'Demo-Einladung wurde an ' . $user->user_email . ' gesendet.',
+        ]);
     }
 
     /* ──────────────────────────────────────────────

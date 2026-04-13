@@ -605,6 +605,33 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
             <?php $render_section_comments('section-benachrichtigungen'); ?>
         </div>
 
+        <!-- Bewertungs-Demo -->
+        <div class="dgptm-freigabe-section" id="section-demo">
+            <h3>Bewertungs-Demo: Selbst ausprobieren</h3>
+
+            <p>Erleben Sie den digitalen Bewertungsbogen aus der Perspektive eines Gutachters. Klicken Sie auf den Button — Sie erhalten eine E-Mail mit einem persoenlichen Zugangslink zu einer <strong>fiktiven Bewerbung</strong>. Dort koennen Sie den kompletten Bewertungsprozess durchspielen.</p>
+
+            <div style="text-align:center;margin:20px 0;">
+                <button type="button" id="dgptm-demo-bewertung-btn" class="dgptm-freigabe-approve-btn" style="background:#2e7d32;font-size:16px;padding:14px 32px;">
+                    Bewertungs-Demo starten
+                </button>
+                <div id="dgptm-demo-bewertung-status" style="margin-top:10px;font-size:14px;color:#666;"></div>
+            </div>
+
+            <div class="dgptm-freigabe-highlight blue" style="font-size:13px;">
+                <strong>Was passiert?</strong>
+                <ol style="margin:6px 0 0 20px;">
+                    <li>Sie erhalten eine HTML-E-Mail mit dem Betreff &bdquo;Einladung zur Begutachtung&ldquo;</li>
+                    <li>In der Mail finden Sie den Button &bdquo;Jetzt begutachten&ldquo;</li>
+                    <li>Der Link fuehrt Sie zum Bewertungsbogen einer fiktiven Bewerbung</li>
+                    <li>Sie koennen Noten vergeben, Kommentare schreiben und das Gutachten abschliessen</li>
+                    <li>Ihre Eingaben werden automatisch zwischengespeichert</li>
+                </ol>
+            </div>
+
+            <?php $render_section_comments('section-demo'); ?>
+        </div>
+
         <!-- Abschnitt 9 -->
         <div class="dgptm-freigabe-section" id="section-naechste-schritte">
             <h3>9. Naechste Schritte</h3>

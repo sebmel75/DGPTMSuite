@@ -369,7 +369,7 @@ class DGPTM_Stipendium_Freigabe {
 
         // Einladungsmail senden
         if (class_exists('DGPTM_Stipendium_Mail_Templates')) {
-            $gutachten_url = home_url('/stipendium/gutachten/?token=' . $token_data['token']);
+            $gutachten_url = home_url('/karriere/stipendien/gutachten/?token=' . $token_data['token']);
 
             DGPTM_Stipendium_Mail_Templates::send_einladung(
                 $user->user_email,

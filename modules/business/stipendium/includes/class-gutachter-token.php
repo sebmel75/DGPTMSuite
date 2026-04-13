@@ -280,7 +280,7 @@ class DGPTM_Stipendium_Gutachter_Token {
             return add_query_arg('token', $token, get_permalink($page_id));
         }
         // Fallback: statischer Pfad
-        return home_url('/stipendium/gutachten/?token=' . $token);
+        return home_url('/karriere/stipendien/gutachten/?token=' . $token);
     }
 
     /**

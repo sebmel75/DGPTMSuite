@@ -392,15 +392,15 @@ class DGPTM_Stipendium_Freigabe {
         if (class_exists('DGPTM_Stipendium_Mail_Templates')) {
             $gutachten_url = home_url('/karriere/stipendien/gutachten/?token=' . $token_data['token']);
 
-            DGPTM_Stipendium_Mail_Templates::send_einladung(
-                $user->user_email,
-                $user->display_name,
-                'Dr. Max Mustermann (Demo-Bewerbung)',
-                'Promotionsstipendium',
-                'Ausschreibung 2026 (Demo)',
-                $gutachten_url,
-                date_i18n('d.m.Y', strtotime('+28 days'))
-            );
+            DGPTM_Stipendium_Mail_Templates::send_einladung([
+                'gutachter_name'  => $user->display_name,
+                'gutachter_email' => $user->user_email,
+                'bewerber_name'   => 'Dr. Max Mustermann (Demo-Bewerbung)',
+                'stipendientyp'   => 'Promotionsstipendium',
+                'runde'           => 'Ausschreibung 2026 (Demo)',
+                'gutachten_url'   => $gutachten_url,
+                'frist'           => date_i18n('d.m.Y', strtotime('+28 days')),
+            ]);
         }
 
         wp_send_json_success([

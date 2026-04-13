@@ -125,7 +125,7 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
         <div class="dgptm-freigabe-feedback-banner">
             <div class="dgptm-freigabe-feedback-banner-icon">&#128221;</div>
             <div>
-                <div class="dgptm-freigabe-feedback-banner-title">Status der Rueckmeldungen (Stand: 12. April 2026, 21 Kommentare)</div>
+                <div class="dgptm-freigabe-feedback-banner-title">Status der Rueckmeldungen (Stand: 13. April 2026, 24 Kommentare)</div>
                 <div class="dgptm-freigabe-feedback-banner-text">
                     Auswertung aller Kommentare. Punkte ohne inhaltlichen Aenderungsbedarf (Bestaetigungen, Lob, interne Diskussion) sind nicht aufgefuehrt.
                 </div>
@@ -136,13 +136,14 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
                     <li><strong>Gutachter-Unabhaengigkeit:</strong> Gutachter sehen Bewertungen anderer waehrend des Prozesses NICHT. Erst nach Abschluss. &rarr; <em>Abschnitt 2 (Rollen-Tabelle), Abschnitt 3 (Phase 4, Schritt 9+12)</em> <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
                     <li><strong>Externe Gutachter:</strong> Token-basierter Zugang fuer Nicht-Mitglieder. &rarr; <em>Abschnitt 2 (Hinweis-Box)</em> <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
                     <li><strong>Expose/Exzerpt:</strong> Als Pflichtdokument hinzugefuegt. &rarr; <em>Abschnitt 5 (Tabelle + Hinweis)</em> <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
+                    <li><strong>Expose-Leitfaden:</strong> Kein Template, sondern 1-seitiges Gliederungsdokument mit Pflichtstruktur (Titel, Einleitung, Zielsetzung, Hintergrund, Methodik, Relevanz, Zeitplan, Literatur). Zeigt direkten Bezug zu Bewertungskriterien A-D. Download auf Stipendien-Seite, Pflichtlektuere im Upload-Formular. &rarr; <em>Abschnitt 5</em> <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
                     <li><strong>GS-Rolle bei Gutachterverwaltung:</strong> GS kann in Ruecksprache Gutachter freischalten. &rarr; <em>Abschnitt 7 (Hinweis-Box)</em> <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
                     <li><strong>Termin 2. Juni 2026:</strong> Finale Besprechung und Deadline. &rarr; <em>Countdown + Abschnitt 9</em> <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
-                    <li><strong>ORCID-ID automatisch abfragen:</strong> Historie des Bewerbers automatisch abrufen. &rarr; <em>Abschnitt 5</em> <span class="dgptm-badge-offen">offen</span></li>
+                    <li><strong>3-Jahres-Pruefung des Gremiums:</strong> Auf Agenda der naechsten Vorstandssitzung (jaheller). M.Sc.-Anforderung fuer Guettler-Gutachter. &rarr; <em>Abschnitt 7</em> <span class="dgptm-badge-umgesetzt">eingearbeitet</span></li>
+                    <li><strong>ORCID-ID automatisch abfragen:</strong> Historie des Bewerbers automatisch abrufen. <span class="dgptm-badge-offen">offen</span></li>
                     <li><strong>Konkrete Fristen definieren:</strong> Bewertungsfristen, Einreichungsfristen pro Phase. <span class="dgptm-badge-offen">offen &mdash; in Sitzung am 2.6. klaeren</span></li>
-                    <li><strong>Muster-Expose erstellen:</strong> Vorlage fuer strukturierte Projektbeschreibungen (jaheller). <span class="dgptm-badge-offen">offen</span></li>
-                    <li><strong>Guettler-Stipendium:</strong> Eigene Fragestellungen und Gewichtungen (dbuchwald, in Bearbeitung). <span class="dgptm-badge-offen">offen</span></li>
-                    <li><strong>Geschaeftsordnung:</strong> 3-Jahres-Pruefung des Gremiums aufnehmen. <span class="dgptm-badge-offen">offen &mdash; in Sitzung am 2.6. klaeren</span></li>
+                    <li><strong>Guettler-Stipendium:</strong> Eigene Fragestellungen und Gewichtungen (dbuchwald, in Bearbeitung). Unterschiede zum Promotionsstipendium noch zu klaeren. <span class="dgptm-badge-offen">offen</span></li>
+                    <li><strong>Demo-Version:</strong> System mit Testdaten im CRM aufbauen fuer ersten Live-Test. <span class="dgptm-badge-offen">offen</span></li>
                 </ul>
             </div>
         </div>
@@ -477,7 +478,21 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
             </table>
 
             <div class="dgptm-freigabe-highlight green">
-                <strong>Neu: Expose/Exzerpt</strong> als Pflichtdokument hinzugefuegt. Ein <strong>Muster-Expose</strong> soll als Vorlage bereitgestellt werden (jaheller). <span class="dgptm-badge-offen">Muster wird erstellt</span><br>
+                <strong>Expose-Leitfaden (jaheller):</strong> Kein starres Template, sondern ein <strong>1-seitiges Gliederungsdokument</strong> mit Pflichtstruktur und kurzen Erlaeuterungen. Zum Download auf der Stipendien-Seite, als Pflichtlektuere im Upload-Formular verlinkt. Die Gliederung zeigt einen direkten Bezug zu den Bewertungskriterien A&ndash;D:
+                <ol style="margin:8px 0 0 20px;font-size:13px;">
+                    <li>Titel der Arbeit / Arbeitstitel</li>
+                    <li>Einleitung &amp; Problemstellung (inkl. expliziter Forschungsfrage) &rarr; <em>Rubrik A</em></li>
+                    <li>Zielsetzung der Arbeit &rarr; <em>Rubrik A</em></li>
+                    <li>Wissenschaftlicher Hintergrund &amp; Forschungsstand &rarr; <em>Rubrik A</em></li>
+                    <li>Methodik &rarr; <em>Rubrik C</em></li>
+                    <li>Relevanz fuer die Perfusiologie &rarr; <em>Rubrik B</em></li>
+                    <li>Zeitplan &rarr; <em>Rubrik C</em></li>
+                    <li>Literaturverzeichnis (zaehlt nicht zur Seitenzahl)</li>
+                </ol>
+                <span class="dgptm-badge-umgesetzt">eingearbeitet</span>
+            </div>
+
+            <div class="dgptm-freigabe-highlight blue">
                 <strong>Geplant: ORCID-ID</strong> &mdash; Bei der Einreichung soll die ORCID-ID abgefragt und die Publikationshistorie automatisch abgerufen werden. <span class="dgptm-badge-offen">offen</span>
             </div>
 
@@ -563,7 +578,7 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
             </div>
 
             <div class="dgptm-freigabe-highlight orange">
-                <strong>Vorschlag fuer die Geschaeftsordnung:</strong> Das Gutachtergremium soll alle <strong>3 Jahre ueberprueft</strong> und ggf. angepasst werden. <span class="dgptm-badge-offen">noch abzustimmen</span>
+                <strong>Geschaeftsordnung:</strong> Das Gutachtergremium soll alle <strong>3 Jahre ueberprueft</strong> und ggf. angepasst werden. Steht auf der <strong>Agenda der naechsten Vorstandssitzung</strong> (jaheller). Dabei soll auf eine Balance aus Erfahrung und neuen Gesichtern geachtet werden. Fuer das Guettler-Stipendium wird mindestens ein <strong>M.Sc.-Abschluss</strong> als Gutachter-Qualifikation vorausgesetzt. <span class="dgptm-badge-umgesetzt">eingearbeitet</span>
             </div>
 
             <?php $render_section_comments('section-einstellungen'); ?>
@@ -595,10 +610,11 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
             <h3>9. Naechste Schritte</h3>
 
             <ol class="dgptm-freigabe-steps-list">
-                <li><strong>Laufende Feedbackrunde abschliessen</strong> &mdash; Offene Punkte klaeren (Guettler-Gewichtung, Geschaeftsordnung)</li>
+                <li><strong>Laufende Feedbackrunde abschliessen</strong> &mdash; Offene Punkte klaeren (Guettler-Gewichtung)</li>
+                <li><strong>Expose-Leitfaden finalisieren</strong> &mdash; Draft von jaheller liegt vor, Abstimmung im Gremium</li>
                 <li><strong>Finale Besprechung am 2. Juni 2026</strong> &mdash; Letzte Abstimmung und Terminierung der weiteren Schritte</li>
                 <li><strong>2026: Papierbasierte Bewertung nach neuem Schema</strong> &mdash; Gutachterleitfaden + Bewertungsmatrix bereits fuer laufende Runde nutzen</li>
-                <li><strong>Sommer 2026: Muster-Expose erstellen</strong> &mdash; Vorlage fuer strukturierte Projektbeschreibungen</li>
+                <li><strong>Demo-Version mit Testdaten</strong> &mdash; System mit Testdaten im CRM aufbauen fuer ersten Live-Test mit dem Stipendiumsrat</li>
                 <li><strong>Ab Sommer 2026: Technische Umsetzung</strong> &mdash; WordPress-Modul + Zoho CRM-Konfiguration</li>
                 <li><strong>Testphase</strong> &mdash; Probelauf mit dem Stipendiumsrat</li>
                 <li><strong>Ab 2027: Go-Live</strong> &mdash; Digitales System fuer die Runde 2027</li>
@@ -607,9 +623,10 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
             <div class="dgptm-freigabe-highlight orange">
                 <strong>Offene Punkte:</strong>
                 <ul>
-                    <li>Bewertungskriterien und Gewichtungen fuer das <strong>Guettler-Stipendium</strong> (dbuchwald)</li>
-                    <li>Aufnahme der <strong>3-Jahres-Pruefung</strong> des Gremiums in die Geschaeftsordnung</li>
-                    <li>Muster-Expose erstellen (jaheller)</li>
+                    <li>Bewertungskriterien und Gewichtungen fuer das <strong>Guettler-Stipendium</strong> (dbuchwald, in Bearbeitung)</li>
+                    <li>Unterschiede Guettler vs. Promotionsstipendium im Bewertungsleitfaden klaeren</li>
+                    <li>ORCID-ID Abfrage technisch umsetzen</li>
+                    <li>Demo-Version mit Testdaten im CRM aufbauen</li>
                     <li>Datenschutzerklaerung auf der Homepage ergaenzen</li>
                 </ul>
             </div>

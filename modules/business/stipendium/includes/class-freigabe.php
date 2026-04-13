@@ -354,17 +354,38 @@ class DGPTM_Stipendium_Freigabe {
             wp_send_json_error('Token-System noch nicht verfuegbar. Bitte Modul-Update abwarten.');
         }
 
+        // Sicherstellen dass Token-Tabelle existiert
+        if (class_exists('DGPTM_Stipendium_Token_Installer')) {
+            DGPTM_Stipendium_Token_Installer::install();
+        }
+
         $token_manager = new DGPTM_Stipendium_Gutachter_Token();
 
         // Demo-Token fuer fiktive Bewerbung generieren
-        $token_data = $token_manager->generate('DEMO-2026-001', [
-            'gutachter_name'  => $user->display_name,
-            'gutachter_email' => $user->user_email,
-            'expires_in'      => 28,
-        ]);
+        $token_data = $token_manager->generate(
+            'DEMO-2026-001',
+            $user->display_name,
+            $user->user_email,
+            28
+        );
 
         if (is_wp_error($token_data)) {
-            wp_send_json_error('Token konnte nicht erstellt werden: ' . $token_data->get_error_message());
+            // Bei "token_exists" den bestehenden Token verwenden
+            if ($token_data->get_error_code() === 'token_exists') {
+                global $wpdb;
+                $table = $wpdb->prefix . 'dgptm_stipendium_tokens';
+                $existing = $wpdb->get_row($wpdb->prepare(
+                    "SELECT token FROM {$table} WHERE stipendium_id = %s AND gutachter_email = %s AND bewertung_status != 'abgeschlossen' ORDER BY created_at DESC LIMIT 1",
+                    'DEMO-2026-001', $user->user_email
+                ), ARRAY_A);
+                if ($existing) {
+                    $token_data = ['token' => $existing['token']];
+                } else {
+                    wp_send_json_error('Token konnte nicht erstellt werden: ' . $token_data->get_error_message());
+                }
+            } else {
+                wp_send_json_error('Token konnte nicht erstellt werden: ' . $token_data->get_error_message());
+            }
         }
 
         // Einladungsmail senden

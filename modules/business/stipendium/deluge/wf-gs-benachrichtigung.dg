@@ -1,0 +1,93 @@
+// ============================================================
+// DGPTM Stipendium — Workflow: GS-Benachrichtigung
+// ============================================================
+// TRIGGER:  Workflow Rule auf Modul "Stipendien"
+//           Bedingung: Field Update → Stipendium_Status = "Geprueft"
+//
+// AKTION:   E-Mail an Vorsitzenden des Stipendiumsrats senden,
+//           damit dieser die Bewerbung im WordPress-Dashboard
+//           freigeben oder ablehnen kann.
+//
+// SETUP:
+//   1. Zoho CRM > Setup > Automation > Workflow Rules
+//   2. Modul: Stipendien
+//   3. Trigger: "On a record action" → "Edit"
+//   4. Bedingung: Stipendium_Status wird geaendert auf "Geprueft"
+//   5. Sofortaktion: Custom Function → dieses Skript
+// ============================================================
+
+// Vorsitzenden-E-Mail aus Organisation-Settings oder dediziertem Contact
+vorsitzender_contacts = zoho.crm.searchRecords("Contacts",
+    "(Stipendiumsrat_Vorsitz:equals:true)");
+
+if (vorsitzender_contacts.size() == 0)
+{
+    info "WARNUNG: Kein Vorsitzender im CRM gefunden. Mail nicht gesendet.";
+    return;
+}
+
+vorsitzender = vorsitzender_contacts.get(0);
+vorsitz_email = vorsitzender.get("Email");
+vorsitz_name = vorsitzender.get("Full_Name");
+
+if (vorsitz_email == null || vorsitz_email == "")
+{
+    info "WARNUNG: Vorsitzender hat keine E-Mail-Adresse.";
+    return;
+}
+
+// Bewerbungsdaten
+bewerber_name = ifnull(input.Name, "Unbekannt");
+stipendientyp = ifnull(input.Stipendientyp, "");
+runde = ifnull(input.Runde, "");
+eingangsdatum = ifnull(input.Eingangsdatum, "");
+
+// E-Mail senden
+subject = "DGPTM Stipendium: Neue Bewerbung geprueft — " + bewerber_name;
+
+body = "<html><body style='font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif;'>";
+body = body + "<table width='600' cellpadding='0' cellspacing='0' style='background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;'>";
+
+// Header
+body = body + "<tr><td style='background:#003366;padding:20px 30px;'>";
+body = body + "<table width='100%'><tr>";
+body = body + "<td style='color:#ffffff;font-size:20px;font-weight:700;'>DGPTM</td>";
+body = body + "<td align='right' style='color:#8bb8e8;font-size:13px;'>Stipendienvergabe</td>";
+body = body + "</tr></table></td></tr>";
+
+// Inhalt
+body = body + "<tr><td style='padding:24px 30px;'>";
+body = body + "<h2 style='margin:0 0 12px;font-size:18px;color:#1a1a1a;'>Neue Bewerbung geprueft</h2>";
+body = body + "<p style='font-size:15px;color:#333;'>Sehr geehrte/r " + vorsitz_name + ",</p>";
+body = body + "<p style='font-size:15px;color:#333;'>Die Geschaeftsstelle hat eine neue Bewerbung vorgegrueft. Bitte pruefen und freigeben Sie diese im Vorsitzenden-Dashboard.</p>";
+
+// Info-Box
+body = body + "<div style='background:#f0f5fa;border-left:4px solid #003366;border-radius:0 8px 8px 0;padding:16px 20px;margin:16px 0;'>";
+body = body + "<strong>Bewerber/in:</strong> " + bewerber_name + "<br>";
+body = body + "<strong>Stipendium:</strong> " + stipendientyp + "<br>";
+body = body + "<strong>Runde:</strong> " + runde + "<br>";
+body = body + "<strong>Eingangsdatum:</strong> " + eingangsdatum;
+body = body + "</div>";
+
+// CTA
+body = body + "<p style='text-align:center;margin:20px 0;'>";
+body = body + "<a href='https://perfusiologie.de/mitgliederbereich/' style='display:inline-block;background:#003366;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;'>Im Dashboard pruefen</a>";
+body = body + "</p>";
+body = body + "</td></tr>";
+
+// Footer
+body = body + "<tr><td style='background:#f9fafb;padding:16px 30px;border-top:1px solid #e5e7eb;'>";
+body = body + "<p style='margin:0;font-size:12px;color:#9ca3af;text-align:center;'>Diese Nachricht wurde automatisch gesendet.<br>DGPTM e.V.</p>";
+body = body + "</td></tr>";
+
+body = body + "</table></body></html>";
+
+sendmail
+[
+    from: zoho.adminuserid
+    to: vorsitz_email
+    subject: subject
+    message: body
+];
+
+info "GS-Benachrichtigung gesendet an: " + vorsitz_email + " fuer Bewerbung: " + bewerber_name;

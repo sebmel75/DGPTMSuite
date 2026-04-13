@@ -2,7 +2,7 @@
     "id": "stipendium",
     "name": "Stipendienvergabe",
     "description": "Digitales Bewerbungs- und Bewertungsverfahren fuer DGPTM-Stipendien",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "author": "Sebastian Melzer",
     "main_file": "dgptm-stipendium.php",
     "dependencies": ["crm-abruf"],

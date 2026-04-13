@@ -1,0 +1,464 @@
+/**
+ * DGPTM Stipendium — Gutachten-Bewertungsbogen Styles
+ *
+ * Responsive Layout, DGPTM-Farben (#003366 Akzent),
+ * Karten-Design fuer Rubriken, Score-Vorschau-Box.
+ */
+
+/* === Wrapper === */
+.dgptm-gutachten-wrap {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 16px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #1a1a1a;
+    line-height: 1.6;
+}
+
+/* === Header === */
+.dgptm-gutachten-header {
+    margin-bottom: 24px;
+}
+
+.dgptm-gutachten-header-bar {
+    background: #003366;
+    color: #fff;
+    padding: 16px 24px;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dgptm-gutachten-logo {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.dgptm-gutachten-header-sub {
+    font-size: 13px;
+    color: #8bb8e8;
+}
+
+.dgptm-gutachten-meta {
+    background: #f0f5fa;
+    padding: 10px 24px;
+    border-radius: 0 0 12px 12px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.dgptm-gutachten-meta-tag {
+    display: inline-block;
+    background: #003366;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 12px;
+    border-radius: 12px;
+}
+
+.dgptm-gutachten-meta-tag--light {
+    background: #e8eaf6;
+    color: #283593;
+}
+
+/* === Intro === */
+.dgptm-gutachten-intro {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+}
+
+.dgptm-gutachten-intro p {
+    margin: 0 0 8px;
+    font-size: 15px;
+}
+
+.dgptm-gutachten-bewerber {
+    background: #f0f5fa;
+    border-left: 4px solid #003366;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin-top: 12px;
+}
+
+.dgptm-gutachten-bewerber-label {
+    font-size: 13px;
+    color: #6b7280;
+    display: block;
+}
+
+.dgptm-gutachten-bewerber-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: #003366;
+}
+
+/* === Dokumente === */
+.dgptm-gutachten-dokumente {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px 24px;
+    margin-bottom: 24px;
+}
+
+.dgptm-gutachten-dokumente h4 {
+    margin: 0 0 12px;
+    font-size: 15px;
+    color: #374151;
+}
+
+.dgptm-gutachten-dokumente-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.dgptm-gutachten-dok-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+    color: #003366;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.dgptm-gutachten-dok-link:hover {
+    background: #e8eaf6;
+    border-color: #003366;
+    color: #003366;
+}
+
+.dgptm-gutachten-dok-icon {
+    font-size: 16px;
+}
+
+/* === Rubriken === */
+.dgptm-gutachten-rubrik {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+}
+
+.dgptm-gutachten-rubrik legend {
+    font-size: 17px;
+    font-weight: 700;
+    color: #003366;
+    padding: 0 8px;
+}
+
+.dgptm-gutachten-gewicht {
+    font-size: 13px;
+    font-weight: 400;
+    color: #6b7280;
+}
+
+/* === Fragen === */
+.dgptm-gutachten-frage {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #f3f4f6;
+    gap: 12px;
+}
+
+.dgptm-gutachten-frage:last-of-type {
+    border-bottom: none;
+}
+
+.dgptm-gutachten-frage label {
+    flex: 1;
+    font-size: 14px;
+    color: #374151;
+    line-height: 1.4;
+}
+
+.dgptm-gutachten-note {
+    width: 160px;
+    min-width: 140px;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    background: #fff;
+    appearance: auto;
+}
+
+.dgptm-gutachten-note:focus {
+    outline: none;
+    border-color: #003366;
+    box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1);
+}
+
+.dgptm-gutachten-note--error {
+    border-color: #dc2626;
+    background: #fef2f2;
+}
+
+/* === Kommentar === */
+.dgptm-gutachten-kommentar {
+    margin-top: 12px;
+}
+
+.dgptm-gutachten-kommentar label {
+    display: block;
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 4px;
+}
+
+.dgptm-gutachten-kommentar textarea,
+.dgptm-gutachten-gesamt-anmerkungen textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+.dgptm-gutachten-kommentar textarea:focus,
+.dgptm-gutachten-gesamt-anmerkungen textarea:focus {
+    outline: none;
+    border-color: #003366;
+    box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1);
+}
+
+/* === Rubrik-Score === */
+.dgptm-gutachten-rubrik-score {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+    font-size: 14px;
+    color: #6b7280;
+    text-align: right;
+}
+
+.dgptm-gutachten-rubrik-score .score-value {
+    font-weight: 700;
+    color: #003366;
+    font-size: 16px;
+}
+
+/* === Score-Vorschau === */
+.dgptm-gutachten-score-vorschau {
+    background: linear-gradient(135deg, #003366 0%, #004d99 100%);
+    color: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    margin: 24px 0;
+    text-align: center;
+}
+
+.dgptm-gutachten-score-vorschau.dgptm-score-vorschau--complete {
+    background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+}
+
+.dgptm-gutachten-score-label {
+    font-size: 13px;
+    opacity: 0.8;
+    margin-bottom: 4px;
+}
+
+.dgptm-gutachten-score-value {
+    font-size: 32px;
+    font-weight: 700;
+}
+
+.dgptm-gutachten-score-punkte {
+    font-size: 16px;
+    font-weight: 400;
+    opacity: 0.8;
+}
+
+.dgptm-gutachten-score-detail {
+    margin-top: 8px;
+    font-size: 13px;
+    opacity: 0.7;
+}
+
+/* === Aktionen === */
+.dgptm-gutachten-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 24px 0 16px;
+    gap: 16px;
+}
+
+.dgptm-gutachten-autosave-status {
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.dgptm-autosave--saving {
+    color: #b45309;
+}
+
+.dgptm-autosave--saved {
+    color: #065f46;
+}
+
+.dgptm-autosave--error {
+    color: #dc2626;
+}
+
+.dgptm-gutachten-submit {
+    background: #003366;
+    color: #fff;
+    border: none;
+    padding: 14px 32px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+}
+
+.dgptm-gutachten-submit:hover {
+    background: #004d99;
+}
+
+.dgptm-gutachten-submit:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+}
+
+.dgptm-gutachten-hinweis {
+    font-size: 13px;
+    color: #6b7280;
+    margin-top: 12px;
+    padding: 12px 16px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+}
+
+/* === Danke-Seite === */
+.dgptm-gutachten-danke {
+    text-align: center;
+    padding: 40px 24px;
+}
+
+.dgptm-gutachten-danke-icon {
+    width: 64px;
+    height: 64px;
+    background: #065f46;
+    color: #fff;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    margin-bottom: 16px;
+}
+
+.dgptm-gutachten-danke h2 {
+    color: #065f46;
+    margin: 0 0 16px;
+}
+
+.dgptm-gutachten-danke p {
+    font-size: 15px;
+    color: #374151;
+    margin: 0 0 12px;
+}
+
+.dgptm-gutachten-danke-details {
+    display: inline-block;
+    background: #f0f5fa;
+    border-radius: 12px;
+    padding: 16px 24px;
+    margin: 16px 0;
+}
+
+.dgptm-gutachten-danke-details table {
+    text-align: left;
+}
+
+.dgptm-gutachten-danke-details td {
+    padding: 4px 12px;
+    font-size: 14px;
+}
+
+.dgptm-gutachten-danke-kontakt {
+    margin-top: 20px;
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.dgptm-gutachten-danke-kontakt a {
+    color: #003366;
+}
+
+/* === Ungueltig-Seite === */
+.dgptm-gutachten-ungueltig {
+    text-align: center;
+    padding: 60px 24px;
+}
+
+.dgptm-gutachten-ungueltig-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: #b45309;
+}
+
+.dgptm-gutachten-ungueltig h2 {
+    color: #374151;
+    margin: 0 0 12px;
+}
+
+.dgptm-gutachten-ungueltig p {
+    font-size: 15px;
+    color: #6b7280;
+}
+
+.dgptm-gutachten-ungueltig a {
+    color: #003366;
+}
+
+/* === Responsive === */
+@media (max-width: 640px) {
+    .dgptm-gutachten-frage {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .dgptm-gutachten-note {
+        width: 100%;
+    }
+
+    .dgptm-gutachten-actions {
+        flex-direction: column;
+    }
+
+    .dgptm-gutachten-submit {
+        width: 100%;
+    }
+
+    .dgptm-gutachten-header-bar {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .dgptm-gutachten-score-value {
+        font-size: 24px;
+    }
+}

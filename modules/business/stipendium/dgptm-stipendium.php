@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM Stipendienvergabe
  * Description: Digitales Bewerbungs- und Bewertungsverfahren fuer DGPTM-Stipendien
- * Version: 1.0.0
+ * Version: 1.1.0
  */
 if (!defined('ABSPATH')) exit;
 
@@ -16,6 +16,10 @@ if (!class_exists('DGPTM_Stipendium')) {
         private $settings;
         private $zoho;
         private $workdrive;
+        private $token_manager;
+        private $gutachter_form;
+        private $orcid_lookup;
+        private $vorsitz_dashboard;
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -34,11 +38,15 @@ if (!class_exists('DGPTM_Stipendium')) {
         }
 
         private function load_components() {
+            // DB-Installer (immer laden, prueft intern ob Update noetig)
+            require_once $this->plugin_path . 'includes/class-token-installer.php';
+            DGPTM_Stipendium_Token_Installer::install();
+
             // Freigabe-Komponente (bereits implementiert)
             require_once $this->plugin_path . 'includes/class-freigabe.php';
             new DGPTM_Stipendium_Freigabe($this->plugin_path, $this->plugin_url);
 
-            // Einstellungen (wird in Task 7 erstellt)
+            // Einstellungen
             if (file_exists($this->plugin_path . 'includes/class-settings.php')) {
                 require_once $this->plugin_path . 'includes/class-settings.php';
                 $this->settings = new DGPTM_Stipendium_Settings($this->plugin_path, $this->plugin_url);
@@ -57,11 +65,46 @@ if (!class_exists('DGPTM_Stipendium')) {
                 }
             }
 
+            // Token-Manager (braucht DB-Tabelle)
+            require_once $this->plugin_path . 'includes/class-gutachter-token.php';
+            $this->token_manager = new DGPTM_Stipendium_Gutachter_Token();
+
+            // Mail-Templates
+            require_once $this->plugin_path . 'includes/class-mail-templates.php';
+
+            // ORCID-Lookup
+            require_once $this->plugin_path . 'includes/class-orcid-lookup.php';
+            $this->orcid_lookup = new DGPTM_Stipendium_ORCID_Lookup();
+
+            // Gutachter-Bewertungsbogen (Shortcode + AJAX, auch fuer nicht-eingeloggte)
+            require_once $this->plugin_path . 'includes/class-gutachter-form.php';
+            $this->gutachter_form = new DGPTM_Stipendium_Gutachter_Form(
+                $this->plugin_path,
+                $this->plugin_url,
+                $this->token_manager,
+                $this->zoho
+            );
+
+            // Vorsitzenden-Dashboard
+            require_once $this->plugin_path . 'includes/class-vorsitz-dashboard.php';
+            $this->vorsitz_dashboard = new DGPTM_Stipendium_Vorsitz_Dashboard(
+                $this->plugin_path,
+                $this->plugin_url,
+                $this->settings,
+                $this->zoho,
+                $this->token_manager
+            );
+
             // Dashboard-Tab Registrierung (nur wenn Dashboard-Modul aktiv)
             if (class_exists('DGPTM_Mitglieder_Dashboard') || shortcode_exists('dgptm_dashboard')) {
                 if (file_exists($this->plugin_path . 'includes/class-dashboard-tab.php')) {
                     require_once $this->plugin_path . 'includes/class-dashboard-tab.php';
-                    new DGPTM_Stipendium_Dashboard_Tab($this->plugin_path, $this->plugin_url, $this->settings);
+                    new DGPTM_Stipendium_Dashboard_Tab(
+                        $this->plugin_path,
+                        $this->plugin_url,
+                        $this->settings,
+                        $this->vorsitz_dashboard
+                    );
                 }
             }
         }
@@ -113,6 +156,8 @@ if (!class_exists('DGPTM_Stipendium')) {
         public function get_settings() { return $this->settings; }
         public function get_zoho() { return $this->zoho; }
         public function get_workdrive() { return $this->workdrive; }
+        public function get_token_manager() { return $this->token_manager; }
+        public function get_vorsitz_dashboard() { return $this->vorsitz_dashboard; }
     }
 }
 

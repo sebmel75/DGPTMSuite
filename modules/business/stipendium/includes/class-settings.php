@@ -34,6 +34,7 @@ class DGPTM_Stipendium_Settings {
         'bestaetigungsmail_text'          => "Sehr geehrte/r {name},\n\nvielen Dank fuer Ihre Bewerbung fuer das {stipendientyp} der DGPTM.\n\nIhre Bewerbung ist eingegangen und wird geprueft. Sie erhalten eine weitere Benachrichtigung, sobald das Verfahren abgeschlossen ist.\n\nMit freundlichen Gruessen\nDGPTM - Stipendiumsrat",
         'workdrive_team_folder_id'        => '',
         'benachrichtigung_vorsitz_email'  => '',
+        'gutachter_frist_tage'            => 28,
     ];
 
     public function __construct($plugin_path, $plugin_url) {
@@ -168,6 +169,9 @@ class DGPTM_Stipendium_Settings {
         $clean['bestaetigungsmail_text'] = sanitize_textarea_field($data['bestaetigungsmail_text'] ?? '');
         $clean['workdrive_team_folder_id'] = sanitize_text_field($data['workdrive_team_folder_id'] ?? '');
         $clean['benachrichtigung_vorsitz_email'] = sanitize_email($data['benachrichtigung_vorsitz_email'] ?? '');
+        $clean['gutachter_frist_tage'] = absint($data['gutachter_frist_tage'] ?? 28);
+        if ($clean['gutachter_frist_tage'] < 7) $clean['gutachter_frist_tage'] = 7;
+        if ($clean['gutachter_frist_tage'] > 90) $clean['gutachter_frist_tage'] = 90;
 
         update_option(self::OPTION_KEY, $clean, false);
 

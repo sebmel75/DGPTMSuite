@@ -6,13 +6,15 @@ class DGPTM_Stipendium_Dashboard_Tab {
     private $plugin_path;
     private $plugin_url;
     private $settings;
+    private $vorsitz_dashboard;
 
     const TABS_REGISTERED_KEY = 'dgptm_stipendium_tabs_registered_v1';
 
-    public function __construct($plugin_path, $plugin_url, $settings) {
-        $this->plugin_path = $plugin_path;
-        $this->plugin_url  = $plugin_url;
-        $this->settings    = $settings;
+    public function __construct($plugin_path, $plugin_url, $settings, $vorsitz_dashboard = null) {
+        $this->plugin_path       = $plugin_path;
+        $this->plugin_url        = $plugin_url;
+        $this->settings          = $settings;
+        $this->vorsitz_dashboard = $vorsitz_dashboard;
 
         add_action('init', [$this, 'ensure_dashboard_tabs']);
         add_shortcode('dgptm_stipendium_dashboard', [$this, 'render_dashboard']);
@@ -115,8 +117,6 @@ class DGPTM_Stipendium_Dashboard_Tab {
 
     /**
      * Shortcode: Auswertungs-Dashboard (nur Vorsitzender).
-     *
-     * HINWEIS: Vollstaendige Implementierung erfolgt nach Feedback des Stipendiumsrats.
      */
     public function render_auswertung($atts) {
         if (!is_user_logged_in()) return '';
@@ -125,15 +125,12 @@ class DGPTM_Stipendium_Dashboard_Tab {
         $ist_vorsitz = get_field('stipendiumsrat_vorsitz', 'user_' . $user_id);
         if (!$ist_vorsitz && !current_user_can('manage_options')) return '';
 
-        ob_start();
-        ?>
-        <div class="dgptm-stipendium-auswertung">
-            <h3>Stipendien — Auswertung</h3>
-            <p style="color:#888;font-style:italic;">
-                Die Auswertungsfunktion wird nach Freigabe des Konzepts durch den Stipendiumsrat freigeschaltet.
-            </p>
-        </div>
-        <?php
-        return ob_get_clean();
+        // An Vorsitzenden-Dashboard delegieren
+        if ($this->vorsitz_dashboard) {
+            return $this->vorsitz_dashboard->render();
+        }
+
+        // Fallback (sollte nicht vorkommen)
+        return '<p>Vorsitzenden-Dashboard nicht verfuegbar.</p>';
     }
 }

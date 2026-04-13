@@ -261,11 +261,27 @@ class DGPTM_Artikel_Freigabe {
         wp_mail('nichtantworten@dgptm.de', $subject, $body, $headers);
     }
 
+    private function get_section_label($section_id) {
+        $sections = [
+            'section-ueberblick'         => '1. Was ist das Einreichungssystem?',
+            'section-rollen'             => '2. Wer ist beteiligt?',
+            'section-ablauf'             => '3. Der Ablauf im Ueberblick',
+            'section-formular'           => '4. Das Einreichungsformular',
+            'section-begutachtung'       => '5. Der Begutachtungsbogen',
+            'section-datenschutz'        => '6. Datenschutz und Sicherheit',
+            'section-status'             => '7. Status-Uebersicht',
+            'section-einstellungen'      => '8. Konfigurierbare Einstellungen',
+            'section-naechste-schritte'  => '9. Naechste Schritte',
+        ];
+        return $sections[$section_id] ?? $section_id;
+    }
+
     private function build_notification_html($author, $comment, $dokument_name) {
         $date = date_i18n('d.m.Y, H:i', strtotime($comment['timestamp']));
         $text = nl2br(esc_html($comment['text']));
         $author_name = esc_html($author->display_name);
         $doc_name = esc_html($dokument_name);
+        $section_label = esc_html($this->get_section_label($comment['section'] ?? ''));
 
         return '<!DOCTYPE html>
 <html lang="de">
@@ -290,6 +306,15 @@ class DGPTM_Artikel_Freigabe {
     <td style="padding:28px 30px 12px;">
       <h2 style="margin:0;font-size:18px;color:#1a1a1a;">Neuer Kommentar</h2>
       <p style="margin:6px 0 0;font-size:14px;color:#6b7280;">von <strong>' . $author_name . '</strong> am ' . $date . '</p>
+    </td>
+  </tr>
+
+  <!-- Abschnitt -->
+  <tr>
+    <td style="padding:4px 30px 8px;">
+      <div style="display:inline-block;background:#e8eaf6;color:#283593;font-size:12px;font-weight:600;padding:4px 12px;border-radius:12px;">
+        Abschnitt: ' . $section_label . '
+      </div>
     </td>
   </tr>
 

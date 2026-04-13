@@ -65,7 +65,7 @@ class DGPTM_Stipendium_Freigabe {
 
     public function render_export_shortcode($atts) {
         if (!current_user_can('manage_options')) {
-            return '<p>Nur fuer Administratoren.</p>';
+            return '';
         }
 
         $comments  = $this->get_comments();
@@ -84,18 +84,23 @@ class DGPTM_Stipendium_Freigabe {
         ];
 
         ob_start();
-        echo '<div style="font-family:monospace;font-size:13px;background:#f5f5f5;padding:20px;border-radius:8px;white-space:pre-wrap;">';
+        $export_id = 'dgptm-freigabe-export-' . wp_rand();
+        ?>
+        <div style="margin:16px 0;">
+            <button type="button" onclick="(function(){var t=document.getElementById('<?php echo $export_id; ?>');var r=document.createRange();r.selectNodeContents(t);var s=window.getSelection();s.removeAllRanges();s.addRange(r);document.execCommand('copy');s.removeAllRanges();this.textContent='Kopiert!';var b=this;setTimeout(function(){b.textContent='Alle Kommentare kopieren';},2000);}).call(this)" style="background:#003366;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">Alle Kommentare kopieren</button>
+        </div>
+        <div id="<?php echo $export_id; ?>" style="font-family:monospace;font-size:13px;background:#f5f5f5;padding:20px;border-radius:8px;white-space:pre-wrap;"><?php
 
-        echo "=== FREIGABEN (" . count($approvals) . ") ===\n";
+        echo esc_html("=== FREIGABEN (" . count($approvals) . ") ===") . "\n";
         foreach ($approvals as $a) {
             echo "  " . esc_html($a['user_name']) . " — " . esc_html($a['timestamp']) . "\n";
         }
 
-        echo "\n=== KOMMENTARE (" . count($comments) . ") ===\n";
+        echo "\n" . esc_html("=== KOMMENTARE (" . count($comments) . ") ===") . "\n";
         foreach ($sections as $sid => $label) {
             $sc = array_filter($comments, function($c) use ($sid) { return $c['section'] === $sid; });
             if (empty($sc)) continue;
-            echo "\n--- " . $label . " ---\n";
+            echo "\n--- " . esc_html($label) . " ---\n";
             foreach ($sc as $c) {
                 $status = !empty($c['status']) ? ' [' . $c['status'] . ']' : '';
                 echo "  [" . esc_html($c['timestamp']) . "] " . esc_html($c['user_name']) . $status . ":\n";
@@ -103,7 +108,8 @@ class DGPTM_Stipendium_Freigabe {
             }
         }
 
-        echo '</div>';
+        ?></div>
+        <?php
         return ob_get_clean();
     }
 
@@ -364,11 +370,27 @@ class DGPTM_Stipendium_Freigabe {
         wp_mail('nichtantworten@dgptm.de', $subject, $body, $headers);
     }
 
+    private function get_section_label($section_id) {
+        $sections = [
+            'section-aenderungen'       => '1. Was aendert sich?',
+            'section-rollen'            => '2. Wer ist beteiligt?',
+            'section-ablauf'            => '3. Ablauf im Ueberblick',
+            'section-bewertungsbogen'   => '4. Der digitale Bewertungsbogen',
+            'section-dokumente'         => '5. Welche Dokumente werden hochgeladen?',
+            'section-datenschutz'       => '6. Datenschutz (DSGVO)',
+            'section-einstellungen'     => '7. Konfigurierbare Einstellungen',
+            'section-benachrichtigungen'=> '8. E-Mail-Benachrichtigungen',
+            'section-naechste-schritte' => '9. Naechste Schritte',
+        ];
+        return $sections[$section_id] ?? $section_id;
+    }
+
     private function build_notification_html($author, $comment, $dokument_name) {
         $date = date_i18n('d.m.Y, H:i', strtotime($comment['timestamp']));
         $text = nl2br(esc_html($comment['text']));
         $author_name = esc_html($author->display_name);
         $doc_name = esc_html($dokument_name);
+        $section_label = esc_html($this->get_section_label($comment['section'] ?? ''));
 
         return '<!DOCTYPE html>
 <html lang="de">
@@ -393,6 +415,15 @@ class DGPTM_Stipendium_Freigabe {
     <td style="padding:28px 30px 12px;">
       <h2 style="margin:0;font-size:18px;color:#1a1a1a;">Neuer Kommentar</h2>
       <p style="margin:6px 0 0;font-size:14px;color:#6b7280;">von <strong>' . $author_name . '</strong> am ' . $date . '</p>
+    </td>
+  </tr>
+
+  <!-- Abschnitt -->
+  <tr>
+    <td style="padding:4px 30px 8px;">
+      <div style="display:inline-block;background:#e8eaf6;color:#283593;font-size:12px;font-weight:600;padding:4px 12px;border-radius:12px;">
+        Abschnitt: ' . $section_label . '
+      </div>
     </td>
   </tr>
 

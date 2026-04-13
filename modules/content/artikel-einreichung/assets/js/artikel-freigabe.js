@@ -46,8 +46,14 @@
     }
 
     /* ──────────────────────────────────────────────
-     * Kommentare: Panels sind immer sichtbar (kein Toggle)
+     * Kommentare: Toggle (standardmaessig zugeklappt)
      * ────────────────────────────────────────────── */
+
+    $(document).on('click', '.dgptm-freigabe-comments-toggle', function () {
+        var $panel = $(this).next('.dgptm-freigabe-comments-panel');
+        $panel.slideToggle(200);
+        $(this).toggleClass('open');
+    });
 
     /* ──────────────────────────────────────────────
      * Kommentare: Hinzufuegen

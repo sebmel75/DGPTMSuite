@@ -110,10 +110,6 @@ final class DGPTM_Abstimmen_Addon {
 
 		// Presence Scanner (v1.1.0 - abstimmenadon.php)
 		require_once DGPTM_ABSTIMMEN_PATH . 'includes/presence/class-presence-scanner.php';
-
-		// Freigabe-Dokument (Vorstandsfreigabe)
-		require_once DGPTM_ABSTIMMEN_PATH . 'includes/class-abstimmen-freigabe.php';
-		new DGPTM_Abstimmen_Freigabe( DGPTM_ABSTIMMEN_PATH, DGPTM_ABSTIMMEN_URL );
 	}
 
 	/**

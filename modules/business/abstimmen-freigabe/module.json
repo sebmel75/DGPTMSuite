@@ -1,0 +1,26 @@
+{
+    "id": "abstimmen-freigabe",
+    "name": "DGPTM - Abstimmungstool Freigabe",
+    "description": "Interaktives Freigabe-Dokument fuer das Abstimmungstool mit Kommentarfunktion und Vorstandsfreigabe",
+    "version": "1.0.0",
+    "author": "Sebastian Melzer",
+    "main_file": "abstimmen-freigabe.php",
+    "dependencies": [],
+    "optional_dependencies": [],
+    "wp_dependencies": {
+        "plugins": []
+    },
+    "requires_php": "7.4",
+    "requires_wp": "5.8",
+    "category": "business",
+    "icon": "dashicons-yes-alt",
+    "active": true,
+    "can_export": true,
+    "critical": false,
+    "flags": ["production"],
+    "comment": {
+        "text": "Eigenstaendiges Modul fuer die Vorstandsfreigabe des Abstimmungstools — unabhaengig vom abstimmen-addon.",
+        "timestamp": 1744646400,
+        "user_id": 1
+    }
+}

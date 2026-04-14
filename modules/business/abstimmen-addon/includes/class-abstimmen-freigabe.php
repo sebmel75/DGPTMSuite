@@ -1,6 +1,6 @@
 <?php
 /**
- * Digitale Freigabe-Komponente fuer das Artikel-Einreichungssystem.
+ * Digitale Freigabe-Komponente fuer das Abstimmen-Addon.
  *
  * Stellt einen Shortcode bereit, der das Konzeptdokument mit
  * Kommentierungsfunktion je Abschnitt und digitaler Freigabe anzeigt.
@@ -8,31 +8,31 @@
  */
 if (!defined('ABSPATH')) exit;
 
-class DGPTM_Artikel_Freigabe {
+class DGPTM_Abstimmen_Freigabe {
 
     private $plugin_path;
     private $plugin_url;
 
     /** wp_options Keys */
-    const OPT_APPROVALS = 'dgptm_artikel_freigabe_approvals';
-    const OPT_COMMENTS  = 'dgptm_artikel_freigabe_comments';
+    const OPT_APPROVALS = 'dgptm_abstimmen_freigabe_approvals';
+    const OPT_COMMENTS  = 'dgptm_abstimmen_freigabe_comments';
 
     /** Nonce Action */
-    const NONCE_ACTION = 'dgptm_artikel_freigabe_nonce';
+    const NONCE_ACTION = 'dgptm_abstimmen_freigabe_nonce';
 
     public function __construct($plugin_path, $plugin_url) {
         $this->plugin_path = $plugin_path;
         $this->plugin_url  = $plugin_url;
 
-        add_shortcode('dgptm_artikel_freigabe', [$this, 'render_shortcode']);
-        add_shortcode('dgptm_artikel_freigabe_export', [$this, 'render_export_shortcode']);
+        add_shortcode('dgptm_abstimmen_freigabe', [$this, 'render_shortcode']);
+        add_shortcode('dgptm_abstimmen_freigabe_export', [$this, 'render_export_shortcode']);
         add_action('wp_enqueue_scripts', [$this, 'register_assets']);
 
         // AJAX-Endpoints (nur fuer eingeloggte User)
-        add_action('wp_ajax_dgptm_artikel_freigabe_comment',        [$this, 'ajax_add_comment']);
-        add_action('wp_ajax_dgptm_artikel_freigabe_delete_comment',  [$this, 'ajax_delete_comment']);
-        add_action('wp_ajax_dgptm_artikel_freigabe_approve',         [$this, 'ajax_approve']);
-        add_action('wp_ajax_dgptm_artikel_freigabe_revoke',          [$this, 'ajax_revoke']);
+        add_action('wp_ajax_dgptm_abstimmen_freigabe_comment',        [$this, 'ajax_add_comment']);
+        add_action('wp_ajax_dgptm_abstimmen_freigabe_delete_comment',  [$this, 'ajax_delete_comment']);
+        add_action('wp_ajax_dgptm_abstimmen_freigabe_approve',         [$this, 'ajax_approve']);
+        add_action('wp_ajax_dgptm_abstimmen_freigabe_revoke',          [$this, 'ajax_revoke']);
     }
 
     /* ──────────────────────────────────────────────
@@ -41,16 +41,16 @@ class DGPTM_Artikel_Freigabe {
 
     public function register_assets() {
         wp_register_style(
-            'dgptm-artikel-freigabe',
-            $this->plugin_url . 'assets/css/artikel-freigabe.css',
+            'dgptm-abstimmen-freigabe',
+            $this->plugin_url . 'assets/css/freigabe.css',
             [],
-            '0.2.0'
+            '0.1.0'
         );
         wp_register_script(
-            'dgptm-artikel-freigabe',
-            $this->plugin_url . 'assets/js/artikel-freigabe.js',
+            'dgptm-abstimmen-freigabe',
+            $this->plugin_url . 'assets/js/freigabe.js',
             ['jquery'],
-            '0.2.0',
+            '0.1.0',
             true
         );
     }
@@ -67,20 +67,10 @@ class DGPTM_Artikel_Freigabe {
         $comments  = $this->get_comments();
         $approvals = $this->get_approvals();
 
-        $sections = [
-            'section-was-ist'           => '1. Was ist das Einreichungssystem?',
-            'section-rollen'            => '2. Wer ist beteiligt?',
-            'section-ablauf'            => '3. Der Ablauf im Ueberblick',
-            'section-formular'          => '4. Das Einreichungsformular',
-            'section-gutachtenbogen'    => '5. Der Begutachtungsbogen',
-            'section-datenschutz'       => '6. Datenschutz und Sicherheit',
-            'section-status'            => '7. Status-Uebersicht',
-            'section-einstellungen'     => '8. Konfigurierbare Einstellungen',
-            'section-naechste-schritte' => '9. Naechste Schritte',
-        ];
+        $sections = $this->get_section_labels();
 
         ob_start();
-        $export_id = 'dgptm-artikel-freigabe-export-' . wp_rand();
+        $export_id = 'dgptm-abstimmen-freigabe-export-' . wp_rand();
         ?>
         <div style="margin:16px 0;">
             <button type="button" onclick="(function(){var t=document.getElementById('<?php echo $export_id; ?>');var r=document.createRange();r.selectNodeContents(t);var s=window.getSelection();s.removeAllRanges();s.addRange(r);document.execCommand('copy');s.removeAllRanges();this.textContent='Kopiert!';var b=this;setTimeout(function(){b.textContent='Alle Kommentare kopieren';},2000);}).call(this)" style="background:#003366;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">Alle Kommentare kopieren</button>
@@ -113,7 +103,6 @@ class DGPTM_Artikel_Freigabe {
      * ────────────────────────────────────────────── */
 
     public function render_shortcode($atts) {
-        // Rollencheck: nur "mitglied" oder "administrator"
         if (!is_user_logged_in()) {
             return '<p class="dgptm-freigabe-hinweis">Bitte melden Sie sich an, um dieses Dokument einzusehen.</p>';
         }
@@ -123,9 +112,9 @@ class DGPTM_Artikel_Freigabe {
             return '<p class="dgptm-freigabe-hinweis">Dieses Dokument ist nur fuer Mitglieder zugaenglich.</p>';
         }
 
-        wp_enqueue_style('dgptm-artikel-freigabe');
-        wp_enqueue_script('dgptm-artikel-freigabe');
-        wp_localize_script('dgptm-artikel-freigabe', 'dgptmArtikelFreigabe', [
+        wp_enqueue_style('dgptm-abstimmen-freigabe');
+        wp_enqueue_script('dgptm-abstimmen-freigabe');
+        wp_localize_script('dgptm-abstimmen-freigabe', 'dgptmAbstimmenFreigabe', [
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce'   => wp_create_nonce(self::NONCE_ACTION),
             'userId'  => $user->ID,
@@ -136,7 +125,7 @@ class DGPTM_Artikel_Freigabe {
         $user_approved = $this->has_user_approved($user->ID);
 
         ob_start();
-        include $this->plugin_path . 'templates/artikel-freigabe-dokument.php';
+        include $this->plugin_path . 'templates/freigabe-dokument.php';
         return ob_get_clean();
     }
 
@@ -173,8 +162,7 @@ class DGPTM_Artikel_Freigabe {
         $comments[] = $comment;
         update_option(self::OPT_COMMENTS, $comments, false);
 
-        // Alle Beteiligten per E-Mail benachrichtigen
-        $this->notify_participants($user, $comment, 'Workflow Zeitschrift');
+        $this->notify_participants($user, $comment, 'Abstimmungstool');
 
         wp_send_json_success([
             'comment' => $comment,
@@ -200,7 +188,6 @@ class DGPTM_Artikel_Freigabe {
         $found    = false;
         $comments = array_values(array_filter($comments, function ($c) use ($comment_id, $user, &$found) {
             if ($c['id'] === $comment_id) {
-                // Nur eigene Kommentare loeschen (oder Admin)
                 if ((int) $c['user_id'] === $user->ID || current_user_can('manage_options')) {
                     $found = true;
                     return false;
@@ -231,7 +218,6 @@ class DGPTM_Artikel_Freigabe {
         $user      = wp_get_current_user();
         $approvals = $this->get_approvals();
 
-        // Doppelte Freigabe verhindern
         foreach ($approvals as $a) {
             if ((int) $a['user_id'] === $user->ID) {
                 wp_send_json_error('Sie haben bereits freigegeben.');
@@ -315,19 +301,20 @@ class DGPTM_Artikel_Freigabe {
         wp_mail('nichtantworten@dgptm.de', $subject, $body, $headers);
     }
 
-    private function get_section_label($section_id) {
-        $sections = [
-            'section-was-ist'            => '1. Was ist das Einreichungssystem?',
-            'section-rollen'             => '2. Wer ist beteiligt?',
-            'section-ablauf'             => '3. Der Ablauf im Ueberblick',
-            'section-formular'           => '4. Das Einreichungsformular',
-            'section-gutachtenbogen'     => '5. Der Begutachtungsbogen',
-            'section-datenschutz'        => '6. Datenschutz und Sicherheit',
-            'section-status'             => '7. Status-Uebersicht',
-            'section-einstellungen'      => '8. Konfigurierbare Einstellungen',
-            'section-naechste-schritte'  => '9. Naechste Schritte',
+    private function get_section_labels() {
+        return [
+            'section-ueberblick'     => '1. Was ist das Abstimmungstool?',
+            'section-satzung'        => '2. Bezug zur Satzung',
+            'section-voting'         => '3. Das Voting-System',
+            'section-teilnehmer'     => '4. Teilnehmer-Verwaltung',
+            'section-beamer'         => '5. Beamer-Ansicht (Live-Projektion)',
+            'section-zoom'           => '6. Zoom-Integration',
+            'section-anwesenheit'    => '7. Anwesenheitserfassung',
+            'section-scanner'        => '8. Praesenz-Scanner',
+            'section-export'         => '9. Export und Auswertung',
+            'section-sicherheit'     => '10. Sicherheit und Berechtigungen',
+            'section-naechste'       => '11. Naechste Schritte',
         ];
-        return $sections[$section_id] ?? $section_id;
     }
 
     private function build_notification_html($author, $comment, $dokument_name) {
@@ -335,7 +322,8 @@ class DGPTM_Artikel_Freigabe {
         $text = nl2br(esc_html($comment['text']));
         $author_name = esc_html($author->display_name);
         $doc_name = esc_html($dokument_name);
-        $section_label = esc_html($this->get_section_label($comment['section'] ?? ''));
+        $sections = $this->get_section_labels();
+        $section_label = esc_html($sections[$comment['section']] ?? $comment['section']);
 
         return '<!DOCTYPE html>
 <html lang="de">
@@ -431,12 +419,6 @@ class DGPTM_Artikel_Freigabe {
             }
         }
         return false;
-    }
-
-    private function get_section_comments($section_id, $comments) {
-        return array_filter($comments, function ($c) use ($section_id) {
-            return $c['section'] === $section_id;
-        });
     }
 
     /**

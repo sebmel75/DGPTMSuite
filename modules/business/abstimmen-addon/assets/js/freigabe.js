@@ -1,7 +1,7 @@
 (function ($) {
     'use strict';
 
-    var config = window.dgptmArtikelFreigabe || {};
+    var config = window.dgptmAbstimmenFreigabe || {};
 
     /* ──────────────────────────────────────────────
      * Countdown
@@ -42,7 +42,7 @@
         }
 
         update();
-        setInterval(update, 60000); // jede Minute aktualisieren
+        setInterval(update, 60000);
     }
 
     /* ──────────────────────────────────────────────
@@ -76,7 +76,7 @@
         $btn.prop('disabled', true).text('Wird gesendet...');
 
         $.post(config.ajaxUrl, {
-            action:  'dgptm_artikel_freigabe_comment',
+            action:  'dgptm_abstimmen_freigabe_comment',
             nonce:   config.nonce,
             section: section,
             comment: text
@@ -111,12 +111,12 @@
     $(document).on('click', '.dgptm-freigabe-comment-delete', function () {
         if (!confirm('Kommentar wirklich loeschen?')) return;
 
-        var $comment  = $(this).closest('.dgptm-freigabe-comment');
-        var $block    = $(this).closest('.dgptm-freigabe-comments-block');
+        var $comment = $(this).closest('.dgptm-freigabe-comment');
+        var $block   = $(this).closest('.dgptm-freigabe-comments-block');
         var commentId = $(this).data('id');
 
         $.post(config.ajaxUrl, {
-            action:     'dgptm_artikel_freigabe_delete_comment',
+            action:     'dgptm_abstimmen_freigabe_delete_comment',
             nonce:      config.nonce,
             comment_id: commentId
         }, function (res) {
@@ -147,11 +147,10 @@
         $btn.prop('disabled', true).text('Wird gespeichert...');
 
         $.post(config.ajaxUrl, {
-            action: 'dgptm_artikel_freigabe_approve',
+            action: 'dgptm_abstimmen_freigabe_approve',
             nonce:  config.nonce
         }, function (res) {
             if (res.success) {
-                // Seite neu laden um Zustand korrekt darzustellen
                 location.reload();
             } else {
                 alert(res.data || 'Fehler bei der Freigabe.');
@@ -171,7 +170,7 @@
         if (!confirm('Freigabe wirklich zurueckziehen?')) return;
 
         $.post(config.ajaxUrl, {
-            action: 'dgptm_artikel_freigabe_revoke',
+            action: 'dgptm_abstimmen_freigabe_revoke',
             nonce:  config.nonce
         }, function (res) {
             if (res.success) {

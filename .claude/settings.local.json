@@ -28,7 +28,13 @@
       "Bash(where:*)",
       "Bash(git pull:*)",
       "Bash(gh run list:*)",
-      "Skill(commit-commands:commit)"
+      "Skill(commit-commands:commit)",
+      "WebFetch(domain:perfusiologie.de)",
+      "WebFetch(domain:link.springer.com)",
+      "Skill(health-check)",
+      "Skill(commit-commands:commit-push-pr)",
+      "mcp__plugin_github_github__create_pull_request",
+      "mcp__plugin_github_github__merge_pull_request"
     ],
     "deny": [],
     "ask": []

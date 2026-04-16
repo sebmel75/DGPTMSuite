@@ -241,40 +241,97 @@
 
 /* === Fragen === */
 .dgptm-gutachten-frage {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 0;
+    padding: 14px 0;
     border-bottom: 1px solid #f3f4f6;
-    gap: 12px;
 }
 
 .dgptm-gutachten-frage:last-of-type {
     border-bottom: none;
 }
 
-.dgptm-gutachten-frage label {
-    flex: 1;
+.dgptm-gutachten-frage-text {
     font-size: 14px;
     color: #374151;
     line-height: 1.4;
+    margin-bottom: 10px;
+    font-weight: 500;
 }
 
-.dgptm-gutachten-note {
-    width: 160px;
-    min-width: 140px;
-    padding: 8px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    font-size: 14px;
+/* Bewertungsskala */
+.dgptm-gutachten-skala {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dgptm-gutachten-skala-label {
+    font-size: 11px;
+    color: #9ca3af;
+    white-space: nowrap;
+    min-width: 70px;
+}
+.dgptm-gutachten-skala-label--low {
+    text-align: right;
+    color: #dc2626;
+}
+.dgptm-gutachten-skala-label--high {
+    text-align: left;
+    color: #16a34a;
+}
+
+.dgptm-gutachten-skala-buttons {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+    justify-content: center;
+}
+
+.dgptm-gutachten-radio-label {
+    cursor: pointer;
+    margin: 0;
+}
+
+.dgptm-gutachten-radio-label input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.dgptm-gutachten-radio-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 2px solid #d1d5db;
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
     background: #fff;
-    appearance: auto;
+    transition: all 0.15s;
 }
 
-.dgptm-gutachten-note:focus {
-    outline: none;
+.dgptm-gutachten-radio-btn:hover {
     border-color: #003366;
-    box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1);
+    color: #003366;
+    background: #f0f5fa;
+}
+
+.dgptm-gutachten-radio-label input[type="radio"]:checked + .dgptm-gutachten-radio-btn {
+    background: #003366;
+    border-color: #003366;
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(0, 51, 102, 0.3);
+}
+
+.dgptm-gutachten-radio-label input[type="radio"]:focus + .dgptm-gutachten-radio-btn {
+    box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.2);
+}
+
+/* Fehler-Markierung bei nicht ausgefuellten Fragen */
+.dgptm-gutachten-frage--error .dgptm-gutachten-radio-btn {
+    border-color: #dc2626;
 }
 
 .dgptm-gutachten-note--error {
@@ -509,13 +566,21 @@
 
 /* === Responsive === */
 @media (max-width: 640px) {
-    .dgptm-gutachten-frage {
+    .dgptm-gutachten-skala {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: stretch;
     }
-
-    .dgptm-gutachten-note {
-        width: 100%;
+    .dgptm-gutachten-skala-label {
+        text-align: center;
+    }
+    .dgptm-gutachten-skala-buttons {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .dgptm-gutachten-radio-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 12px;
     }
 
     .dgptm-gutachten-actions {

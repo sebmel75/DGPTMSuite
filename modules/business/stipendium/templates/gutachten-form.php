@@ -175,21 +175,29 @@ $rubriken = [
 
             <?php foreach ($rubrik['fragen'] as $frage_id => $frage_text) : ?>
             <div class="dgptm-gutachten-frage">
-                <label for="<?php echo $frage_id; ?>_Note">
+                <div class="dgptm-gutachten-frage-text">
                     <?php echo substr($frage_id, 1); ?>. <?php echo esc_html($frage_text); ?>
-                </label>
-                <select id="<?php echo $frage_id; ?>_Note"
-                        name="<?php echo $frage_id; ?>_Note"
-                        class="dgptm-gutachten-note"
-                        data-rubrik="<?php echo $prefix; ?>"
-                        required>
-                    <option value="">-- Note --</option>
-                    <?php for ($i = 1; $i <= 10; $i++) : ?>
-                        <option value="<?php echo $i; ?>" <?php selected($get_note($frage_id . '_Note'), $i); ?>>
-                            <?php echo $i; ?><?php echo $i === 1 ? ' (ungenuegend)' : ($i === 10 ? ' (hervorragend)' : ''); ?>
-                        </option>
-                    <?php endfor; ?>
-                </select>
+                </div>
+                <div class="dgptm-gutachten-skala">
+                    <span class="dgptm-gutachten-skala-label dgptm-gutachten-skala-label--low">ungenuegend</span>
+                    <div class="dgptm-gutachten-skala-buttons">
+                        <?php for ($i = 1; $i <= 10; $i++) :
+                            $checked = ($get_note($frage_id . '_Note') === $i) ? 'checked' : '';
+                        ?>
+                        <label class="dgptm-gutachten-radio-label" title="<?php echo $i; ?> von 10">
+                            <input type="radio"
+                                   name="<?php echo $frage_id; ?>_Note"
+                                   value="<?php echo $i; ?>"
+                                   class="dgptm-gutachten-note"
+                                   data-rubrik="<?php echo $prefix; ?>"
+                                   <?php echo $checked; ?>
+                                   required>
+                            <span class="dgptm-gutachten-radio-btn"><?php echo $i; ?></span>
+                        </label>
+                        <?php endfor; ?>
+                    </div>
+                    <span class="dgptm-gutachten-skala-label dgptm-gutachten-skala-label--high">hervorragend</span>
+                </div>
             </div>
             <?php endforeach; ?>
 

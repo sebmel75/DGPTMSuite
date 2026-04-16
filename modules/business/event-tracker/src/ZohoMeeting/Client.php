@@ -54,6 +54,13 @@ class Client {
 	private $presenter_zuid;
 
 	/**
+	 * Zoho Organization ID (für Registration-Endpoint)
+	 *
+	 * @var string
+	 */
+	private $org_id;
+
+	/**
 	 * Transient key for access token
 	 */
 	const TOKEN_TRANSIENT = 'et_zoho_meeting_access_token';
@@ -81,6 +88,9 @@ class Client {
 		$this->presenter_zuid = ! empty( $settings['zoho_meeting_presenter'] )
 			? $settings['zoho_meeting_presenter']
 			: self::DEFAULT_PRESENTER;
+		$this->org_id = ! empty( $settings['zoho_meeting_org_id'] )
+			? $settings['zoho_meeting_org_id']
+			: self::DEFAULT_ZSOID;
 
 		// Nur bei fehlendem ZSOID warnen (sonst zu verbose)
 		if ( ! $this->zsoid ) {
@@ -183,7 +193,7 @@ class Client {
 	 * @param bool   $is_retry Whether this is a retry after 401.
 	 * @return array|WP_Error
 	 */
-	private function make_request( $endpoint, $method = 'GET', $body = [], $is_retry = false ) {
+	private function make_request( $endpoint, $method = 'GET', $body = [], $is_retry = false, $override_zsoid = '' ) {
 		$token = $this->get_access_token();
 
 		if ( ! $token ) {
@@ -191,7 +201,8 @@ class Client {
 			return new \WP_Error( 'no_token', 'Kein Zoho Access-Token verfuegbar.' );
 		}
 
-		$url = $this->api_base . '/api/v2/' . $this->zsoid . '/' . ltrim( $endpoint, '/' );
+		$zsoid_to_use = $override_zsoid ? $override_zsoid : $this->zsoid;
+		$url = $this->api_base . '/api/v2/' . $zsoid_to_use . '/' . ltrim( $endpoint, '/' );
 
 		Helpers::log( sprintf( 'API Request: %s %s', $method, $url ), 'verbose' );
 
@@ -244,7 +255,7 @@ class Client {
 				$this->access_token = false;
 				$this->access_token = $this->refresh_access_token();
 				if ( $this->access_token ) {
-					return $this->make_request( $endpoint, $method, $body, true );
+					return $this->make_request( $endpoint, $method, $body, true, $override_zsoid );
 				}
 				Helpers::log( 'Token-Refresh nach 401 fehlgeschlagen', 'error' );
 			}
@@ -475,6 +486,107 @@ class Client {
 		}
 
 		return [ 'ok' => false, 'message' => $this->extract_error( $result2['body'], $result2['code'] ) ];
+	}
+
+	/* =========================================================================
+	 * Registration & Attendance API
+	 * ======================================================================= */
+
+	/**
+	 * Bulk-Register attendees for a webinar
+	 *
+	 * Nutzt die Org-ID statt zsoid fuer den Registration-Endpoint.
+	 *
+	 * @param string $meeting_key  Webinar meeting key.
+	 * @param string $instance_id  Webinar sysId (instanceId).
+	 * @param array  $registrants  Array of ['email' => '...', 'firstName' => '...', 'lastName' => '...'].
+	 * @return array
+	 */
+	public function register_attendees( $meeting_key, $instance_id, $registrants ) {
+		if ( empty( $registrants ) ) {
+			return [ 'ok' => true, 'data' => [ 'successCount' => 0 ] ];
+		}
+
+		$endpoint = 'register/' . urlencode( $meeting_key ) . '.json?instanceId=' . urlencode( $instance_id ) . '&sendMail=false';
+		$payload  = [ 'registrant' => $registrants ];
+
+		Helpers::log( sprintf( 'register_attendees: key=%s, count=%d', $meeting_key, count( $registrants ) ), 'verbose' );
+
+		$result = $this->make_request( $endpoint, 'POST', $payload, false, $this->org_id );
+
+		if ( is_wp_error( $result ) ) {
+			return [ 'ok' => false, 'message' => $result->get_error_message() ];
+		}
+
+		if ( $result['code'] >= 200 && $result['code'] < 300 ) {
+			$body = $result['body'];
+			Helpers::log( sprintf(
+				'register_attendees: success=%d, failed=%d',
+				$body['successCount'] ?? 0,
+				$body['failedCount'] ?? 0
+			), 'info' );
+			return [ 'ok' => true, 'data' => $body ];
+		}
+
+		return [ 'ok' => false, 'message' => $this->extract_error( $result['body'], $result['code'] ) ];
+	}
+
+	/**
+	 * Get webinar registrants
+	 *
+	 * @param string $meeting_key Webinar meeting key.
+	 * @return array
+	 */
+	public function get_registrants( $meeting_key ) {
+		$result = $this->make_request( 'registrant/' . urlencode( $meeting_key ) . '.json' );
+
+		if ( is_wp_error( $result ) ) {
+			return [ 'ok' => false, 'message' => $result->get_error_message() ];
+		}
+
+		if ( $result['code'] >= 200 && $result['code'] < 300 ) {
+			return [ 'ok' => true, 'data' => $result['body'] ];
+		}
+
+		return [ 'ok' => false, 'message' => $this->extract_error( $result['body'], $result['code'] ) ];
+	}
+
+	/**
+	 * Get attendee report (available after webinar ends)
+	 *
+	 * @param string $meeting_key Webinar meeting key.
+	 * @return array
+	 */
+	public function get_attendee_report( $meeting_key ) {
+		$result = $this->make_request( 'attendee/' . urlencode( $meeting_key ) . '.json' );
+
+		if ( is_wp_error( $result ) ) {
+			return [ 'ok' => false, 'message' => $result->get_error_message() ];
+		}
+
+		if ( $result['code'] >= 200 && $result['code'] < 300 ) {
+			return [ 'ok' => true, 'data' => $result['body'] ];
+		}
+
+		return [ 'ok' => false, 'message' => $this->extract_error( $result['body'], $result['code'] ) ];
+	}
+
+	/**
+	 * Get Org-ID (needed by sync classes)
+	 *
+	 * @return string
+	 */
+	public function get_org_id() {
+		return $this->org_id;
+	}
+
+	/**
+	 * Get ZSOID
+	 *
+	 * @return string
+	 */
+	public function get_zsoid() {
+		return $this->zsoid;
 	}
 
 	/* =========================================================================

@@ -73,6 +73,12 @@ class Constants {
 	// Misc
 	const MAX_JOBS_PER_TICK = 5;
 
+	// Sync Constants
+	const META_ZM_INSTANCE_ID   = '_et_zoho_meeting_instance_id';
+	const CRON_HOOK_SYNC        = 'et_zm_registration_sync';
+	const CRON_HOOK_ATTENDANCE  = 'et_zm_attendance_sync_cron';
+	const CRON_HOOK_EVENT_SYNC  = 'et_zm_event_sync';
+
 	// Mail Status
 	const STATUS_SENT    = 'sent';
 	const STATUS_ERROR   = 'error';

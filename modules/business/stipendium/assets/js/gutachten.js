@@ -38,7 +38,7 @@
         rubriken.forEach(function(prefix) {
             var noten = [];
             for (var i = 1; i <= 3; i++) {
-                var val = parseInt($('#' + prefix + i + '_Note').val()) || 0;
+                var val = parseInt($('input[name="' + prefix + i + '_Note"]:checked').val()) || 0;
                 noten.push(val);
                 if (val === 0) alleAusgefuellt = false;
             }
@@ -82,7 +82,7 @@
         var kommentarFelder = ['A_Kommentar','B_Kommentar','C_Kommentar','D_Kommentar','Gesamtanmerkungen'];
 
         notenFelder.forEach(function(feld) {
-            data[feld] = parseInt($('#' + feld).val()) || 0;
+            data[feld] = parseInt($('input[name="' + feld + '"]:checked').val()) || 0;
         });
 
         kommentarFelder.forEach(function(feld) {
@@ -145,23 +145,27 @@
 
         if (isSubmitting) return;
 
-        // Pflichtfelder pruefen
+        // Pflichtfelder pruefen (jede Frage muss einen Radio-Button ausgewaehlt haben)
         var incomplete = false;
-        $('.dgptm-gutachten-note').each(function() {
-            if (!$(this).val()) {
-                $(this).addClass('dgptm-gutachten-note--error');
+        var notenNamen = ['A1_Note','A2_Note','A3_Note','B1_Note','B2_Note','B3_Note',
+                          'C1_Note','C2_Note','C3_Note','D1_Note','D2_Note','D3_Note'];
+        var firstMissing = null;
+
+        notenNamen.forEach(function(name) {
+            var $frage = $('input[name="' + name + '"]').closest('.dgptm-gutachten-frage');
+            if (!$('input[name="' + name + '"]:checked').length) {
+                $frage.addClass('dgptm-gutachten-frage--error');
                 incomplete = true;
+                if (!firstMissing) firstMissing = $frage;
             } else {
-                $(this).removeClass('dgptm-gutachten-note--error');
+                $frage.removeClass('dgptm-gutachten-frage--error');
             }
         });
 
         if (incomplete) {
             alert('Bitte vergeben Sie fuer alle Leitfragen eine Note zwischen 1 und 10.');
-            // Zum ersten fehlenden Feld scrollen
-            var firstError = $('.dgptm-gutachten-note--error').first();
-            if (firstError.length) {
-                $('html, body').animate({ scrollTop: firstError.offset().top - 100 }, 400);
+            if (firstMissing && firstMissing.length) {
+                $('html, body').animate({ scrollTop: firstMissing.offset().top - 100 }, 400);
             }
             return;
         }
@@ -210,9 +214,15 @@
         if (!draftData || typeof draftData !== 'object') return;
 
         Object.keys(draftData).forEach(function(key) {
-            var el = $('#' + key);
-            if (el.length) {
-                el.val(draftData[key]);
+            if (key.match(/_Note$/)) {
+                // Radio-Button: den passenden Wert checken
+                $('input[name="' + key + '"][value="' + draftData[key] + '"]').prop('checked', true);
+            } else {
+                // Textarea: Wert setzen
+                var el = $('#' + key);
+                if (el.length) {
+                    el.val(draftData[key]);
+                }
             }
         });
 

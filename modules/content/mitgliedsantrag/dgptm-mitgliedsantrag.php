@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.1.9
+ * Version: 2.1.10
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.1.9';
+        private $version = '2.1.10';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -2300,6 +2300,14 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
          *                VMID = Zoho Contact ID des Vorstandsmitglieds
          */
         public function render_vorstandsgenehmigung($atts) {
+            // CSS sofort enqueuen, damit auch Fehler-/Info-Karten das Styling bekommen
+            wp_enqueue_style(
+                'dgptm-vorstandsgenehmigung',
+                $this->plugin_url . 'assets/css/vorstandsgenehmigung.css',
+                [],
+                $this->version
+            );
+
             $antragsteller_token = isset($_GET['token']) ? sanitize_text_field($_GET['token']) : '';
 
             if ($antragsteller_token === '') {
@@ -2345,12 +2353,6 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 'gesamt'        => count($abgestimmte_ids)
             ];
 
-            wp_enqueue_style(
-                'dgptm-vorstandsgenehmigung',
-                $this->plugin_url . 'assets/css/vorstandsgenehmigung.css',
-                [],
-                $this->version
-            );
             wp_enqueue_script(
                 'dgptm-vorstandsgenehmigung',
                 $this->plugin_url . 'assets/js/vorstandsgenehmigung.js',

@@ -473,3 +473,45 @@
     border-radius: 3px;
     border: 1px solid #f1b5b7;
 }
+
+.dgptm-privacy-banner {
+    background: #fde7e9;
+    color: #b32d2e;
+    padding: 8px 12px;
+    border-left: 3px solid #b32d2e;
+    margin: 8px 0 12px;
+    font-size: 13px;
+}
+
+.dgptm-choice-stats {
+    font-size: 12px;
+    color: #555;
+    margin: 4px 0 8px 24px;
+    font-family: monospace;
+}
+
+.dgptm-choice-details {
+    margin: 4px 0 12px 24px;
+    font-size: 13px;
+}
+
+.dgptm-choice-details > summary {
+    cursor: pointer;
+    color: #2271b1;
+    padding: 2px 0;
+}
+
+.dgptm-choice-texts {
+    margin: 6px 0 0 12px;
+    padding-left: 12px;
+}
+
+.dgptm-choice-texts li {
+    margin: 2px 0;
+}
+
+.dgptm-choice-numbers {
+    margin: 6px 0 0 12px;
+    font-family: monospace;
+    color: #555;
+}

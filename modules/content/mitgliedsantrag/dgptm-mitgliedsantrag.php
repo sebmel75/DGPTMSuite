@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.1.3
+ * Version: 2.1.4
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.1.3';
+        private $version = '2.1.4';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -165,13 +165,20 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                     foreach ($always_show as $key) {
                         $result['contact'][$key] = $contact[$key] ?? null;
                     }
-                    // Zusaetzlich alle nicht-null Custom-Felder
+                    // Zusaetzlich alle nicht-null Custom-Felder (Arrays als JSON-String)
                     $result['contact_extra'] = [];
                     foreach ($contact as $key => $val) {
-                        if ($val !== null && $val !== '' && !in_array($key, $always_show) && !is_array($val)) {
-                            $result['contact_extra'][$key] = $val;
+                        if ($val === null || $val === '' || in_array($key, $always_show, true)) {
+                            continue;
                         }
+                        $result['contact_extra'][$key] = is_array($val) ? wp_json_encode($val) : $val;
                     }
+
+                    // Spezialblock fuer File-Upload-Felder (Nachweise)
+                    $result['nachweise_raw'] = [
+                        'StudinachweisDirekt' => $contact['StudinachweisDirekt'] ?? null,
+                        'QualiNachweisDirekt' => $contact['QualiNachweisDirekt'] ?? null
+                    ];
                 } else {
                     $result['contact'] = ['error' => 'Kontakt nicht gefunden', 'raw' => $contact_body];
                 }
@@ -2901,6 +2908,14 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             }
 
             $full = $this->get_contact_details($hit['id'], $oauth);
+            if ($full) {
+                // Diagnose: Welche Nachweis-Felder liefert die API konkret?
+                $this->log(
+                    'get_contact_by_token: Direct-Get fields_count=' . count($full) .
+                    ' StudinachweisDirekt=' . (isset($full['StudinachweisDirekt']) ? gettype($full['StudinachweisDirekt']) . (is_array($full['StudinachweisDirekt']) ? '(' . count($full['StudinachweisDirekt']) . ')' : '') : 'MISSING') .
+                    ' QualiNachweisDirekt=' . (isset($full['QualiNachweisDirekt']) ? gettype($full['QualiNachweisDirekt']) . (is_array($full['QualiNachweisDirekt']) ? '(' . count($full['QualiNachweisDirekt']) . ')' : '') : 'MISSING')
+                );
+            }
             return $full ?: $hit;
         }
 

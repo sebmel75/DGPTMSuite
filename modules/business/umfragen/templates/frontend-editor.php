@@ -379,6 +379,10 @@ $status_labels = [
                             <input type="checkbox" class="dgptm-fe-q-required" <?php checked($q->is_required); ?>>
                             Pflichtfeld
                         </label>
+                        <label class="dgptm-fe-checkbox">
+                            <input type="checkbox" class="dgptm-fe-q-privacy" <?php checked($q->is_privacy_sensitive); ?>>
+                            🔒 Datenschutzrelevant
+                        </label>
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -505,6 +509,10 @@ $status_labels = [
                 <label class="dgptm-fe-checkbox">
                     <input type="checkbox" class="dgptm-fe-q-required">
                     Pflichtfeld
+                </label>
+                <label class="dgptm-fe-checkbox">
+                    <input type="checkbox" class="dgptm-fe-q-privacy">
+                    🔒 Datenschutzrelevant
                 </label>
             </div>
         </div>

@@ -55,6 +55,7 @@ if (!class_exists('DGPTM_Umfragen')) {
             // Database
             register_activation_hook(__FILE__, ['DGPTM_Survey_Installer', 'install']);
             add_action('admin_init', ['DGPTM_Survey_Installer', 'maybe_upgrade']);
+            add_action('admin_init', [$this, 'maybe_close_all_stale_responses_once']);
 
             // Ensure tables exist on module load (suite doesn't trigger activation hooks)
             add_action('init', [$this, 'ensure_tables'], 1);
@@ -99,6 +100,12 @@ if (!class_exists('DGPTM_Umfragen')) {
             add_action('dgptm_survey_cleanup_files', [$this, 'cleanup_old_files']);
             if (!wp_next_scheduled('dgptm_survey_cleanup_files')) {
                 wp_schedule_event(time(), 'daily', 'dgptm_survey_cleanup_files');
+            }
+
+            // Stale in_progress responses cleanup cron
+            add_action('dgptm_survey_close_stale_responses', [$this, 'close_stale_responses']);
+            if (!wp_next_scheduled('dgptm_survey_close_stale_responses')) {
+                wp_schedule_event(time(), 'daily', 'dgptm_survey_close_stale_responses');
             }
         }
 
@@ -510,6 +517,53 @@ if (!class_exists('DGPTM_Umfragen')) {
 
             if (function_exists('dgptm_log_info')) {
                 dgptm_log_info('Datei-Cleanup durchgefuehrt (aelter als ' . $days . ' Tage)', 'umfragen');
+            }
+        }
+
+        /**
+         * Close in_progress responses older than 5 days by setting them to 'completed'.
+         * Verwaiste Zwischenspeicher-Eintraege werden nach 5 Tagen automatisch abgeschlossen.
+         */
+        public function close_stale_responses() {
+            global $wpdb;
+            $table = $wpdb->prefix . 'dgptm_survey_responses';
+            $cutoff = gmdate('Y-m-d H:i:s', strtotime('-5 days'));
+            $now = current_time('mysql');
+
+            $updated = $wpdb->query($wpdb->prepare(
+                "UPDATE $table SET status = 'completed', completed_at = %s
+                 WHERE status = 'in_progress' AND started_at < %s",
+                $now, $cutoff
+            ));
+
+            if ($updated && function_exists('dgptm_log_info')) {
+                dgptm_log_info(sprintf('%d verwaiste Umfrage-Antworten (>5 Tage) abgeschlossen', $updated), 'umfragen');
+            }
+        }
+
+        /**
+         * One-time migration: close ALL existing in_progress responses.
+         * Runs once per site; guarded by option flag.
+         */
+        public function maybe_close_all_stale_responses_once() {
+            if (get_option('dgptm_umfragen_all_stale_closed_v1')) {
+                return;
+            }
+
+            global $wpdb;
+            $table = $wpdb->prefix . 'dgptm_survey_responses';
+            $now = current_time('mysql');
+
+            $updated = $wpdb->query($wpdb->prepare(
+                "UPDATE $table SET status = 'completed', completed_at = %s
+                 WHERE status = 'in_progress'",
+                $now
+            ));
+
+            update_option('dgptm_umfragen_all_stale_closed_v1', 1, false);
+
+            if (function_exists('dgptm_log_info')) {
+                dgptm_log_info(sprintf('Einmal-Cleanup: %d offene Umfrage-Antworten abgeschlossen', (int) $updated), 'umfragen');
             }
         }
     }

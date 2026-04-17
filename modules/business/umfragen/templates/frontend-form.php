@@ -80,7 +80,7 @@ if ($resume_data) {
     }
     ?>
 
-    <form id="dgptm-survey-form-<?php echo esc_attr($survey->id); ?>" class="dgptm-survey-form" enctype="multipart/form-data">
+    <form id="dgptm-survey-form-<?php echo esc_attr($survey->id); ?>" class="dgptm-survey-form" enctype="multipart/form-data" novalidate>
         <input type="hidden" name="survey_id" value="<?php echo esc_attr($survey->id); ?>">
         <input type="hidden" name="response_id" value="<?php echo esc_attr($response_id); ?>">
 

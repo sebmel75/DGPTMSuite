@@ -378,6 +378,11 @@ $question_types = [
                                         <input type="checkbox" class="dgptm-q-required" <?php checked($q->is_required); ?>>
                                         Pflichtfeld
                                     </label>
+                                    <br>
+                                    <label>
+                                        <input type="checkbox" class="dgptm-q-privacy" <?php checked($q->is_privacy_sensitive); ?>>
+                                        🔒 Datenschutzrelevant
+                                    </label>
                                 </td>
                             </tr>
                         </table>
@@ -539,6 +544,11 @@ $question_types = [
                             <label>
                                 <input type="checkbox" class="dgptm-q-required">
                                 Pflichtfeld
+                            </label>
+                            <br>
+                            <label>
+                                <input type="checkbox" class="dgptm-q-privacy">
+                                🔒 Datenschutzrelevant
                             </label>
                         </td>
                     </tr>

@@ -579,6 +579,7 @@
                     description: $item.find('.dgptm-q-description').val(),
                     group_label: $item.find('.dgptm-q-group').val(),
                     is_required: $item.find('.dgptm-q-required').is(':checked') ? 1 : 0,
+                    is_privacy_sensitive: $item.find('.dgptm-q-privacy').is(':checked') ? 1 : 0,
                     choices: null,
                     validation_rules: null,
                     skip_logic: null,

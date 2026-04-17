@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.1.2
+ * Version: 2.1.3
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.1.2';
+        private $version = '2.1.3';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -2866,6 +2866,9 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
         /**
          * Holt einen Contact anhand des CRM-Feldes "token" (Antragsteller-Token).
+         * Die Search-API gibt File-Upload-Felder (StudinachweisDirekt, QualiNachweisDirekt)
+         * nicht zurück — deshalb nach dem Hit noch einen Direct-Get, der den
+         * vollständigen Datensatz inkl. dieser Felder liefert.
          */
         private function get_contact_by_token($token_value, $oauth) {
             $token_value = trim((string) $token_value);
@@ -2891,8 +2894,14 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 return null;
             }
 
-            $body = json_decode(wp_remote_retrieve_body($response), true);
-            return $body['data'][0] ?? null;
+            $body     = json_decode(wp_remote_retrieve_body($response), true);
+            $hit      = $body['data'][0] ?? null;
+            if (!$hit || empty($hit['id'])) {
+                return null;
+            }
+
+            $full = $this->get_contact_details($hit['id'], $oauth);
+            return $full ?: $hit;
         }
 
         /**
@@ -3261,12 +3270,61 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             if ($http_code >= 200 && $http_code < 300) {
                 $this->log('Vote saved successfully for contact ' . $antragsteller_id . ' by ' . $vorstand_id);
+                // Bemerkung als Notiz am Antragsteller-Contact ablegen (Fehler sind
+                // nicht blockierend — die Abstimmung selbst ist bereits gespeichert).
+                $this->speichere_abstimmungs_note($antragsteller_id, $vorstand_name, $entscheidung, $bemerkung, $token);
                 return ['success' => true, 'message' => 'Abstimmung gespeichert'];
             }
 
             $body = wp_remote_retrieve_body($response);
             $this->log('ERROR: Vote save returned HTTP ' . $http_code . ': ' . $body);
             return ['success' => false, 'message' => 'CRM-Fehler: HTTP ' . $http_code];
+        }
+
+        /**
+         * Legt die Vorstandsabstimmung (inkl. Bemerkung) als Notiz am Antragsteller ab.
+         * Titel: "Vorstandsabstimmung: Genehmigung/Ablehnung – <Name>"
+         * Inhalt: Vorstand, Entscheidung, Zeitstempel, Bemerkung.
+         * Bei leerer Bemerkung wird trotzdem eine Audit-Note geschrieben.
+         */
+        private function speichere_abstimmungs_note($contact_id, $vorstand_name, $entscheidung, $bemerkung, $oauth) {
+            $entscheidung_text = $entscheidung === 'approve' ? 'Genehmigung' : 'Ablehnung';
+            $title             = 'Vorstandsabstimmung: ' . $entscheidung_text . ' – ' . $vorstand_name;
+            $bemerkung_trim    = trim((string) $bemerkung);
+
+            $content = sprintf(
+                "Vorstandsmitglied: %s\nEntscheidung: %s\nDatum: %s\n\nBemerkung:\n%s",
+                $vorstand_name,
+                $entscheidung_text,
+                current_time('d.m.Y H:i'),
+                $bemerkung_trim !== '' ? $bemerkung_trim : '(keine)'
+            );
+
+            $response = wp_remote_post(
+                'https://www.zohoapis.eu/crm/v8/Contacts/' . $contact_id . '/Notes',
+                [
+                    'headers' => [
+                        'Authorization' => 'Zoho-oauthtoken ' . $oauth,
+                        'Content-Type'  => 'application/json'
+                    ],
+                    'body'    => wp_json_encode(['data' => [[
+                        'Note_Title'   => $title,
+                        'Note_Content' => $content
+                    ]]]),
+                    'timeout' => 30
+                ]
+            );
+
+            if (is_wp_error($response)) {
+                $this->log('WARN speichere_abstimmungs_note: ' . $response->get_error_message());
+                return;
+            }
+
+            $http_code = wp_remote_retrieve_response_code($response);
+            if ($http_code < 200 || $http_code >= 300) {
+                $body = wp_remote_retrieve_body($response);
+                $this->log('WARN speichere_abstimmungs_note HTTP ' . $http_code . ': ' . substr($body, 0, 300));
+            }
         }
 
         private function log($message) {

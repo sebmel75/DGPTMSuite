@@ -387,10 +387,20 @@
                     '<input type="checkbox" class="dgptm-choice-has-text">' +
                     '<small>Textfeld</small>' +
                     '</label>' +
+                    '<label class="dgptm-choice-number-toggle" title="Zahlenfeld bei Auswahl" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;cursor:pointer;margin:0 4px;">' +
+                    '<input type="checkbox" class="dgptm-choice-has-number">' +
+                    '<small>Zahl</small>' +
+                    '</label>' +
+                    '<input type="text" class="dgptm-choice-number-label" value="Anzahl:" placeholder="Label..." style="width:80px;font-size:11px;padding:2px 4px;border:1px solid #ccc;border-radius:3px;display:none;">' +
                     '<button type="button" class="button button-small dgptm-remove-choice">&times;</button>' +
                     '</div>'
                 );
                 $list.find('.dgptm-choice-input').last().focus();
+            });
+
+            // Zahlenfeld-Label ein-/ausblenden wenn Checkbox getoggelt wird
+            $(document).on('change', '.dgptm-choice-has-number', function() {
+                $(this).closest('.dgptm-choice-item').find('.dgptm-choice-number-label').toggle(this.checked);
             });
 
             $(document).on('click', '.dgptm-remove-choice', function() {
@@ -649,6 +659,17 @@
                     });
                     if (choicesWithText.length > 0) {
                         validation.choices_with_text = choicesWithText;
+                    }
+                    var choicesWithNumber = [];
+                    $item.find('.dgptm-choice-item').each(function() {
+                        var val = $.trim($(this).find('.dgptm-choice-input').val());
+                        if (val && $(this).find('.dgptm-choice-has-number').is(':checked')) {
+                            var label = $.trim($(this).find('.dgptm-choice-number-label').val()) || 'Anzahl:';
+                            choicesWithNumber.push({ choice: val, label: label });
+                        }
+                    });
+                    if (choicesWithNumber.length > 0) {
+                        validation.choices_with_number = choicesWithNumber;
                     }
                 }
 

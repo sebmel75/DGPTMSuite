@@ -221,6 +221,9 @@ $question_types = [
                                         <?php
                                         $flat_choices = is_array($choices) && !isset($choices['rows']) ? $choices : [];
                                         $cwt = isset($validation['choices_with_text']) ? $validation['choices_with_text'] : [];
+                                        $cwn = isset($validation['choices_with_number']) ? (array) $validation['choices_with_number'] : [];
+                                        $cwn_map = [];
+                                        foreach ($cwn as $cn) { if (is_array($cn) && isset($cn['choice'])) $cwn_map[$cn['choice']] = $cn['label'] ?? 'Anzahl:'; }
                                         foreach ($flat_choices as $choice) : ?>
                                             <div class="dgptm-choice-item">
                                                 <input type="text" class="dgptm-choice-input" value="<?php echo esc_attr($choice); ?>">
@@ -228,6 +231,11 @@ $question_types = [
                                                     <input type="checkbox" class="dgptm-choice-has-text" <?php checked(in_array($choice, $cwt, true)); ?>>
                                                     <small>Textfeld</small>
                                                 </label>
+                                                <label class="dgptm-choice-number-toggle" title="Zahlenfeld bei Auswahl" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;cursor:pointer;margin:0 4px;">
+                                                    <input type="checkbox" class="dgptm-choice-has-number" <?php checked(isset($cwn_map[$choice])); ?>>
+                                                    <small>Zahl</small>
+                                                </label>
+                                                <input type="text" class="dgptm-choice-number-label" value="<?php echo esc_attr($cwn_map[$choice] ?? 'Anzahl:'); ?>" placeholder="Label..." style="width:80px;font-size:11px;padding:2px 4px;border:1px solid #ccc;border-radius:3px;<?php echo isset($cwn_map[$choice]) ? '' : 'display:none;'; ?>">
                                                 <button type="button" class="button button-small dgptm-remove-choice">&times;</button>
                                             </div>
                                         <?php endforeach; ?>

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.1.0
+ * Version: 2.1.1
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.1.0';
+        private $version = '2.1.1';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -2649,6 +2649,12 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 }
             }
 
+            // Geschäftsstellen-Mitarbeitende sind nie stimmberechtigt, auch mit Vorstand-Tag
+            if ($is_vorstand && $this->contact_has_tag($contact, 'Mitarbeitende')) {
+                $this->log('check_vorstand_tag: ' . $contact_id . ' hat Mitarbeitende-Tag -> is_vorstand=false');
+                $is_vorstand = false;
+            }
+
             $this->log('check_vorstand_tag: Result for ' . $contact_id . ': is_vorstand=' . ($is_vorstand ? 'true' : 'false'));
 
             return [
@@ -2890,11 +2896,34 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         }
 
         /**
+         * Prüft, ob das Tag-Feld eines Contacts einen bestimmten Tag-Namen enthält.
+         */
+        private function contact_has_tag($contact, $tag_name) {
+            $tags = $contact['Tag'] ?? [];
+            if (is_string($tags)) {
+                $tags = array_map('trim', explode(',', $tags));
+            }
+            if (!is_array($tags)) {
+                return false;
+            }
+            foreach ($tags as $t) {
+                $name = is_array($t) ? ($t['name'] ?? $t['Name'] ?? '') : (is_string($t) ? $t : '');
+                if (strcasecmp(trim($name), $tag_name) === 0) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /**
          * Holt alle Contacts mit Tag "Vorstand" aus dem CRM.
+         * Geschäftsstellen-Mitarbeitende (Tag "Mitarbeitende") werden ausgeschlossen,
+         * auch wenn sie zusätzlich den Tag "Vorstand" tragen.
          * 24h-Transient-Cache. Ergebnis ist alphabetisch nach Nachname sortiert.
          */
         private function get_active_vorstaende($oauth, $bypass_cache = false) {
-            $cache_key = 'dgptm_vorstand_liste';
+            // Cache-Key versioniert — inkrementieren, wenn Filter-Logik sich ändert
+            $cache_key = 'dgptm_vorstand_liste_v2';
 
             if (!$bypass_cache) {
                 $cached = get_transient($cache_key);
@@ -2931,6 +2960,10 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 $data = $body['data'] ?? [];
 
                 foreach ($data as $c) {
+                    // Geschäftsstellen-Mitarbeitende rausfiltern, auch wenn sie "Vorstand" tragen
+                    if ($this->contact_has_tag($c, 'Mitarbeitende')) {
+                        continue;
+                    }
                     $vorstaende[] = [
                         'id'             => $c['id'],
                         'first_name'     => $c['First_Name'] ?? '',
@@ -3116,6 +3149,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             }
             check_ajax_referer('dgptm_mitgliedsantrag_admin_nonce', 'nonce');
             delete_transient('dgptm_vorstand_liste');
+            delete_transient('dgptm_vorstand_liste_v2');
             wp_send_json_success(['message' => 'Vorstands-Cache geleert.']);
         }
 

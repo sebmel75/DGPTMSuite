@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.1.4
+ * Version: 2.1.5
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.1.4';
+        private $version = '2.1.5';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -2908,14 +2908,6 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             }
 
             $full = $this->get_contact_details($hit['id'], $oauth);
-            if ($full) {
-                // Diagnose: Welche Nachweis-Felder liefert die API konkret?
-                $this->log(
-                    'get_contact_by_token: Direct-Get fields_count=' . count($full) .
-                    ' StudinachweisDirekt=' . (isset($full['StudinachweisDirekt']) ? gettype($full['StudinachweisDirekt']) . (is_array($full['StudinachweisDirekt']) ? '(' . count($full['StudinachweisDirekt']) . ')' : '') : 'MISSING') .
-                    ' QualiNachweisDirekt=' . (isset($full['QualiNachweisDirekt']) ? gettype($full['QualiNachweisDirekt']) . (is_array($full['QualiNachweisDirekt']) ? '(' . count($full['QualiNachweisDirekt']) . ')' : '') : 'MISSING')
-                );
-            }
             return $full ?: $hit;
         }
 
@@ -3072,22 +3064,38 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                     continue;
                 }
                 foreach ($files as $f) {
-                    // file_Id ist der für /crm/v8/files?id=... benötigte Hash-String;
-                    // attachment_Id (numerisch) funktioniert an diesem Endpoint nicht.
-                    $file_id = (string) ($f['file_Id'] ?? '');
+                    // v8-API liefert File_Id__s / File_Name__s / Size__s / id,
+                    // ältere UI-Payloads haben file_Id / file_Name / file_Size / attachment_Id.
+                    // file_id ist der für /crm/v8/files?id=... benötigte Hash-String.
+                    $file_id = (string) ($f['File_Id__s'] ?? $f['file_Id'] ?? '');
                     if ($file_id === '') {
                         continue;
                     }
+                    $size_bytes = $f['Size__s'] ?? null;
+                    $file_size  = $f['file_Size'] ?? ($size_bytes !== null ? $this->format_bytes((int) $size_bytes) : '');
                     $uploads[] = [
                         'file_id'       => $file_id,
-                        'attachment_id' => (string) ($f['attachment_Id'] ?? ''),
-                        'file_name'     => $f['file_Name'] ?? 'Dokument',
-                        'file_size'     => $f['file_Size']  ?? '',
+                        'attachment_id' => (string) ($f['id'] ?? $f['attachment_Id'] ?? ''),
+                        'file_name'     => $f['File_Name__s'] ?? $f['file_Name'] ?? 'Dokument',
+                        'file_size'     => $file_size,
                         'source'        => $label
                     ];
                 }
             }
             return $uploads;
+        }
+
+        /**
+         * Formatiert Bytes als lesbare Größe (KB/MB).
+         */
+        private function format_bytes($bytes) {
+            if ($bytes < 1024) {
+                return $bytes . ' B';
+            }
+            if ($bytes < 1048576) {
+                return number_format($bytes / 1024, 1, ',', '.') . ' KB';
+            }
+            return number_format($bytes / 1048576, 1, ',', '.') . ' MB';
         }
 
         /**

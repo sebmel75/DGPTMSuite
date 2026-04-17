@@ -42,9 +42,9 @@ if (!class_exists('DGPTM_Umfragen')) {
             require_once DGPTM_UMFRAGEN_PATH . 'includes/class-survey-installer.php';
             require_once DGPTM_UMFRAGEN_PATH . 'includes/class-survey-seeder.php';
 
-            if (is_admin()) {
-                require_once DGPTM_UMFRAGEN_PATH . 'includes/class-survey-admin.php';
-            }
+            // Wird auch im Public-Kontext (template_redirect) benoetigt,
+            // z.B. fuer DGPTM_Survey_Admin::render_question_result() auf der Ergebnisseite.
+            require_once DGPTM_UMFRAGEN_PATH . 'includes/class-survey-admin.php';
 
             require_once DGPTM_UMFRAGEN_PATH . 'includes/class-survey-frontend.php';
             require_once DGPTM_UMFRAGEN_PATH . 'includes/class-survey-exporter.php';

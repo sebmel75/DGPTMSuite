@@ -12,7 +12,9 @@ if (!defined('ABSPATH')) {
 global $wpdb;
 
 $questions = $wpdb->get_results($wpdb->prepare(
-    "SELECT * FROM {$wpdb->prefix}dgptm_survey_questions WHERE survey_id = %d ORDER BY sort_order ASC",
+    "SELECT * FROM {$wpdb->prefix}dgptm_survey_questions
+     WHERE survey_id = %d AND is_privacy_sensitive = 0
+     ORDER BY sort_order ASC",
     $survey->id
 ));
 
@@ -101,130 +103,13 @@ $total_completed = (int) $wpdb->get_var($wpdb->prepare(
                  WHERE a.question_id = %d AND r.survey_id = %d AND r.status = 'completed'",
                 $q->id, $survey->id
             ));
-            $choices = $q->choices ? json_decode($q->choices, true) : [];
         ?>
             <div class="dgptm-public-question">
                 <h3><span class="q-num"><?php echo esc_html($q->sort_order); ?>.</span> <?php echo esc_html($q->question_text); ?>
                     <span style="color:#999;font-size:12px;font-weight:normal;">(<?php echo count($q_answers); ?>)</span>
                 </h3>
 
-                <?php if (in_array($q->question_type, ['radio', 'select'], true)) :
-                    $counts = [];
-                    if (is_array($choices)) {
-                        foreach ($choices as $c) { $counts[$c] = 0; }
-                    }
-                    foreach ($q_answers as $a) {
-                        $v = $a->answer_value;
-                        if (isset($counts[$v])) { $counts[$v]++; } else { $counts[$v] = 1; }
-                    }
-                    $max_count = max(array_merge($counts, [1]));
-                ?>
-                    <div class="dgptm-bar-chart">
-                        <?php foreach ($counts as $label => $count) :
-                            $pct = $max_count > 0 ? round(($count / $max_count) * 100) : 0;
-                            $pct_total = count($q_answers) > 0 ? round(($count / count($q_answers)) * 100) : 0;
-                        ?>
-                            <div class="dgptm-bar-row">
-                                <span class="dgptm-bar-label"><?php echo esc_html($label); ?></span>
-                                <div class="dgptm-bar-track"><div class="dgptm-bar-fill" style="width: <?php echo esc_attr($pct); ?>%"></div></div>
-                                <span class="dgptm-bar-count"><?php echo esc_html($count); ?> (<?php echo esc_html($pct_total); ?>%)</span>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-
-                <?php elseif ($q->question_type === 'checkbox') :
-                    $counts = [];
-                    if (is_array($choices)) {
-                        foreach ($choices as $c) { $counts[$c] = 0; }
-                    }
-                    foreach ($q_answers as $a) {
-                        $vals = json_decode($a->answer_value, true);
-                        if (is_array($vals)) {
-                            foreach ($vals as $v) {
-                                if (isset($counts[$v])) { $counts[$v]++; } else { $counts[$v] = 1; }
-                            }
-                        }
-                    }
-                    $max_count = max(array_merge($counts, [1]));
-                ?>
-                    <div class="dgptm-bar-chart">
-                        <?php foreach ($counts as $label => $count) :
-                            $pct = $max_count > 0 ? round(($count / $max_count) * 100) : 0;
-                            $pct_total = count($q_answers) > 0 ? round(($count / count($q_answers)) * 100) : 0;
-                        ?>
-                            <div class="dgptm-bar-row">
-                                <span class="dgptm-bar-label"><?php echo esc_html($label); ?></span>
-                                <div class="dgptm-bar-track"><div class="dgptm-bar-fill" style="width: <?php echo esc_attr($pct); ?>%"></div></div>
-                                <span class="dgptm-bar-count"><?php echo esc_html($count); ?> (<?php echo esc_html($pct_total); ?>%)</span>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-
-                <?php elseif ($q->question_type === 'number') :
-                    $values = [];
-                    foreach ($q_answers as $a) {
-                        if (is_numeric($a->answer_value)) { $values[] = floatval($a->answer_value); }
-                    }
-                    if (!empty($values)) :
-                        sort($values);
-                        $cnt = count($values);
-                        $avg = array_sum($values) / $cnt;
-                        $mid = (int) floor($cnt / 2);
-                        $median = $cnt % 2 === 0 ? ($values[$mid - 1] + $values[$mid]) / 2 : $values[$mid];
-                    ?>
-                    <div class="dgptm-number-stats">
-                        <div class="dgptm-number-stat"><strong><?php echo esc_html(number_format_i18n(min($values))); ?></strong><span>Min</span></div>
-                        <div class="dgptm-number-stat"><strong><?php echo esc_html(number_format_i18n(max($values))); ?></strong><span>Max</span></div>
-                        <div class="dgptm-number-stat"><strong><?php echo esc_html(number_format_i18n($avg, 1)); ?></strong><span>Durchschn.</span></div>
-                        <div class="dgptm-number-stat"><strong><?php echo esc_html(number_format_i18n($median, 1)); ?></strong><span>Median</span></div>
-                    </div>
-                    <?php endif;
-
-                elseif ($q->question_type === 'matrix') :
-                    $rows = isset($choices['rows']) ? $choices['rows'] : [];
-                    $cols = isset($choices['columns']) ? $choices['columns'] : [];
-                    $matrix_counts = [];
-                    foreach ($rows as $r) {
-                        $rk = sanitize_title($r);
-                        foreach ($cols as $c) { $matrix_counts[$rk][$c] = 0; }
-                    }
-                    foreach ($q_answers as $a) {
-                        $vals = json_decode($a->answer_value, true);
-                        if (is_array($vals)) {
-                            foreach ($vals as $rk => $cv) {
-                                if (isset($matrix_counts[$rk][$cv])) { $matrix_counts[$rk][$cv]++; }
-                            }
-                        }
-                    }
-                    $mx = 1;
-                    foreach ($matrix_counts as $rc) { foreach ($rc as $c) { if ($c > $mx) $mx = $c; } }
-                ?>
-                    <div class="dgptm-matrix-result">
-                        <table>
-                            <thead><tr><th></th>
-                                <?php foreach ($cols as $c) : ?><th><?php echo esc_html($c); ?></th><?php endforeach; ?>
-                            </tr></thead>
-                            <tbody>
-                                <?php foreach ($rows as $r) : $rk = sanitize_title($r); ?>
-                                    <tr><th><?php echo esc_html($r); ?></th>
-                                        <?php foreach ($cols as $c) :
-                                            $v = isset($matrix_counts[$rk][$c]) ? $matrix_counts[$rk][$c] : 0;
-                                            $bg = 'rgba(34,113,177,' . ($mx > 0 ? round(($v / $mx) * 0.4, 2) : 0) . ')';
-                                        ?>
-                                            <td style="background: <?php echo $bg; ?>"><?php echo esc_html($v); ?></td>
-                                        <?php endforeach; ?>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-
-                <?php elseif (in_array($q->question_type, ['text', 'textarea'], true)) : ?>
-                    <p style="color:#999;font-size:13px;"><?php echo count($q_answers); ?> Freitext-Antworten (nicht oeffentlich einsehbar).</p>
-
-                <?php elseif ($q->question_type === 'file') : ?>
-                    <p style="color:#999;font-size:13px;">Datei-Uploads (nicht oeffentlich einsehbar).</p>
-                <?php endif; ?>
+                <?php DGPTM_Survey_Admin::render_question_result($q, $q_answers); ?>
             </div>
         <?php endforeach; ?>
     <?php endif; ?>

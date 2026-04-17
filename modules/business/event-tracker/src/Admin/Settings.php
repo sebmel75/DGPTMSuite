@@ -129,6 +129,22 @@ class Settings {
 			'event-tracker-settings',
 			'et_section_zoho_meeting'
 		);
+
+		add_settings_field(
+			'zoho_meeting_org_id',
+			__( 'Zoho Meeting Org-ID (für Registrierung)', 'event-tracker' ),
+			[ $this, 'field_zoho_meeting_org_id' ],
+			'event-tracker-settings',
+			'et_section_zoho_meeting'
+		);
+
+		add_settings_field(
+			'zoho_meeting_sync_enabled',
+			__( 'CRM-Sync aktivieren', 'event-tracker' ),
+			[ $this, 'field_zoho_meeting_sync_enabled' ],
+			'event-tracker-settings',
+			'et_section_zoho_meeting'
+		);
 	}
 
 	/**
@@ -181,6 +197,12 @@ class Settings {
 				$out['zoho_meeting_api_base'] = $api_url;
 			}
 		}
+
+		$out['zoho_meeting_org_id'] = isset( $input['zoho_meeting_org_id'] )
+			? sanitize_text_field( $input['zoho_meeting_org_id'] )
+			: '';
+
+		$out['zoho_meeting_sync_enabled'] = ! empty( $input['zoho_meeting_sync_enabled'] ) ? '1' : '0';
 
 		return $out;
 	}
@@ -253,6 +275,28 @@ class Settings {
 		$val  = isset( $opts['zoho_meeting_api_base'] ) ? $opts['zoho_meeting_api_base'] : 'https://meeting.zoho.eu';
 		echo '<input type="url" class="regular-text" name="' . esc_attr( Constants::OPT_KEY ) . '[zoho_meeting_api_base]" value="' . esc_attr( $val ) . '" />';
 		echo '<p class="description">' . esc_html__( 'EU: https://meeting.zoho.eu | US: https://meeting.zoho.com', 'event-tracker' ) . '</p>';
+	}
+
+	/**
+	 * Zoho Meeting Org-ID field (für Registration-Endpoint)
+	 */
+	public function field_zoho_meeting_org_id() {
+		$opts = get_option( Constants::OPT_KEY, [] );
+		$val  = isset( $opts['zoho_meeting_org_id'] ) ? $opts['zoho_meeting_org_id'] : '';
+		echo '<input type="text" class="regular-text" name="' . esc_attr( Constants::OPT_KEY ) . '[zoho_meeting_org_id]" value="' . esc_attr( $val ) . '" placeholder="20086233025" />';
+		echo '<p class="description">' . esc_html__( 'Organisations-ID fuer den Registration-Endpoint. Unterscheidet sich von der ZSOID. Zu finden in der Zoho Meeting URL nach /meeting/.', 'event-tracker' ) . '</p>';
+	}
+
+	/**
+	 * CRM Sync Toggle
+	 */
+	public function field_zoho_meeting_sync_enabled() {
+		$opts = get_option( Constants::OPT_KEY, [] );
+		$val  = isset( $opts['zoho_meeting_sync_enabled'] ) ? $opts['zoho_meeting_sync_enabled'] : '0';
+		echo '<label>';
+		echo '<input type="checkbox" name="' . esc_attr( Constants::OPT_KEY ) . '[zoho_meeting_sync_enabled]" value="1" ' . checked( $val, '1', false ) . ' />';
+		echo ' ' . esc_html__( 'Automatische Synchronisation Meeting ↔ CRM aktivieren (alle 15 Min)', 'event-tracker' );
+		echo '</label>';
 	}
 
 	/**

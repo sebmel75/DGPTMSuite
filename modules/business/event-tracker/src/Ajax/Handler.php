@@ -1008,6 +1008,31 @@ class Handler {
 
 		Helpers::log( sprintf( 'Zoho Meeting erstellt fuer Event %d: %s', $event_id, $session_key ), 'info' );
 
+		// CRM-Event anlegen (falls CRM verfuegbar)
+		if ( $session_key && class_exists( 'DGPTM_Zoho_Auth' ) ) {
+			$crm      = new \EventTracker\Sync\CrmClient();
+			$provider = new \EventTracker\Sync\ZohoMeetingProvider();
+			$evt_sync = new \EventTracker\Sync\WebinarEventSync( $provider, $crm );
+
+			$start_date = gmdate( 'Y-m-d', $start_ts );
+			$end_date   = gmdate( 'Y-m-d', $end_ts );
+
+			$crm_id = $evt_sync->create_crm_event( $session_key, $title, $start_date, $end_date );
+
+			if ( $crm_id ) {
+				Helpers::log( sprintf( 'zm_create_webinar: CRM-Event angelegt: %s', $crm_id ), 'info' );
+			}
+
+			// Attendance-Cron planen (1h nach Ende)
+			if ( $end_ts ) {
+				$attendance_time = $end_ts + 3600;
+				if ( ! wp_next_scheduled( Constants::CRON_HOOK_ATTENDANCE, [ $event_id, $crm_id ?: '', $session_key ] ) ) {
+					wp_schedule_single_event( $attendance_time, Constants::CRON_HOOK_ATTENDANCE, [ $event_id, $crm_id ?: '', $session_key ] );
+					Helpers::log( sprintf( 'Attendance-Sync geplant: Event %d um %s', $event_id, wp_date( 'd.m.Y H:i', $attendance_time ) ), 'info' );
+				}
+			}
+		}
+
 		wp_send_json_success( [
 			'message'     => __( 'Webinar erfolgreich erstellt.', 'event-tracker' ),
 			'session_key' => $session_key,

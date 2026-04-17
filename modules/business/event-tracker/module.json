@@ -1,16 +1,15 @@
 {
   "id": "event-tracker",
-  "name": "Event Tracker v2.2",
-  "description": "Event-Management mit Webhook, Mail-System, Zoho Meeting Integration und PSR-4 Architektur",
-  "version": "2.2.0",
+  "name": "Event Tracker v2.3",
+  "description": "Event-Management mit Webhook, Mail-System, Zoho Meeting Integration, Webinar-CRM-Sync und PSR-4 Architektur",
+  "version": "2.3.0",
   "author": "Sebastian Melzer",
   "main_file": "event-tracker.php",
   "dependencies": [
-    "webhook-trigger"
-  ],
-  "optional_dependencies": [
+    "webhook-trigger",
     "crm-abruf"
   ],
+  "optional_dependencies": [],
   "wp_dependencies": {
     "plugins": []
   },
@@ -30,9 +29,11 @@
     "Webhook Integration",
     "Iframe Support",
     "Cron Jobs",
-    "Zoho Meeting Integration"
+    "Zoho Meeting Integration",
+    "Webinar CRM Sync"
   ],
   "changelog": {
+    "2.3.0": "Bidirektionale Webinar-CRM-Synchronisation (Events, Registrierungen, Anwesenheit), Provider-Interface",
     "2.2.0": "Zoho Meeting API-Fixes (Endpoints, Feldnamen, Duration), robustes JS Error-Handling, feinere Optik",
     "2.1.0": "Zoho Meeting Integration, AJAX-Bugfixes, modernes CSS",
     "2.0.0": "Komplette Neuschreibung mit moderner Architektur"

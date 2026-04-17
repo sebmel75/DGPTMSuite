@@ -109,6 +109,47 @@
     margin-left: 8px;
 }
 
+.dgptm-vg-status-ok {
+    background: #c6f6d5;
+    color: #22543d;
+}
+
+.dgptm-vg-status-pending {
+    background: #feebc8;
+    color: #744210;
+}
+
+.dgptm-vg-buerge-kommentar {
+    margin-top: 6px;
+    color: #4a5568;
+    font-size: 0.95em;
+}
+
+.dgptm-vg-attachment-meta {
+    margin-left: auto;
+    color: #718096;
+    font-size: 0.85em;
+}
+
+.dgptm-vg-empty {
+    margin-top: 40px;
+    padding: 30px;
+    background: #f7fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.dgptm-vg-empty h3 {
+    margin: 0 0 10px 0;
+    color: #2d3748;
+}
+
+.dgptm-vg-empty p {
+    color: #4a5568;
+    margin: 0;
+}
+
 .dgptm-vg-attachments {
     display: flex;
     flex-direction: column;
@@ -150,6 +191,27 @@
 .dgptm-vg-entscheidung h3 {
     margin: 0 0 20px 0;
     font-size: 1.4em;
+}
+
+.dgptm-vg-select {
+    margin-bottom: 20px;
+}
+
+.dgptm-vg-select label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.dgptm-vg-select select {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1em;
+    box-sizing: border-box;
+    background: white;
+    color: #2d3748;
 }
 
 .dgptm-vg-kommentar {

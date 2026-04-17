@@ -30,7 +30,7 @@ class Plugin {
 	 *
 	 * @var string
 	 */
-	const VERSION = '2.2.0';
+	const VERSION = '2.3.0';
 
 	/**
 	 * Singleton Instance
@@ -86,6 +86,9 @@ class Plugin {
 	 * Initialize Plugin
 	 */
 	private function init() {
+		// Custom Cron-Intervall (15 Minuten)
+		add_filter( 'cron_schedules', [ __CLASS__, 'register_cron_interval' ] );
+
 		// Zentrale Zoho-Auth: Meeting-Scopes registrieren
 		add_filter( 'dgptm_zoho_required_scopes', function( $scopes ) {
 			$scopes['Event Tracker'] = [
@@ -122,6 +125,12 @@ class Plugin {
 
 		// Cron: Automatischer Recording-Abruf nach Webinar-Ende
 		add_action( 'et_zm_fetch_recording_cron', [ $this, 'cron_fetch_recording' ] );
+
+		// Cron: Webinar ↔ CRM Sync
+		add_action( Constants::CRON_HOOK_EVENT_SYNC, [ $this, 'cron_event_sync' ] );
+		add_action( Constants::CRON_HOOK_SYNC, [ $this, 'cron_registration_sync' ] );
+		add_action( Constants::CRON_HOOK_ATTENDANCE, [ $this, 'cron_attendance_sync' ] );
+		$this->schedule_sync_crons();
 	}
 
 	/**
@@ -422,5 +431,147 @@ class Plugin {
 
 			Helpers::log( sprintf( 'Cron Recording: URL gespeichert fuer Event %d: %s', $event_id, $recording_url ), 'info' );
 		}
+	}
+
+	/* =========================================================================
+	 * Webinar ↔ CRM Sync
+	 * ======================================================================= */
+
+	/**
+	 * Custom Cron-Intervall (15 Minuten).
+	 *
+	 * @param array $schedules Existing schedules.
+	 * @return array
+	 */
+	public static function register_cron_interval( $schedules ) {
+		$schedules['et_15min'] = [
+			'interval' => 900,
+			'display'  => __( 'Alle 15 Minuten', 'event-tracker' ),
+		];
+		return $schedules;
+	}
+
+	/**
+	 * Sync-Crons planen oder entfernen.
+	 */
+	private function schedule_sync_crons() {
+		$settings = get_option( Constants::OPT_KEY, [] );
+		$enabled  = ( $settings['zoho_meeting_sync_enabled'] ?? '0' ) === '1';
+
+		if ( $enabled ) {
+			if ( ! wp_next_scheduled( Constants::CRON_HOOK_EVENT_SYNC ) ) {
+				wp_schedule_event( time(), 'et_15min', Constants::CRON_HOOK_EVENT_SYNC );
+			}
+			if ( ! wp_next_scheduled( Constants::CRON_HOOK_SYNC ) ) {
+				wp_schedule_event( time() + 120, 'et_15min', Constants::CRON_HOOK_SYNC );
+			}
+		} else {
+			$ts1 = wp_next_scheduled( Constants::CRON_HOOK_EVENT_SYNC );
+			if ( $ts1 ) {
+				wp_unschedule_event( $ts1, Constants::CRON_HOOK_EVENT_SYNC );
+			}
+			$ts2 = wp_next_scheduled( Constants::CRON_HOOK_SYNC );
+			if ( $ts2 ) {
+				wp_unschedule_event( $ts2, Constants::CRON_HOOK_SYNC );
+			}
+		}
+	}
+
+	/**
+	 * Cron: Webinar-Events synchronisieren.
+	 */
+	public function cron_event_sync() {
+		$crm = new \EventTracker\Sync\CrmClient();
+		if ( ! $crm->is_available() ) {
+			Helpers::log( 'cron_event_sync: CRM nicht verfuegbar', 'warning' );
+			return;
+		}
+
+		$provider = new \EventTracker\Sync\ZohoMeetingProvider();
+		$sync     = new \EventTracker\Sync\WebinarEventSync( $provider, $crm );
+		$stats    = $sync->sync();
+
+		Helpers::log( sprintf( 'cron_event_sync: created=%d, updated=%d, errors=%d',
+			$stats['created'], $stats['updated'], $stats['errors'] ), 'info' );
+	}
+
+	/**
+	 * Cron: Registrierungs-Sync (bidirektional).
+	 */
+	public function cron_registration_sync() {
+		$crm = new \EventTracker\Sync\CrmClient();
+		if ( ! $crm->is_available() ) {
+			return;
+		}
+
+		$provider = new \EventTracker\Sync\ZohoMeetingProvider();
+
+		$events = $crm->coql_query(
+			"SELECT id, Meeting_Key FROM DGFK_Events WHERE Meeting_Key is not null AND Event_Type = 'Webinar' LIMIT 200"
+		);
+
+		$webinars     = $provider->list_webinars();
+		$instance_map = [];
+		if ( $webinars['ok'] ) {
+			foreach ( $webinars['data'] as $w ) {
+				$instance_map[ $w['key'] ] = $w['sysId'] ?? '';
+			}
+		}
+
+		$sync = new \EventTracker\Sync\RegistrationSync( $provider, $crm );
+
+		foreach ( $events as $event ) {
+			$meeting_key = $event['Meeting_Key'] ?? '';
+			$instance_id = $instance_map[ $meeting_key ] ?? '';
+
+			if ( ! $meeting_key || ! $instance_id ) {
+				continue;
+			}
+
+			$stats = $sync->sync( $event['id'], $meeting_key, $instance_id );
+
+			Helpers::log( sprintf( 'cron_registration_sync: Event %s — crm2meeting=%d, meeting2crm=%d, created=%d',
+				$event['id'], $stats['crm_to_meeting'], $stats['meeting_to_crm'], $stats['contacts_created'] ), 'info' );
+		}
+	}
+
+	/**
+	 * Cron: Attendance nach Webinar-Ende synchronisieren.
+	 *
+	 * @param int    $event_id     WordPress Event-Post-ID.
+	 * @param string $crm_event_id CRM DGFK_Events Record-ID.
+	 * @param string $meeting_key  Webinar Meeting-Key.
+	 */
+	public function cron_attendance_sync( $event_id = 0, $crm_event_id = '', $meeting_key = '' ) {
+		if ( ! $meeting_key && $event_id ) {
+			$meeting_key = get_post_meta( $event_id, Constants::META_ZM_KEY, true );
+		}
+
+		if ( ! $meeting_key ) {
+			Helpers::log( 'cron_attendance_sync: Kein Meeting-Key', 'warning' );
+			return;
+		}
+
+		$crm = new \EventTracker\Sync\CrmClient();
+		if ( ! $crm->is_available() ) {
+			return;
+		}
+
+		if ( ! $crm_event_id ) {
+			$events       = $crm->coql_query( "SELECT id FROM DGFK_Events WHERE Meeting_Key = '{$meeting_key}' LIMIT 1" );
+			$crm_event_id = $events[0]['id'] ?? '';
+		}
+
+		if ( ! $crm_event_id ) {
+			Helpers::log( sprintf( 'cron_attendance_sync: Kein CRM-Event fuer Key %s', $meeting_key ), 'warning' );
+			return;
+		}
+
+		$provider = new \EventTracker\Sync\ZohoMeetingProvider();
+		$sync     = new \EventTracker\Sync\AttendanceSync( $provider, $crm );
+		$stats    = $sync->sync( $crm_event_id, $meeting_key );
+
+		Helpers::log( sprintf( 'cron_attendance_sync: attended=%d, not_attended=%d, errors=%d',
+			$stats['attended'], $stats['not_attended'], $stats['errors'] ), 'info' );
 	}
 }

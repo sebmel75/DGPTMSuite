@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.0.0
+ * Version: 2.1.0
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.0.0';
+        private $version = '2.1.0';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -59,6 +59,14 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             // AJAX Handler für Genehmigung/Ablehnung
             add_action('wp_ajax_dgptm_vorstand_entscheidung', [$this, 'ajax_vorstand_entscheidung']);
+            add_action('wp_ajax_nopriv_dgptm_vorstand_entscheidung', [$this, 'ajax_vorstand_entscheidung']);
+
+            // Download-Proxy für Zoho CRM File-Upload-Felder (Nachweise)
+            add_action('wp_ajax_dgptm_download_crm_file', [$this, 'ajax_download_crm_file']);
+            add_action('wp_ajax_nopriv_dgptm_download_crm_file', [$this, 'ajax_download_crm_file']);
+
+            // Admin-Action: Vorstands-Cache leeren (z. B. nach Tag-Änderung im CRM)
+            add_action('wp_ajax_dgptm_clear_vorstand_cache', [$this, 'ajax_clear_vorstand_cache']);
             add_action('wp_enqueue_scripts', [$this, 'enqueue_frontend_assets']);
             add_action('admin_menu', [$this, 'add_admin_menu']);
             add_action('admin_init', [$this, 'register_settings']);
@@ -2285,65 +2293,49 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
          *                VMID = Zoho Contact ID des Vorstandsmitglieds
          */
         public function render_vorstandsgenehmigung($atts) {
-            // Parameter aus URL holen
-            $antragsteller_id = isset($_GET['ID']) ? sanitize_text_field($_GET['ID']) : '';
-            $vorstand_id = isset($_GET['VMID']) ? sanitize_text_field($_GET['VMID']) : '';
+            $antragsteller_token = isset($_GET['token']) ? sanitize_text_field($_GET['token']) : '';
 
-            // Parameter validieren
-            if (empty($antragsteller_id) || empty($vorstand_id)) {
+            if ($antragsteller_token === '') {
                 return $this->render_error_message(
                     'Fehlende Parameter',
-                    'Bitte verwenden Sie den vollstaendigen Link aus der E-Mail. Es fehlen erforderliche Identifikationsparameter.'
+                    'Bitte verwenden Sie den vollstaendigen Link aus der E-Mail. Es fehlt der Identifikationstoken.'
                 );
             }
 
-            // Token holen
-            $token = $this->get_access_token();
-            if (!$token) {
+            $oauth = $this->get_access_token();
+            if (!$oauth) {
                 return $this->render_error_message(
                     'Verbindungsfehler',
                     'Die Verbindung zum CRM-System konnte nicht hergestellt werden. Bitte versuchen Sie es spaeter erneut.'
                 );
             }
 
-            // Pruefen ob Vorstandsmitglied den Tag "Vorstand" hat
-            $vorstand_check = $this->check_vorstand_tag($vorstand_id, $token);
-            if (!$vorstand_check['is_vorstand']) {
-                return $this->render_error_message(
-                    'Keine Berechtigung',
-                    'Sie sind nicht als Vorstandsmitglied autorisiert, Mitgliedsantraege zu bearbeiten.'
-                );
-            }
-
-            // Pruefen ob dieses Vorstandsmitglied bereits abgestimmt hat
-            $bereits_abgestimmt = $this->hat_bereits_abgestimmt($antragsteller_id, $vorstand_id, $token);
-            if ($bereits_abgestimmt) {
-                return $this->render_error_message(
-                    'Bereits abgestimmt',
-                    'Sie haben fuer diesen Antrag bereits eine Entscheidung getroffen. Eine erneute Abstimmung ist nicht moeglich.'
-                );
-            }
-
-            // Antragsteller-Daten laden
-            $antragsteller = $this->get_contact_details($antragsteller_id, $token);
+            $antragsteller = $this->get_contact_by_token($antragsteller_token, $oauth);
             if (!$antragsteller) {
                 return $this->render_error_message(
-                    'Antragsteller nicht gefunden',
-                    'Die Daten des Antragstellers konnten nicht geladen werden. Bitte pruefen Sie den Link.'
+                    'Antrag nicht gefunden',
+                    'Zu diesem Link konnte kein Antrag zugeordnet werden. Bitte pruefen Sie die URL.'
                 );
             }
 
-            // Vorstandsmitglied-Daten laden (fuer Anzeige)
-            $vorstand = $this->get_contact_details($vorstand_id, $token);
+            $vorstaende_all    = $this->get_active_vorstaende($oauth);
+            $abgestimmte_ids   = $this->get_bereits_abgestimmte_ids($antragsteller);
+            $vorstaende_aktiv  = array_values(array_filter($vorstaende_all, function ($v) use ($abgestimmte_ids) {
+                return !in_array((string) $v['id'], $abgestimmte_ids, true);
+            }));
 
-            // Frontend Assets laden
+            $summary = [
+                'genehmigungen' => (int) ($antragsteller['Membership_Approved']     ?? 0),
+                'ablehnungen'   => (int) ($antragsteller['Membership_Not_Approved'] ?? 0),
+                'gesamt'        => count($abgestimmte_ids)
+            ];
+
             wp_enqueue_style(
                 'dgptm-vorstandsgenehmigung',
                 $this->plugin_url . 'assets/css/vorstandsgenehmigung.css',
                 [],
                 $this->version
             );
-
             wp_enqueue_script(
                 'dgptm-vorstandsgenehmigung',
                 $this->plugin_url . 'assets/js/vorstandsgenehmigung.js',
@@ -2353,29 +2345,42 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             );
 
             wp_localize_script('dgptm-vorstandsgenehmigung', 'dgptmVorstand', [
-                'ajaxUrl' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('dgptm_vorstand_entscheidung'),
-                'antragstellerId' => $antragsteller_id,
-                'vorstandId' => $vorstand_id,
-                'strings' => [
-                    'confirm_approve' => 'Moechten Sie diesen Mitgliedsantrag wirklich GENEHMIGEN?',
-                    'confirm_reject' => 'Moechten Sie diesen Mitgliedsantrag wirklich ABLEHNEN?',
-                    'processing' => 'Wird verarbeitet...',
+                'ajaxUrl'            => admin_url('admin-ajax.php'),
+                'nonce'              => wp_create_nonce('dgptm_vorstand_entscheidung'),
+                'antragstellerToken' => $antragsteller_token,
+                'strings'            => [
+                    'confirm_approve'  => 'Moechten Sie diesen Mitgliedsantrag wirklich GENEHMIGEN?',
+                    'confirm_reject'   => 'Moechten Sie diesen Mitgliedsantrag wirklich ABLEHNEN?',
+                    'processing'       => 'Wird verarbeitet...',
+                    'select_vorstand'  => 'Bitte waehlen Sie Ihren Namen aus der Liste aus.',
                     'success_approved' => 'Der Antrag wurde erfolgreich genehmigt.',
                     'success_rejected' => 'Der Antrag wurde abgelehnt.',
-                    'error' => 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.'
+                    'error'            => 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.'
                 ]
             ]);
 
-            // Template rendern
+            $nachweise = $this->get_direct_uploads_from_contact($antragsteller);
+
+            // Adresse: Mailing_* bevorzugen, Other_* als Fallback
+            $addr_street  = $antragsteller['Mailing_Street']  ?? $antragsteller['Other_Street']  ?? '';
+            $addr_city    = $antragsteller['Mailing_City']    ?? $antragsteller['Other_City']    ?? '';
+            $addr_zip     = $antragsteller['Mailing_Zip']     ?? $antragsteller['Other_Zip']     ?? '';
+            $addr_state   = $antragsteller['Mailing_State']   ?? $antragsteller['Other_State']   ?? '';
+            $addr_country = $antragsteller['Mailing_Country'] ?? $antragsteller['Other_Country'] ?? '';
+            $addr_add     = $antragsteller['Mailing_Street_Additional'] ?? '';
+
             ob_start();
             ?>
             <div class="dgptm-vorstandsgenehmigung-container">
                 <div class="dgptm-vg-header">
                     <h2>Mitgliedsantrag zur Genehmigung</h2>
+                    <?php if ($summary['gesamt'] > 0): ?>
                     <p class="dgptm-vg-info">
-                        Sie bearbeiten diesen Antrag als: <strong><?php echo esc_html($vorstand['Full_Name'] ?? ($vorstand['First_Name'] . ' ' . $vorstand['Last_Name'])); ?></strong>
+                        Bisherige Abstimmungen:
+                        <strong><?php echo $summary['genehmigungen']; ?></strong>&nbsp;Genehmigung(en),
+                        <strong><?php echo $summary['ablehnungen']; ?></strong>&nbsp;Ablehnung(en)
                     </p>
+                    <?php endif; ?>
                 </div>
 
                 <div class="dgptm-vg-antragsteller">
@@ -2384,57 +2389,36 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                     <div class="dgptm-vg-section">
                         <h4>Persoenliche Daten</h4>
                         <table class="dgptm-vg-table">
-                            <tr>
-                                <th>Anrede:</th>
-                                <td><?php echo esc_html($antragsteller['greeting'] ?? '-'); ?></td>
-                            </tr>
-                            <tr>
-                                <th>Akadem. Titel:</th>
-                                <td><?php echo esc_html($antragsteller['Academic_Title'] ?? '-'); ?></td>
-                            </tr>
-                            <tr>
-                                <th>Vorname:</th>
-                                <td><?php echo esc_html($antragsteller['First_Name'] ?? '-'); ?></td>
-                            </tr>
-                            <tr>
-                                <th>Nachname:</th>
-                                <td><?php echo esc_html($antragsteller['Last_Name'] ?? '-'); ?></td>
-                            </tr>
-                            <tr>
-                                <th>Geburtsdatum:</th>
-                                <td><?php echo esc_html($this->format_date($antragsteller['Date_of_Birth'] ?? '')); ?></td>
-                            </tr>
+                            <tr><th>Anrede:</th><td><?php echo esc_html($antragsteller['Salutation'] ?: ($antragsteller['greeting'] ?? '-')); ?></td></tr>
+                            <tr><th>Akadem. Titel:</th><td><?php echo esc_html($antragsteller['Academic_Title'] ?? '-'); ?></td></tr>
+                            <tr><th>Vorname:</th><td><?php echo esc_html($antragsteller['First_Name'] ?? '-'); ?></td></tr>
+                            <tr><th>Nachname:</th><td><?php echo esc_html($antragsteller['Last_Name'] ?? '-'); ?></td></tr>
+                            <?php if (!empty($antragsteller['Title_After_The_Name'])): ?>
+                            <tr><th>Titel nachgestellt:</th><td><?php echo esc_html($antragsteller['Title_After_The_Name']); ?></td></tr>
+                            <?php endif; ?>
+                            <tr><th>Geburtsdatum:</th><td><?php echo esc_html($this->format_date($antragsteller['Date_of_Birth'] ?? '')); ?></td></tr>
+                            <?php if (!empty($antragsteller['Geburtsort'])): ?>
+                            <tr><th>Geburtsort:</th><td><?php echo esc_html($antragsteller['Geburtsort']); ?></td></tr>
+                            <?php endif; ?>
                         </table>
                     </div>
 
                     <div class="dgptm-vg-section">
                         <h4>Kontaktdaten</h4>
                         <table class="dgptm-vg-table">
-                            <tr>
-                                <th>E-Mail 1:</th>
-                                <td><?php echo esc_html($antragsteller['Email'] ?? '-'); ?></td>
-                            </tr>
+                            <tr><th>E-Mail 1:</th><td><?php echo esc_html($antragsteller['Email'] ?? '-'); ?></td></tr>
                             <?php if (!empty($antragsteller['Secondary_Email'])): ?>
-                            <tr>
-                                <th>E-Mail 2:</th>
-                                <td><?php echo esc_html($antragsteller['Secondary_Email']); ?></td>
-                            </tr>
+                            <tr><th>E-Mail 2:</th><td><?php echo esc_html($antragsteller['Secondary_Email']); ?></td></tr>
                             <?php endif; ?>
                             <?php if (!empty($antragsteller['Third_Email'])): ?>
-                            <tr>
-                                <th>E-Mail 3:</th>
-                                <td><?php echo esc_html($antragsteller['Third_Email']); ?></td>
-                            </tr>
+                            <tr><th>E-Mail 3:</th><td><?php echo esc_html($antragsteller['Third_Email']); ?></td></tr>
                             <?php endif; ?>
-                            <tr>
-                                <th>Telefon:</th>
-                                <td><?php echo esc_html($antragsteller['Phone'] ?? '-'); ?></td>
-                            </tr>
+                            <tr><th>Telefon:</th><td><?php echo esc_html($antragsteller['Phone'] ?? '-'); ?></td></tr>
+                            <?php if (!empty($antragsteller['Mobile'])): ?>
+                            <tr><th>Mobil:</th><td><?php echo esc_html($antragsteller['Mobile']); ?></td></tr>
+                            <?php endif; ?>
                             <?php if (!empty($antragsteller['Work_Phone'])): ?>
-                            <tr>
-                                <th>Telefon (Arbeit):</th>
-                                <td><?php echo esc_html($antragsteller['Work_Phone']); ?></td>
-                            </tr>
+                            <tr><th>Telefon (Arbeit):</th><td><?php echo esc_html($antragsteller['Work_Phone']); ?></td></tr>
                             <?php endif; ?>
                         </table>
                     </div>
@@ -2442,40 +2426,27 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                     <div class="dgptm-vg-section">
                         <h4>Adresse</h4>
                         <table class="dgptm-vg-table">
-                            <tr>
-                                <th>Strasse:</th>
-                                <td><?php echo esc_html($antragsteller['Other_Street'] ?? '-'); ?></td>
-                            </tr>
-                            <tr>
-                                <th>PLZ / Ort:</th>
-                                <td><?php echo esc_html(($antragsteller['Other_Zip'] ?? '') . ' ' . ($antragsteller['Other_City'] ?? '')); ?></td>
-                            </tr>
-                            <tr>
-                                <th>Bundesland:</th>
-                                <td><?php echo esc_html($antragsteller['Other_State'] ?? '-'); ?></td>
-                            </tr>
-                            <tr>
-                                <th>Land:</th>
-                                <td><?php echo esc_html($antragsteller['Other_Country'] ?? '-'); ?></td>
-                            </tr>
+                            <tr><th>Strasse:</th><td><?php echo esc_html($addr_street ?: '-'); ?></td></tr>
+                            <?php if (!empty($addr_add)): ?>
+                            <tr><th>Adresszusatz:</th><td><?php echo esc_html($addr_add); ?></td></tr>
+                            <?php endif; ?>
+                            <tr><th>PLZ / Ort:</th><td><?php echo esc_html(trim($addr_zip . ' ' . $addr_city)) ?: '-'; ?></td></tr>
+                            <?php if (!empty($addr_state)): ?>
+                            <tr><th>Bundesland:</th><td><?php echo esc_html($addr_state); ?></td></tr>
+                            <?php endif; ?>
+                            <tr><th>Land:</th><td><?php echo esc_html($addr_country ?: '-'); ?></td></tr>
                         </table>
                     </div>
 
                     <div class="dgptm-vg-section">
                         <h4>Mitgliedschaft</h4>
                         <table class="dgptm-vg-table">
-                            <tr>
-                                <th>Beantragte Mitgliedsart:</th>
-                                <td><strong><?php echo esc_html($antragsteller['Membership_Type'] ?? '-'); ?></strong></td>
-                            </tr>
-                            <tr>
-                                <th>Arbeitgeber:</th>
-                                <td><?php echo esc_html($antragsteller['employer_name'] ?? '-'); ?></td>
-                            </tr>
-                            <tr>
-                                <th>Beruf/Studienrichtung:</th>
-                                <td><?php echo esc_html($antragsteller['profession'] ?? '-'); ?></td>
-                            </tr>
+                            <tr><th>Beantragte Mitgliedsart:</th><td><strong><?php echo esc_html($antragsteller['Membership_Type'] ?? '-'); ?></strong></td></tr>
+                            <tr><th>Arbeitgeber:</th><td><?php echo esc_html($antragsteller['employer_name'] ?? '-'); ?></td></tr>
+                            <tr><th>Beruf/Studienrichtung:</th><td><?php echo esc_html($antragsteller['profession'] ?? '-'); ?></td></tr>
+                            <?php if (!empty($antragsteller['Student_Status'])): ?>
+                            <tr><th>Studentenstatus:</th><td>Ja</td></tr>
+                            <?php endif; ?>
                         </table>
                     </div>
 
@@ -2492,7 +2463,12 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                                         (<?php echo esc_html($antragsteller['Guarantor_Mail_1']); ?>)
                                     <?php endif; ?>
                                     <?php if (!empty($antragsteller['Guarantor_Status_1'])): ?>
-                                        <span class="dgptm-vg-status"><?php echo esc_html($antragsteller['Guarantor_Status_1']); ?></span>
+                                        <span class="dgptm-vg-status dgptm-vg-status-ok">✓ bestaetigt</span>
+                                    <?php else: ?>
+                                        <span class="dgptm-vg-status dgptm-vg-status-pending">offen</span>
+                                    <?php endif; ?>
+                                    <?php if (!empty($antragsteller['guarantor_1_comment']) && $antragsteller['guarantor_1_comment'] !== 'false'): ?>
+                                        <div class="dgptm-vg-buerge-kommentar"><em><?php echo esc_html($antragsteller['guarantor_1_comment']); ?></em></div>
                                     <?php endif; ?>
                                 </td>
                             </tr>
@@ -2506,7 +2482,12 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                                         (<?php echo esc_html($antragsteller['Guarantor_Mail_2']); ?>)
                                     <?php endif; ?>
                                     <?php if (!empty($antragsteller['Guarantor_Status_2'])): ?>
-                                        <span class="dgptm-vg-status"><?php echo esc_html($antragsteller['Guarantor_Status_2']); ?></span>
+                                        <span class="dgptm-vg-status dgptm-vg-status-ok">✓ bestaetigt</span>
+                                    <?php else: ?>
+                                        <span class="dgptm-vg-status dgptm-vg-status-pending">offen</span>
+                                    <?php endif; ?>
+                                    <?php if (!empty($antragsteller['guarantor_2_comment']) && $antragsteller['guarantor_2_comment'] !== 'false'): ?>
+                                        <div class="dgptm-vg-buerge-kommentar"><em><?php echo esc_html($antragsteller['guarantor_2_comment']); ?></em></div>
                                     <?php endif; ?>
                                 </td>
                             </tr>
@@ -2515,64 +2496,74 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                     </div>
                     <?php endif; ?>
 
-                    <?php
-                    // Nachweise anzeigen
-                    $nachweise = $this->get_contact_attachments($antragsteller_id, $token);
-                    if (!empty($nachweise)):
-                    ?>
+                    <?php if (!empty($nachweise)): ?>
                     <div class="dgptm-vg-section">
                         <h4>Hochgeladene Nachweise</h4>
                         <div class="dgptm-vg-attachments">
-                            <?php foreach ($nachweise as $nachweis): ?>
-                            <div class="dgptm-vg-attachment">
-                                <span class="dgptm-vg-attachment-icon">📄</span>
-                                <a href="<?php echo esc_url($nachweis['url']); ?>" target="_blank" rel="noopener noreferrer">
-                                    <?php echo esc_html($nachweis['name']); ?>
-                                </a>
-                            </div>
+                            <?php foreach ($nachweise as $n): ?>
+                                <div class="dgptm-vg-attachment">
+                                    <span class="dgptm-vg-attachment-icon">📄</span>
+                                    <a href="<?php echo esc_url($this->build_download_proxy_url($antragsteller_token, $n['attachment_id'])); ?>" target="_blank" rel="noopener noreferrer">
+                                        <?php echo esc_html($n['file_name']); ?>
+                                    </a>
+                                    <span class="dgptm-vg-attachment-meta"><?php echo esc_html($n['source'] . (!empty($n['file_size']) ? ' · ' . $n['file_size'] : '')); ?></span>
+                                </div>
                             <?php endforeach; ?>
                         </div>
+                    </div>
+                    <?php endif; ?>
+
+                    <?php if (!empty($antragsteller['Bemerkung'])): ?>
+                    <div class="dgptm-vg-section">
+                        <h4>Bemerkung der Geschaeftsstelle</h4>
+                        <p><?php echo wp_kses_post(nl2br(esc_html($antragsteller['Bemerkung']))); ?></p>
                     </div>
                     <?php endif; ?>
 
                     <div class="dgptm-vg-section">
                         <h4>Akzeptierte Erklaerungen</h4>
                         <table class="dgptm-vg-table">
-                            <tr>
-                                <th>Satzung akzeptiert:</th>
-                                <td><?php echo $antragsteller['SatzungAkzeptiert'] ? '✓ Ja' : '✗ Nein'; ?></td>
-                            </tr>
-                            <tr>
-                                <th>Beitragsordnung akzeptiert:</th>
-                                <td><?php echo $antragsteller['BeitragAkzeptiert'] ? '✓ Ja' : '✗ Nein'; ?></td>
-                            </tr>
-                            <tr>
-                                <th>Datenschutz akzeptiert:</th>
-                                <td><?php echo $antragsteller['Datenschutzakzeptiert'] ? '✓ Ja' : '✗ Nein'; ?></td>
-                            </tr>
+                            <tr><th>Satzung akzeptiert:</th><td><?php echo !empty($antragsteller['SatzungAkzeptiert']) ? '✓ Ja' : '✗ Nein'; ?></td></tr>
+                            <tr><th>Beitragsordnung akzeptiert:</th><td><?php echo !empty($antragsteller['BeitragAkzeptiert']) ? '✓ Ja' : '✗ Nein'; ?></td></tr>
+                            <tr><th>Datenschutz akzeptiert:</th><td><?php echo !empty($antragsteller['Datenschutzakzeptiert']) ? '✓ Ja' : '✗ Nein'; ?></td></tr>
                         </table>
                     </div>
                 </div>
 
-                <div class="dgptm-vg-entscheidung">
-                    <h3>Ihre Entscheidung</h3>
-
-                    <div class="dgptm-vg-kommentar">
-                        <label for="dgptm-vg-bemerkung">Bemerkung (optional):</label>
-                        <textarea id="dgptm-vg-bemerkung" rows="3" placeholder="Optionale Bemerkung zur Entscheidung..."></textarea>
+                <?php if (empty($vorstaende_aktiv)): ?>
+                    <div class="dgptm-vg-empty">
+                        <h3>Abstimmung abgeschlossen</h3>
+                        <p>Fuer diesen Antrag haben bereits alle Vorstandsmitglieder abgestimmt (<?php echo $summary['genehmigungen']; ?>&nbsp;Genehmigung(en), <?php echo $summary['ablehnungen']; ?>&nbsp;Ablehnung(en)).</p>
                     </div>
+                <?php else: ?>
+                    <div class="dgptm-vg-entscheidung">
+                        <h3>Ihre Entscheidung</h3>
 
-                    <div class="dgptm-vg-buttons">
-                        <button type="button" class="dgptm-vg-btn dgptm-vg-btn-approve" data-action="approve">
-                            ✓ Antrag genehmigen
-                        </button>
-                        <button type="button" class="dgptm-vg-btn dgptm-vg-btn-reject" data-action="reject">
-                            ✗ Antrag ablehnen
-                        </button>
+                        <div class="dgptm-vg-select">
+                            <label for="dgptm-vg-vorstand">Vorstandsmitglied (Ihr Name):</label>
+                            <select id="dgptm-vg-vorstand" required>
+                                <option value="">-- bitte auswaehlen --</option>
+                                <?php foreach ($vorstaende_aktiv as $v): ?>
+                                    <option value="<?php echo esc_attr($v['id']); ?>">
+                                        <?php echo esc_html($this->format_vorstand_label($v)); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="dgptm-vg-kommentar">
+                            <label for="dgptm-vg-bemerkung">Bemerkung (optional):</label>
+                            <textarea id="dgptm-vg-bemerkung" rows="3" placeholder="Optionale Bemerkung zur Entscheidung..."></textarea>
+                        </div>
+
+                        <div class="dgptm-vg-buttons">
+                            <button type="button" class="dgptm-vg-btn dgptm-vg-btn-approve" data-action="approve">✓ Antrag genehmigen</button>
+                            <button type="button" class="dgptm-vg-btn dgptm-vg-btn-reject" data-action="reject">✗ Antrag ablehnen</button>
+                        </div>
+
+                        <div class="dgptm-vg-result" style="display: none;"></div>
                     </div>
-
-                    <div class="dgptm-vg-result" style="display: none;"></div>
-                </div>
+                <?php endif; ?>
             </div>
             <?php
             return ob_get_clean();
@@ -2801,51 +2792,59 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
         /**
          * AJAX Handler fuer Vorstandsentscheidung
+         * Erwartet POST: antragsteller_token, vorstand_id (Dropdown-Auswahl), entscheidung, bemerkung
          */
         public function ajax_vorstand_entscheidung() {
             check_ajax_referer('dgptm_vorstand_entscheidung', 'nonce');
 
-            $antragsteller_id = sanitize_text_field($_POST['antragsteller_id'] ?? '');
-            $vorstand_id = sanitize_text_field($_POST['vorstand_id'] ?? '');
-            $action = sanitize_text_field($_POST['entscheidung'] ?? '');
-            $bemerkung = sanitize_textarea_field($_POST['bemerkung'] ?? '');
+            $antragsteller_token = sanitize_text_field($_POST['antragsteller_token'] ?? '');
+            $vorstand_id         = sanitize_text_field($_POST['vorstand_id'] ?? '');
+            $action              = sanitize_text_field($_POST['entscheidung'] ?? '');
+            $bemerkung           = sanitize_textarea_field($_POST['bemerkung'] ?? '');
 
-            if (empty($antragsteller_id) || empty($vorstand_id) || empty($action)) {
+            if ($antragsteller_token === '' || $vorstand_id === '' || $action === '') {
                 wp_send_json_error(['message' => 'Fehlende Parameter']);
                 return;
             }
 
-            if (!in_array($action, ['approve', 'reject'])) {
+            if (!in_array($action, ['approve', 'reject'], true)) {
                 wp_send_json_error(['message' => 'Ungueltige Aktion']);
                 return;
             }
 
-            // Token holen
-            $token = $this->get_access_token();
-            if (!$token) {
+            $oauth = $this->get_access_token();
+            if (!$oauth) {
                 wp_send_json_error(['message' => 'CRM-Verbindung fehlgeschlagen']);
                 return;
             }
 
-            // Nochmals pruefen ob Vorstand
-            $vorstand_check = $this->check_vorstand_tag($vorstand_id, $token);
-            if (!$vorstand_check['is_vorstand']) {
-                wp_send_json_error(['message' => 'Keine Vorstandsberechtigung']);
+            // Antragsteller per Token auflösen (kein raw-ID im URL mehr)
+            $antragsteller = $this->get_contact_by_token($antragsteller_token, $oauth);
+            if (!$antragsteller) {
+                wp_send_json_error(['message' => 'Antrag nicht gefunden']);
+                return;
+            }
+            $antragsteller_id = $antragsteller['id'];
+
+            // Gewähltes Vorstandsmitglied muss Tag "Vorstand" tragen
+            $vorstand_check = $this->check_vorstand_tag($vorstand_id, $oauth);
+            if (empty($vorstand_check['is_vorstand'])) {
+                wp_send_json_error(['message' => 'Das gewählte Mitglied ist nicht als Vorstand autorisiert.']);
                 return;
             }
 
-            // Nochmals pruefen ob bereits abgestimmt
-            if ($this->hat_bereits_abgestimmt($antragsteller_id, $vorstand_id, $token)) {
-                wp_send_json_error(['message' => 'Sie haben bereits abgestimmt']);
+            // Race-Schutz: nochmals gegen aktuelle Abstimmungsliste prüfen
+            if (in_array((string) $vorstand_id, $this->get_bereits_abgestimmte_ids($antragsteller), true)) {
+                wp_send_json_error(['message' => 'Fuer dieses Vorstandsmitglied liegt bereits eine Abstimmung vor.']);
                 return;
             }
 
-            // Vorstandsmitglied-Details holen
-            $vorstand = $this->get_contact_details($vorstand_id, $token);
-            $vorstand_name = $vorstand ? ($vorstand['Full_Name'] ?? ($vorstand['First_Name'] . ' ' . $vorstand['Last_Name'])) : 'Unbekannt';
+            $vorstand      = $vorstand_check['contact'] ?? $this->get_contact_details($vorstand_id, $oauth);
+            $vorstand_name = $vorstand
+                ? ($vorstand['Full_Name'] ?? trim(($vorstand['First_Name'] ?? '') . ' ' . ($vorstand['Last_Name'] ?? '')))
+                : 'Unbekannt';
 
-            // Abstimmung speichern
-            $result = $this->speichere_abstimmung($antragsteller_id, $vorstand_id, $vorstand_name, $action, $bemerkung, $token);
+            $result = $this->speichere_abstimmung($antragsteller_id, $vorstand_id, $vorstand_name, $action, $bemerkung, $oauth);
 
             if (!$result['success']) {
                 wp_send_json_error(['message' => $result['message']]);
@@ -2855,8 +2854,269 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             $action_text = $action === 'approve' ? 'genehmigt' : 'abgelehnt';
             wp_send_json_success([
                 'message' => 'Ihre Entscheidung wurde gespeichert. Der Antrag wurde ' . $action_text . '.',
-                'action' => $action
+                'action'  => $action
             ]);
+        }
+
+        /**
+         * Holt einen Contact anhand des CRM-Feldes "token" (Antragsteller-Token).
+         */
+        private function get_contact_by_token($token_value, $oauth) {
+            $token_value = trim((string) $token_value);
+            if ($token_value === '') {
+                return null;
+            }
+
+            $url = 'https://www.zohoapis.eu/crm/v8/Contacts/search?criteria=' .
+                urlencode('(token:equals:' . $token_value . ')');
+
+            $response = wp_remote_get($url, [
+                'headers' => ['Authorization' => 'Zoho-oauthtoken ' . $oauth],
+                'timeout' => 30
+            ]);
+
+            if (is_wp_error($response)) {
+                $this->log('ERROR get_contact_by_token: ' . $response->get_error_message());
+                return null;
+            }
+
+            $http_code = wp_remote_retrieve_response_code($response);
+            if ($http_code === 204) {
+                return null;
+            }
+
+            $body = json_decode(wp_remote_retrieve_body($response), true);
+            return $body['data'][0] ?? null;
+        }
+
+        /**
+         * Holt alle Contacts mit Tag "Vorstand" aus dem CRM.
+         * 24h-Transient-Cache. Ergebnis ist alphabetisch nach Nachname sortiert.
+         */
+        private function get_active_vorstaende($oauth, $bypass_cache = false) {
+            $cache_key = 'dgptm_vorstand_liste';
+
+            if (!$bypass_cache) {
+                $cached = get_transient($cache_key);
+                if (is_array($cached)) {
+                    return $cached;
+                }
+            }
+
+            $vorstaende = [];
+            $page       = 1;
+            $page_size  = 200;
+
+            do {
+                $url = 'https://www.zohoapis.eu/crm/v8/Contacts/search?criteria=' .
+                    urlencode('(Tag:equals:Vorstand)') .
+                    '&page=' . $page . '&per_page=' . $page_size;
+
+                $response = wp_remote_get($url, [
+                    'headers' => ['Authorization' => 'Zoho-oauthtoken ' . $oauth],
+                    'timeout' => 30
+                ]);
+
+                if (is_wp_error($response)) {
+                    $this->log('ERROR get_active_vorstaende: ' . $response->get_error_message());
+                    break;
+                }
+
+                $http_code = wp_remote_retrieve_response_code($response);
+                if ($http_code === 204) {
+                    break;
+                }
+
+                $body = json_decode(wp_remote_retrieve_body($response), true);
+                $data = $body['data'] ?? [];
+
+                foreach ($data as $c) {
+                    $vorstaende[] = [
+                        'id'             => $c['id'],
+                        'first_name'     => $c['First_Name'] ?? '',
+                        'last_name'      => $c['Last_Name'] ?? '',
+                        'full_name'      => $c['Full_Name'] ?? trim(($c['First_Name'] ?? '') . ' ' . ($c['Last_Name'] ?? '')),
+                        'salutation'     => $c['Salutation'] ?? '',
+                        'academic_title' => $c['Academic_Title'] ?? '',
+                        'title_after'    => $c['Title_After_The_Name'] ?? ''
+                    ];
+                }
+
+                $more = !empty($body['info']['more_records']);
+                $page++;
+            } while ($more && $page < 20);
+
+            usort($vorstaende, function ($a, $b) {
+                $cmp = strcasecmp($a['last_name'], $b['last_name']);
+                return $cmp !== 0 ? $cmp : strcasecmp($a['first_name'], $b['first_name']);
+            });
+
+            set_transient($cache_key, $vorstaende, DAY_IN_SECONDS);
+            return $vorstaende;
+        }
+
+        /**
+         * Baut das Anzeigeformat eines Vorstandsmitglieds für das Dropdown.
+         * Berücksichtigt Titel und Nachname-Zusatz.
+         */
+        private function format_vorstand_label($v) {
+            $parts = array_filter([
+                $v['salutation']     ?? '',
+                $v['academic_title'] ?? '',
+                $v['first_name']     ?? '',
+                $v['last_name']      ?? ''
+            ], function ($s) { return trim((string) $s) !== ''; });
+
+            $label = implode(' ', $parts);
+            if (!empty($v['title_after'])) {
+                $label .= ', ' . $v['title_after'];
+            }
+            return $label !== '' ? $label : ($v['full_name'] ?? '(Unbekannt)');
+        }
+
+        /**
+         * Liefert Liste der IDs, die für diesen Antragsteller bereits abgestimmt haben.
+         */
+        private function get_bereits_abgestimmte_ids($antragsteller) {
+            $raw = $antragsteller['Vorstand_Abstimmungen'] ?? '';
+            if (empty($raw)) {
+                return [];
+            }
+            $decoded = json_decode($raw, true);
+            if (!is_array($decoded)) {
+                return [];
+            }
+            $ids = [];
+            foreach ($decoded as $a) {
+                if (!empty($a['vorstand_id'])) {
+                    $ids[] = (string) $a['vorstand_id'];
+                }
+            }
+            return $ids;
+        }
+
+        /**
+         * Sammelt Dateien aus den File-Upload-Feldern StudinachweisDirekt und QualiNachweisDirekt.
+         */
+        private function get_direct_uploads_from_contact($contact) {
+            $uploads = [];
+            if (!is_array($contact)) {
+                return $uploads;
+            }
+
+            $field_map = [
+                'StudinachweisDirekt' => 'Studienbescheinigung',
+                'QualiNachweisDirekt' => 'Qualifikationsnachweis'
+            ];
+
+            foreach ($field_map as $api_field => $label) {
+                $files = $contact[$api_field] ?? null;
+                if (!is_array($files)) {
+                    continue;
+                }
+                foreach ($files as $f) {
+                    if (empty($f['attachment_Id'])) {
+                        continue;
+                    }
+                    $uploads[] = [
+                        'attachment_id' => (string) $f['attachment_Id'],
+                        'file_name'     => $f['file_Name'] ?? 'Dokument',
+                        'file_size'     => $f['file_Size']  ?? '',
+                        'source'        => $label
+                    ];
+                }
+            }
+            return $uploads;
+        }
+
+        /**
+         * URL zum Download-Proxy für eine Nachweis-Datei des Antragstellers.
+         */
+        private function build_download_proxy_url($antragsteller_token, $attachment_id) {
+            return add_query_arg([
+                'action'              => 'dgptm_download_crm_file',
+                'antragsteller_token' => $antragsteller_token,
+                'attachment_id'       => $attachment_id
+            ], admin_url('admin-ajax.php'));
+        }
+
+        /**
+         * AJAX: Download-Proxy. Autorisierung via Antragsteller-Token — die gewünschte
+         * attachment_id muss in den Direktupload-Feldern genau dieses Antragstellers stehen.
+         */
+        public function ajax_download_crm_file() {
+            $antragsteller_token = sanitize_text_field($_GET['antragsteller_token'] ?? '');
+            $attachment_id       = sanitize_text_field($_GET['attachment_id'] ?? '');
+
+            if ($antragsteller_token === '' || $attachment_id === '') {
+                wp_die('Ungueltige Parameter', 'Download', ['response' => 400]);
+            }
+
+            $oauth = $this->get_access_token();
+            if (!$oauth) {
+                wp_die('CRM-Verbindung fehlgeschlagen', 'Download', ['response' => 502]);
+            }
+
+            $antragsteller = $this->get_contact_by_token($antragsteller_token, $oauth);
+            if (!$antragsteller) {
+                wp_die('Nicht autorisiert', 'Download', ['response' => 403]);
+            }
+
+            $uploads   = $this->get_direct_uploads_from_contact($antragsteller);
+            $allowed   = false;
+            $file_name = 'download.bin';
+            foreach ($uploads as $u) {
+                if ($u['attachment_id'] === $attachment_id) {
+                    $allowed   = true;
+                    $file_name = $u['file_name'];
+                    break;
+                }
+            }
+            if (!$allowed) {
+                wp_die('Datei ist fuer diesen Antrag nicht freigegeben', 'Download', ['response' => 403]);
+            }
+
+            $url = 'https://www.zohoapis.eu/crm/v8/Contacts/' . $antragsteller['id'] . '/Attachments/' . $attachment_id;
+            $response = wp_remote_get($url, [
+                'headers' => ['Authorization' => 'Zoho-oauthtoken ' . $oauth],
+                'timeout' => 60
+            ]);
+
+            if (is_wp_error($response)) {
+                $this->log('ERROR download-proxy: ' . $response->get_error_message());
+                wp_die('Fehler beim Laden der Datei', 'Download', ['response' => 502]);
+            }
+
+            $http_code = wp_remote_retrieve_response_code($response);
+            if ($http_code !== 200) {
+                wp_die('CRM-Fehler beim Download: HTTP ' . $http_code, 'Download', ['response' => 502]);
+            }
+
+            $body         = wp_remote_retrieve_body($response);
+            $content_type = wp_remote_retrieve_header($response, 'content-type');
+            if (empty($content_type)) {
+                $content_type = 'application/octet-stream';
+            }
+
+            nocache_headers();
+            header('Content-Type: ' . $content_type);
+            header('Content-Disposition: inline; filename="' . rawurlencode($file_name) . '"');
+            header('Content-Length: ' . strlen($body));
+            echo $body;
+            exit;
+        }
+
+        /**
+         * AJAX (Admin): Vorstands-Cache leeren (nach Tag-Änderungen im CRM).
+         */
+        public function ajax_clear_vorstand_cache() {
+            if (!current_user_can('manage_options')) {
+                wp_send_json_error(['message' => 'Keine Berechtigung'], 403);
+                return;
+            }
+            check_ajax_referer('dgptm_mitgliedsantrag_admin_nonce', 'nonce');
+            delete_transient('dgptm_vorstand_liste');
+            wp_send_json_success(['message' => 'Vorstands-Cache geleert.']);
         }
 
         /**
@@ -2903,10 +3163,9 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             // Update-Daten vorbereiten
             $update_data = [
-                'Vorstand_Abstimmungen' => wp_json_encode($abstimmungen),
-                'Vorstand_Genehmigungen' => $genehmigt_count,
-                'Vorstand_Ablehnungen' => $abgelehnt_count,
-                'Letzte_Vorstand_Abstimmung' => current_time('Y-m-d')
+                'Vorstand_Abstimmungen'    => wp_json_encode($abstimmungen),
+                'Membership_Approved'      => $genehmigt_count,
+                'Membership_Not_Approved'  => $abgelehnt_count
             ];
 
             // Wenn abgelehnt, Antragsstatus aktualisieren

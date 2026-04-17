@@ -7,22 +7,25 @@
     'use strict';
 
     $(document).ready(function() {
-        var $container = $('.dgptm-vorstandsgenehmigung-container');
-        var $buttons = $('.dgptm-vg-btn');
+        var $buttons   = $('.dgptm-vg-btn');
         var $resultBox = $('.dgptm-vg-result');
         var $bemerkung = $('#dgptm-vg-bemerkung');
+        var $vorstand  = $('#dgptm-vg-vorstand');
         var isProcessing = false;
 
-        // Button Click Handler
         $buttons.on('click', function(e) {
             e.preventDefault();
-
             if (isProcessing) return;
 
-            var $btn = $(this);
-            var action = $btn.data('action');
+            var action     = $(this).data('action');
+            var vorstandId = ($vorstand.val() || '').trim();
 
-            // Bestaetigung
+            if (!vorstandId) {
+                showError(dgptmVorstand.strings.select_vorstand);
+                $vorstand.focus();
+                return;
+            }
+
             var confirmMsg = action === 'approve'
                 ? dgptmVorstand.strings.confirm_approve
                 : dgptmVorstand.strings.confirm_reject;
@@ -31,25 +34,22 @@
                 return;
             }
 
-            // Processing starten
             isProcessing = true;
             $buttons.prop('disabled', true);
 
-            // Loading anzeigen
             $resultBox
                 .removeClass('success error')
                 .html('<div class="dgptm-vg-loading"><div class="dgptm-vg-spinner"></div><span>' + dgptmVorstand.strings.processing + '</span></div>')
                 .show();
 
-            // AJAX Request
             $.ajax({
                 url: dgptmVorstand.ajaxUrl,
                 type: 'POST',
                 data: {
                     action: 'dgptm_vorstand_entscheidung',
                     nonce: dgptmVorstand.nonce,
-                    antragsteller_id: dgptmVorstand.antragstellerId,
-                    vorstand_id: dgptmVorstand.vorstandId,
+                    antragsteller_token: dgptmVorstand.antragstellerToken,
+                    vorstand_id: vorstandId,
                     entscheidung: action,
                     bemerkung: $bemerkung.val()
                 },
@@ -59,17 +59,10 @@
                             .removeClass('error')
                             .addClass('success')
                             .html('<p>' + response.data.message + '</p>');
-
-                        // Buttons ausblenden
-                        $('.dgptm-vg-buttons').hide();
-                        $('.dgptm-vg-kommentar').hide();
-
-                        // Erfolgreiche Abstimmung - Seite nach 3 Sekunden neu laden
-                        setTimeout(function() {
-                            window.location.reload();
-                        }, 3000);
+                        $('.dgptm-vg-buttons, .dgptm-vg-kommentar, .dgptm-vg-select').hide();
+                        setTimeout(function() { window.location.reload(); }, 3000);
                     } else {
-                        showError(response.data.message || dgptmVorstand.strings.error);
+                        showError((response.data && response.data.message) || dgptmVorstand.strings.error);
                     }
                 },
                 error: function(xhr, status, error) {

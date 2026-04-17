@@ -193,6 +193,7 @@ $status_labels = [
                         <span class="dgptm-fe-question-preview"><?php echo esc_html(wp_trim_words($q->question_text, 10)); ?></span>
                         <span class="dgptm-fe-type-badge"><?php echo esc_html($question_types[$q->question_type] ?? $q->question_type); ?></span>
                         <?php if ($q->is_required) : ?><span class="dgptm-fe-required-badge">Pflicht</span><?php endif; ?>
+                        <?php if (!empty($q->is_privacy_sensitive)) : ?><span class="dgptm-fe-privacy-badge">🔒 Datenschutzrelevant</span><?php endif; ?>
                         <button type="button" class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-toggle-q">&#9660;</button>
                         <button type="button" class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-btn-danger dgptm-fe-remove-q">&times;</button>
                     </div>

@@ -180,6 +180,9 @@ $question_types = [
                         <?php if ($q->is_required) : ?>
                             <span class="dgptm-required-badge">Pflicht</span>
                         <?php endif; ?>
+                        <?php if (!empty($q->is_privacy_sensitive)) : ?>
+                            <span class="dgptm-privacy-badge">🔒 Datenschutzrelevant</span>
+                        <?php endif; ?>
                         <button type="button" class="dgptm-toggle-question button button-small">
                             <span class="dashicons dashicons-arrow-down-alt2"></span>
                         </button>

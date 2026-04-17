@@ -394,6 +394,7 @@ class DGPTM_Survey_Admin {
                 'is_required'        => absint($q['is_required'] ?? 0),
                 'parent_question_id' => absint($q['parent_question_id'] ?? 0),
                 'parent_answer_value' => sanitize_text_field($q['parent_answer_value'] ?? ''),
+                'is_privacy_sensitive' => absint($q['is_privacy_sensitive'] ?? 0),
             ];
 
             // Validate question type
@@ -546,6 +547,7 @@ class DGPTM_Survey_Admin {
                 'is_required'        => $q->is_required,
                 'parent_question_id' => 0, // Reset, will remap below
                 'parent_answer_value' => $q->parent_answer_value,
+                'is_privacy_sensitive' => $q->is_privacy_sensitive,
             ]);
             $id_map[$old_id] = $wpdb->insert_id;
         }

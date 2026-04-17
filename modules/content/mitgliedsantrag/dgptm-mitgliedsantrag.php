@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.1.1
+ * Version: 2.1.2
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.1.1';
+        private $version = '2.1.2';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -2503,7 +2503,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                             <?php foreach ($nachweise as $n): ?>
                                 <div class="dgptm-vg-attachment">
                                     <span class="dgptm-vg-attachment-icon">📄</span>
-                                    <a href="<?php echo esc_url($this->build_download_proxy_url($antragsteller_token, $n['attachment_id'])); ?>" target="_blank" rel="noopener noreferrer">
+                                    <a href="<?php echo esc_url($this->build_download_proxy_url($antragsteller_token, $n['file_id'])); ?>" target="_blank" rel="noopener noreferrer">
                                         <?php echo esc_html($n['file_name']); ?>
                                     </a>
                                     <span class="dgptm-vg-attachment-meta"><?php echo esc_html($n['source'] . (!empty($n['file_size']) ? ' · ' . $n['file_size'] : '')); ?></span>
@@ -3048,11 +3048,15 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                     continue;
                 }
                 foreach ($files as $f) {
-                    if (empty($f['attachment_Id'])) {
+                    // file_Id ist der für /crm/v8/files?id=... benötigte Hash-String;
+                    // attachment_Id (numerisch) funktioniert an diesem Endpoint nicht.
+                    $file_id = (string) ($f['file_Id'] ?? '');
+                    if ($file_id === '') {
                         continue;
                     }
                     $uploads[] = [
-                        'attachment_id' => (string) $f['attachment_Id'],
+                        'file_id'       => $file_id,
+                        'attachment_id' => (string) ($f['attachment_Id'] ?? ''),
                         'file_name'     => $f['file_Name'] ?? 'Dokument',
                         'file_size'     => $f['file_Size']  ?? '',
                         'source'        => $label
@@ -3064,24 +3068,28 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
         /**
          * URL zum Download-Proxy für eine Nachweis-Datei des Antragstellers.
+         * file_id ist der Zoho-File-ID-Hash (nicht die numerische attachment_Id).
          */
-        private function build_download_proxy_url($antragsteller_token, $attachment_id) {
+        private function build_download_proxy_url($antragsteller_token, $file_id) {
             return add_query_arg([
                 'action'              => 'dgptm_download_crm_file',
                 'antragsteller_token' => $antragsteller_token,
-                'attachment_id'       => $attachment_id
+                'file_id'             => $file_id
             ], admin_url('admin-ajax.php'));
         }
 
         /**
-         * AJAX: Download-Proxy. Autorisierung via Antragsteller-Token — die gewünschte
-         * attachment_id muss in den Direktupload-Feldern genau dieses Antragstellers stehen.
+         * AJAX: Download-Proxy für Zoho-File-Upload-Felder.
+         * Autorisierung: Antragsteller-Token muss zu einem Contact gehören, in dessen
+         * File-Upload-Feldern (StudinachweisDirekt / QualiNachweisDirekt) die angefragte
+         * file_id steht. Der Vorstand klickt den WP-Link, der Server holt die Datei mit
+         * OAuth von Zoho und streamt sie zurück — der Browser sieht nur WordPress.
          */
         public function ajax_download_crm_file() {
             $antragsteller_token = sanitize_text_field($_GET['antragsteller_token'] ?? '');
-            $attachment_id       = sanitize_text_field($_GET['attachment_id'] ?? '');
+            $file_id             = sanitize_text_field($_GET['file_id'] ?? '');
 
-            if ($antragsteller_token === '' || $attachment_id === '') {
+            if ($antragsteller_token === '' || $file_id === '') {
                 wp_die('Ungueltige Parameter', 'Download', ['response' => 400]);
             }
 
@@ -3099,7 +3107,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             $allowed   = false;
             $file_name = 'download.bin';
             foreach ($uploads as $u) {
-                if ($u['attachment_id'] === $attachment_id) {
+                if ($u['file_id'] === $file_id) {
                     $allowed   = true;
                     $file_name = $u['file_name'];
                     break;
@@ -3109,7 +3117,8 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 wp_die('Datei ist fuer diesen Antrag nicht freigegeben', 'Download', ['response' => 403]);
             }
 
-            $url = 'https://www.zohoapis.eu/crm/v8/Contacts/' . $antragsteller['id'] . '/Attachments/' . $attachment_id;
+            // Zoho-Endpoint für File-Upload-Felder: /crm/v8/files?id=<file_Id>
+            $url = 'https://www.zohoapis.eu/crm/v8/files?id=' . urlencode($file_id);
             $response = wp_remote_get($url, [
                 'headers' => ['Authorization' => 'Zoho-oauthtoken ' . $oauth],
                 'timeout' => 60
@@ -3122,13 +3131,15 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             $http_code = wp_remote_retrieve_response_code($response);
             if ($http_code !== 200) {
+                $body_err = wp_remote_retrieve_body($response);
+                $this->log('ERROR download-proxy HTTP ' . $http_code . ' body: ' . substr($body_err, 0, 500));
                 wp_die('CRM-Fehler beim Download: HTTP ' . $http_code, 'Download', ['response' => 502]);
             }
 
             $body         = wp_remote_retrieve_body($response);
             $content_type = wp_remote_retrieve_header($response, 'content-type');
             if (empty($content_type)) {
-                $content_type = 'application/octet-stream';
+                $content_type = $this->guess_content_type_from_name($file_name);
             }
 
             nocache_headers();
@@ -3137,6 +3148,25 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             header('Content-Length: ' . strlen($body));
             echo $body;
             exit;
+        }
+
+        /**
+         * Content-Type-Heuristik als Fallback, wenn Zoho keinen Header mitsendet.
+         */
+        private function guess_content_type_from_name($file_name) {
+            $ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+            $map = [
+                'pdf'  => 'application/pdf',
+                'png'  => 'image/png',
+                'jpg'  => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'gif'  => 'image/gif',
+                'webp' => 'image/webp',
+                'heic' => 'image/heic',
+                'doc'  => 'application/msword',
+                'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            ];
+            return $map[$ext] ?? 'application/octet-stream';
         }
 
         /**

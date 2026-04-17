@@ -962,3 +962,23 @@ select + .dgptm-other-text-input {
     font-family: monospace;
     color: #555;
 }
+
+/* ========================================
+   Text/Textarea-Antworten (Public-Ergebnisseite)
+   ======================================== */
+
+.dgptm-text-responses {
+    border: 1px solid #eee;
+    padding: 8px;
+    border-radius: 4px;
+}
+
+.dgptm-text-response-item {
+    padding: 6px 0;
+    border-bottom: 1px solid #f0f0f1;
+    font-size: 13px;
+}
+
+.dgptm-text-response-item:last-child {
+    border-bottom: none;
+}

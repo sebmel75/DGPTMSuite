@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.1.5
+ * Version: 2.1.6
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.1.5';
+        private $version = '2.1.6';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -2305,7 +2305,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             if ($antragsteller_token === '') {
                 return $this->render_error_message(
                     'Fehlende Parameter',
-                    'Bitte verwenden Sie den vollstaendigen Link aus der E-Mail. Es fehlt der Identifikationstoken.'
+                    'Bitte verwende den vollstaendigen Link aus der E-Mail. Es fehlt der Identifikationstoken.'
                 );
             }
 
@@ -2313,7 +2313,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             if (!$oauth) {
                 return $this->render_error_message(
                     'Verbindungsfehler',
-                    'Die Verbindung zum CRM-System konnte nicht hergestellt werden. Bitte versuchen Sie es spaeter erneut.'
+                    'Die Verbindung zum CRM-System konnte nicht hergestellt werden. Bitte versuche es spaeter erneut.'
                 );
             }
 
@@ -2321,7 +2321,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             if (!$antragsteller) {
                 return $this->render_error_message(
                     'Antrag nicht gefunden',
-                    'Zu diesem Link konnte kein Antrag zugeordnet werden. Bitte pruefen Sie die URL.'
+                    'Zu diesem Link konnte kein Antrag zugeordnet werden. Bitte pruefe die URL.'
                 );
             }
 
@@ -2356,13 +2356,13 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 'nonce'              => wp_create_nonce('dgptm_vorstand_entscheidung'),
                 'antragstellerToken' => $antragsteller_token,
                 'strings'            => [
-                    'confirm_approve'  => 'Moechten Sie diesen Mitgliedsantrag wirklich GENEHMIGEN?',
-                    'confirm_reject'   => 'Moechten Sie diesen Mitgliedsantrag wirklich ABLEHNEN?',
+                    'confirm_approve'  => 'Moechtest du diesen Mitgliedsantrag wirklich GENEHMIGEN?',
+                    'confirm_reject'   => 'Moechtest du diesen Mitgliedsantrag wirklich ABLEHNEN?',
                     'processing'       => 'Wird verarbeitet...',
-                    'select_vorstand'  => 'Bitte waehlen Sie Ihren Namen aus der Liste aus.',
+                    'select_vorstand'  => 'Bitte waehle deinen Namen aus der Liste aus.',
                     'success_approved' => 'Der Antrag wurde erfolgreich genehmigt.',
                     'success_rejected' => 'Der Antrag wurde abgelehnt.',
-                    'error'            => 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.'
+                    'error'            => 'Ein Fehler ist aufgetreten. Bitte versuche es erneut.'
                 ]
             ]);
 
@@ -2544,10 +2544,10 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                     </div>
                 <?php else: ?>
                     <div class="dgptm-vg-entscheidung">
-                        <h3>Ihre Entscheidung</h3>
+                        <h3>Deine Entscheidung</h3>
 
                         <div class="dgptm-vg-select">
-                            <label for="dgptm-vg-vorstand">Vorstandsmitglied (Ihr Name):</label>
+                            <label for="dgptm-vg-vorstand">Vorstandsmitglied (dein Name):</label>
                             <select id="dgptm-vg-vorstand" required>
                                 <option value="">-- bitte auswaehlen --</option>
                                 <?php foreach ($vorstaende_aktiv as $v): ?>
@@ -2866,7 +2866,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             $action_text = $action === 'approve' ? 'genehmigt' : 'abgelehnt';
             wp_send_json_success([
-                'message' => 'Ihre Entscheidung wurde gespeichert. Der Antrag wurde ' . $action_text . '.',
+                'message' => 'Deine Entscheidung wurde gespeichert. Der Antrag wurde ' . $action_text . '.',
                 'action'  => $action
             ]);
         }

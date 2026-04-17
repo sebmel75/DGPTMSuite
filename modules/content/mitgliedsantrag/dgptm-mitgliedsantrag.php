@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.1.6
+ * Version: 2.1.7
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.1.6';
+        private $version = '2.1.7';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -2391,7 +2391,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 </div>
 
                 <div class="dgptm-vg-antragsteller">
-                    <h3>Antragsteller</h3>
+                    <h3>Antragsteller:in</h3>
 
                     <div class="dgptm-vg-section">
                         <h4>Persoenliche Daten</h4>
@@ -3223,7 +3223,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             $antragsteller = $this->get_contact_details($antragsteller_id, $token);
 
             if (!$antragsteller) {
-                return ['success' => false, 'message' => 'Antragsteller nicht gefunden'];
+                return ['success' => false, 'message' => 'Antragsteller:in nicht gefunden'];
             }
 
             // Bestehende Abstimmungen laden

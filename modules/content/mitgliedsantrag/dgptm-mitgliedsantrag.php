@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.1.7
+ * Version: 2.1.8
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.1.7';
+        private $version = '2.1.8';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -2319,9 +2319,9 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             $antragsteller = $this->get_contact_by_token($antragsteller_token, $oauth);
             if (!$antragsteller) {
-                return $this->render_error_message(
-                    'Antrag nicht gefunden',
-                    'Zu diesem Link konnte kein Antrag zugeordnet werden. Bitte pruefe die URL.'
+                return $this->render_info_message(
+                    'Abstimmung bereits abgeschlossen',
+                    'Vielen Dank fuer dein Engagement! Die Abstimmungsphase zu diesem Mitgliedsantrag ist inzwischen beendet, eine Stimmabgabe ueber diesen Link ist daher nicht mehr moeglich. Bei Rueckfragen wende dich gerne an die Geschaeftsstelle.'
                 );
             }
 
@@ -2591,6 +2591,18 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         }
 
         /**
+         * Rendert eine neutrale Info-Meldung (kein Fehler, z. B. Abstimmungsphase beendet).
+         * Nutzt den bestehenden .dgptm-vg-empty-Stil aus dem Leerfall-Block.
+         */
+        private function render_info_message($title, $message) {
+            return sprintf(
+                '<div class="dgptm-vorstandsgenehmigung-container"><div class="dgptm-vg-empty"><h3>%s</h3><p>%s</p></div></div>',
+                esc_html($title),
+                esc_html($message)
+            );
+        }
+
+        /**
          * Formatiert ein Datum fuer die Anzeige
          */
         private function format_date($date) {
@@ -2834,7 +2846,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             // Antragsteller per Token auflösen (kein raw-ID im URL mehr)
             $antragsteller = $this->get_contact_by_token($antragsteller_token, $oauth);
             if (!$antragsteller) {
-                wp_send_json_error(['message' => 'Antrag nicht gefunden']);
+                wp_send_json_error(['message' => 'Die Abstimmungsphase fuer diesen Antrag ist bereits beendet.']);
                 return;
             }
             $antragsteller_id = $antragsteller['id'];

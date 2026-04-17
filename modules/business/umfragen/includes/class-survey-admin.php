@@ -719,4 +719,215 @@ class DGPTM_Survey_Admin {
             $user_id
         )) > 0;
     }
+
+    /**
+     * Aggregate answers for a single question into per-choice counts, numbers, and texts.
+     * Handles the "Choice|||Text|||Number" storage format from radio/checkbox with choices_with_text/number.
+     *
+     * @return array<string, array{count:int, numbers:float[], texts:string[]}>
+     */
+    public static function aggregate_choice_answers($question, $q_answers) {
+        $result = [];
+
+        $init_choice = function ($label) use (&$result) {
+            if (!isset($result[$label])) {
+                $result[$label] = ['count' => 0, 'numbers' => [], 'texts' => []];
+            }
+        };
+
+        $parse_value = function ($raw) {
+            $parts = explode('|||', $raw, 3);
+            return [
+                'base'   => $parts[0] ?? '',
+                'text'   => $parts[1] ?? '',
+                'number' => $parts[2] ?? '',
+            ];
+        };
+
+        $choices = $question->choices ? json_decode($question->choices, true) : [];
+        if (is_array($choices)) {
+            foreach ($choices as $c) {
+                $init_choice($c);
+            }
+        }
+
+        foreach ($q_answers as $a) {
+            $raw = $a->answer_value;
+
+            if ($question->question_type === 'checkbox') {
+                $vals = json_decode($raw, true);
+                if (!is_array($vals)) continue;
+            } else {
+                $vals = [$raw];
+            }
+
+            foreach ($vals as $val) {
+                $parsed = $parse_value($val);
+                $label = $parsed['base'];
+                if ($label === '') continue;
+                $init_choice($label);
+                $result[$label]['count']++;
+                if ($parsed['number'] !== '' && is_numeric($parsed['number'])) {
+                    $result[$label]['numbers'][] = floatval($parsed['number']);
+                }
+                if ($parsed['text'] !== '') {
+                    $result[$label]['texts'][] = $parsed['text'];
+                }
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Render aggregated results for a single question.
+     * Used by both admin-survey-results.php and public-results.php.
+     * Echoes HTML directly.
+     */
+    public static function render_question_result($q, $q_answers) {
+        $choices = $q->choices ? json_decode($q->choices, true) : [];
+
+        switch ($q->question_type) {
+            case 'radio':
+            case 'select':
+            case 'checkbox':
+                $per_choice = self::aggregate_choice_answers($q, $q_answers);
+                $total = count($q_answers);
+                $max_count = 1;
+                foreach ($per_choice as $data) {
+                    if ($data['count'] > $max_count) $max_count = $data['count'];
+                }
+                echo '<div class="dgptm-bar-chart">';
+                foreach ($per_choice as $label => $data) {
+                    $display_label = $label === '__other__' ? 'Sonstiges' : $label;
+                    $pct = $max_count > 0 ? round(($data['count'] / $max_count) * 100) : 0;
+                    $pct_total = $total > 0 ? round(($data['count'] / $total) * 100) : 0;
+                    echo '<div class="dgptm-bar-row">';
+                    echo '<span class="dgptm-bar-label" title="' . esc_attr($display_label) . '">' . esc_html($display_label) . '</span>';
+                    echo '<div class="dgptm-bar-track"><div class="dgptm-bar-fill" style="width:' . esc_attr($pct) . '%"></div></div>';
+                    echo '<span class="dgptm-bar-count">' . esc_html($data['count']) . ' (' . esc_html($pct_total) . '%)</span>';
+                    echo '</div>';
+
+                    if (!empty($data['numbers'])) {
+                        $nums = $data['numbers'];
+                        sort($nums);
+                        $n = count($nums);
+                        $sum = array_sum($nums);
+                        $avg = $sum / $n;
+                        $median_idx = (int) floor($n / 2);
+                        $median = $n % 2 === 0 ? ($nums[$median_idx - 1] + $nums[$median_idx]) / 2 : $nums[$median_idx];
+                        echo '<div class="dgptm-choice-stats">';
+                        echo 'n=' . esc_html($n);
+                        echo '  Median=' . esc_html(number_format_i18n($median, 1));
+                        echo '  &Oslash;=' . esc_html(number_format_i18n($avg, 1));
+                        echo '  Min&ndash;Max: ' . esc_html(number_format_i18n(min($nums))) . '&ndash;' . esc_html(number_format_i18n(max($nums)));
+                        echo '  &Sigma;=' . esc_html(number_format_i18n($sum));
+                        echo '</div>';
+                    }
+
+                    if (!empty($data['texts'])) {
+                        echo '<details class="dgptm-choice-details">';
+                        echo '<summary>' . esc_html(count($data['texts'])) . ' Freitext-Eintrag/Eintr&auml;ge</summary>';
+                        echo '<ul class="dgptm-choice-texts">';
+                        foreach ($data['texts'] as $t) {
+                            echo '<li>' . esc_html($t) . '</li>';
+                        }
+                        echo '</ul>';
+                        echo '</details>';
+                    }
+
+                    if (!empty($data['numbers']) && count($data['numbers']) > 0) {
+                        $nums_display = $data['numbers'];
+                        sort($nums_display);
+                        echo '<details class="dgptm-choice-details">';
+                        echo '<summary>Zahlen-Einzelwerte anzeigen</summary>';
+                        echo '<p class="dgptm-choice-numbers">' . esc_html(implode(', ', array_map('number_format_i18n', $nums_display))) . '</p>';
+                        echo '</details>';
+                    }
+                }
+                echo '</div>';
+                break;
+
+            case 'number':
+                $values = [];
+                foreach ($q_answers as $a) {
+                    if (is_numeric($a->answer_value)) $values[] = floatval($a->answer_value);
+                }
+                if (!empty($values)) {
+                    sort($values);
+                    $sum = array_sum($values);
+                    $cnt = count($values);
+                    $avg = $sum / $cnt;
+                    $median_idx = (int) floor($cnt / 2);
+                    $median = $cnt % 2 === 0 ? ($values[$median_idx - 1] + $values[$median_idx]) / 2 : $values[$median_idx];
+                    echo '<div class="dgptm-number-stats">';
+                    printf('<div class="dgptm-number-stat"><strong>%s</strong><span>Minimum</span></div>', esc_html(number_format_i18n(min($values))));
+                    printf('<div class="dgptm-number-stat"><strong>%s</strong><span>Maximum</span></div>', esc_html(number_format_i18n(max($values))));
+                    printf('<div class="dgptm-number-stat"><strong>%s</strong><span>Durchschnitt</span></div>', esc_html(number_format_i18n($avg, 1)));
+                    printf('<div class="dgptm-number-stat"><strong>%s</strong><span>Median</span></div>', esc_html(number_format_i18n($median, 1)));
+                    printf('<div class="dgptm-number-stat"><strong>%s</strong><span>Summe</span></div>', esc_html(number_format_i18n($sum)));
+                    echo '</div>';
+                } else {
+                    echo '<p style="color:#999;">Keine numerischen Antworten.</p>';
+                }
+                break;
+
+            case 'matrix':
+                $rows = isset($choices['rows']) ? $choices['rows'] : [];
+                $cols = isset($choices['columns']) ? $choices['columns'] : [];
+                $matrix_counts = [];
+                foreach ($rows as $r) {
+                    $rk = sanitize_title($r);
+                    foreach ($cols as $c) $matrix_counts[$rk][$c] = 0;
+                }
+                foreach ($q_answers as $a) {
+                    $vals = json_decode($a->answer_value, true);
+                    if (!is_array($vals)) continue;
+                    foreach ($vals as $rk => $cv) {
+                        if (isset($matrix_counts[$rk][$cv])) $matrix_counts[$rk][$cv]++;
+                    }
+                }
+                $matrix_max = 1;
+                foreach ($matrix_counts as $rc) foreach ($rc as $c) if ($c > $matrix_max) $matrix_max = $c;
+                echo '<div class="dgptm-matrix-result"><table><thead><tr><th></th>';
+                foreach ($cols as $c) echo '<th>' . esc_html($c) . '</th>';
+                echo '</tr></thead><tbody>';
+                foreach ($rows as $r) {
+                    $rk = sanitize_title($r);
+                    echo '<tr><th>' . esc_html($r) . '</th>';
+                    foreach ($cols as $c) {
+                        $v = $matrix_counts[$rk][$c] ?? 0;
+                        $intensity = $matrix_max > 0 ? ($v / $matrix_max) * 0.4 : 0;
+                        echo '<td class="dgptm-matrix-cell" style="background:rgba(34,113,177,' . $intensity . ')">' . esc_html($v) . '</td>';
+                    }
+                    echo '</tr>';
+                }
+                echo '</tbody></table></div>';
+                break;
+
+            case 'text':
+            case 'textarea':
+                echo '<div class="dgptm-text-responses">';
+                if (empty($q_answers)) {
+                    echo '<p style="color:#999;">Keine Antworten.</p>';
+                } else {
+                    foreach ($q_answers as $a) {
+                        echo '<div class="dgptm-text-response-item">' . esc_html($a->answer_value) . '</div>';
+                    }
+                }
+                echo '</div>';
+                break;
+
+            case 'file':
+                $file_count = 0;
+                foreach ($q_answers as $a) {
+                    if ($a->file_ids) {
+                        $fids = json_decode($a->file_ids, true);
+                        if (is_array($fids)) $file_count += count($fids);
+                    }
+                }
+                echo '<p>' . esc_html($file_count) . ' Datei(en) hochgeladen.</p>';
+                break;
+        }
+    }
 }

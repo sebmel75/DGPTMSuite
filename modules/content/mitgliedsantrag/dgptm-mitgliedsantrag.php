@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.1.8
+ * Version: 2.1.9
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.1.8';
+        private $version = '2.1.9';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -2325,6 +2325,14 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 );
             }
 
+            // Nur Antraege mit Contact_Status "In Prüfung beim Vorstand" sind offen
+            if (($antragsteller['Contact_Status'] ?? '') !== 'In Prüfung beim Vorstand') {
+                return $this->render_info_message(
+                    'Abstimmung bereits abgeschlossen',
+                    'Vielen Dank fuer dein Engagement! Dieser Mitgliedsantrag befindet sich nicht mehr in der Vorstandsabstimmung. Bei Rueckfragen wende dich gerne an die Geschaeftsstelle.'
+                );
+            }
+
             $vorstaende_all    = $this->get_active_vorstaende($oauth);
             $abgestimmte_ids   = $this->get_bereits_abgestimmte_ids($antragsteller);
             $vorstaende_aktiv  = array_values(array_filter($vorstaende_all, function ($v) use ($abgestimmte_ids) {
@@ -2847,6 +2855,10 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             $antragsteller = $this->get_contact_by_token($antragsteller_token, $oauth);
             if (!$antragsteller) {
                 wp_send_json_error(['message' => 'Die Abstimmungsphase fuer diesen Antrag ist bereits beendet.']);
+                return;
+            }
+            if (($antragsteller['Contact_Status'] ?? '') !== 'In Prüfung beim Vorstand') {
+                wp_send_json_error(['message' => 'Dieser Antrag befindet sich nicht mehr in der Vorstandsabstimmung.']);
                 return;
             }
             $antragsteller_id = $antragsteller['id'];

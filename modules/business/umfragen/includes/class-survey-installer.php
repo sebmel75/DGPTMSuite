@@ -59,6 +59,7 @@ class DGPTM_Survey_Installer {
             is_required TINYINT(1) NOT NULL DEFAULT 0,
             parent_question_id BIGINT(20) UNSIGNED NOT NULL DEFAULT 0,
             parent_answer_value VARCHAR(255) NOT NULL DEFAULT '',
+            is_privacy_sensitive TINYINT(1) NOT NULL DEFAULT 0,
             PRIMARY KEY (id),
             KEY survey_id (survey_id),
             KEY sort_order (sort_order)
@@ -160,6 +161,10 @@ class DGPTM_Survey_Installer {
 
         if (!$has($questions, 'parent_answer_value')) {
             $wpdb->query("ALTER TABLE $questions ADD COLUMN parent_answer_value VARCHAR(255) NOT NULL DEFAULT ''");
+        }
+
+        if (!$has($questions, 'is_privacy_sensitive')) {
+            $wpdb->query("ALTER TABLE $questions ADD COLUMN is_privacy_sensitive TINYINT(1) NOT NULL DEFAULT 0");
         }
 
         // Backfill: generate survey_token for existing surveys that don't have one

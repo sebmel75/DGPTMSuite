@@ -259,6 +259,18 @@
     margin-bottom: 0;
 }
 
+/* Testmodus-Banner (nur fuer WP-Admins mit ?skip_status_check=1) */
+.dgptm-vg-testmode {
+    margin: 0 0 20px 0;
+    padding: 10px 16px;
+    background: #fffbeb;
+    border: 1px dashed #f59e0b;
+    border-radius: 8px;
+    font-size: 0.95em;
+    color: #92400e;
+    text-align: center;
+}
+
 .dgptm-vg-attachments {
     display: flex;
     flex-direction: column;

@@ -2649,8 +2649,9 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
         /**
          * Shortcode [buergenbestaetigung] — Bürgschaftsbestätigung per Link.
-         * URL: ?token=<antragsteller.token>&g=1|2
-         * g=1 → Guarantor_*_1-Felder, g=2 → Guarantor_*_2-Felder.
+         * URL: ?token=<antragsteller.token>&email=<buerge.email>
+         * Der Server matcht die E-Mail gegen Guarantor_Mail_1 / _2 und ermittelt
+         * daraus den Slot. Groß-/Kleinschreibung wird ignoriert.
          */
         public function render_buergenbestaetigung($atts) {
             wp_enqueue_style(
@@ -2661,13 +2662,12 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             );
 
             $antragsteller_token = isset($_GET['token']) ? sanitize_text_field($_GET['token']) : '';
-            $slot_raw            = isset($_GET['g']) ? sanitize_text_field($_GET['g']) : '';
-            $slot                = in_array($slot_raw, ['1', '2'], true) ? (int) $slot_raw : 0;
+            $buerge_email_raw    = isset($_GET['email']) ? sanitize_email(wp_unslash($_GET['email'])) : '';
 
-            if ($antragsteller_token === '' || $slot === 0) {
+            if ($antragsteller_token === '' || $buerge_email_raw === '') {
                 return $this->render_error_message(
                     'Fehlende Parameter',
-                    'Bitte verwende den vollstaendigen Link aus der E-Mail. Es fehlen Identifikationstoken oder Buergen-Kennung.'
+                    'Bitte verwende den vollstaendigen Link aus der E-Mail. Es fehlen Identifikationstoken oder Buerg:innen-E-Mail.'
                 );
             }
 
@@ -2687,16 +2687,17 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 );
             }
 
+            $slot = $this->match_buerge_slot_by_email($antragsteller, $buerge_email_raw);
+            if ($slot === 0) {
+                return $this->render_error_message(
+                    'Buerg:innen-Eintrag nicht gefunden',
+                    'Unter diesem Antrag ist die angegebene E-Mail-Adresse nicht als Buerg:in hinterlegt. Bitte pruefe, ob du den richtigen Link verwendest.'
+                );
+            }
+
             $buerge_name   = $antragsteller['Guarantor_Name_' . $slot]   ?? '';
             $buerge_mail   = $antragsteller['Guarantor_Mail_' . $slot]   ?? '';
             $buerge_status = !empty($antragsteller['Guarantor_Status_' . $slot]);
-
-            if (trim($buerge_name) === '' && trim($buerge_mail) === '') {
-                return $this->render_error_message(
-                    'Buergen-Eintrag nicht gefunden',
-                    'Unter diesem Link wurde kein Buergen-Eintrag hinterlegt. Bitte pruefe, ob du den richtigen Link verwendest.'
-                );
-            }
 
             $antragsteller_name = $antragsteller['Full_Name']
                 ?? trim(($antragsteller['First_Name'] ?? '') . ' ' . ($antragsteller['Last_Name'] ?? ''));
@@ -2720,7 +2721,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 'ajaxUrl'            => admin_url('admin-ajax.php'),
                 'nonce'              => wp_create_nonce('dgptm_buerge_entscheidung'),
                 'antragstellerToken' => $antragsteller_token,
-                'slot'               => $slot,
+                'buergeEmail'        => $buerge_email_raw,
                 'strings'            => [
                     'confirm_confirm' => 'Moechtest du die Buergschaft wirklich bestaetigen?',
                     'confirm_reject'  => 'Moechtest du die Buergschaft wirklich ablehnen?',
@@ -2738,7 +2739,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             <div class="dgptm-vorstandsgenehmigung-container">
                 <div class="dgptm-vg-header">
                     <h2>Buergschaftsbestaetigung</h2>
-                    <p class="dgptm-vg-info">Anfrage an: <strong><?php echo esc_html($buerge_name ?: $buerge_mail); ?></strong> (Buerge <?php echo (int) $slot; ?>)</p>
+                    <p class="dgptm-vg-info">Anfrage an: <strong><?php echo esc_html($buerge_name ?: $buerge_mail); ?></strong> (<?php echo esc_html($buerge_mail); ?>)</p>
                 </div>
 
                 <div class="dgptm-vg-antragsteller">
@@ -2797,6 +2798,24 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         }
 
         /**
+         * Ermittelt den Bürgen-Slot (1 oder 2) anhand der E-Mail-Adresse.
+         * Liefert 0 wenn kein Match.
+         */
+        private function match_buerge_slot_by_email($antragsteller, $email) {
+            $needle = strtolower(trim((string) $email));
+            if ($needle === '') {
+                return 0;
+            }
+            foreach ([1, 2] as $i) {
+                $val = strtolower(trim((string) ($antragsteller['Guarantor_Mail_' . $i] ?? '')));
+                if ($val !== '' && $val === $needle) {
+                    return $i;
+                }
+            }
+            return 0;
+        }
+
+        /**
          * AJAX: Bürgen-Bestätigung oder -Ablehnung.
          * Setzt Guarantor_Status_<slot> = true bei Bestätigung (Ablehnung belässt
          * den Wert auf false und dokumentiert die Entscheidung als Notiz).
@@ -2805,13 +2824,11 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             check_ajax_referer('dgptm_buerge_entscheidung', 'nonce');
 
             $antragsteller_token = sanitize_text_field($_POST['antragsteller_token'] ?? '');
-            $slot_raw            = sanitize_text_field($_POST['slot'] ?? '');
+            $buerge_email        = sanitize_email(wp_unslash($_POST['buerge_email'] ?? ''));
             $action              = sanitize_text_field($_POST['entscheidung'] ?? '');
             $bemerkung           = sanitize_textarea_field($_POST['bemerkung'] ?? '');
 
-            $slot = in_array($slot_raw, ['1', '2'], true) ? (int) $slot_raw : 0;
-
-            if ($antragsteller_token === '' || $slot === 0 || !in_array($action, ['confirm', 'reject'], true)) {
+            if ($antragsteller_token === '' || $buerge_email === '' || !in_array($action, ['confirm', 'reject'], true)) {
                 wp_send_json_error(['message' => 'Ungueltige Parameter']);
                 return;
             }
@@ -2825,6 +2842,12 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             $antragsteller = $this->get_contact_by_token($antragsteller_token, $oauth);
             if (!$antragsteller) {
                 wp_send_json_error(['message' => 'Antrag nicht mehr zugeordnet.']);
+                return;
+            }
+
+            $slot = $this->match_buerge_slot_by_email($antragsteller, $buerge_email);
+            if ($slot === 0) {
+                wp_send_json_error(['message' => 'Die angegebene E-Mail ist nicht als Buerg:in hinterlegt.']);
                 return;
             }
 

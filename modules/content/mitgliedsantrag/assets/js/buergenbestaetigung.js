@@ -40,7 +40,7 @@
                     action: 'dgptm_buerge_entscheidung',
                     nonce: dgptmBuerge.nonce,
                     antragsteller_token: dgptmBuerge.antragstellerToken,
-                    slot: dgptmBuerge.slot,
+                    buerge_email: dgptmBuerge.buergeEmail,
                     entscheidung: action,
                     bemerkung: $bemerkung.val()
                 },

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.3.3
+ * Version: 2.3.4
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.3.3';
+        private $version = '2.3.4';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -2500,6 +2500,23 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                             <?php endif; ?>
                         </table>
                     </div>
+
+                    <?php if ($hat_quali && $benoetigte_buergen === 0): ?>
+                    <div class="dgptm-vg-section dgptm-vg-note">
+                        <h4>Keine Bürg:innen erforderlich</h4>
+                        <p>
+                            Für diese Antragstellerin / diesen Antragsteller liegt ein Qualifikationsnachweis vor —
+                            gemäß § 4.1.1.1 der Satzung sind daher <strong>keine Bürg:innen</strong> erforderlich.
+                            Bitte prüfe den Nachweis im Abschnitt <em>„Hochgeladene Nachweise"</em>.
+                        </p>
+                        <details class="dgptm-vg-satzung">
+                            <summary>§&nbsp;4.1.1.1 der Satzung einblenden</summary>
+                            <div class="dgptm-vg-satzung-text">
+                                <p><strong>§&nbsp;4.1.1.1</strong> — Ordentliches Mitglied kann jede natürliche Person werden, die über eine anerkannte Qualifikation als „Kardiotechniker", „Perfusionist", „Perfusiologe" oder „Technischer Mediziner" verfügt oder sich in einer entsprechenden Ausbildung befindet. Anerkannte Qualifikationen sind insbesondere das <strong>ECCP-Zertifikat</strong> (European Certificate in Cardiovascular Perfusion) und/oder ein Abschluss als „Kardiotechniker" nach dem Berliner „Gesetz über Medizinalfachberufe".</p>
+                            </div>
+                        </details>
+                    </div>
+                    <?php endif; ?>
 
                     <?php if ($buergen_fehlen): ?>
                     <div class="dgptm-vg-section dgptm-vg-warning">

@@ -185,6 +185,38 @@
 
 /* .dgptm-vg-empty teilt sich das Card-Styling mit .dgptm-vorstandsgenehmigung-error (oben) */
 
+/* Info-Hinweis: Qualifikationsnachweis vorhanden, keine Bürg:innen nötig */
+.dgptm-vg-note {
+    background: #ebf8ff;
+    border: 1px solid #63b3ed;
+    border-left: 4px solid #3182ce;
+}
+
+.dgptm-vg-note h4 {
+    color: #1e4e8c;
+}
+
+.dgptm-vg-note h4::before {
+    content: 'ℹ';
+    display: inline-block;
+    margin-right: 8px;
+}
+
+.dgptm-vg-note p {
+    color: #2c5282;
+    line-height: 1.6;
+    margin: 0 0 12px 0;
+}
+
+.dgptm-vg-note .dgptm-vg-satzung summary {
+    background: #bee3f8;
+    color: #1e4e8c;
+}
+
+.dgptm-vg-note .dgptm-vg-satzung summary:hover {
+    background: #90cdf4;
+}
+
 /* Warnhinweis: Bürg:innen-Anforderung nicht erfüllt */
 .dgptm-vg-warning {
     background: #fffaf0;

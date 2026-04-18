@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.3.1
+ * Version: 2.3.2
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Helper-Funktion fuer Mitgliedsantrag Settings
+ * Helper-Funktion für Mitgliedsantrag Settings
  * Verwendet das zentrale DGPTM Settings-System mit Fallback auf alte Options
  */
 if (!function_exists('dgptm_ma_get_options')) {
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.3.1';
+        private $version = '2.3.2';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -103,7 +103,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         }
 
         public function register_rest_routes() {
-            // Temporaerer Diagnose-Endpoint (Health-Check-Token oder Admin)
+            // Temporärer Diagnose-Endpoint (Health-Check-Token oder Admin)
             register_rest_route('dgptm/v1', '/diagnose-contact/(?P<id>\d+)', [
                 'methods' => 'GET',
                 'callback' => [$this, 'rest_diagnose_contact'],
@@ -172,7 +172,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                     foreach ($always_show as $key) {
                         $result['contact'][$key] = $contact[$key] ?? null;
                     }
-                    // Zusaetzlich alle nicht-null Custom-Felder (Arrays als JSON-String)
+                    // Zusätzlich alle nicht-null Custom-Felder (Arrays als JSON-String)
                     $result['contact_extra'] = [];
                     foreach ($contact as $key => $val) {
                         if ($val === null || $val === '' || in_array($key, $always_show, true)) {
@@ -181,7 +181,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                         $result['contact_extra'][$key] = is_array($val) ? wp_json_encode($val) : $val;
                     }
 
-                    // Spezialblock fuer File-Upload-Felder (Nachweise)
+                    // Spezialblock für File-Upload-Felder (Nachweise)
                     $result['nachweise_raw'] = [
                         'StudinachweisDirekt' => $contact['StudinachweisDirekt'] ?? null,
                         'QualiNachweisDirekt' => $contact['QualiNachweisDirekt'] ?? null
@@ -1393,7 +1393,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 dgptm_log_verbose('Blueprint triggered successfully', 'mitgliedsantrag');
             }
 
-            // Infomail an Geschaeftsstelle
+            // Infomail an Geschäftsstelle
             $this->send_notification_email($data, $contact_id);
 
             // Schedule deletion of uploaded certificates after 10 minutes
@@ -1543,7 +1543,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             if ($existing_contact) {
                 dgptm_log_info('Kontakt gefunden: ' . $existing_contact['id'] . ' (' . ($existing_contact['First_Name'] ?? '') . ' ' . ($existing_contact['Last_Name'] ?? '') . ') -> UPDATE', 'mitgliedsantrag');
             } else {
-                dgptm_log_info('Kein Kontakt gefunden fuer ' . $data['email1'] . ' / ' . $data['vorname'] . ' ' . $data['nachname'] . ' -> CREATE', 'mitgliedsantrag');
+                dgptm_log_info('Kein Kontakt gefunden für ' . $data['email1'] . ' / ' . $data['vorname'] . ' ' . $data['nachname'] . ' -> CREATE', 'mitgliedsantrag');
             }
 
             // Check if contact has existing application or membership
@@ -1573,7 +1573,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 return ($value === true || $value === 'true' || $value === '1' || $value === 1);
             };
 
-            // Zoho Date-Felder: leere/ungueltige Werte verursachen INVALID_DATA
+            // Zoho Date-Felder: leere/ungültige Werte verursachen INVALID_DATA
             $zoho_date_fields = ['Freigestellt_bis', 'Date_of_Birth'];
 
             // Map form data to CRM fields
@@ -1581,7 +1581,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 if (isset($data[$form_field])) {
                     $value = $data[$form_field];
 
-                    // Date-Felder: nur gueltige YYYY-MM-DD Werte senden
+                    // Date-Felder: nur gültige YYYY-MM-DD Werte senden
                     if (in_array($crm_field, $zoho_date_fields)) {
                         if (empty($value) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
                             dgptm_log_info('Skipping date field ' . $crm_field . ' (value: "' . $value . '")', 'mitgliedsantrag');
@@ -1984,7 +1984,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             // Blueprint-Pflichtfelder aus Kontaktdaten befuellen
             $bp_data = [];
 
-            // Kontakt abrufen fuer Pflichtfelder
+            // Kontakt abrufen für Pflichtfelder
             $contact_resp = wp_remote_get(
                 'https://www.zohoapis.eu/crm/v8/Contacts/' . $contact_id,
                 ['headers' => ['Authorization' => 'Zoho-oauthtoken ' . $token], 'timeout' => 15]
@@ -2047,7 +2047,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         }
 
         /**
-         * Benachrichtigungs-E-Mail an Geschaeftsstelle senden
+         * Benachrichtigungs-E-Mail an Geschäftsstelle senden
          */
         private function send_notification_email($data, $contact_id) {
             $to = 'geschaeftsstelle@dgptm.de';
@@ -2124,9 +2124,9 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             $sent = wp_mail($to, $subject, $body, $headers);
 
             if ($sent) {
-                dgptm_log_info('Infomail gesendet an ' . $to . ' fuer Contact ' . $contact_id, 'mitgliedsantrag');
+                dgptm_log_info('Infomail gesendet an ' . $to . ' für Contact ' . $contact_id, 'mitgliedsantrag');
             } else {
-                dgptm_log_warning('Infomail an ' . $to . ' fehlgeschlagen fuer Contact ' . $contact_id, 'mitgliedsantrag');
+                dgptm_log_warning('Infomail an ' . $to . ' fehlgeschlagen für Contact ' . $contact_id, 'mitgliedsantrag');
             }
         }
 
@@ -2320,7 +2320,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             if ($antragsteller_token === '') {
                 return $this->render_error_message(
                     'Fehlende Parameter',
-                    'Bitte verwende den vollstaendigen Link aus der E-Mail. Es fehlt der Identifikationstoken.'
+                    'Bitte verwende den vollständigen Link aus der E-Mail. Es fehlt der Identifikationstoken.'
                 );
             }
 
@@ -2328,7 +2328,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             if (!$oauth) {
                 return $this->render_error_message(
                     'Verbindungsfehler',
-                    'Die Verbindung zum CRM-System konnte nicht hergestellt werden. Bitte versuche es spaeter erneut.'
+                    'Die Verbindung zum CRM-System konnte nicht hergestellt werden. Bitte versuche es später erneut.'
                 );
             }
 
@@ -2336,7 +2336,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             if (!$antragsteller) {
                 return $this->render_info_message(
                     'Abstimmung bereits abgeschlossen',
-                    'Vielen Dank fuer dein Engagement! Die Abstimmungsphase zu diesem Mitgliedsantrag ist inzwischen beendet, eine Stimmabgabe ueber diesen Link ist daher nicht mehr moeglich. Bei Rueckfragen wende dich gerne an die Geschaeftsstelle.'
+                    'Vielen Dank für dein Engagement! Die Abstimmungsphase zu diesem Mitgliedsantrag ist inzwischen beendet, eine Stimmabgabe über diesen Link ist daher nicht mehr möglich. Bei Rückfragen wende dich gerne an die Geschäftsstelle.'
                 );
             }
 
@@ -2344,11 +2344,11 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             // Nicht-Admins ignorieren den Parameter.
             $skip_status_check = current_user_can('manage_options') && !empty($_GET['skip_status_check']);
 
-            // Nur Antraege mit Contact_Status "In Prüfung beim Vorstand" sind offen
+            // Nur Anträge mit Contact_Status "In Prüfung beim Vorstand" sind offen
             if (!$skip_status_check && ($antragsteller['Contact_Status'] ?? '') !== 'In Prüfung beim Vorstand') {
                 return $this->render_info_message(
                     'Abstimmung bereits abgeschlossen',
-                    'Vielen Dank fuer dein Engagement! Dieser Mitgliedsantrag befindet sich nicht mehr in der Vorstandsabstimmung. Bei Rueckfragen wende dich gerne an die Geschaeftsstelle.'
+                    'Vielen Dank für dein Engagement! Dieser Mitgliedsantrag befindet sich nicht mehr in der Vorstandsabstimmung. Bei Rückfragen wende dich gerne an die Geschäftsstelle.'
                 );
             }
 
@@ -2378,10 +2378,10 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 'antragstellerToken' => $antragsteller_token,
                 'skipStatusCheck'    => $skip_status_check ? 1 : 0,
                 'strings'            => [
-                    'confirm_approve'  => 'Moechtest du diesen Mitgliedsantrag wirklich GENEHMIGEN?',
-                    'confirm_reject'   => 'Moechtest du diesen Mitgliedsantrag wirklich ABLEHNEN?',
+                    'confirm_approve'  => 'Möchtest du diesen Mitgliedsantrag wirklich GENEHMIGEN?',
+                    'confirm_reject'   => 'Möchtest du diesen Mitgliedsantrag wirklich ABLEHNEN?',
                     'processing'       => 'Wird verarbeitet...',
-                    'select_vorstand'  => 'Bitte waehle deinen Namen aus der Liste aus.',
+                    'select_vorstand'  => 'Bitte wähle deinen Namen aus der Liste aus.',
                     'success_approved' => 'Der Antrag wurde erfolgreich genehmigt.',
                     'success_rejected' => 'Der Antrag wurde abgelehnt.',
                     'error'            => 'Ein Fehler ist aufgetreten. Bitte versuche es erneut.'
@@ -2398,16 +2398,16 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             // nicht reagiert hat, erfüllt die Satzungsvorgabe nicht.
             $hat_quali = !empty($antragsteller['QualiNachweisDirekt']);
             $hat_studi = !empty($antragsteller['StudinachweisDirekt']);
-            $benoetigte_buergen = $hat_quali ? 0 : ($hat_studi ? 1 : 2);
+            $benötigte_buergen = $hat_quali ? 0 : ($hat_studi ? 1 : 2);
 
             $b1_name = !empty($antragsteller['Guarantor_Name_1']);
             $b2_name = !empty($antragsteller['Guarantor_Name_2']);
             $b1_ok   = !empty($antragsteller['Guarantor_Status_1']);
             $b2_ok   = !empty($antragsteller['Guarantor_Status_2']);
             $vorhandene_buergen  = ($b1_name ? 1 : 0) + ($b2_name ? 1 : 0);
-            $bestaetigte_buergen = ($b1_ok ? 1 : 0)   + ($b2_ok ? 1 : 0);
+            $bestätigte_buergen = ($b1_ok ? 1 : 0)   + ($b2_ok ? 1 : 0);
             $offene_buergen      = ($b1_name && !$b1_ok ? 1 : 0) + ($b2_name && !$b2_ok ? 1 : 0);
-            $buergen_fehlen      = $bestaetigte_buergen < $benoetigte_buergen;
+            $buergen_fehlen      = $bestätigte_buergen < $benötigte_buergen;
 
             // Adresse: Mailing_* bevorzugen, Other_* als Fallback
             $addr_street  = $antragsteller['Mailing_Street']  ?? $antragsteller['Other_Street']  ?? '';
@@ -2506,13 +2506,13 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                         <h4>Bürg:innen-Anforderung nicht erfüllt</h4>
                         <p>
                             Laut Satzung (§&nbsp;4) werden für diese Mitgliedschaftsart
-                            <strong><?php echo (int) $benoetigte_buergen; ?>&nbsp;bestätigte Bürg:in<?php echo $benoetigte_buergen === 1 ? '' : 'nen'; ?></strong>
-                            benötigt, bestätigt <?php echo $bestaetigte_buergen === 1 ? 'hat' : 'haben'; ?> bisher
-                            <strong><?php echo (int) $bestaetigte_buergen; ?></strong>
+                            <strong><?php echo (int) $benötigte_buergen; ?>&nbsp;bestätigte Bürg:in<?php echo $benötigte_buergen === 1 ? '' : 'nen'; ?></strong>
+                            benötigt, bestätigt <?php echo $bestätigte_buergen === 1 ? 'hat' : 'haben'; ?> bisher
+                            <strong><?php echo (int) $bestätigte_buergen; ?></strong>
                             <?php if ($offene_buergen > 0): ?>
                                 — <?php echo (int) $offene_buergen; ?>&nbsp;Bürg:in<?php echo $offene_buergen === 1 ? '' : 'nen'; ?> <?php echo $offene_buergen === 1 ? 'hat' : 'haben'; ?> noch nicht reagiert.
                             <?php else: ?>
-                                — es <?php echo ($benoetigte_buergen - $bestaetigte_buergen) === 1 ? 'fehlt' : 'fehlen'; ?> <?php echo (int) ($benoetigte_buergen - $bestaetigte_buergen); ?>&nbsp;Eintrag<?php echo ($benoetigte_buergen - $bestaetigte_buergen) === 1 ? '' : 'e'; ?>.
+                                — es <?php echo ($benötigte_buergen - $bestätigte_buergen) === 1 ? 'fehlt' : 'fehlen'; ?> <?php echo (int) ($benötigte_buergen - $bestätigte_buergen); ?>&nbsp;Eintrag<?php echo ($benötigte_buergen - $bestätigte_buergen) === 1 ? '' : 'e'; ?>.
                             <?php endif; ?>
                             Bitte prüfe vor deiner Entscheidung, ob eine Aufnahme dennoch gerechtfertigt ist.
                         </p>
@@ -2534,14 +2534,14 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                         <table class="dgptm-vg-table">
                             <?php if (!empty($antragsteller['Guarantor_Name_1'])): ?>
                             <tr>
-                                <th>Buerge 1:</th>
+                                <th>Bürge 1:</th>
                                 <td>
                                     <?php echo esc_html($antragsteller['Guarantor_Name_1']); ?>
                                     <?php if (!empty($antragsteller['Guarantor_Mail_1'])): ?>
                                         (<?php echo esc_html($antragsteller['Guarantor_Mail_1']); ?>)
                                     <?php endif; ?>
                                     <?php if (!empty($antragsteller['Guarantor_Status_1'])): ?>
-                                        <span class="dgptm-vg-status dgptm-vg-status-ok">✓ bestaetigt</span>
+                                        <span class="dgptm-vg-status dgptm-vg-status-ok">✓ bestätigt</span>
                                     <?php else: ?>
                                         <span class="dgptm-vg-status dgptm-vg-status-pending">offen</span>
                                     <?php endif; ?>
@@ -2553,14 +2553,14 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                             <?php endif; ?>
                             <?php if (!empty($antragsteller['Guarantor_Name_2'])): ?>
                             <tr>
-                                <th>Buerge 2:</th>
+                                <th>Bürge 2:</th>
                                 <td>
                                     <?php echo esc_html($antragsteller['Guarantor_Name_2']); ?>
                                     <?php if (!empty($antragsteller['Guarantor_Mail_2'])): ?>
                                         (<?php echo esc_html($antragsteller['Guarantor_Mail_2']); ?>)
                                     <?php endif; ?>
                                     <?php if (!empty($antragsteller['Guarantor_Status_2'])): ?>
-                                        <span class="dgptm-vg-status dgptm-vg-status-ok">✓ bestaetigt</span>
+                                        <span class="dgptm-vg-status dgptm-vg-status-ok">✓ bestätigt</span>
                                     <?php else: ?>
                                         <span class="dgptm-vg-status dgptm-vg-status-pending">offen</span>
                                     <?php endif; ?>
@@ -2593,13 +2593,13 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
                     <?php if (!empty($antragsteller['Bemerkung'])): ?>
                     <div class="dgptm-vg-section">
-                        <h4>Bemerkung der Geschaeftsstelle</h4>
+                        <h4>Bemerkung der Geschäftsstelle</h4>
                         <p><?php echo wp_kses_post(nl2br(esc_html($antragsteller['Bemerkung']))); ?></p>
                     </div>
                     <?php endif; ?>
 
                     <div class="dgptm-vg-section">
-                        <h4>Akzeptierte Erklaerungen</h4>
+                        <h4>Akzeptierte Erklärungen</h4>
                         <table class="dgptm-vg-table">
                             <tr><th>Satzung akzeptiert:</th><td><?php echo !empty($antragsteller['SatzungAkzeptiert']) ? '✓ Ja' : '✗ Nein'; ?></td></tr>
                             <tr><th>Beitragsordnung akzeptiert:</th><td><?php echo !empty($antragsteller['BeitragAkzeptiert']) ? '✓ Ja' : '✗ Nein'; ?></td></tr>
@@ -2611,7 +2611,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 <?php if (empty($vorstaende_aktiv)): ?>
                     <div class="dgptm-vg-empty">
                         <h3>Abstimmung abgeschlossen</h3>
-                        <p>Fuer diesen Antrag haben bereits alle Vorstandsmitglieder abgestimmt (<?php echo $summary['genehmigungen']; ?>&nbsp;Genehmigung(en), <?php echo $summary['ablehnungen']; ?>&nbsp;Ablehnung(en)).</p>
+                        <p>Für diesen Antrag haben bereits alle Vorstandsmitglieder abgestimmt (<?php echo $summary['genehmigungen']; ?>&nbsp;Genehmigung(en), <?php echo $summary['ablehnungen']; ?>&nbsp;Ablehnung(en)).</p>
                     </div>
                 <?php else: ?>
                     <div class="dgptm-vg-entscheidung">
@@ -2620,7 +2620,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                         <div class="dgptm-vg-select">
                             <label for="dgptm-vg-vorstand">Vorstandsmitglied (dein Name):</label>
                             <select id="dgptm-vg-vorstand" required>
-                                <option value="">-- bitte auswaehlen --</option>
+                                <option value="">-- bitte auswählen --</option>
                                 <?php foreach ($vorstaende_aktiv as $v): ?>
                                     <option value="<?php echo esc_attr($v['id']); ?>">
                                         <?php echo esc_html($this->format_vorstand_label($v)); ?>
@@ -2648,7 +2648,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         }
 
         /**
-         * Shortcode [buergenbestaetigung] — Bürgschaftsbestätigung per Link.
+         * Shortcode [buergenbestätigung] — Bürgschaftsbestätigung per Link.
          * URL: ?token=<antragsteller.token>&email=<buerge.email>
          * Der Server matcht die E-Mail gegen Guarantor_Mail_1 / _2 und ermittelt
          * daraus den Slot. Groß-/Kleinschreibung wird ignoriert.
@@ -2667,7 +2667,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             if ($antragsteller_token === '' || $buerge_email_raw === '') {
                 return $this->render_error_message(
                     'Fehlende Parameter',
-                    'Bitte verwende den vollstaendigen Link aus der E-Mail. Es fehlen Identifikationstoken oder Buerg:innen-E-Mail.'
+                    'Bitte verwende den vollständigen Link aus der E-Mail. Es fehlen Identifikationstoken oder Bürg:innen-E-Mail.'
                 );
             }
 
@@ -2675,7 +2675,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             if (!$oauth) {
                 return $this->render_error_message(
                     'Verbindungsfehler',
-                    'Die Verbindung zum CRM-System konnte nicht hergestellt werden. Bitte versuche es spaeter erneut.'
+                    'Die Verbindung zum CRM-System konnte nicht hergestellt werden. Bitte versuche es später erneut.'
                 );
             }
 
@@ -2683,15 +2683,15 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             if (!$antragsteller) {
                 return $this->render_info_message(
                     'Anfrage nicht mehr aktiv',
-                    'Vielen Dank! Zu diesem Link ist aktuell kein offener Aufnahmeantrag zugeordnet. Die Buergschaftsanfrage ist vermutlich bereits abgeschlossen. Bei Rueckfragen wende dich gerne an die Geschaeftsstelle.'
+                    'Vielen Dank! Zu diesem Link ist aktuell kein offener Aufnahmeantrag zugeordnet. Die Bürgschaftsanfrage ist vermutlich bereits abgeschlossen. Bei Rückfragen wende dich gerne an die Geschäftsstelle.'
                 );
             }
 
             $slot = $this->match_buerge_slot_by_email($antragsteller, $buerge_email_raw);
             if ($slot === 0) {
                 return $this->render_error_message(
-                    'Buerg:innen-Eintrag nicht gefunden',
-                    'Unter diesem Antrag ist die angegebene E-Mail-Adresse nicht als Buerg:in hinterlegt. Bitte pruefe, ob du den richtigen Link verwendest.'
+                    'Bürg:innen-Eintrag nicht gefunden',
+                    'Unter diesem Antrag ist die angegebene E-Mail-Adresse nicht als Bürg:in hinterlegt. Bitte prüfe, ob du den richtigen Link verwendest.'
                 );
             }
 
@@ -2705,8 +2705,8 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             // Falls bereits bestätigt → freundliche Dankekarte, keine Buttons
             if ($buerge_status) {
                 return $this->render_info_message(
-                    'Bereits bestaetigt',
-                    sprintf('Vielen Dank! Deine Buergschaft fuer den Aufnahmeantrag von %s wurde bereits erfasst. Eine erneute Bestaetigung ist nicht erforderlich.', esc_html($antragsteller_name))
+                    'Bereits bestätigt',
+                    sprintf('Vielen Dank! Deine Bürgschaft für den Aufnahmeantrag von %s wurde bereits erfasst. Eine erneute Bestätigung ist nicht erforderlich.', esc_html($antragsteller_name))
                 );
             }
 
@@ -2723,8 +2723,8 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 'antragstellerToken' => $antragsteller_token,
                 'buergeEmail'        => $buerge_email_raw,
                 'strings'            => [
-                    'confirm_confirm' => 'Moechtest du die Buergschaft wirklich bestaetigen?',
-                    'confirm_reject'  => 'Moechtest du die Buergschaft wirklich ablehnen?',
+                    'confirm_confirm' => 'Möchtest du die Bürgschaft wirklich bestätigen?',
+                    'confirm_reject'  => 'Möchtest du die Bürgschaft wirklich ablehnen?',
                     'processing'      => 'Wird verarbeitet...',
                     'error'           => 'Ein Fehler ist aufgetreten. Bitte versuche es erneut.'
                 ]
@@ -2732,20 +2732,20 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             $hat_quali = !empty($antragsteller['QualiNachweisDirekt']);
             $hat_studi = !empty($antragsteller['StudinachweisDirekt']);
-            $benoetigt = $hat_quali ? 0 : ($hat_studi ? 1 : 2);
+            $benötigt = $hat_quali ? 0 : ($hat_studi ? 1 : 2);
 
             ob_start();
             ?>
             <div class="dgptm-vorstandsgenehmigung-container">
                 <div class="dgptm-vg-header">
-                    <h2>Buergschaftsbestaetigung</h2>
+                    <h2>Bürgschaftsbestätigung</h2>
                     <p class="dgptm-vg-info">
                         Liebe(r) <strong><?php echo esc_html($buerge_name ?: $buerge_mail); ?></strong>,
-                        Sie wurden von <strong><?php echo esc_html($antragsteller_name); ?></strong> als Buerge benannt.
-                        Bitte bestaetigen Sie, dass <?php echo esc_html($antragsteller_name); ?>
-                        die Anforderungen fuer die Aufnahme als
+                        Sie wurden von <strong><?php echo esc_html($antragsteller_name); ?></strong> als Bürge benannt.
+                        Bitte bestätigen Sie, dass <?php echo esc_html($antragsteller_name); ?>
+                        die Anforderungen für die Aufnahme als
                         <?php echo esc_html($antragsteller['Membership_Type'] ?? 'Ordentliches Mitglied'); ?>
-                        in die DGPTM erfuellt.
+                        in die DGPTM erfüllt.
                     </p>
                 </div>
 
@@ -2766,22 +2766,22 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                     </div>
 
                     <div class="dgptm-vg-section">
-                        <h4>Worum es bei einer Buergschaft geht</h4>
+                        <h4>Worum es bei einer Bürgschaft geht</h4>
                         <p>
-                            Die Satzung sieht fuer diesen Antrag <strong><?php echo (int) $benoetigt; ?>&nbsp;Buerg<?php echo $benoetigt === 1 ? 'en' : 'innen'; ?></strong> vor.
+                            Die Satzung sieht für diesen Antrag <strong><?php echo (int) $benötigt; ?>&nbsp;Bürg<?php echo $benötigt === 1 ? 'en' : 'innen'; ?></strong> vor.
                             <?php if ($hat_quali): ?>
-                                Da ein Qualifikationsnachweis vorliegt, sind eigentlich keine Buerg:innen noetig — der Antrag wurde dennoch mit dir hinterlegt.
+                                Da ein Qualifikationsnachweis vorliegt, sind eigentlich keine Bürg:innen nötig — der Antrag wurde dennoch mit dir hinterlegt.
                             <?php elseif ($hat_studi): ?>
-                                Als studentisches Mitglied benoetigt der Antrag die Bestaetigung eines ordentlichen Mitglieds, dass der Studienschwerpunkt im Bereich Perfusion/Technische Medizin liegt.
+                                Als studentisches Mitglied benötigt der Antrag die Bestätigung eines ordentlichen Mitglieds, dass der Studienschwerpunkt im Bereich Perfusion/Technische Medizin liegt.
                             <?php else: ?>
-                                Ohne formalen Qualifikationsnachweis braucht der Antrag das schriftliche Zeugnis von zwei ordentlichen Mitgliedern, die bestaetigen, dass der/die Antragsteller:in eine entsprechende Taetigkeit ausuebt oder ausgeuebt hat.
+                                Ohne formalen Qualifikationsnachweis braucht der Antrag das schriftliche Zeugnis von zwei ordentlichen Mitgliedern, die bestätigen, dass der/die Antragsteller:in eine entsprechende Tätigkeit ausübt oder ausgeübt hat.
                             <?php endif; ?>
                         </p>
                         <details class="dgptm-vg-satzung">
                             <summary>§&nbsp;4 der Satzung einblenden</summary>
                             <div class="dgptm-vg-satzung-text">
-                                <p><strong>§&nbsp;4.1.1.2</strong> — Personen, die in dem Beruf arbeiten, ohne ueber eine der genannten Qualifikationen zu verfuegen, koennen ordentliches Mitglied werden, wenn sie nachweislich eine Taetigkeit ausueben oder ausgeuebt haben, die ueblicherweise von Perfusionisten (Kardiotechnikern) ausgeuebt wird. <strong>Als Nachweis ist das schriftliche Zeugnis von zwei ordentlichen Mitgliedern als Buergen ausreichend und erforderlich</strong>, die die entsprechende Taetigkeit der Person bestaetigen.</p>
-                                <p><strong>§&nbsp;4.1.1.3</strong> — Ordentliche Mitglieder, die sich nachweislich noch in der Ausbildung befinden, koennen auf Antrag als Studentisches Mitglied gefuehrt werden. <strong>Zusaetzlich ist die Bestaetigung des Studienschwerpunkts durch ein ordentliches Mitglied als Buergen erforderlich.</strong></p>
+                                <p><strong>§&nbsp;4.1.1.2</strong> — Personen, die in dem Beruf arbeiten, ohne ueber eine der genannten Qualifikationen zu verfuegen, können ordentliches Mitglied werden, wenn sie nachweislich eine Tätigkeit ausueben oder ausgeübt haben, die ueblicherweise von Perfusionisten (Kardiotechnikern) ausgeübt wird. <strong>Als Nachweis ist das schriftliche Zeugnis von zwei ordentlichen Mitgliedern als Bürgen ausreichend und erforderlich</strong>, die die entsprechende Tätigkeit der Person bestätigen.</p>
+                                <p><strong>§&nbsp;4.1.1.3</strong> — Ordentliche Mitglieder, die sich nachweislich noch in der Ausbildung befinden, können auf Antrag als Studentisches Mitglied geführt werden. <strong>Zusätzlich ist die Bestätigung des Studienschwerpunkts durch ein ordentliches Mitglied als Bürgen erforderlich.</strong></p>
                             </div>
                         </details>
                     </div>
@@ -2791,11 +2791,11 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                     <h3>Deine Entscheidung</h3>
                     <div class="dgptm-vg-kommentar">
                         <label for="dgptm-buerge-bemerkung">Bemerkung (optional):</label>
-                        <textarea id="dgptm-buerge-bemerkung" rows="3" placeholder="Optionale Bemerkung zu deiner Bestaetigung oder Ablehnung..."></textarea>
+                        <textarea id="dgptm-buerge-bemerkung" rows="3" placeholder="Optionale Bemerkung zu deiner Bestätigung oder Ablehnung..."></textarea>
                     </div>
                     <div class="dgptm-vg-buttons">
-                        <button type="button" class="dgptm-vg-btn dgptm-vg-btn-approve" data-action="confirm">✓ Buergschaft bestaetigen</button>
-                        <button type="button" class="dgptm-vg-btn dgptm-vg-btn-reject"  data-action="reject">✗ Buergschaft ablehnen</button>
+                        <button type="button" class="dgptm-vg-btn dgptm-vg-btn-approve" data-action="confirm">✓ Bürgschaft bestätigen</button>
+                        <button type="button" class="dgptm-vg-btn dgptm-vg-btn-reject"  data-action="reject">✗ Bürgschaft ablehnen</button>
                     </div>
                     <div class="dgptm-vg-result" style="display: none;"></div>
                 </div>
@@ -2836,7 +2836,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             $bemerkung           = sanitize_textarea_field($_POST['bemerkung'] ?? '');
 
             if ($antragsteller_token === '' || $buerge_email === '' || !in_array($action, ['confirm', 'reject'], true)) {
-                wp_send_json_error(['message' => 'Ungueltige Parameter']);
+                wp_send_json_error(['message' => 'Ungültige Parameter']);
                 return;
             }
 
@@ -2854,17 +2854,17 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             $slot = $this->match_buerge_slot_by_email($antragsteller, $buerge_email);
             if ($slot === 0) {
-                wp_send_json_error(['message' => 'Die angegebene E-Mail ist nicht als Buerg:in hinterlegt.']);
+                wp_send_json_error(['message' => 'Die angegebene E-Mail ist nicht als Bürg:in hinterlegt.']);
                 return;
             }
 
             $status_field = 'Guarantor_Status_' . $slot;
             if (!empty($antragsteller[$status_field]) && $action === 'confirm') {
-                wp_send_json_error(['message' => 'Diese Buergschaft wurde bereits bestaetigt.']);
+                wp_send_json_error(['message' => 'Diese Bürgschaft wurde bereits bestätigt.']);
                 return;
             }
 
-            $buerge_name = $antragsteller['Guarantor_Name_' . $slot] ?? ('Buerge ' . $slot);
+            $buerge_name = $antragsteller['Guarantor_Name_' . $slot] ?? ('Bürge ' . $slot);
             $antragsteller_id = $antragsteller['id'];
 
             $update_data = [];
@@ -2901,8 +2901,8 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             $this->speichere_buergschafts_note($antragsteller_id, $slot, $buerge_name, $action, $bemerkung, $oauth);
 
             $msg = $action === 'confirm'
-                ? 'Vielen Dank! Deine Bestaetigung wurde erfasst.'
-                : 'Deine Rueckmeldung (Ablehnung) wurde erfasst. Die Geschaeftsstelle wird informiert.';
+                ? 'Vielen Dank! Deine Bestätigung wurde erfasst.'
+                : 'Deine Rückmeldung (Ablehnung) wurde erfasst. Die Geschäftsstelle wird informiert.';
             wp_send_json_success(['message' => $msg, 'action' => $action]);
         }
 
@@ -2910,11 +2910,11 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
          * Legt die Bürgschaftsentscheidung als Notiz am Antragsteller ab.
          */
         private function speichere_buergschafts_note($contact_id, $slot, $buerge_name, $action, $bemerkung, $oauth) {
-            $aktion_text    = $action === 'confirm' ? 'Bestaetigung' : 'Ablehnung';
+            $aktion_text    = $action === 'confirm' ? 'Bestätigung' : 'Ablehnung';
             $bemerkung_trim = trim((string) $bemerkung);
-            $title   = 'Buergschaft Slot ' . (int) $slot . ': ' . $aktion_text . ' – ' . $buerge_name;
+            $title   = 'Bürgschaft Slot ' . (int) $slot . ': ' . $aktion_text . ' – ' . $buerge_name;
             $content = sprintf(
-                "Buerge (Slot %d): %s\nEntscheidung: %s\nDatum: %s\n\nBemerkung:\n%s",
+                "Bürge (Slot %d): %s\nEntscheidung: %s\nDatum: %s\n\nBemerkung:\n%s",
                 (int) $slot,
                 $buerge_name,
                 $aktion_text,
@@ -2974,7 +2974,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         }
 
         /**
-         * Formatiert ein Datum fuer die Anzeige
+         * Formatiert ein Datum für die Anzeige
          */
         private function format_date($date) {
             if (empty($date)) return '-';
@@ -2984,7 +2984,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         }
 
         /**
-         * Prueft ob ein Kontakt den Tag "Vorstand" hat
+         * Prüft ob ein Kontakt den Tag "Vorstand" hat
          */
         private function check_vorstand_tag($contact_id, $token) {
             $contact = $this->get_contact_details($contact_id, $token);
@@ -3004,7 +3004,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 $tags = array_map('trim', explode(',', $tags));
             }
 
-            // Auch alternative Feldnamen pruefen
+            // Auch alternative Feldnamen prüfen
             if (empty($tags)) {
                 if (isset($contact['Tags'])) {
                     $tags = $contact['Tags'];
@@ -3021,7 +3021,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             if (is_array($tags)) {
                 foreach ($tags as $tag) {
-                    // Zoho gibt Tags als Array von Objekten zurueck: [{"name": "Vorstand", "id": "123"}]
+                    // Zoho gibt Tags als Array von Objekten zurück: [{"name": "Vorstand", "id": "123"}]
                     if (is_array($tag)) {
                         $tag_name = $tag['name'] ?? $tag['Name'] ?? '';
                         $this->log('check_vorstand_tag: Checking tag object: ' . wp_json_encode($tag) . ' -> name: ' . $tag_name);
@@ -3054,7 +3054,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         }
 
         /**
-         * Prueft ob ein Vorstandsmitglied bereits ueber diesen Antrag abgestimmt hat
+         * Prüft ob ein Vorstandsmitglied bereits ueber diesen Antrag abgestimmt hat
          * Speichert Abstimmungen im Feld "Vorstand_Abstimmungen" als JSON
          */
         private function hat_bereits_abgestimmt($antragsteller_id, $vorstand_id, $token) {
@@ -3078,7 +3078,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 return false;
             }
 
-            // Pruefen ob dieses Vorstandsmitglied bereits abgestimmt hat
+            // Prüfen ob dieses Vorstandsmitglied bereits abgestimmt hat
             foreach ($abstimmungen as $abstimmung) {
                 if (isset($abstimmung['vorstand_id']) && $abstimmung['vorstand_id'] === $vorstand_id) {
                     return true;
@@ -3118,12 +3118,12 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         }
 
         /**
-         * Holt Anhaenge eines Kontakts aus Zoho CRM
+         * Holt Anhänge eines Kontakts aus Zoho CRM
          */
         private function get_contact_attachments($contact_id, $token) {
             $attachments = [];
 
-            // Versuche verschiedene Felder fuer Anhaenge
+            // Versuche verschiedene Felder für Anhänge
             $attachment_fields = [
                 'Studienbescheinigung',
                 'Qualifikationsnachweis',
@@ -3158,7 +3158,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 }
             }
 
-            // Auch allgemeine Attachments pruefen
+            // Auch allgemeine Attachments prüfen
             $attachments_response = wp_remote_get(
                 'https://www.zohoapis.eu/crm/v8/Contacts/' . $contact_id . '/Attachments',
                 [
@@ -3187,7 +3187,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         }
 
         /**
-         * AJAX Handler fuer Vorstandsentscheidung
+         * AJAX Handler für Vorstandsentscheidung
          * Erwartet POST: antragsteller_token, vorstand_id (Dropdown-Auswahl), entscheidung, bemerkung
          */
         public function ajax_vorstand_entscheidung() {
@@ -3204,7 +3204,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             }
 
             if (!in_array($action, ['approve', 'reject'], true)) {
-                wp_send_json_error(['message' => 'Ungueltige Aktion']);
+                wp_send_json_error(['message' => 'Ungültige Aktion']);
                 return;
             }
 
@@ -3217,7 +3217,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             // Antragsteller per Token auflösen (kein raw-ID im URL mehr)
             $antragsteller = $this->get_contact_by_token($antragsteller_token, $oauth);
             if (!$antragsteller) {
-                wp_send_json_error(['message' => 'Die Abstimmungsphase fuer diesen Antrag ist bereits beendet.']);
+                wp_send_json_error(['message' => 'Die Abstimmungsphase für diesen Antrag ist bereits beendet.']);
                 return;
             }
             $skip_status_check = current_user_can('manage_options') && !empty($_POST['skip_status_check']);
@@ -3236,7 +3236,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             // Race-Schutz: nochmals gegen aktuelle Abstimmungsliste prüfen
             if (in_array((string) $vorstand_id, $this->get_bereits_abgestimmte_ids($antragsteller), true)) {
-                wp_send_json_error(['message' => 'Fuer dieses Vorstandsmitglied liegt bereits eine Abstimmung vor.']);
+                wp_send_json_error(['message' => 'Für dieses Vorstandsmitglied liegt bereits eine Abstimmung vor.']);
                 return;
             }
 
@@ -3510,7 +3510,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             $file_id             = sanitize_text_field($_GET['file_id'] ?? '');
 
             if ($antragsteller_token === '' || $file_id === '') {
-                wp_die('Ungueltige Parameter', 'Download', ['response' => 400]);
+                wp_die('Ungültige Parameter', 'Download', ['response' => 400]);
             }
 
             $oauth = $this->get_access_token();
@@ -3534,7 +3534,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 }
             }
             if (!$allowed) {
-                wp_die('Datei ist fuer diesen Antrag nicht freigegeben', 'Download', ['response' => 403]);
+                wp_die('Datei ist für diesen Antrag nicht freigegeben', 'Download', ['response' => 403]);
             }
 
             // Zoho-Endpoint für File-Upload-Felder: /crm/v8/files?id=<file_Id>
@@ -3658,7 +3658,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 $update_data['Antragsstatus'] = 'Abgelehnt durch Vorstand';
             }
 
-            // Update im CRM ausfuehren
+            // Update im CRM ausführen
             $response = wp_remote_request(
                 'https://www.zohoapis.eu/crm/v8/Contacts/' . $antragsteller_id,
                 [

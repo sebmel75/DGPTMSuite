@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.1.10
+ * Version: 2.2.0
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.1.10';
+        private $version = '2.2.0';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -2378,6 +2378,17 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             $nachweise = $this->get_direct_uploads_from_contact($antragsteller);
 
+            // Bürgen-Anforderung nach § 4 Satzung:
+            //   Quali-Nachweis (ECCP o. ä.)        → 0 Bürg:innen (§ 4.1.1.1)
+            //   Nur Studien-Nachweis              → 1 Bürge (§ 4.1.1.3)
+            //   Weder Quali- noch Studien-Nachweis → 2 Bürg:innen (§ 4.1.1.2)
+            $hat_quali = !empty($antragsteller['QualiNachweisDirekt']);
+            $hat_studi = !empty($antragsteller['StudinachweisDirekt']);
+            $benoetigte_buergen = $hat_quali ? 0 : ($hat_studi ? 1 : 2);
+            $vorhandene_buergen = (!empty($antragsteller['Guarantor_Name_1']) ? 1 : 0)
+                                + (!empty($antragsteller['Guarantor_Name_2']) ? 1 : 0);
+            $buergen_fehlen = $vorhandene_buergen < $benoetigte_buergen;
+
             // Adresse: Mailing_* bevorzugen, Other_* als Fallback
             $addr_street  = $antragsteller['Mailing_Street']  ?? $antragsteller['Other_Street']  ?? '';
             $addr_city    = $antragsteller['Mailing_City']    ?? $antragsteller['Other_City']    ?? '';
@@ -2467,9 +2478,31 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                         </table>
                     </div>
 
+                    <?php if ($buergen_fehlen): ?>
+                    <div class="dgptm-vg-section dgptm-vg-warning">
+                        <h4>Bürg:innen-Anforderung nicht erfüllt</h4>
+                        <p>
+                            Laut Satzung (§&nbsp;4) werden für diese Mitgliedschaftsart
+                            <strong><?php echo (int) $benoetigte_buergen; ?>&nbsp;Bürg:in<?php echo $benoetigte_buergen === 1 ? '' : 'nen'; ?></strong>
+                            benötigt, vorhanden <?php echo $vorhandene_buergen === 1 ? 'ist' : 'sind'; ?>
+                            <strong><?php echo (int) $vorhandene_buergen; ?></strong>.
+                            Bitte prüfe vor deiner Entscheidung, ob eine Aufnahme dennoch gerechtfertigt ist.
+                        </p>
+                        <details class="dgptm-vg-satzung">
+                            <summary>§&nbsp;4 der Satzung einblenden</summary>
+                            <div class="dgptm-vg-satzung-text">
+                                <p><strong>§&nbsp;4.1.1.1</strong> — Ordentliches Mitglied kann jede natürliche Person werden, die über eine anerkannte Qualifikation als „Kardiotechniker", „Perfusionist", „Perfusiologe" oder „Technischer Mediziner" verfügt oder sich in einer entsprechenden Ausbildung befindet. Anerkannte Qualifikationen sind insbesondere das ECCP-Zertifikat (European Certificate in Cardiovascular Perfusion) und/oder ein Abschluss als „Kardiotechniker" nach dem Berliner „Gesetz über Medizinalfachberufe".</p>
+                                <p><strong>§&nbsp;4.1.1.2</strong> — Personen, die in dem Beruf arbeiten, ohne über eine der genannten Qualifikationen zu verfügen, können ordentliches Mitglied werden, wenn sie nachweislich eine Tätigkeit ausüben oder ausgeübt haben, die üblicherweise von Perfusionisten (Kardiotechnikern) ausgeübt wird. <strong>Als Nachweis ist das schriftliche Zeugnis von zwei ordentlichen Mitgliedern als Bürgen ausreichend und erforderlich</strong>, die die entsprechende Tätigkeit der Person bestätigen.</p>
+                                <p><strong>§&nbsp;4.1.1.3</strong> — Ordentliche Mitglieder, die sich nachweislich noch in der Ausbildung befinden, können auf Antrag als Studentisches Mitglied geführt werden. Der Nachweis ist in geeigneter Form zu führen. <strong>Zusätzlich ist die Bestätigung des Studienschwerpunkts im Bereich Perfusion (Kardiotechnik), Medizintechnik, Perfusiologie, und Technische Medizin durch ein ordentliches Mitglied als Bürgen erforderlich.</strong> Studentische Mitglieder zahlen einen vergünstigten Beitrag.</p>
+                                <p><strong>§&nbsp;4.2.1</strong> — Der Aufnahmeantrag kann jederzeit schriftlich an den Vorstand gestellt werden. <strong>Die nach Abs.&nbsp;1 lit.&nbsp;a) erforderlichen Nachweise oder Bürgschaften sind beizufügen.</strong> Über den Antrag entscheidet der Vorstand mit einfacher Mehrheit. Die Entscheidungen des Vorstands sind endgültig.</p>
+                            </div>
+                        </details>
+                    </div>
+                    <?php endif; ?>
+
                     <?php if (!empty($antragsteller['Guarantor_Name_1']) || !empty($antragsteller['Guarantor_Name_2'])): ?>
                     <div class="dgptm-vg-section">
-                        <h4>Buergen</h4>
+                        <h4>Bürg:innen</h4>
                         <table class="dgptm-vg-table">
                             <?php if (!empty($antragsteller['Guarantor_Name_1'])): ?>
                             <tr>

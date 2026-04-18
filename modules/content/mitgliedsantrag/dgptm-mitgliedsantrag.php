@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.3.2
+ * Version: 2.3.3
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.3.2';
+        private $version = '2.3.3';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -2536,7 +2536,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                             <tr>
                                 <th>Bürge 1:</th>
                                 <td>
-                                    <?php echo esc_html($antragsteller['Guarantor_Name_1']); ?>
+                                    <?php echo esc_html($this->format_personen_name($antragsteller['Guarantor_Name_1'])); ?>
                                     <?php if (!empty($antragsteller['Guarantor_Mail_1'])): ?>
                                         (<?php echo esc_html($antragsteller['Guarantor_Mail_1']); ?>)
                                     <?php endif; ?>
@@ -2555,7 +2555,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                             <tr>
                                 <th>Bürge 2:</th>
                                 <td>
-                                    <?php echo esc_html($antragsteller['Guarantor_Name_2']); ?>
+                                    <?php echo esc_html($this->format_personen_name($antragsteller['Guarantor_Name_2'])); ?>
                                     <?php if (!empty($antragsteller['Guarantor_Mail_2'])): ?>
                                         (<?php echo esc_html($antragsteller['Guarantor_Mail_2']); ?>)
                                     <?php endif; ?>
@@ -2695,7 +2695,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 );
             }
 
-            $buerge_name   = $antragsteller['Guarantor_Name_' . $slot]   ?? '';
+            $buerge_name   = $this->format_personen_name($antragsteller['Guarantor_Name_' . $slot] ?? '');
             $buerge_mail   = $antragsteller['Guarantor_Mail_' . $slot]   ?? '';
             $buerge_status = !empty($antragsteller['Guarantor_Status_' . $slot]);
 
@@ -2802,6 +2802,23 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             </div>
             <?php
             return ob_get_clean();
+        }
+
+        /**
+         * Formatiert historische "Nachname, Titel/Anrede"-Einträge um:
+         * "Hellmut Haardt, Herr" → "Herr Hellmut Haardt".
+         * Strings ohne Komma bleiben unverändert.
+         */
+        private function format_personen_name($name) {
+            $name = trim((string) $name);
+            if ($name === '' || strpos($name, ',') === false) {
+                return $name;
+            }
+            $parts = array_map('trim', explode(',', $name, 2));
+            if (count($parts) === 2 && $parts[1] !== '') {
+                return $parts[1] . ' ' . $parts[0];
+            }
+            return $name;
         }
 
         /**

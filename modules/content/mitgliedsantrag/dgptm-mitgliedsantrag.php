@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.3.0
+ * Version: 2.3.1
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.3.0';
+        private $version = '2.3.1';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -2739,7 +2739,14 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             <div class="dgptm-vorstandsgenehmigung-container">
                 <div class="dgptm-vg-header">
                     <h2>Buergschaftsbestaetigung</h2>
-                    <p class="dgptm-vg-info">Anfrage an: <strong><?php echo esc_html($buerge_name ?: $buerge_mail); ?></strong> (<?php echo esc_html($buerge_mail); ?>)</p>
+                    <p class="dgptm-vg-info">
+                        Liebe(r) <strong><?php echo esc_html($buerge_name ?: $buerge_mail); ?></strong>,
+                        Sie wurden von <strong><?php echo esc_html($antragsteller_name); ?></strong> als Buerge benannt.
+                        Bitte bestaetigen Sie, dass <?php echo esc_html($antragsteller_name); ?>
+                        die Anforderungen fuer die Aufnahme als
+                        <?php echo esc_html($antragsteller['Membership_Type'] ?? 'Ordentliches Mitglied'); ?>
+                        in die DGPTM erfuellt.
+                    </p>
                 </div>
 
                 <div class="dgptm-vg-antragsteller">

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.2.1
+ * Version: 2.2.2
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.2.1';
+        private $version = '2.2.2';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -2387,12 +2387,20 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             //   Quali-Nachweis (ECCP o. ä.)        → 0 Bürg:innen (§ 4.1.1.1)
             //   Nur Studien-Nachweis              → 1 Bürge (§ 4.1.1.3)
             //   Weder Quali- noch Studien-Nachweis → 2 Bürg:innen (§ 4.1.1.2)
+            // Es zählen nur BESTÄTIGTE Bürg:innen (Guarantor_Status_X == true) — wer
+            // nicht reagiert hat, erfüllt die Satzungsvorgabe nicht.
             $hat_quali = !empty($antragsteller['QualiNachweisDirekt']);
             $hat_studi = !empty($antragsteller['StudinachweisDirekt']);
             $benoetigte_buergen = $hat_quali ? 0 : ($hat_studi ? 1 : 2);
-            $vorhandene_buergen = (!empty($antragsteller['Guarantor_Name_1']) ? 1 : 0)
-                                + (!empty($antragsteller['Guarantor_Name_2']) ? 1 : 0);
-            $buergen_fehlen = $vorhandene_buergen < $benoetigte_buergen;
+
+            $b1_name = !empty($antragsteller['Guarantor_Name_1']);
+            $b2_name = !empty($antragsteller['Guarantor_Name_2']);
+            $b1_ok   = !empty($antragsteller['Guarantor_Status_1']);
+            $b2_ok   = !empty($antragsteller['Guarantor_Status_2']);
+            $vorhandene_buergen  = ($b1_name ? 1 : 0) + ($b2_name ? 1 : 0);
+            $bestaetigte_buergen = ($b1_ok ? 1 : 0)   + ($b2_ok ? 1 : 0);
+            $offene_buergen      = ($b1_name && !$b1_ok ? 1 : 0) + ($b2_name && !$b2_ok ? 1 : 0);
+            $buergen_fehlen      = $bestaetigte_buergen < $benoetigte_buergen;
 
             // Adresse: Mailing_* bevorzugen, Other_* als Fallback
             $addr_street  = $antragsteller['Mailing_Street']  ?? $antragsteller['Other_Street']  ?? '';
@@ -2491,9 +2499,14 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                         <h4>Bürg:innen-Anforderung nicht erfüllt</h4>
                         <p>
                             Laut Satzung (§&nbsp;4) werden für diese Mitgliedschaftsart
-                            <strong><?php echo (int) $benoetigte_buergen; ?>&nbsp;Bürg:in<?php echo $benoetigte_buergen === 1 ? '' : 'nen'; ?></strong>
-                            benötigt, vorhanden <?php echo $vorhandene_buergen === 1 ? 'ist' : 'sind'; ?>
-                            <strong><?php echo (int) $vorhandene_buergen; ?></strong>.
+                            <strong><?php echo (int) $benoetigte_buergen; ?>&nbsp;bestätigte Bürg:in<?php echo $benoetigte_buergen === 1 ? '' : 'nen'; ?></strong>
+                            benötigt, bestätigt <?php echo $bestaetigte_buergen === 1 ? 'hat' : 'haben'; ?> bisher
+                            <strong><?php echo (int) $bestaetigte_buergen; ?></strong>
+                            <?php if ($offene_buergen > 0): ?>
+                                — <?php echo (int) $offene_buergen; ?>&nbsp;Bürg:in<?php echo $offene_buergen === 1 ? '' : 'nen'; ?> <?php echo $offene_buergen === 1 ? 'hat' : 'haben'; ?> noch nicht reagiert.
+                            <?php else: ?>
+                                — es <?php echo ($benoetigte_buergen - $bestaetigte_buergen) === 1 ? 'fehlt' : 'fehlen'; ?> <?php echo (int) ($benoetigte_buergen - $bestaetigte_buergen); ?>&nbsp;Eintrag<?php echo ($benoetigte_buergen - $bestaetigte_buergen) === 1 ? '' : 'e'; ?>.
+                            <?php endif; ?>
                             Bitte prüfe vor deiner Entscheidung, ob eine Aufnahme dennoch gerechtfertigt ist.
                         </p>
                         <details class="dgptm-vg-satzung">

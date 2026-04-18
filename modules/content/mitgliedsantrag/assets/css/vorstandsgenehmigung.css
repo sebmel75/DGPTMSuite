@@ -185,6 +185,93 @@
 
 /* .dgptm-vg-empty teilt sich das Card-Styling mit .dgptm-vorstandsgenehmigung-error (oben) */
 
+/* Bisherige Vorstandsabstimmungen */
+.dgptm-vg-votes {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.dgptm-vg-vote {
+    padding: 14px 18px;
+    border-radius: 10px;
+    border-left: 4px solid #cbd5e0;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.dgptm-vg-vote-approve {
+    border-left-color: #38a169;
+    background: #f0fff4;
+}
+
+.dgptm-vg-vote-reject {
+    border-left-color: #e53e3e;
+    background: #fff5f5;
+}
+
+.dgptm-vg-vote-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 0.98em;
+    color: #2d3748;
+}
+
+.dgptm-vg-vote-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #edf2f7;
+    font-weight: 700;
+}
+
+.dgptm-vg-vote-approve .dgptm-vg-vote-icon {
+    background: #c6f6d5;
+    color: #22543d;
+}
+
+.dgptm-vg-vote-reject .dgptm-vg-vote-icon {
+    background: #fed7d7;
+    color: #742a2a;
+}
+
+.dgptm-vg-vote-verdict {
+    font-weight: 600;
+    color: #4a5568;
+}
+
+.dgptm-vg-vote-approve .dgptm-vg-vote-verdict { color: #22543d; }
+.dgptm-vg-vote-reject .dgptm-vg-vote-verdict  { color: #742a2a; }
+
+.dgptm-vg-vote-date {
+    margin-left: auto;
+    color: #718096;
+    font-size: 0.88em;
+}
+
+.dgptm-vg-vote-bemerkung {
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 6px;
+    color: #2d3748;
+    line-height: 1.5;
+    font-size: 0.97em;
+    white-space: pre-wrap;
+}
+
+.dgptm-vg-vote-empty {
+    color: #a0aec0;
+    font-style: italic;
+    background: transparent;
+    padding: 0;
+}
+
 /* Info-Hinweis: Qualifikationsnachweis vorhanden, keine Bürg:innen nötig */
 .dgptm-vg-note {
     background: #ebf8ff;

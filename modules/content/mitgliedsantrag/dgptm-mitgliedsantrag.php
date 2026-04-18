@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.2.0
+ * Version: 2.2.1
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.2.0';
+        private $version = '2.2.1';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -2333,8 +2333,12 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 );
             }
 
+            // Debug: Status-Check kann von Admins via ?skip_status_check=1 deaktiviert werden.
+            // Nicht-Admins ignorieren den Parameter.
+            $skip_status_check = current_user_can('manage_options') && !empty($_GET['skip_status_check']);
+
             // Nur Antraege mit Contact_Status "In Prüfung beim Vorstand" sind offen
-            if (($antragsteller['Contact_Status'] ?? '') !== 'In Prüfung beim Vorstand') {
+            if (!$skip_status_check && ($antragsteller['Contact_Status'] ?? '') !== 'In Prüfung beim Vorstand') {
                 return $this->render_info_message(
                     'Abstimmung bereits abgeschlossen',
                     'Vielen Dank fuer dein Engagement! Dieser Mitgliedsantrag befindet sich nicht mehr in der Vorstandsabstimmung. Bei Rueckfragen wende dich gerne an die Geschaeftsstelle.'
@@ -2365,6 +2369,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 'ajaxUrl'            => admin_url('admin-ajax.php'),
                 'nonce'              => wp_create_nonce('dgptm_vorstand_entscheidung'),
                 'antragstellerToken' => $antragsteller_token,
+                'skipStatusCheck'    => $skip_status_check ? 1 : 0,
                 'strings'            => [
                     'confirm_approve'  => 'Moechtest du diesen Mitgliedsantrag wirklich GENEHMIGEN?',
                     'confirm_reject'   => 'Moechtest du diesen Mitgliedsantrag wirklich ABLEHNEN?',
@@ -2400,6 +2405,9 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             ob_start();
             ?>
             <div class="dgptm-vorstandsgenehmigung-container">
+                <?php if ($skip_status_check): ?>
+                    <div class="dgptm-vg-testmode">🧪 Testmodus aktiv — Contact-Status-Prüfung (<?php echo esc_html($antragsteller['Contact_Status'] ?? '-'); ?>) übergangen.</div>
+                <?php endif; ?>
                 <div class="dgptm-vg-header">
                     <h2>Mitgliedsantrag zur Genehmigung</h2>
                     <?php if ($summary['gesamt'] > 0): ?>
@@ -2892,7 +2900,8 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 wp_send_json_error(['message' => 'Die Abstimmungsphase fuer diesen Antrag ist bereits beendet.']);
                 return;
             }
-            if (($antragsteller['Contact_Status'] ?? '') !== 'In Prüfung beim Vorstand') {
+            $skip_status_check = current_user_can('manage_options') && !empty($_POST['skip_status_check']);
+            if (!$skip_status_check && ($antragsteller['Contact_Status'] ?? '') !== 'In Prüfung beim Vorstand') {
                 wp_send_json_error(['message' => 'Dieser Antrag befindet sich nicht mehr in der Vorstandsabstimmung.']);
                 return;
             }

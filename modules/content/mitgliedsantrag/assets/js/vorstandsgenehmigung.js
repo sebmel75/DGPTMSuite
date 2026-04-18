@@ -51,7 +51,8 @@
                     antragsteller_token: dgptmVorstand.antragstellerToken,
                     vorstand_id: vorstandId,
                     entscheidung: action,
-                    bemerkung: $bemerkung.val()
+                    bemerkung: $bemerkung.val(),
+                    skip_status_check: dgptmVorstand.skipStatusCheck || 0
                 },
                 success: function(response) {
                     if (response.success) {

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.2.2
+ * Version: 2.3.0
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.2.2';
+        private $version = '2.3.0';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -57,9 +57,16 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             // Vorstandsgenehmigung Shortcode
             add_shortcode('vorstandsgenehmigung', [$this, 'render_vorstandsgenehmigung']);
 
+            // Bürgen-Bestätigung Shortcode
+            add_shortcode('buergenbestaetigung', [$this, 'render_buergenbestaetigung']);
+
             // AJAX Handler für Genehmigung/Ablehnung
             add_action('wp_ajax_dgptm_vorstand_entscheidung', [$this, 'ajax_vorstand_entscheidung']);
             add_action('wp_ajax_nopriv_dgptm_vorstand_entscheidung', [$this, 'ajax_vorstand_entscheidung']);
+
+            // AJAX Handler für Bürgen-Bestätigung
+            add_action('wp_ajax_dgptm_buerge_entscheidung', [$this, 'ajax_buerge_entscheidung']);
+            add_action('wp_ajax_nopriv_dgptm_buerge_entscheidung', [$this, 'ajax_buerge_entscheidung']);
 
             // Download-Proxy für Zoho CRM File-Upload-Felder (Nachweise)
             add_action('wp_ajax_dgptm_download_crm_file', [$this, 'ajax_download_crm_file']);
@@ -2638,6 +2645,276 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             </div>
             <?php
             return ob_get_clean();
+        }
+
+        /**
+         * Shortcode [buergenbestaetigung] — Bürgschaftsbestätigung per Link.
+         * URL: ?token=<antragsteller.token>&g=1|2
+         * g=1 → Guarantor_*_1-Felder, g=2 → Guarantor_*_2-Felder.
+         */
+        public function render_buergenbestaetigung($atts) {
+            wp_enqueue_style(
+                'dgptm-vorstandsgenehmigung',
+                $this->plugin_url . 'assets/css/vorstandsgenehmigung.css',
+                [],
+                $this->version
+            );
+
+            $antragsteller_token = isset($_GET['token']) ? sanitize_text_field($_GET['token']) : '';
+            $slot_raw            = isset($_GET['g']) ? sanitize_text_field($_GET['g']) : '';
+            $slot                = in_array($slot_raw, ['1', '2'], true) ? (int) $slot_raw : 0;
+
+            if ($antragsteller_token === '' || $slot === 0) {
+                return $this->render_error_message(
+                    'Fehlende Parameter',
+                    'Bitte verwende den vollstaendigen Link aus der E-Mail. Es fehlen Identifikationstoken oder Buergen-Kennung.'
+                );
+            }
+
+            $oauth = $this->get_access_token();
+            if (!$oauth) {
+                return $this->render_error_message(
+                    'Verbindungsfehler',
+                    'Die Verbindung zum CRM-System konnte nicht hergestellt werden. Bitte versuche es spaeter erneut.'
+                );
+            }
+
+            $antragsteller = $this->get_contact_by_token($antragsteller_token, $oauth);
+            if (!$antragsteller) {
+                return $this->render_info_message(
+                    'Anfrage nicht mehr aktiv',
+                    'Vielen Dank! Zu diesem Link ist aktuell kein offener Aufnahmeantrag zugeordnet. Die Buergschaftsanfrage ist vermutlich bereits abgeschlossen. Bei Rueckfragen wende dich gerne an die Geschaeftsstelle.'
+                );
+            }
+
+            $buerge_name   = $antragsteller['Guarantor_Name_' . $slot]   ?? '';
+            $buerge_mail   = $antragsteller['Guarantor_Mail_' . $slot]   ?? '';
+            $buerge_status = !empty($antragsteller['Guarantor_Status_' . $slot]);
+
+            if (trim($buerge_name) === '' && trim($buerge_mail) === '') {
+                return $this->render_error_message(
+                    'Buergen-Eintrag nicht gefunden',
+                    'Unter diesem Link wurde kein Buergen-Eintrag hinterlegt. Bitte pruefe, ob du den richtigen Link verwendest.'
+                );
+            }
+
+            $antragsteller_name = $antragsteller['Full_Name']
+                ?? trim(($antragsteller['First_Name'] ?? '') . ' ' . ($antragsteller['Last_Name'] ?? ''));
+
+            // Falls bereits bestätigt → freundliche Dankekarte, keine Buttons
+            if ($buerge_status) {
+                return $this->render_info_message(
+                    'Bereits bestaetigt',
+                    sprintf('Vielen Dank! Deine Buergschaft fuer den Aufnahmeantrag von %s wurde bereits erfasst. Eine erneute Bestaetigung ist nicht erforderlich.', esc_html($antragsteller_name))
+                );
+            }
+
+            wp_enqueue_script(
+                'dgptm-buergenbestaetigung',
+                $this->plugin_url . 'assets/js/buergenbestaetigung.js',
+                ['jquery'],
+                $this->version,
+                true
+            );
+            wp_localize_script('dgptm-buergenbestaetigung', 'dgptmBuerge', [
+                'ajaxUrl'            => admin_url('admin-ajax.php'),
+                'nonce'              => wp_create_nonce('dgptm_buerge_entscheidung'),
+                'antragstellerToken' => $antragsteller_token,
+                'slot'               => $slot,
+                'strings'            => [
+                    'confirm_confirm' => 'Moechtest du die Buergschaft wirklich bestaetigen?',
+                    'confirm_reject'  => 'Moechtest du die Buergschaft wirklich ablehnen?',
+                    'processing'      => 'Wird verarbeitet...',
+                    'error'           => 'Ein Fehler ist aufgetreten. Bitte versuche es erneut.'
+                ]
+            ]);
+
+            $hat_quali = !empty($antragsteller['QualiNachweisDirekt']);
+            $hat_studi = !empty($antragsteller['StudinachweisDirekt']);
+            $benoetigt = $hat_quali ? 0 : ($hat_studi ? 1 : 2);
+
+            ob_start();
+            ?>
+            <div class="dgptm-vorstandsgenehmigung-container">
+                <div class="dgptm-vg-header">
+                    <h2>Buergschaftsbestaetigung</h2>
+                    <p class="dgptm-vg-info">Anfrage an: <strong><?php echo esc_html($buerge_name ?: $buerge_mail); ?></strong> (Buerge <?php echo (int) $slot; ?>)</p>
+                </div>
+
+                <div class="dgptm-vg-antragsteller">
+                    <div class="dgptm-vg-section">
+                        <h4>Antrag von</h4>
+                        <table class="dgptm-vg-table">
+                            <tr><th>Name:</th><td><strong><?php echo esc_html($antragsteller_name ?: '-'); ?></strong></td></tr>
+                            <tr><th>E-Mail:</th><td><?php echo esc_html($antragsteller['Email'] ?? '-'); ?></td></tr>
+                            <tr><th>Beantragte Mitgliedsart:</th><td><?php echo esc_html($antragsteller['Membership_Type'] ?? '-'); ?></td></tr>
+                            <?php if (!empty($antragsteller['employer_name'])): ?>
+                            <tr><th>Arbeitgeber:</th><td><?php echo esc_html($antragsteller['employer_name']); ?></td></tr>
+                            <?php endif; ?>
+                            <?php if (!empty($antragsteller['profession'])): ?>
+                            <tr><th>Beruf/Studienrichtung:</th><td><?php echo esc_html($antragsteller['profession']); ?></td></tr>
+                            <?php endif; ?>
+                        </table>
+                    </div>
+
+                    <div class="dgptm-vg-section">
+                        <h4>Worum es bei einer Buergschaft geht</h4>
+                        <p>
+                            Die Satzung sieht fuer diesen Antrag <strong><?php echo (int) $benoetigt; ?>&nbsp;Buerg<?php echo $benoetigt === 1 ? 'en' : 'innen'; ?></strong> vor.
+                            <?php if ($hat_quali): ?>
+                                Da ein Qualifikationsnachweis vorliegt, sind eigentlich keine Buerg:innen noetig — der Antrag wurde dennoch mit dir hinterlegt.
+                            <?php elseif ($hat_studi): ?>
+                                Als studentisches Mitglied benoetigt der Antrag die Bestaetigung eines ordentlichen Mitglieds, dass der Studienschwerpunkt im Bereich Perfusion/Technische Medizin liegt.
+                            <?php else: ?>
+                                Ohne formalen Qualifikationsnachweis braucht der Antrag das schriftliche Zeugnis von zwei ordentlichen Mitgliedern, die bestaetigen, dass der/die Antragsteller:in eine entsprechende Taetigkeit ausuebt oder ausgeuebt hat.
+                            <?php endif; ?>
+                        </p>
+                        <details class="dgptm-vg-satzung">
+                            <summary>§&nbsp;4 der Satzung einblenden</summary>
+                            <div class="dgptm-vg-satzung-text">
+                                <p><strong>§&nbsp;4.1.1.2</strong> — Personen, die in dem Beruf arbeiten, ohne ueber eine der genannten Qualifikationen zu verfuegen, koennen ordentliches Mitglied werden, wenn sie nachweislich eine Taetigkeit ausueben oder ausgeuebt haben, die ueblicherweise von Perfusionisten (Kardiotechnikern) ausgeuebt wird. <strong>Als Nachweis ist das schriftliche Zeugnis von zwei ordentlichen Mitgliedern als Buergen ausreichend und erforderlich</strong>, die die entsprechende Taetigkeit der Person bestaetigen.</p>
+                                <p><strong>§&nbsp;4.1.1.3</strong> — Ordentliche Mitglieder, die sich nachweislich noch in der Ausbildung befinden, koennen auf Antrag als Studentisches Mitglied gefuehrt werden. <strong>Zusaetzlich ist die Bestaetigung des Studienschwerpunkts durch ein ordentliches Mitglied als Buergen erforderlich.</strong></p>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+
+                <div class="dgptm-vg-entscheidung">
+                    <h3>Deine Entscheidung</h3>
+                    <div class="dgptm-vg-kommentar">
+                        <label for="dgptm-buerge-bemerkung">Bemerkung (optional):</label>
+                        <textarea id="dgptm-buerge-bemerkung" rows="3" placeholder="Optionale Bemerkung zu deiner Bestaetigung oder Ablehnung..."></textarea>
+                    </div>
+                    <div class="dgptm-vg-buttons">
+                        <button type="button" class="dgptm-vg-btn dgptm-vg-btn-approve" data-action="confirm">✓ Buergschaft bestaetigen</button>
+                        <button type="button" class="dgptm-vg-btn dgptm-vg-btn-reject"  data-action="reject">✗ Buergschaft ablehnen</button>
+                    </div>
+                    <div class="dgptm-vg-result" style="display: none;"></div>
+                </div>
+            </div>
+            <?php
+            return ob_get_clean();
+        }
+
+        /**
+         * AJAX: Bürgen-Bestätigung oder -Ablehnung.
+         * Setzt Guarantor_Status_<slot> = true bei Bestätigung (Ablehnung belässt
+         * den Wert auf false und dokumentiert die Entscheidung als Notiz).
+         */
+        public function ajax_buerge_entscheidung() {
+            check_ajax_referer('dgptm_buerge_entscheidung', 'nonce');
+
+            $antragsteller_token = sanitize_text_field($_POST['antragsteller_token'] ?? '');
+            $slot_raw            = sanitize_text_field($_POST['slot'] ?? '');
+            $action              = sanitize_text_field($_POST['entscheidung'] ?? '');
+            $bemerkung           = sanitize_textarea_field($_POST['bemerkung'] ?? '');
+
+            $slot = in_array($slot_raw, ['1', '2'], true) ? (int) $slot_raw : 0;
+
+            if ($antragsteller_token === '' || $slot === 0 || !in_array($action, ['confirm', 'reject'], true)) {
+                wp_send_json_error(['message' => 'Ungueltige Parameter']);
+                return;
+            }
+
+            $oauth = $this->get_access_token();
+            if (!$oauth) {
+                wp_send_json_error(['message' => 'CRM-Verbindung fehlgeschlagen']);
+                return;
+            }
+
+            $antragsteller = $this->get_contact_by_token($antragsteller_token, $oauth);
+            if (!$antragsteller) {
+                wp_send_json_error(['message' => 'Antrag nicht mehr zugeordnet.']);
+                return;
+            }
+
+            $status_field = 'Guarantor_Status_' . $slot;
+            if (!empty($antragsteller[$status_field]) && $action === 'confirm') {
+                wp_send_json_error(['message' => 'Diese Buergschaft wurde bereits bestaetigt.']);
+                return;
+            }
+
+            $buerge_name = $antragsteller['Guarantor_Name_' . $slot] ?? ('Buerge ' . $slot);
+            $antragsteller_id = $antragsteller['id'];
+
+            $update_data = [];
+            if ($action === 'confirm') {
+                $update_data[$status_field] = true;
+            }
+
+            if (!empty($update_data)) {
+                $response = wp_remote_request(
+                    'https://www.zohoapis.eu/crm/v8/Contacts/' . $antragsteller_id,
+                    [
+                        'method'  => 'PUT',
+                        'headers' => [
+                            'Authorization' => 'Zoho-oauthtoken ' . $oauth,
+                            'Content-Type'  => 'application/json'
+                        ],
+                        'body'    => wp_json_encode(['data' => [$update_data]]),
+                        'timeout' => 30
+                    ]
+                );
+                if (is_wp_error($response)) {
+                    $this->log('ERROR buerge_entscheidung update: ' . $response->get_error_message());
+                    wp_send_json_error(['message' => 'Speichern fehlgeschlagen.']);
+                    return;
+                }
+                $http_code = wp_remote_retrieve_response_code($response);
+                if ($http_code < 200 || $http_code >= 300) {
+                    $this->log('ERROR buerge_entscheidung HTTP ' . $http_code . ': ' . wp_remote_retrieve_body($response));
+                    wp_send_json_error(['message' => 'CRM-Fehler: HTTP ' . $http_code]);
+                    return;
+                }
+            }
+
+            $this->speichere_buergschafts_note($antragsteller_id, $slot, $buerge_name, $action, $bemerkung, $oauth);
+
+            $msg = $action === 'confirm'
+                ? 'Vielen Dank! Deine Bestaetigung wurde erfasst.'
+                : 'Deine Rueckmeldung (Ablehnung) wurde erfasst. Die Geschaeftsstelle wird informiert.';
+            wp_send_json_success(['message' => $msg, 'action' => $action]);
+        }
+
+        /**
+         * Legt die Bürgschaftsentscheidung als Notiz am Antragsteller ab.
+         */
+        private function speichere_buergschafts_note($contact_id, $slot, $buerge_name, $action, $bemerkung, $oauth) {
+            $aktion_text    = $action === 'confirm' ? 'Bestaetigung' : 'Ablehnung';
+            $bemerkung_trim = trim((string) $bemerkung);
+            $title   = 'Buergschaft Slot ' . (int) $slot . ': ' . $aktion_text . ' – ' . $buerge_name;
+            $content = sprintf(
+                "Buerge (Slot %d): %s\nEntscheidung: %s\nDatum: %s\n\nBemerkung:\n%s",
+                (int) $slot,
+                $buerge_name,
+                $aktion_text,
+                current_time('d.m.Y H:i'),
+                $bemerkung_trim !== '' ? $bemerkung_trim : '(keine)'
+            );
+
+            $response = wp_remote_post(
+                'https://www.zohoapis.eu/crm/v8/Contacts/' . $contact_id . '/Notes',
+                [
+                    'headers' => [
+                        'Authorization' => 'Zoho-oauthtoken ' . $oauth,
+                        'Content-Type'  => 'application/json'
+                    ],
+                    'body'    => wp_json_encode(['data' => [[
+                        'Note_Title'   => $title,
+                        'Note_Content' => $content
+                    ]]]),
+                    'timeout' => 30
+                ]
+            );
+
+            if (is_wp_error($response)) {
+                $this->log('WARN speichere_buergschafts_note: ' . $response->get_error_message());
+                return;
+            }
+            $http_code = wp_remote_retrieve_response_code($response);
+            if ($http_code < 200 || $http_code >= 300) {
+                $this->log('WARN speichere_buergschafts_note HTTP ' . $http_code);
+            }
         }
 
         /**

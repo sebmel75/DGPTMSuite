@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.3.4
+ * Version: 2.3.5
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.3.4';
+        private $version = '2.3.5';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -2358,6 +2358,16 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 return !in_array((string) $v['id'], $abgestimmte_ids, true);
             }));
 
+            // Vollständige Abstimmungsliste für die Anzeige der Kommentare
+            $abstimmungen_alle = [];
+            $raw_votes         = $antragsteller['Vorstand_Abstimmungen'] ?? '';
+            if (!empty($raw_votes)) {
+                $decoded = json_decode($raw_votes, true);
+                if (is_array($decoded)) {
+                    $abstimmungen_alle = $decoded;
+                }
+            }
+
             $summary = [
                 'genehmigungen' => (int) ($antragsteller['Membership_Approved']     ?? 0),
                 'ablehnungen'   => (int) ($antragsteller['Membership_Not_Approved'] ?? 0),
@@ -2623,6 +2633,40 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                             <tr><th>Datenschutz akzeptiert:</th><td><?php echo !empty($antragsteller['Datenschutzakzeptiert']) ? '✓ Ja' : '✗ Nein'; ?></td></tr>
                         </table>
                     </div>
+
+                    <?php if (!empty($abstimmungen_alle)): ?>
+                    <div class="dgptm-vg-section">
+                        <h4>Bisherige Vorstandsabstimmungen</h4>
+                        <div class="dgptm-vg-votes">
+                            <?php foreach ($abstimmungen_alle as $v):
+                                $is_approve = ($v['entscheidung'] ?? '') === 'approve';
+                                $cls        = $is_approve ? 'dgptm-vg-vote-approve' : 'dgptm-vg-vote-reject';
+                                $icon       = $is_approve ? '✓' : '✗';
+                                $verdict    = $is_approve ? 'Genehmigt' : 'Abgelehnt';
+                                $datum_raw  = $v['datum'] ?? '';
+                                $datum_fmt  = $datum_raw ? date_i18n('d.m.Y H:i', strtotime($datum_raw)) : '';
+                                $name       = $v['vorstand_name'] ?? 'Unbekannt';
+                                $bem        = trim((string) ($v['bemerkung'] ?? ''));
+                            ?>
+                                <div class="dgptm-vg-vote <?php echo esc_attr($cls); ?>">
+                                    <div class="dgptm-vg-vote-head">
+                                        <span class="dgptm-vg-vote-icon"><?php echo $icon; ?></span>
+                                        <strong><?php echo esc_html($name); ?></strong>
+                                        <span class="dgptm-vg-vote-verdict"><?php echo $verdict; ?></span>
+                                        <?php if ($datum_fmt): ?>
+                                            <span class="dgptm-vg-vote-date"><?php echo esc_html($datum_fmt); ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <?php if ($bem !== ''): ?>
+                                        <div class="dgptm-vg-vote-bemerkung"><?php echo esc_html($bem); ?></div>
+                                    <?php else: ?>
+                                        <div class="dgptm-vg-vote-bemerkung dgptm-vg-vote-empty"><em>(ohne Kommentar)</em></div>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
                 </div>
 
                 <?php if (empty($vorstaende_aktiv)): ?>

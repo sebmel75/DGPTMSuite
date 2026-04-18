@@ -185,6 +185,80 @@
 
 /* .dgptm-vg-empty teilt sich das Card-Styling mit .dgptm-vorstandsgenehmigung-error (oben) */
 
+/* Warnhinweis: Bürg:innen-Anforderung nicht erfüllt */
+.dgptm-vg-warning {
+    background: #fffaf0;
+    border: 1px solid #f6ad55;
+    border-left: 4px solid #dd6b20;
+}
+
+.dgptm-vg-warning h4 {
+    color: #744210;
+}
+
+.dgptm-vg-warning h4::before {
+    content: '⚠';
+    display: inline-block;
+    margin-right: 8px;
+}
+
+.dgptm-vg-warning p {
+    color: #5a3a0f;
+    line-height: 1.6;
+    margin: 0 0 12px 0;
+}
+
+.dgptm-vg-satzung summary {
+    cursor: pointer;
+    padding: 10px 14px;
+    background: #fbd38d;
+    border-radius: 6px;
+    font-weight: 600;
+    color: #744210;
+    list-style: none;
+    user-select: none;
+    transition: background 0.15s ease;
+}
+
+.dgptm-vg-satzung summary:hover {
+    background: #f6ad55;
+}
+
+.dgptm-vg-satzung summary::-webkit-details-marker {
+    display: none;
+}
+
+.dgptm-vg-satzung summary::before {
+    content: '▸';
+    display: inline-block;
+    margin-right: 8px;
+    transition: transform 0.15s ease;
+}
+
+.dgptm-vg-satzung[open] summary::before {
+    transform: rotate(90deg);
+}
+
+.dgptm-vg-satzung-text {
+    margin-top: 12px;
+    padding: 16px 20px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.95em;
+    line-height: 1.6;
+    color: #2d3748;
+}
+
+.dgptm-vg-satzung-text p {
+    margin: 0 0 12px 0;
+    color: #2d3748;
+}
+
+.dgptm-vg-satzung-text p:last-child {
+    margin-bottom: 0;
+}
+
 .dgptm-vg-attachments {
     display: flex;
     flex-direction: column;

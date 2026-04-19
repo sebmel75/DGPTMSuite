@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.4.1
+ * Version: 2.4.2
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.4.1';
+        private $version = '2.4.2';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -134,6 +134,71 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                     ]
                 ]
             ]);
+
+            // Test-Endpoint für Bürgen-Mail (Admin oder Health-Check-Token)
+            register_rest_route('dgptm/v1', '/test-buergenmail', [
+                'methods'             => 'GET',
+                'callback'            => [$this, 'rest_test_buergenmail'],
+                'permission_callback' => function ($request) {
+                    if (current_user_can('manage_options')) return true;
+                    $token = $request->get_param('auth');
+                    return $token && hash_equals(get_option('dgptm_health_check_token', ''), $token);
+                },
+                'args' => [
+                    'contact_id' => ['required' => true, 'validate_callback' => function ($p) { return is_numeric($p); }],
+                    'to'         => ['required' => true, 'validate_callback' => function ($p) { return is_email($p); }],
+                    'slot'       => ['required' => false]
+                ]
+            ]);
+        }
+
+        /**
+         * REST: Bürgen-Mail testweise an beliebige E-Mail-Adresse versenden.
+         * Nutzt dieselbe Render- und Versand-Logik wie der automatische Flow,
+         * überschreibt aber nur den Empfänger.
+         */
+        public function rest_test_buergenmail($request) {
+            $contact_id = (string) $request->get_param('contact_id');
+            $to         = sanitize_email((string) $request->get_param('to'));
+            $slot_raw   = (string) ($request->get_param('slot') ?? '1');
+            $slot       = in_array($slot_raw, ['1', '2'], true) ? (int) $slot_raw : 1;
+
+            $oauth = $this->get_access_token();
+            if (!$oauth) {
+                return new WP_REST_Response(['error' => 'CRM-Verbindung fehlgeschlagen'], 502);
+            }
+
+            $contact = $this->get_contact_details($contact_id, $oauth);
+            if (!$contact) {
+                return new WP_REST_Response(['error' => 'Contact ' . $contact_id . ' nicht gefunden'], 404);
+            }
+
+            $options     = dgptm_ma_get_options();
+            $template    = !empty($options['buerge_mail_template'])
+                ? $options['buerge_mail_template']
+                : $this->get_default_buerge_mail_template();
+            $subject_tpl = !empty($options['buerge_mail_subject'])
+                ? $options['buerge_mail_subject']
+                : 'Bürgschaft für Mitgliedsantrag ${Kontakte.Vorname} ${Kontakte.Nachname}';
+
+            $body    = $this->render_buerge_mail_body($template, $contact, $slot);
+            $subject = '[TEST] ' . wp_strip_all_tags($this->render_buerge_mail_body($subject_tpl, $contact, $slot));
+            $headers = [
+                'Content-Type: text/html; charset=UTF-8',
+                'From: DGPTM Geschäftsstelle <nichtantworten@dgptm.de>'
+            ];
+
+            $sent = wp_mail($to, $subject, $body, $headers);
+
+            return new WP_REST_Response([
+                'sent'             => (bool) $sent,
+                'to'               => $to,
+                'contact_id'       => $contact_id,
+                'slot'             => $slot,
+                'subject'          => $subject,
+                'buerge_mail_real' => $contact['Guarantor_Mail_' . $slot] ?? null,
+                'note'             => $sent ? 'Testmail versendet.' : 'wp_mail() lieferte false — Mailserver-Konfiguration prüfen.'
+            ], $sent ? 200 : 500);
         }
 
         public function rest_diagnose_contact($request) {

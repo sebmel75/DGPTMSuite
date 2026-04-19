@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.4.3
+ * Version: 2.5.0
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.4.3';
+        private $version = '2.5.0';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -516,8 +516,50 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 // Mail-Template darf HTML enthalten – keine aggressive Sanitize
                 $sanitized['buerge_mail_template'] = wp_unslash($input['buerge_mail_template']);
             }
+            if (isset($input['error_notification_email'])) {
+                $sanitized['error_notification_email'] = sanitize_email($input['error_notification_email']);
+            }
 
             return $sanitized;
+        }
+
+        /**
+         * Schickt eine Fehlermeldung an die Admin-Mail (Default: s.melzer@dgptm.de,
+         * überschreibbar per Option error_notification_email).
+         * Wird an kritischen Fehlerstellen im Submit-/Mailflow aufgerufen.
+         */
+        private function notify_admin_on_error($context, $message, $data = []) {
+            $options = dgptm_ma_get_options();
+            $to = !empty($options['error_notification_email'])
+                ? $options['error_notification_email']
+                : 's.melzer@dgptm.de';
+
+            $subject = '[DGPTM Mitgliedsantrag] Fehler: ' . $context;
+
+            $lines = [
+                'Im Mitgliedsantrag-Flow ist ein Fehler aufgetreten.',
+                '',
+                'Context:   ' . $context,
+                'Zeitpunkt: ' . current_time('d.m.Y H:i:s'),
+                'Nachricht: ' . $message
+            ];
+
+            if (!empty($data) && is_array($data)) {
+                $lines[] = '';
+                $lines[] = 'Zusatzdaten:';
+                foreach ($data as $k => $v) {
+                    if (is_scalar($v) || is_null($v)) {
+                        $lines[] = '  ' . $k . ' = ' . (string) $v;
+                    } else {
+                        $lines[] = '  ' . $k . ' = ' . substr((string) wp_json_encode($v), 0, 500);
+                    }
+                }
+            }
+
+            $lines[] = '';
+            $lines[] = '-- Automatisch vom DGPTM Mitgliedsantrag-Plugin';
+
+            @wp_mail($to, $subject, implode("\n", $lines));
         }
 
         /**
@@ -586,6 +628,18 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             $sent = wp_mail($mail, $subject, $body, $headers);
             $this->log('Bürgenmail Slot ' . $slot . ' an ' . $mail . ' -> ' . ($sent ? 'OK' : 'FEHLER'));
+            if (!$sent) {
+                $this->notify_admin_on_error(
+                    'Bürgen-Mail konnte nicht versendet werden',
+                    'wp_mail() lieferte false.',
+                    [
+                        'slot'        => $slot,
+                        'empfaenger'  => $mail,
+                        'contact_id'  => $contact['id'] ?? '',
+                        'antragsteller' => trim(($contact['First_Name'] ?? '') . ' ' . ($contact['Last_Name'] ?? ''))
+                    ]
+                );
+            }
             return $sent;
         }
 
@@ -602,43 +656,63 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 }
             }
             if ($sent_count > 0 && !empty($contact['id'])) {
-                $this->mark_buergen_mails_sent($contact['id']);
+                $this->mark_buergen_mails_sent($contact);
             }
             return $sent_count;
         }
 
         /**
-         * Setzt im CRM das Flag mails_guarantor_sendet = true am Antragsteller-Contact.
+         * Setzt im CRM das Flag mails_guarantor_sendet = true und ergänzt im
+         * Bemerkung-Feld " | Bürgen angeschrieben: dd.mm.YYYY HH:MM".
          * Nicht blockierend — Fehler landen nur im Log.
          */
-        private function mark_buergen_mails_sent($contact_id) {
+        private function mark_buergen_mails_sent($contact) {
             $oauth = $this->get_access_token();
             if (!$oauth) {
                 $this->log('WARN mark_buergen_mails_sent: kein OAuth-Token verfügbar');
                 return;
             }
 
+            $zeitstempel    = current_time('d.m.Y H:i');
+            $alt_bemerkung  = trim((string) ($contact['Bemerkung'] ?? ''));
+            $suffix         = 'Bürgen angeschrieben: ' . $zeitstempel;
+            $neue_bemerkung = $alt_bemerkung !== '' ? $alt_bemerkung . ' | ' . $suffix : $suffix;
+
             $response = wp_remote_request(
-                'https://www.zohoapis.eu/crm/v8/Contacts/' . $contact_id,
+                'https://www.zohoapis.eu/crm/v8/Contacts/' . $contact['id'],
                 [
                     'method'  => 'PUT',
                     'headers' => [
                         'Authorization' => 'Zoho-oauthtoken ' . $oauth,
                         'Content-Type'  => 'application/json'
                     ],
-                    'body'    => wp_json_encode(['data' => [['mails_guarantor_sendet' => true]]]),
+                    'body'    => wp_json_encode(['data' => [[
+                        'mails_guarantor_sendet' => true,
+                        'Bemerkung'              => $neue_bemerkung
+                    ]]]),
                     'timeout' => 30
                 ]
             );
 
             if (is_wp_error($response)) {
                 $this->log('WARN mark_buergen_mails_sent: ' . $response->get_error_message());
+                $this->notify_admin_on_error(
+                    'CRM-Update mails_guarantor_sendet fehlgeschlagen',
+                    $response->get_error_message(),
+                    ['contact_id' => $contact['id']]
+                );
                 return;
             }
 
             $http_code = wp_remote_retrieve_response_code($response);
             if ($http_code < 200 || $http_code >= 300) {
-                $this->log('WARN mark_buergen_mails_sent HTTP ' . $http_code . ' body: ' . substr(wp_remote_retrieve_body($response), 0, 300));
+                $body_snip = substr(wp_remote_retrieve_body($response), 0, 300);
+                $this->log('WARN mark_buergen_mails_sent HTTP ' . $http_code . ' body: ' . $body_snip);
+                $this->notify_admin_on_error(
+                    'CRM-Update mails_guarantor_sendet HTTP ' . $http_code,
+                    $body_snip,
+                    ['contact_id' => $contact['id']]
+                );
             }
         }
 
@@ -1576,6 +1650,15 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             // Check if contact creation failed
             if (!$contact_result) {
                 dgptm_log_error('Contact creation/update returned false', 'mitgliedsantrag');
+                $this->notify_admin_on_error(
+                    'Contact creation/update fehlgeschlagen',
+                    'create_or_update_contact() lieferte false.',
+                    [
+                        'email'    => $data['email1'] ?? '',
+                        'vorname'  => $data['vorname'] ?? '',
+                        'nachname' => $data['nachname'] ?? ''
+                    ]
+                );
                 wp_send_json_error(['message' => 'Fehler beim Erstellen des Kontakts in Zoho CRM. Bitte prüfen Sie das Debug-Log für Details.']);
                 return;
             }
@@ -1589,6 +1672,11 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             if (!$blueprint_result['success'] && empty($blueprint_result['skipped'])) {
                 dgptm_log_warning('Blueprint trigger failed: ' . $blueprint_result['message'], 'mitgliedsantrag');
+                $this->notify_admin_on_error(
+                    'Blueprint-Transition fehlgeschlagen',
+                    $blueprint_result['message'] ?? 'unbekannt',
+                    ['contact_id' => $contact_id]
+                );
             } else {
                 dgptm_log_verbose('Blueprint triggered successfully', 'mitgliedsantrag');
             }
@@ -1831,11 +1919,9 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 $contact_data['Bemerkung'] .= ' | Studienbescheinigung: ' . $file_url;
             }
 
-            // Add qualification certificate URL if applicable
-            if ($data['hat_qualifikation'] === 'ja' && $qualifikation_nachweis_id > 0) {
-                $file_url = wp_get_attachment_url($qualifikation_nachweis_id);
-                $contact_data['Bemerkung'] .= ' | Qualifikationsnachweis (' . $data['qualifikation_typ'] . '): ' . $file_url;
-            }
+            // Qualifikationsnachweis-URL landet nicht im Bemerkung-Feld —
+            // er liegt ohnehin als File-Upload im QualiNachweisDirekt-Feld und ist
+            // über den Download-Proxy im Vorstandsgenehmigungs-Flow erreichbar.
 
             dgptm_log_info('Contact payload: ' . substr(wp_json_encode($contact_data), 0, 2000), 'mitgliedsantrag');
 

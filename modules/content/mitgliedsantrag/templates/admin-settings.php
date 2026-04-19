@@ -234,6 +234,28 @@ $has_token = !empty($options['access_token'] ?? '');
                     </tr>
                 </table>
 
+                <h3>Fehler-Benachrichtigung</h3>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">
+                            <label for="error_notification_email">Empfänger für Fehler-Mails</label>
+                        </th>
+                        <td>
+                            <input type="email"
+                                   id="error_notification_email"
+                                   name="dgptm_mitgliedsantrag_options[error_notification_email]"
+                                   value="<?php echo esc_attr($options['error_notification_email'] ?? 's.melzer@dgptm.de'); ?>"
+                                   class="regular-text"
+                                   placeholder="s.melzer@dgptm.de">
+                            <p class="description">
+                                An diese Adresse werden automatisch Fehler im Antrags- und Bürgen-Mail-Flow gemeldet
+                                (Contact-Create/Update-Fehler, Blueprint-Trigger-Fehler, Bürgen-Mail-Versand-Fehler,
+                                CRM-Update-Fehler). Leer lassen = <code>s.melzer@dgptm.de</code> als Default.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+
                 <h3>Bürg:innen-Bestätigungsmail</h3>
                 <table class="form-table">
                     <tr>

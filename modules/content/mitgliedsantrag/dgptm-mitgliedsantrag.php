@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.5.0
+ * Version: 2.5.1
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.5.0';
+        private $version = '2.5.1';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -187,17 +187,32 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 ? $options['buerge_mail_subject']
                 : 'Bürgschaft für Mitgliedsantrag ${Kontakte.Vorname} ${Kontakte.Nachname}';
 
-            $body    = $this->render_buerge_mail_body($template, $contact, $slot);
-            $subject = '[TEST] ' . wp_strip_all_tags($this->render_buerge_mail_body($subject_tpl, $contact, $slot));
+            // Unique-Marker, damit Mailserver identische Testmails nicht als
+            // Duplikate verwerfen (Plesk/Postfix/IONOS machen das standardmäßig).
+            $test_id    = substr(bin2hex(random_bytes(3)), 0, 6);
+            $timestamp  = current_time('d.m.Y H:i:s');
+            $message_id = '<test-' . $test_id . '-' . time() . '@dgptm.de>';
+
+            $body_raw = $this->render_buerge_mail_body($template, $contact, $slot);
+            // Unique-Stempel sichtbar im Body + als HTML-Kommentar (gegen Duplicate-Filter)
+            $body    = $body_raw
+                . "\n<!-- dgptm-test: id={$test_id}, ts={$timestamp} -->\n"
+                . '<div style="margin:20px;padding:8px 12px;background:#fffbeb;border:1px dashed #f59e0b;border-radius:6px;font-size:11px;color:#92400e;font-family:monospace;">'
+                . '🧪 Testmail · ID ' . esc_html($test_id) . ' · ' . esc_html($timestamp)
+                . '</div>';
+            $subject = '[TEST ' . $test_id . '] ' . wp_strip_all_tags($this->render_buerge_mail_body($subject_tpl, $contact, $slot));
             $headers = [
                 'Content-Type: text/html; charset=UTF-8',
-                'From: DGPTM Geschäftsstelle <nichtantworten@dgptm.de>'
+                'From: DGPTM Geschäftsstelle <nichtantworten@dgptm.de>',
+                'Message-ID: ' . $message_id
             ];
 
             $sent = wp_mail($to, $subject, $body, $headers);
 
             return new WP_REST_Response([
                 'sent'             => (bool) $sent,
+                'test_id'          => $test_id,
+                'timestamp'        => $timestamp,
                 'to'               => $to,
                 'contact_id'       => $contact_id,
                 'slot'             => $slot,

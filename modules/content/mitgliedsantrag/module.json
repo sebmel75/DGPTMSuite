@@ -2,7 +2,7 @@
   "id": "mitgliedsantrag",
   "name": "DGPTM - Mitgliedsantrag",
   "description": "Professional membership application form with Zoho CRM integration, guarantor verification, address validation, and student certificate upload",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "author": "Sebastian Melzer",
   "main_file": "dgptm-mitgliedsantrag.php",
   "dependencies": ["crm-abruf"],

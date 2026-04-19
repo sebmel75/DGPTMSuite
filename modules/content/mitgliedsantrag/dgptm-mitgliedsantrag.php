@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.3.6
+ * Version: 2.4.0
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.3.6';
+        private $version = '2.4.0';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -438,8 +438,98 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             if (isset($input['field_mapping'])) {
                 $sanitized['field_mapping'] = $input['field_mapping']; // Will be JSON
             }
+            if (isset($input['buerge_mail_subject'])) {
+                $sanitized['buerge_mail_subject'] = sanitize_text_field($input['buerge_mail_subject']);
+            }
+            if (isset($input['buerge_mail_template'])) {
+                // Mail-Template darf HTML enthalten – keine aggressive Sanitize
+                $sanitized['buerge_mail_template'] = wp_unslash($input['buerge_mail_template']);
+            }
 
             return $sanitized;
+        }
+
+        /**
+         * Default-HTML-Template für Bürg:innen-Mails (aus templates/buergen-mail-default.html).
+         */
+        private function get_default_buerge_mail_template() {
+            $path = $this->plugin_path . 'templates/buergen-mail-default.html';
+            return is_readable($path) ? file_get_contents($path) : '';
+        }
+
+        /**
+         * Ersetzt Zoho-Style-Platzhalter ${Kontakte.Feldname} im Template
+         * durch Werte aus dem Contact-Record + aktuellen Bürg:innen-Slot.
+         */
+        private function render_buerge_mail_body($template, $contact, $slot) {
+            $buerge_name = $this->format_personen_name($contact['Guarantor_Name_' . $slot] ?? '');
+            $buerge_mail = $contact['Guarantor_Mail_' . $slot] ?? '';
+            $stadt       = $contact['Mailing_City'] ?? $contact['Other_City'] ?? '';
+
+            $map = [
+                'Vorname'           => $contact['First_Name'] ?? '',
+                'Nachname'          => $contact['Last_Name']  ?? '',
+                'Postadresse Stadt' => $stadt,
+                'Bürge Name 1'      => $buerge_name,
+                'Bürge Name 2'      => $buerge_name,
+                'Bürge Mail 1'      => $buerge_mail,
+                'Bürge Mail 2'      => $buerge_mail,
+                'token'             => $contact['token']      ?? '',
+                'Email'             => $contact['Email']      ?? ''
+            ];
+
+            return preg_replace_callback('/\$\{Kontakte\.([^\}]+)\}/u', function ($m) use ($map) {
+                $key = trim($m[1]);
+                return isset($map[$key]) ? (string) $map[$key] : $m[0];
+            }, (string) $template);
+        }
+
+        /**
+         * Sendet die Bürg:innen-Bestätigungs-Mail für den angegebenen Slot,
+         * sofern Mail-Adresse vorhanden und Status noch nicht bestätigt ist.
+         */
+        private function send_buerge_mail($contact, $slot) {
+            $mail = trim((string) ($contact['Guarantor_Mail_' . $slot] ?? ''));
+            if ($mail === '' || !is_email($mail)) {
+                return false;
+            }
+            if (!empty($contact['Guarantor_Status_' . $slot])) {
+                return false;
+            }
+
+            $options     = dgptm_ma_get_options();
+            $template    = !empty($options['buerge_mail_template'])
+                ? $options['buerge_mail_template']
+                : $this->get_default_buerge_mail_template();
+            $subject_tpl = !empty($options['buerge_mail_subject'])
+                ? $options['buerge_mail_subject']
+                : 'Bürgschaft für Mitgliedsantrag ${Kontakte.Vorname} ${Kontakte.Nachname}';
+
+            $body    = $this->render_buerge_mail_body($template, $contact, $slot);
+            $subject = wp_strip_all_tags($this->render_buerge_mail_body($subject_tpl, $contact, $slot));
+
+            $headers = [
+                'Content-Type: text/html; charset=UTF-8',
+                'From: DGPTM Geschäftsstelle <nichtantworten@dgptm.de>'
+            ];
+
+            $sent = wp_mail($mail, $subject, $body, $headers);
+            $this->log('Bürgenmail Slot ' . $slot . ' an ' . $mail . ' -> ' . ($sent ? 'OK' : 'FEHLER'));
+            return $sent;
+        }
+
+        /**
+         * Schickt – sofern notwendig – Mails an beide Bürg:innen-Slots.
+         * "Notwendig" = Mail-Adresse vorhanden + Guarantor_Status_X noch nicht true.
+         */
+        private function maybe_send_buergen_mails($contact) {
+            $sent_count = 0;
+            foreach ([1, 2] as $slot) {
+                if ($this->send_buerge_mail($contact, $slot)) {
+                    $sent_count++;
+                }
+            }
+            return $sent_count;
         }
 
         public function render_admin_page() {
@@ -1395,6 +1485,13 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
 
             // Infomail an Geschäftsstelle
             $this->send_notification_email($data, $contact_id);
+
+            // Bürg:innen-Mails versenden (sofern Mail-Adresse vorhanden + Status noch offen)
+            $fresh_contact = $this->get_contact_details($contact_id, $token);
+            if ($fresh_contact) {
+                $sent = $this->maybe_send_buergen_mails($fresh_contact);
+                dgptm_log_info('Bürgen-Mails versendet: ' . $sent . ' fuer Contact ' . $contact_id, 'mitgliedsantrag');
+            }
 
             // Schedule deletion of uploaded certificates after 10 minutes
             if ($studienbescheinigung_id > 0) {

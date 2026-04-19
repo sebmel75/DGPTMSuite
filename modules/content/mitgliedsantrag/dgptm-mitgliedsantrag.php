@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.4.2
+ * Version: 2.4.3
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.4.2';
+        private $version = '2.4.3';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -172,6 +172,12 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
             if (!$contact) {
                 return new WP_REST_Response(['error' => 'Contact ' . $contact_id . ' nicht gefunden'], 404);
             }
+
+            // Für den Test: Bürgen-Mail im Contact durch Empfänger-Adresse ersetzen,
+            // damit der CTA-Link auf das Test-Postfach zeigt — egal ob der echte
+            // Contact eine Bürgen-Mail hat oder nicht.
+            $buerge_mail_real            = $contact['Guarantor_Mail_' . $slot] ?? null;
+            $contact['Guarantor_Mail_' . $slot] = $to;
 
             $options     = dgptm_ma_get_options();
             $template    = !empty($options['buerge_mail_template'])

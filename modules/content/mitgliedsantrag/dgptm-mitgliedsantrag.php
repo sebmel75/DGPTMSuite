@@ -1840,11 +1840,9 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 $contact_data['Bemerkung'] .= ' | Studienbescheinigung: ' . $file_url;
             }
 
-            // Add qualification certificate URL if applicable
-            if ($data['hat_qualifikation'] === 'ja' && $qualifikation_nachweis_id > 0) {
-                $file_url = wp_get_attachment_url($qualifikation_nachweis_id);
-                $contact_data['Bemerkung'] .= ' | Qualifikationsnachweis (' . $data['qualifikation_typ'] . '): ' . $file_url;
-            }
+            // Qualifikationsnachweis-URL landet nicht im Bemerkung-Feld —
+            // er liegt ohnehin als File-Upload im QualiNachweisDirekt-Feld und ist
+            // über den Download-Proxy im Vorstandsgenehmigungs-Flow erreichbar.
 
             dgptm_log_info('Contact payload: ' . substr(wp_json_encode($contact_data), 0, 2000), 'mitgliedsantrag');
 

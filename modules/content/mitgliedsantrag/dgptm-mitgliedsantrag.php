@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.4.3
+ * Version: 2.4.4
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.4.3';
+        private $version = '2.4.4';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -602,31 +602,40 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 }
             }
             if ($sent_count > 0 && !empty($contact['id'])) {
-                $this->mark_buergen_mails_sent($contact['id']);
+                $this->mark_buergen_mails_sent($contact);
             }
             return $sent_count;
         }
 
         /**
-         * Setzt im CRM das Flag mails_guarantor_sendet = true am Antragsteller-Contact.
+         * Setzt im CRM das Flag mails_guarantor_sendet = true und ergänzt im
+         * Bemerkung-Feld " | Bürgen angeschrieben: dd.mm.YYYY HH:MM".
          * Nicht blockierend — Fehler landen nur im Log.
          */
-        private function mark_buergen_mails_sent($contact_id) {
+        private function mark_buergen_mails_sent($contact) {
             $oauth = $this->get_access_token();
             if (!$oauth) {
                 $this->log('WARN mark_buergen_mails_sent: kein OAuth-Token verfügbar');
                 return;
             }
 
+            $zeitstempel    = current_time('d.m.Y H:i');
+            $alt_bemerkung  = trim((string) ($contact['Bemerkung'] ?? ''));
+            $suffix         = 'Bürgen angeschrieben: ' . $zeitstempel;
+            $neue_bemerkung = $alt_bemerkung !== '' ? $alt_bemerkung . ' | ' . $suffix : $suffix;
+
             $response = wp_remote_request(
-                'https://www.zohoapis.eu/crm/v8/Contacts/' . $contact_id,
+                'https://www.zohoapis.eu/crm/v8/Contacts/' . $contact['id'],
                 [
                     'method'  => 'PUT',
                     'headers' => [
                         'Authorization' => 'Zoho-oauthtoken ' . $oauth,
                         'Content-Type'  => 'application/json'
                     ],
-                    'body'    => wp_json_encode(['data' => [['mails_guarantor_sendet' => true]]]),
+                    'body'    => wp_json_encode(['data' => [[
+                        'mails_guarantor_sendet' => true,
+                        'Bemerkung'              => $neue_bemerkung
+                    ]]]),
                     'timeout' => 30
                 ]
             );

@@ -234,6 +234,57 @@ $has_token = !empty($options['access_token'] ?? '');
                     </tr>
                 </table>
 
+                <h3>Bürg:innen-Bestätigungsmail</h3>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">
+                            <label for="buerge_mail_subject">Betreff</label>
+                        </th>
+                        <td>
+                            <input type="text"
+                                   id="buerge_mail_subject"
+                                   name="dgptm_mitgliedsantrag_options[buerge_mail_subject]"
+                                   value="<?php echo esc_attr($options['buerge_mail_subject'] ?? 'Bürgschaft für Mitgliedsantrag ${Kontakte.Vorname} ${Kontakte.Nachname}'); ?>"
+                                   class="large-text">
+                            <p class="description">Unterstützt dieselben Platzhalter wie der Mail-Body (siehe unten).</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="buerge_mail_template">HTML-Vorlage</label>
+                        </th>
+                        <td>
+                            <?php
+                            $default_tpl = '';
+                            $default_tpl_path = dirname(__FILE__) . '/buergen-mail-default.html';
+                            if (is_readable($default_tpl_path)) {
+                                $default_tpl = file_get_contents($default_tpl_path);
+                            }
+                            $current_tpl = !empty($options['buerge_mail_template']) ? $options['buerge_mail_template'] : $default_tpl;
+                            ?>
+                            <textarea id="buerge_mail_template"
+                                      name="dgptm_mitgliedsantrag_options[buerge_mail_template]"
+                                      rows="20"
+                                      class="large-text code"
+                                      style="font-family: monospace; font-size: 12px;"><?php echo esc_textarea($current_tpl); ?></textarea>
+                            <p class="description">
+                                Verfügbare Platzhalter (Zoho-Syntax):
+                                <code>${Kontakte.Vorname}</code>,
+                                <code>${Kontakte.Nachname}</code>,
+                                <code>${Kontakte.Postadresse Stadt}</code>,
+                                <code>${Kontakte.Bürge Name 1}</code>,
+                                <code>${Kontakte.Bürge Mail 1}</code>,
+                                <code>${Kontakte.token}</code>,
+                                <code>${Kontakte.Email}</code>.
+                                Felder mit „1" stehen stellvertretend für den jeweils adressierten Bürgen (funktioniert für Slot 1 und 2).
+                            </p>
+                            <button type="button" class="button" onclick="if(confirm('Vorlage auf Default zurücksetzen?'))document.getElementById('buerge_mail_template').value=<?php echo esc_js(wp_json_encode($default_tpl)); ?>;">
+                                Auf Default zurücksetzen
+                            </button>
+                        </td>
+                    </tr>
+                </table>
+
                 <h3>OAuth-Konfiguration</h3>
                 <table class="form-table">
                     <tr>

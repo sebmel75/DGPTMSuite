@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM - Mitgliedsantrag
  * Description: Satzungskonformes Mitgliedsantragsformular (§4) mit dynamischen Bürgenanforderungen, Qualifikationsnachweisen und Zoho CRM Integration
- * Version: 2.4.0
+ * Version: 2.4.1
  * Author: Sebastian Melzer
  * Text Domain: dgptm-mitgliedsantrag
  */
@@ -35,7 +35,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         private static $instance = null;
         private $plugin_path;
         private $plugin_url;
-        private $version = '2.4.0';
+        private $version = '2.4.1';
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -521,6 +521,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         /**
          * Schickt – sofern notwendig – Mails an beide Bürg:innen-Slots.
          * "Notwendig" = Mail-Adresse vorhanden + Guarantor_Status_X noch nicht true.
+         * Nach erfolgreichem Versand wird das CRM-Feld mails_guarantor_sendet = true gesetzt.
          */
         private function maybe_send_buergen_mails($contact) {
             $sent_count = 0;
@@ -529,7 +530,45 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                     $sent_count++;
                 }
             }
+            if ($sent_count > 0 && !empty($contact['id'])) {
+                $this->mark_buergen_mails_sent($contact['id']);
+            }
             return $sent_count;
+        }
+
+        /**
+         * Setzt im CRM das Flag mails_guarantor_sendet = true am Antragsteller-Contact.
+         * Nicht blockierend — Fehler landen nur im Log.
+         */
+        private function mark_buergen_mails_sent($contact_id) {
+            $oauth = $this->get_access_token();
+            if (!$oauth) {
+                $this->log('WARN mark_buergen_mails_sent: kein OAuth-Token verfügbar');
+                return;
+            }
+
+            $response = wp_remote_request(
+                'https://www.zohoapis.eu/crm/v8/Contacts/' . $contact_id,
+                [
+                    'method'  => 'PUT',
+                    'headers' => [
+                        'Authorization' => 'Zoho-oauthtoken ' . $oauth,
+                        'Content-Type'  => 'application/json'
+                    ],
+                    'body'    => wp_json_encode(['data' => [['mails_guarantor_sendet' => true]]]),
+                    'timeout' => 30
+                ]
+            );
+
+            if (is_wp_error($response)) {
+                $this->log('WARN mark_buergen_mails_sent: ' . $response->get_error_message());
+                return;
+            }
+
+            $http_code = wp_remote_retrieve_response_code($response);
+            if ($http_code < 200 || $http_code >= 300) {
+                $this->log('WARN mark_buergen_mails_sent HTTP ' . $http_code . ' body: ' . substr(wp_remote_retrieve_body($response), 0, 300));
+            }
         }
 
         public function render_admin_page() {

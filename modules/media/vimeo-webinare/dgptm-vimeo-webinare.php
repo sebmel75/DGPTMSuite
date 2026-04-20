@@ -629,6 +629,23 @@ class DGPTM_Vimeo_Webinare {
                 true
             );
         }
+
+        // Frontend-Liste (oeffentliche Seite)
+        if ($has_liste) {
+            wp_enqueue_style(
+                'dgptm-vw-liste',
+                $this->plugin_url . 'assets/css/liste.css',
+                ['dgptm-vw-dashboard-integration'],
+                '2.0.0'
+            );
+            wp_enqueue_script(
+                'dgptm-vw-liste',
+                $this->plugin_url . 'assets/js/liste.js',
+                ['jquery'],
+                '2.0.0',
+                true
+            );
+        }
     }
 
     /**

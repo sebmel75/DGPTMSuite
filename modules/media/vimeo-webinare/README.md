@@ -32,3 +32,18 @@ ausführen.
 - `assets/js/` — Frontend-Skripte (kein Build)
 
 Siehe `CHANGELOG.md` für Versionshistorie.
+
+## Einrichtung im Mitglieder-Dashboard
+
+Nach Aktivierung des Moduls einmalig konfigurieren:
+
+1. WP-Admin → **Dashboard Config** (Submenü der DGPTM Plugin Suite).
+2. Neuen **Top-Tab** anlegen:
+   - Name: `Webinar-Verwaltung`
+   - Permission-Dropdown: ACF-Feld `webinar` auswählen.
+3. Unter dem Top-Tab zwei **Folder-Tabs** anlegen:
+   - `Liste` — Content: `[vimeo_webinar_manager]`
+   - `Statistiken` — Content: `[vimeo_webinar_statistiken]`
+4. Für berechtigte User: im jeweiligen WP-Profil ACF-Feld „Webinare" auf **wahr**
+   setzen. Erst danach wird der Tab im Dashboard angezeigt und die
+   schreibenden AJAX-Endpoints akzeptieren die Requests.

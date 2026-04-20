@@ -100,6 +100,10 @@ class DGPTM_Vimeo_Webinare {
         // Repository-Klasse für Daten- und Stats-Zugriffe
         require_once $this->plugin_path . 'includes/class-webinar-repository.php';
 
+        // Shortcode-Klasse: Manager (registriert eigene Shortcode- und AJAX-Handler)
+        require_once $this->plugin_path . 'includes/class-shortcode-manager.php';
+        DGPTM_VW_Shortcode_Manager::get_instance();
+
         // Datenbank-Check bei erster Nutzung (nicht bei Aktivierung)
         add_action('init', [$this, 'maybe_create_tables'], 1);
 
@@ -113,17 +117,14 @@ class DGPTM_Vimeo_Webinare {
 
         // Shortcodes
         add_shortcode('vimeo_webinar', [$this, 'webinar_player_shortcode']);
-        add_shortcode('vimeo_webinar_manager', [$this, 'webinar_manager_shortcode']);
+        // vimeo_webinar_manager wird in DGPTM_VW_Shortcode_Manager registriert
         add_shortcode('vimeo_webinar_liste', [$this, 'webinar_liste_shortcode']);
 
         // AJAX Handlers - Logged in users
         add_action('wp_ajax_vw_track_progress', [$this, 'ajax_track_progress']);
         add_action('wp_ajax_vw_complete_webinar', [$this, 'ajax_complete_webinar']);
         add_action('wp_ajax_vw_generate_certificate', [$this, 'ajax_generate_certificate']);
-        add_action('wp_ajax_vw_manager_create', [$this, 'ajax_manager_create']);
-        add_action('wp_ajax_vw_manager_update', [$this, 'ajax_manager_update']);
-        add_action('wp_ajax_vw_manager_delete', [$this, 'ajax_manager_delete']);
-        add_action('wp_ajax_vw_manager_stats', [$this, 'ajax_manager_stats']);
+        // vw_manager_* AJAX-Handler wurden durch dgptm_vw_* in DGPTM_VW_Shortcode_Manager ersetzt
         add_action('wp_ajax_vw_transfer_cookie_progress', [$this, 'ajax_transfer_cookie_progress']);
         add_action('wp_ajax_vw_preview_certificate', [$this, 'ajax_preview_certificate']);
 

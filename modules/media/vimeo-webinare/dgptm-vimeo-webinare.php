@@ -104,6 +104,10 @@ class DGPTM_Vimeo_Webinare {
         require_once $this->plugin_path . 'includes/class-shortcode-manager.php';
         DGPTM_VW_Shortcode_Manager::get_instance();
 
+        // Shortcode-Klasse: Statistiken
+        require_once $this->plugin_path . 'includes/class-shortcode-statistiken.php';
+        DGPTM_VW_Shortcode_Statistiken::get_instance();
+
         // Datenbank-Check bei erster Nutzung (nicht bei Aktivierung)
         add_action('init', [$this, 'maybe_create_tables'], 1);
 

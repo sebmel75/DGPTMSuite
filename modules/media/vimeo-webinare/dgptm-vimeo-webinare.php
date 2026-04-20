@@ -3,7 +3,7 @@
  * Plugin Name: DGPTM - Vimeo Webinare
  * Plugin URI: https://dgptm.de
  * Description: Vimeo Videos als Webinare mit dynamischen URLs, automatischen Fortbildungspunkten, Zertifikaten und Frontend-Manager
- * Version: 1.3.1
+ * Version: 2.0.0
  * Author: Sebastian Melzer
  * Author URI: https://dgptm.de
  * License: GPL v2 or later

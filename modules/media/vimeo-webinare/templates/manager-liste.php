@@ -44,9 +44,7 @@ if (!defined('ABSPATH')) exit;
         <p class="dgptm-vw-empty">Keine Webinare vorhanden.</p>
     <?php endif; ?>
 
-    <script type="text/template" id="dgptm-vw-form-template">
-        <?php include plugin_dir_path(__FILE__) . 'manager-form.php'; ?>
-    </script>
+    <template id="dgptm-vw-form-template"><?php include plugin_dir_path(__FILE__) . 'manager-form.php'; ?></template>
 
 </div>
 

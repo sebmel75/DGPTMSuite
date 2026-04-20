@@ -105,6 +105,11 @@ jQuery(function($) {
                 $target.html(r.data.html);
                 // Execute inline scripts
                 $target.find('script').each(function() {
+                    // <script type="text/template"> u. aehnliche Data-Blocks NICHT ausfuehren
+                    // und NICHT entfernen - sie dienen anderen Modulen als DOM-Datenspeicher.
+                    var t = this.getAttribute('type') || '';
+                    if (t && t.indexOf('text/') === 0 && t !== 'text/javascript') return;
+
                     var s = document.createElement('script');
                     if (this.src) s.src = this.src; else s.textContent = this.textContent;
                     document.body.appendChild(s);

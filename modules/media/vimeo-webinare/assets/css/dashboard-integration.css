@@ -58,37 +58,58 @@
 /* Buttons */
 .dgptm-vw .dgptm-btn--primary,
 .dgptm-vw a.dgptm-btn--primary,
+.dgptm-vw a.dgptm-btn--primary:link,
+.dgptm-vw a.dgptm-btn--primary:visited,
 .dgptm-vw button.dgptm-btn--primary {
-    display: inline-block;
-    padding: 8px 16px;
-    background: var(--dd-primary);
+    display: inline-flex !important;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px !important;
+    background: var(--dd-primary) !important;
+    background-image: none !important;
     color: #fff !important;
-    border: none;
-    border-radius: var(--dd-radius);
-    text-decoration: none;
-    font-size: 14px;
-    font-weight: 500;
+    border: none !important;
+    border-radius: var(--dd-radius) !important;
+    text-decoration: none !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    line-height: 1.4 !important;
     cursor: pointer;
     transition: background .15s;
+    text-transform: none !important;
 }
-.dgptm-vw .dgptm-btn--primary:hover { background: var(--dd-primary-dark); }
+.dgptm-vw .dgptm-btn--primary:hover,
+.dgptm-vw a.dgptm-btn--primary:hover {
+    background: var(--dd-primary-dark) !important;
+    color: #fff !important;
+}
+.dgptm-vw .dgptm-btn--primary .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
 
 .dgptm-vw .dgptm-btn--ghost,
 .dgptm-vw a.dgptm-btn--ghost,
+.dgptm-vw a.dgptm-btn--ghost:link,
+.dgptm-vw a.dgptm-btn--ghost:visited,
 .dgptm-vw button.dgptm-btn--ghost {
-    display: inline-block;
-    padding: 7px 15px;
-    background: transparent;
-    color: var(--dd-primary);
-    border: 1px solid var(--dd-primary);
-    border-radius: var(--dd-radius);
-    text-decoration: none;
-    font-size: 14px;
-    font-weight: 500;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 15px !important;
+    background: transparent !important;
+    color: var(--dd-primary) !important;
+    border: 1px solid var(--dd-primary) !important;
+    border-radius: var(--dd-radius) !important;
+    text-decoration: none !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    line-height: 1.4 !important;
     cursor: pointer;
     transition: background .15s;
 }
-.dgptm-vw .dgptm-btn--ghost:hover { background: var(--dd-primary-light); }
+.dgptm-vw .dgptm-btn--ghost:hover { background: var(--dd-primary-light) !important; }
 
 /* Toast */
 .dgptm-vw-toast-layer {

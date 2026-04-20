@@ -274,14 +274,19 @@
     transition: all 0.2s ease;
 }
 
-.vw-btn-primary {
-    background: linear-gradient(135deg, #3182ce 0%, #2c5282 100%);
-    color: #fff;
+.vw-btn-primary,
+a.vw-btn-primary,
+a.vw-btn-primary:link,
+a.vw-btn-primary:visited {
+    background: linear-gradient(135deg, #3182ce 0%, #2c5282 100%) !important;
+    color: #fff !important;
+    text-decoration: none !important;
 }
 
-.vw-btn-primary:hover {
-    background: linear-gradient(135deg, #2c5282 0%, #1a365d 100%);
-    color: #fff;
+.vw-btn-primary:hover,
+a.vw-btn-primary:hover {
+    background: linear-gradient(135deg, #2c5282 0%, #1a365d 100%) !important;
+    color: #fff !important;
     transform: translateY(-1px);
 }
 

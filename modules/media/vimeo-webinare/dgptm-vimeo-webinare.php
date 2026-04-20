@@ -157,6 +157,55 @@ class DGPTM_Vimeo_Webinare {
     }
 
     /**
+     * Idempotente Asset-Registrierung fuer Dashboard-Shortcodes.
+     *
+     * Wird aus den Shortcode-Klassen aufgerufen, falls enqueue_assets() den
+     * Shortcode nicht erkannt hat (Dashboard-Tab-Inhalte leben nicht im
+     * post_content). Funktioniert nur bei initial aktiven Tabs — AJAX-
+     * Nachladungen werden durch die Tab-Config-Detection in enqueue_assets()
+     * abgefangen.
+     *
+     * @param string $which 'manager' | 'liste' | 'statistiken'
+     */
+    public function enqueue_dashboard_assets(string $which): void {
+        if (!wp_style_is('dgptm-vw-dashboard-integration', 'enqueued')) {
+            wp_enqueue_style(
+                'dgptm-vw-dashboard-integration',
+                $this->plugin_url . 'assets/css/dashboard-integration.css',
+                [],
+                '2.0.0'
+            );
+        }
+        wp_enqueue_style('dashicons');
+
+        $assets = [
+            'manager'     => ['css' => 'manager.css',     'js' => 'manager.js'],
+            'liste'       => ['css' => 'liste.css',       'js' => 'liste.js'],
+            'statistiken' => ['css' => 'statistiken.css', 'js' => 'statistiken.js'],
+        ];
+        if (!isset($assets[$which])) return;
+
+        $handle = 'dgptm-vw-' . $which;
+        if (!wp_style_is($handle, 'enqueued')) {
+            wp_enqueue_style(
+                $handle,
+                $this->plugin_url . 'assets/css/' . $assets[$which]['css'],
+                ['dgptm-vw-dashboard-integration'],
+                '2.0.0'
+            );
+        }
+        if (!wp_script_is($handle, 'enqueued')) {
+            wp_enqueue_script(
+                $handle,
+                $this->plugin_url . 'assets/js/' . $assets[$which]['js'],
+                ['jquery'],
+                '2.0.0',
+                true
+            );
+        }
+    }
+
+    /**
      * Autorisierungs-Pruefung fuer schreibende Manager-Operationen.
      *
      * Prueft eingeloggt + ACF-Feld DGPTM_VW_PERMISSION_FIELD am User.
@@ -582,10 +631,21 @@ class DGPTM_Vimeo_Webinare {
         // dort feuert wp_enqueue_scripts nicht mehr. Deshalb muessen die Assets schon
         // beim initialen Page-Load mit erkannt und geladen werden, auch wenn unsere
         // Shortcodes nur im Tab-Content (nicht im post_content) vorkommen.
-        if (has_shortcode($content, 'dgptm_dashboard') && class_exists('DGPTM_Dashboard_Tabs')) {
+        // Erkennung, ob die Seite einen Dashboard-Shortcode enthaelt.
+        // has_shortcode prueft nur post_content; Elementor-Seiten haben den Shortcode
+        // in _elementor_data (post_meta). Beide Wege abdecken.
+        $has_dashboard_here = has_shortcode($content, 'dgptm_dashboard');
+        if (!$has_dashboard_here && !empty($post->ID)) {
+            $elementor_data = get_post_meta($post->ID, '_elementor_data', true);
+            if (is_string($elementor_data) && strpos($elementor_data, 'dgptm_dashboard') !== false) {
+                $has_dashboard_here = true;
+            }
+        }
+
+        if ($has_dashboard_here && class_exists('DGPTM_Dashboard_Tabs')) {
             $dash_tabs = DGPTM_Dashboard_Tabs::get_instance()->get_all();
             foreach ($dash_tabs as $t) {
-                $tc = $t['content'] ?? '';
+                $tc = ($t['content'] ?? '') . ' ' . ($t['content_mobile'] ?? '');
                 if (strpos($tc, 'vimeo_webinar_manager') !== false)      $has_manager = true;
                 if (strpos($tc, 'vimeo_webinar_liste') !== false)        $has_liste   = true;
                 if (strpos($tc, 'vimeo_webinar_statistiken') !== false)  $has_stats   = true;

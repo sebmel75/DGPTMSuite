@@ -23,6 +23,8 @@ if (!class_exists('DGPTM_VW_Shortcode_Statistiken')) {
             if (!is_user_logged_in()) {
                 return '<p>Bitte melden Sie sich an.</p>';
             }
+            DGPTM_Vimeo_Webinare::get_instance()->enqueue_dashboard_assets('statistiken');
+
             $repo = DGPTM_VW_Webinar_Repository::get_instance();
             $webinars = $repo->get_all();
             $ids = array_map(function ($w) { return $w['id']; }, $webinars);

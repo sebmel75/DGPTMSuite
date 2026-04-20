@@ -20,6 +20,8 @@ if (!class_exists('DGPTM_VW_Shortcode_Liste')) {
         }
 
         public function render($atts): string {
+            DGPTM_Vimeo_Webinare::get_instance()->enqueue_dashboard_assets('liste');
+
             $user_id = get_current_user_id();
             $is_logged_in = is_user_logged_in();
 

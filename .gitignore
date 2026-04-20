@@ -49,3 +49,6 @@ debug-elementor-*.php
 
 # Tool config
 .superpowers/
+
+# Git worktrees (subagent-driven development)
+.worktrees/

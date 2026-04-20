@@ -563,15 +563,46 @@ class DGPTM_Vimeo_Webinare {
         }
 
         $content = $post->post_content ?? '';
-        $has_shortcode = has_shortcode($content, 'vimeo_webinar') ||
-                        has_shortcode($content, 'vimeo_webinar_manager') ||
-                        has_shortcode($content, 'vimeo_webinar_liste');
+        $has_player_shortcode = has_shortcode($content, 'vimeo_webinar');
+        $has_manager         = has_shortcode($content, 'vimeo_webinar_manager');
+        $has_liste           = has_shortcode($content, 'vimeo_webinar_liste');
+        $has_stats           = has_shortcode($content, 'vimeo_webinar_statistiken');
+        $has_any_shortcode   = $has_player_shortcode || $has_manager || $has_liste || $has_stats;
 
-        if (!$has_shortcode && get_post_type() !== 'vimeo_webinar') {
+        if (!$has_any_shortcode && get_post_type() !== 'vimeo_webinar') {
             return;
         }
 
+        // Legacy-Assets (Player und alte Liste nutzen style.css/script.js)
         $this->force_enqueue_assets();
+
+        // Dashboard-Design-Tokens + neue Komponenten fuer alle drei neuen Shortcodes
+        if ($has_manager || $has_liste || $has_stats) {
+            wp_enqueue_style(
+                'dgptm-vw-dashboard-integration',
+                $this->plugin_url . 'assets/css/dashboard-integration.css',
+                [],
+                '2.0.0'
+            );
+            wp_enqueue_style('dashicons');
+        }
+
+        // Manager (Dashboard-Tab)
+        if ($has_manager) {
+            wp_enqueue_style(
+                'dgptm-vw-manager',
+                $this->plugin_url . 'assets/css/manager.css',
+                ['dgptm-vw-dashboard-integration'],
+                '2.0.0'
+            );
+            wp_enqueue_script(
+                'dgptm-vw-manager',
+                $this->plugin_url . 'assets/js/manager.js',
+                ['jquery'],
+                '2.0.0',
+                true
+            );
+        }
     }
 
     /**

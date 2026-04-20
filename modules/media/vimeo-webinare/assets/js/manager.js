@@ -33,8 +33,12 @@
 
     function getFormTemplate() {
         if (FORM_TEMPLATE) return FORM_TEMPLATE;
-        var $tpl = $('#dgptm-vw-form-template');
-        FORM_TEMPLATE = $tpl.length ? $tpl.html() : '';
+        var tpl = document.getElementById('dgptm-vw-form-template');
+        if (!tpl) { FORM_TEMPLATE = ''; return FORM_TEMPLATE; }
+        // <template> hat .content (DocumentFragment), <script type="text/template"> hat nur .innerHTML
+        FORM_TEMPLATE = tpl.content
+            ? (new XMLSerializer()).serializeToString(tpl.content)
+            : tpl.innerHTML;
         return FORM_TEMPLATE;
     }
 

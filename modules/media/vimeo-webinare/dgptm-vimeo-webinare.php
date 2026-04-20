@@ -631,18 +631,14 @@ class DGPTM_Vimeo_Webinare {
         // dort feuert wp_enqueue_scripts nicht mehr. Deshalb muessen die Assets schon
         // beim initialen Page-Load mit erkannt und geladen werden, auch wenn unsere
         // Shortcodes nur im Tab-Content (nicht im post_content) vorkommen.
-        // Erkennung, ob die Seite einen Dashboard-Shortcode enthaelt.
-        // has_shortcode prueft nur post_content; Elementor-Seiten haben den Shortcode
-        // in _elementor_data (post_meta). Beide Wege abdecken.
-        $has_dashboard_here = has_shortcode($content, 'dgptm_dashboard');
-        if (!$has_dashboard_here && !empty($post->ID)) {
-            $elementor_data = get_post_meta($post->ID, '_elementor_data', true);
-            if (is_string($elementor_data) && strpos($elementor_data, 'dgptm_dashboard') !== false) {
-                $has_dashboard_here = true;
-            }
-        }
-
-        if ($has_dashboard_here && class_exists('DGPTM_Dashboard_Tabs')) {
+        // Wenn das Mitglieder-Dashboard-Modul aktiv ist und Vimeo-Shortcodes in
+        // seiner Tab-Konfiguration vorkommen, laden wir die Assets auf allen
+        // eingeloggten Frontend-Seiten. Grund: Dashboard-Seiten werden oft ueber
+        // Page-Builder (Elementor/Divi/Custom Templates) eingebunden — der
+        // [dgptm_dashboard]-Shortcode taucht dann nicht zuverlaessig im
+        // post_content auf. Tabs werden zudem per AJAX nachgeladen, dort ist
+        // wp_enqueue zu spaet. Overhead: ~30 KB CSS+JS pro eingeloggter Seite.
+        if (is_user_logged_in() && class_exists('DGPTM_Dashboard_Tabs')) {
             $dash_tabs = DGPTM_Dashboard_Tabs::get_instance()->get_all();
             foreach ($dash_tabs as $t) {
                 $tc = ($t['content'] ?? '') . ' ' . ($t['content_mobile'] ?? '');

@@ -55,23 +55,55 @@
 .dgptm-vw-mgr-table tbody tr:last-child td { border-bottom: none; }
 .dgptm-vw-col-actions { text-align: right; }
 
-/* Action-Icons */
-.dgptm-vw-btn-icon {
-    display: inline-flex;
+/* Action-Icons — mit !important gegen Theme/Elementor-Overrides */
+.dgptm-vw .dgptm-vw-btn-icon,
+.dgptm-vw a.dgptm-vw-btn-icon,
+.dgptm-vw a.dgptm-vw-btn-icon:link,
+.dgptm-vw a.dgptm-vw-btn-icon:visited,
+.dgptm-vw button.dgptm-vw-btn-icon {
+    display: inline-flex !important;
     align-items: center;
     justify-content: center;
-    width: 30px;
-    height: 30px;
-    border: none;
-    background: transparent;
-    color: var(--dd-muted);
-    border-radius: 4px;
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    background-image: none !important;
+    color: var(--dd-muted) !important;
+    border-radius: 6px !important;
     cursor: pointer;
-    text-decoration: none;
-    transition: background .15s, color .15s;
+    text-decoration: none !important;
+    transition: background .15s, color .15s, border-color .15s;
+    box-shadow: none !important;
 }
-.dgptm-vw-btn-icon:hover { background: var(--dd-primary-light); color: var(--dd-primary); }
-.dgptm-vw-btn-icon.dgptm-vw-delete:hover { background: var(--dd-accent-light); color: var(--dd-accent); }
+.dgptm-vw .dgptm-vw-btn-icon:hover,
+.dgptm-vw a.dgptm-vw-btn-icon:hover {
+    background: var(--dd-primary-light) !important;
+    color: var(--dd-primary) !important;
+    border-color: var(--dd-border) !important;
+}
+.dgptm-vw .dgptm-vw-btn-icon.dgptm-vw-delete:hover {
+    background: var(--dd-accent-light) !important;
+    color: var(--dd-accent) !important;
+    border-color: var(--dd-accent-light) !important;
+}
+.dgptm-vw .dgptm-vw-btn-icon .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+.dgptm-vw .dgptm-vw-btn-icon:focus-visible {
+    outline: 2px solid var(--dd-primary);
+    outline-offset: 2px;
+}
+
+.dgptm-vw .dgptm-vw-cell-actions {
+    white-space: nowrap;
+}
+.dgptm-vw .dgptm-vw-cell-actions .dgptm-vw-btn-icon + .dgptm-vw-btn-icon {
+    margin-left: 4px;
+}
 
 /* Empty-State */
 .dgptm-vw-empty {

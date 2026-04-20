@@ -108,6 +108,10 @@ class DGPTM_Vimeo_Webinare {
         require_once $this->plugin_path . 'includes/class-shortcode-statistiken.php';
         DGPTM_VW_Shortcode_Statistiken::get_instance();
 
+        // Shortcode-Klasse: Frontend-Liste
+        require_once $this->plugin_path . 'includes/class-shortcode-liste.php';
+        DGPTM_VW_Shortcode_Liste::get_instance();
+
         // Datenbank-Check bei erster Nutzung (nicht bei Aktivierung)
         add_action('init', [$this, 'maybe_create_tables'], 1);
 
@@ -122,7 +126,8 @@ class DGPTM_Vimeo_Webinare {
         // Shortcodes
         add_shortcode('vimeo_webinar', [$this, 'webinar_player_shortcode']);
         // vimeo_webinar_manager wird in DGPTM_VW_Shortcode_Manager registriert
-        add_shortcode('vimeo_webinar_liste', [$this, 'webinar_liste_shortcode']);
+        // vimeo_webinar_liste wird in DGPTM_VW_Shortcode_Liste registriert
+        // vimeo_webinar_statistiken wird in DGPTM_VW_Shortcode_Statistiken registriert
 
         // AJAX Handlers - Logged in users
         add_action('wp_ajax_vw_track_progress', [$this, 'ajax_track_progress']);

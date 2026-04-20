@@ -1,0 +1,175 @@
+/* Manager — Desktop-Tabelle + Toolbar + Inline-Formular */
+
+.dgptm-vw-mgr { max-width: 100%; }
+
+.dgptm-vw-mgr-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.dgptm-vw-search {
+    position: relative;
+    flex: 1 1 280px;
+    max-width: 420px;
+}
+.dgptm-vw-search .dashicons {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--dd-muted);
+    pointer-events: none;
+}
+.dgptm-vw-search input {
+    padding-left: 34px;
+}
+
+/* Tabelle */
+.dgptm-vw-mgr-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--dd-card);
+    border: 1px solid var(--dd-border);
+    border-radius: var(--dd-radius);
+    overflow: hidden;
+    font-size: 14px;
+}
+.dgptm-vw-mgr-table th,
+.dgptm-vw-mgr-table td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--dd-border);
+}
+.dgptm-vw-mgr-table thead th {
+    background: var(--dd-bg);
+    font-weight: 600;
+    color: var(--dd-muted);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+}
+.dgptm-vw-mgr-table tbody tr:hover { background: var(--dd-primary-light); }
+.dgptm-vw-mgr-table tbody tr:last-child td { border-bottom: none; }
+.dgptm-vw-col-actions { text-align: right; }
+
+/* Action-Icons */
+.dgptm-vw-btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: none;
+    background: transparent;
+    color: var(--dd-muted);
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background .15s, color .15s;
+}
+.dgptm-vw-btn-icon:hover { background: var(--dd-primary-light); color: var(--dd-primary); }
+.dgptm-vw-btn-icon.dgptm-vw-delete:hover { background: var(--dd-accent-light); color: var(--dd-accent); }
+
+/* Empty-State */
+.dgptm-vw-empty {
+    text-align: center;
+    color: var(--dd-muted);
+    padding: 40px 0;
+}
+
+/* Inline-Editor-Slots */
+.dgptm-vw-editor-slot { margin-bottom: 16px; }
+.dgptm-vw-editor-row td { padding: 0 !important; background: var(--dd-bg); }
+.dgptm-vw-editor-row .dgptm-vw-form { margin: 12px; }
+
+/* Formular */
+.dgptm-vw-form h3 { margin-top: 0; }
+.dgptm-vw-form-row { margin-bottom: 12px; }
+.dgptm-vw-form-row-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+.dgptm-vw-form-field { display: block; }
+.dgptm-vw-form-field > span {
+    display: block;
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 4px;
+    color: var(--dd-text);
+}
+.dgptm-vw-form-field em { color: var(--dd-accent); font-style: normal; }
+.dgptm-vw-form-field small { color: var(--dd-muted); font-size: 12px; }
+.dgptm-vw-form-field-full { grid-column: 1 / -1; }
+
+.dgptm-vw-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--dd-border);
+}
+
+/* Loading-State am Save-Button */
+.dgptm-vw-form.is-loading .dgptm-vw-form-save {
+    opacity: .6;
+    pointer-events: none;
+}
+
+/* --- Mobile (<768px): Tabelle zu Karten --- */
+@media (max-width: 768px) {
+    .dgptm-vw-mgr-table thead { display: none; }
+    .dgptm-vw-mgr-table,
+    .dgptm-vw-mgr-table tbody,
+    .dgptm-vw-mgr-table tr,
+    .dgptm-vw-mgr-table td {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .dgptm-vw-mgr-table {
+        border: none;
+        background: transparent;
+    }
+    .dgptm-vw-mgr-table tbody tr {
+        background: var(--dd-card);
+        border: 1px solid var(--dd-border);
+        border-radius: var(--dd-radius);
+        margin-bottom: 12px;
+        padding: 12px;
+    }
+    .dgptm-vw-mgr-table tbody tr:hover { background: var(--dd-card); }
+    .dgptm-vw-mgr-table td {
+        padding: 4px 0;
+        border: none;
+        display: grid;
+        grid-template-columns: 130px 1fr;
+        gap: 8px;
+        font-size: 14px;
+    }
+    .dgptm-vw-mgr-table td.dgptm-vw-cell-title {
+        grid-template-columns: 1fr;
+        font-size: 16px;
+        margin-bottom: 8px;
+    }
+    .dgptm-vw-mgr-table td:not(.dgptm-vw-cell-title):not(.dgptm-vw-cell-actions)::before {
+        content: attr(data-label);
+        color: var(--dd-muted);
+        font-size: 13px;
+    }
+    .dgptm-vw-mgr-table td.dgptm-vw-cell-actions {
+        grid-template-columns: 1fr;
+        justify-items: end;
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid var(--dd-border);
+    }
+    .dgptm-vw-form-row-split { grid-template-columns: 1fr; }
+    .dgptm-vw-mgr-toolbar { flex-direction: column; align-items: stretch; }
+    .dgptm-vw-mgr-toolbar .dgptm-btn--primary { width: 100%; text-align: center; }
+    .dgptm-vw-search { max-width: none; }
+}

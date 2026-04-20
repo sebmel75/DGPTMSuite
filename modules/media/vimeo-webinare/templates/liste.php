@@ -1,105 +1,84 @@
 <?php
 /**
- * Template: Webinar Liste
- * Version: 1.3.0
- * Variables: $webinars, $user_id, $is_logged_in
+ * Template: Webinar-Liste (öffentlicher Frontend-Katalog).
+ * Design an Mitglieder-Dashboard angeglichen.
+ *
+ * Variablen (vom Shortcode-Liste bereitgestellt):
+ *   $webinars_raw : WP_Post[]
+ *   $user_id      : int
+ *   $is_logged_in : bool
+ *   $cookie_progress : array — [webinar_id => ['progress'=>float, 'watched_time'=>float]]
+ *   $history      : array — eingeloggt: letzte 5 Einträge
  */
-
 if (!defined('ABSPATH')) exit;
-
-$instance = DGPTM_Vimeo_Webinare::get_instance();
-
-// Hole Cookie-Fortschritt für nicht eingeloggte Benutzer
-$cookie_progress = [];
-if (!$is_logged_in) {
-    foreach ($_COOKIE as $name => $value) {
-        if (strpos($name, 'vw_webinar_') === 0) {
-            $webinar_id = intval(str_replace('vw_webinar_', '', $name));
-            if ($webinar_id) {
-                $data = json_decode(stripslashes($value), true);
-                if (is_array($data)) {
-                    $cookie_progress[$webinar_id] = [
-                        'watched_time' => floatval($data['watched_time'] ?? 0),
-                        'progress' => floatval($data['progress'] ?? 0),
-                    ];
-                }
-            }
-        }
-    }
-}
-
-// Hole Verlauf für eingeloggte Benutzer
-$history = [];
-if ($is_logged_in && $user_id) {
-    $history = $instance->get_user_webinar_history($user_id, 5);
-}
 ?>
-
-<div class="vw-liste-container">
+<div class="dgptm-vw dgptm-vw-liste">
 
     <?php if (!$is_logged_in): ?>
-        <div class="vw-login-banner">
-            <span class="dashicons dashicons-info-outline"></span>
-            <div class="vw-banner-content">
+        <div class="dgptm-card dgptm-vw-login-banner">
+            <span class="dashicons dashicons-info-outline" aria-hidden="true"></span>
+            <div class="dgptm-vw-login-text">
                 <strong>Hinweis:</strong> Sie sind nicht angemeldet. Fortschritte werden nur lokal gespeichert und nicht in Ihrer Fortbildungsliste eingetragen.
-                <a href="<?php echo wp_login_url(get_permalink()); ?>" class="vw-btn vw-btn-small">Jetzt anmelden</a>
             </div>
+            <a href="<?php echo esc_url(wp_login_url(get_permalink())); ?>" class="dgptm-btn--primary">Jetzt anmelden</a>
         </div>
     <?php endif; ?>
 
     <?php if ($is_logged_in && !empty($history)): ?>
-        <div class="vw-history-section">
-            <h3>📜 Zuletzt angesehen</h3>
-            <div class="vw-history-list">
-                <?php foreach ($history as $item): ?>
-                    <div class="vw-history-item <?php echo $item['completed'] ? 'completed' : ''; ?>">
-                        <div class="vw-history-info">
-                            <a href="<?php echo home_url('/wissen/webinar/' . $item['webinar_id']); ?>" class="vw-history-title">
-                                <?php echo esc_html($item['title']); ?>
-                            </a>
-                            <span class="vw-history-date">
-                                <?php 
-                                $date = new DateTime($item['last_access']);
-                                $now = new DateTime();
-                                $diff = $now->diff($date);
-                                
-                                if ($diff->days == 0) {
-                                    echo 'Heute';
-                                } elseif ($diff->days == 1) {
-                                    echo 'Gestern';
-                                } elseif ($diff->days < 7) {
-                                    echo 'vor ' . $diff->days . ' Tagen';
-                                } else {
-                                    echo $date->format('d.m.Y');
-                                }
-                                ?>
-                            </span>
+        <div class="dgptm-card dgptm-vw-history">
+            <h3>
+                <span class="dashicons dashicons-backup" aria-hidden="true"></span>
+                Zuletzt angesehen
+            </h3>
+            <ul class="dgptm-vw-history-list">
+                <?php foreach ($history as $item):
+                    $date_str = '';
+                    try {
+                        $date = new DateTime($item['last_access']);
+                        $now = new DateTime();
+                        $diff = $now->diff($date);
+                        if ($diff->days == 0)      $date_str = 'Heute';
+                        elseif ($diff->days == 1)  $date_str = 'Gestern';
+                        elseif ($diff->days < 7)   $date_str = 'vor ' . $diff->days . ' Tagen';
+                        else                       $date_str = $date->format('d.m.Y');
+                    } catch (\Exception $e) { /* ignore */ }
+                    $url = home_url('/wissen/webinar/' . $item['webinar_id']);
+                ?>
+                <li class="dgptm-vw-history-item">
+                    <a href="<?php echo esc_url($url); ?>" class="dgptm-vw-history-title"><?php echo esc_html($item['title']); ?></a>
+                    <span class="dgptm-vw-history-date"><?php echo esc_html($date_str); ?></span>
+                    <?php if (!empty($item['completed'])): ?>
+                        <span class="dgptm-badge dgptm-badge--success">
+                            <span class="dashicons dashicons-yes-alt" aria-hidden="true"></span>
+                            Abgeschlossen
+                        </span>
+                    <?php else: ?>
+                        <div class="dgptm-progress" aria-label="Fortschritt">
+                            <div class="dgptm-progress-fill" style="width: <?php echo esc_attr($item['progress']); ?>%"></div>
                         </div>
-                        <div class="vw-history-progress">
-                            <?php if ($item['completed']): ?>
-                                <span class="vw-status-badge completed">✓ Abgeschlossen</span>
-                            <?php else: ?>
-                                <div class="vw-mini-progress">
-                                    <div class="vw-mini-progress-fill" style="width: <?php echo esc_attr($item['progress']); ?>%"></div>
-                                </div>
-                                <span class="vw-progress-percent"><?php echo number_format($item['progress'], 0); ?>%</span>
-                            <?php endif; ?>
-                        </div>
-                    </div>
+                        <span class="dgptm-vw-history-percent"><?php echo esc_html(number_format($item['progress'], 0)); ?>%</span>
+                    <?php endif; ?>
+                </li>
                 <?php endforeach; ?>
-            </div>
+            </ul>
         </div>
     <?php endif; ?>
 
-    <h2>📚 Verfügbare Webinare</h2>
+    <h2 class="dgptm-vw-heading">
+        <span class="dashicons dashicons-format-video" aria-hidden="true"></span>
+        Verfügbare Webinare
+    </h2>
 
-    <?php if (empty($webinars)): ?>
-        <p class="vw-no-webinars">Derzeit sind keine Webinare verfügbar.</p>
+    <?php if (empty($webinars_raw)): ?>
+        <p class="dgptm-vw-empty">Derzeit sind keine Webinare verfügbar.</p>
     <?php else: ?>
 
-        <div class="vw-filter-section">
-            <input type="text" class="vw-search-input" placeholder="Webinare durchsuchen..." />
-            <select class="vw-status-filter">
+        <div class="dgptm-vw-filter">
+            <label class="dgptm-vw-search">
+                <span class="dashicons dashicons-search" aria-hidden="true"></span>
+                <input type="text" class="dgptm-vw-liste-search" placeholder="Webinare durchsuchen..." />
+            </label>
+            <select class="dgptm-vw-liste-status">
                 <option value="all">Alle anzeigen</option>
                 <option value="not-started">Noch nicht begonnen</option>
                 <option value="in-progress">In Bearbeitung</option>
@@ -107,110 +86,95 @@ if ($is_logged_in && $user_id) {
             </select>
         </div>
 
-        <div class="vw-webinar-grid">
-            <?php foreach ($webinars as $webinar):
+        <div class="dgptm-vw-grid">
+            <?php foreach ($webinars_raw as $webinar):
                 $webinar_id = $webinar->ID;
                 $vimeo_id = get_field('vimeo_id', $webinar_id);
                 $points = get_field('ebcp_points', $webinar_id) ?: 1;
                 $completion_req = get_field('completion_percentage', $webinar_id) ?: 90;
 
-                // Fortschritt ermitteln
                 $progress = 0;
                 $is_completed = false;
                 $is_local_progress = false;
 
                 if ($is_logged_in && $user_id) {
-                    // Eingeloggter Benutzer - aus DB
                     $progress = floatval(get_user_meta($user_id, '_vw_progress_' . $webinar_id, true));
                     $is_completed = (bool) get_user_meta($user_id, '_vw_completed_' . $webinar_id, true);
                 } elseif (isset($cookie_progress[$webinar_id])) {
-                    // Nicht eingeloggt - aus Cookie
-                    $progress = $cookie_progress[$webinar_id]['progress'];
+                    $progress = $cookie_progress[$webinar_id]['progress'] ?? 0;
                     $is_local_progress = true;
                 }
 
-                // Status bestimmen
                 $status = 'not-started';
-                $status_label = 'Nicht begonnen';
-                $status_class = 'status-new';
-
+                $badge_class = 'dgptm-badge--muted';
+                $status_label = 'Noch nicht begonnen';
                 if ($is_completed) {
                     $status = 'completed';
+                    $badge_class = 'dgptm-badge--success';
                     $status_label = 'Abgeschlossen';
-                    $status_class = 'status-completed';
                 } elseif ($progress > 0) {
                     $status = 'in-progress';
-                    $status_label = $is_local_progress ? 'In Bearbeitung (lokal)' : 'In Bearbeitung';
-                    $status_class = 'status-progress';
+                    $badge_class = 'dgptm-badge--accent';
+                    $status_label = 'In Bearbeitung';
                 }
 
-                // Thumbnail from Vimeo
-                $thumbnail = '';
-                if ($vimeo_id) {
-                    $thumbnail = "https://vumbnail.com/{$vimeo_id}.jpg";
-                }
+                $thumbnail = $vimeo_id ? "https://vumbnail.com/{$vimeo_id}.jpg" : '';
             ?>
+            <article class="dgptm-card dgptm-vw-webinar-card"
+                     data-status="<?php echo esc_attr($status); ?>"
+                     data-title="<?php echo esc_attr(strtolower($webinar->post_title)); ?>">
 
-            <div class="vw-webinar-card" data-status="<?php echo esc_attr($status); ?>" data-title="<?php echo esc_attr(strtolower($webinar->post_title)); ?>">
-
-                <div class="vw-card-thumbnail" style="background-image: url('<?php echo esc_url($thumbnail); ?>');">
-                    <div class="vw-card-status <?php echo esc_attr($status_class); ?>">
-                        <?php echo esc_html($status_label); ?>
-                        <?php if ($is_local_progress): ?>
-                            <span class="vw-local-indicator" title="Nur lokal gespeichert">📱</span>
+                <div class="dgptm-vw-thumb"<?php if ($thumbnail): ?> style="background-image:url('<?php echo esc_url($thumbnail); ?>');"<?php endif; ?>>
+                    <?php if (!$thumbnail): ?>
+                        <span class="dashicons dashicons-format-video dgptm-vw-thumb-fallback" aria-hidden="true"></span>
+                    <?php endif; ?>
+                    <span class="dgptm-badge <?php echo esc_attr($badge_class); ?> dgptm-vw-thumb-badge">
+                        <?php if ($is_completed): ?>
+                            <span class="dashicons dashicons-yes-alt" aria-hidden="true"></span>
                         <?php endif; ?>
-                    </div>
-                    <?php if ($is_completed): ?>
-                        <div class="vw-card-badge">
-                            <span class="dashicons dashicons-yes-alt"></span>
-                        </div>
+                        <?php echo esc_html($status_label); ?>
+                    </span>
+                    <?php if ($is_local_progress): ?>
+                        <span class="dgptm-vw-local-indicator" title="Nur lokal gespeichert" aria-label="Nur lokal gespeichert">
+                            <span class="dashicons dashicons-smartphone" aria-hidden="true"></span>
+                        </span>
                     <?php endif; ?>
                 </div>
 
-                <div class="vw-card-content">
-                    <h3><?php echo esc_html($webinar->post_title); ?></h3>
+                <div class="dgptm-vw-card-body">
+                    <h3 class="dgptm-vw-card-title"><?php echo esc_html($webinar->post_title); ?></h3>
 
-                    <div class="vw-card-meta">
-                        <span class="vw-meta-item">⭐ <?php echo esc_html($points); ?> EBCP</span>
-                        <span class="vw-meta-item">⏱ <?php echo esc_html($completion_req); ?>% erforderlich</span>
+                    <div class="dgptm-vw-card-meta">
+                        <span><span class="dashicons dashicons-star-filled"></span> <?php echo esc_html(number_format_i18n($points, 1)); ?> EBCP</span>
+                        <span><span class="dashicons dashicons-clock"></span> <?php echo esc_html($completion_req); ?>% erf.</span>
                     </div>
 
                     <?php if ($progress > 0): ?>
-                        <div class="vw-card-progress">
-                            <div class="vw-card-progress-bar">
-                                <div class="vw-card-progress-fill <?php echo $is_local_progress ? 'local' : ''; ?>" style="width: <?php echo esc_attr($progress); ?>%"></div>
-                            </div>
-                            <span class="vw-card-progress-text"><?php echo esc_html(number_format($progress, 0)); ?>%</span>
+                        <div class="dgptm-progress">
+                            <div class="dgptm-progress-fill" style="width: <?php echo esc_attr($progress); ?>%"></div>
                         </div>
+                        <div class="dgptm-vw-card-progress-text"><?php echo esc_html(number_format($progress, 0)); ?>%</div>
                     <?php endif; ?>
 
-                    <div class="vw-card-excerpt">
-                        <?php echo wp_trim_words($webinar->post_content, 20); ?>
-                    </div>
+                    <p class="dgptm-vw-card-excerpt"><?php echo esc_html(wp_trim_words($webinar->post_content, 20)); ?></p>
 
-                    <div class="vw-card-actions">
-                        <a href="<?php echo home_url('/wissen/webinar/' . $webinar_id); ?>" class="vw-btn vw-btn-primary">
-                            <?php 
-                            if ($is_completed) {
-                                echo 'Erneut ansehen';
-                            } elseif ($progress > 0) {
-                                echo 'Fortsetzen';
-                            } else {
-                                echo 'Jetzt ansehen';
-                            }
+                    <div class="dgptm-vw-card-actions">
+                        <a href="<?php echo esc_url(home_url('/wissen/webinar/' . $webinar_id)); ?>" class="dgptm-btn--primary">
+                            <?php
+                            if ($is_completed) echo 'Erneut ansehen';
+                            elseif ($progress > 0) echo 'Fortsetzen';
+                            else echo 'Jetzt ansehen';
                             ?>
                         </a>
-
                         <?php if ($is_completed && $is_logged_in): ?>
-                            <button class="vw-btn vw-btn-secondary vw-generate-certificate" data-webinar-id="<?php echo esc_attr($webinar_id); ?>">
-                                📄 Zertifikat
+                            <button type="button" class="dgptm-btn--ghost dgptm-vw-certificate" data-webinar-id="<?php echo esc_attr($webinar_id); ?>">
+                                <span class="dashicons dashicons-awards" aria-hidden="true"></span>
+                                Zertifikat
                             </button>
                         <?php endif; ?>
                     </div>
                 </div>
-
-            </div>
-
+            </article>
             <?php endforeach; ?>
         </div>
 

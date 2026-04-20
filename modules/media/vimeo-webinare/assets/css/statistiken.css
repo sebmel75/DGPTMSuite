@@ -1,0 +1,104 @@
+/* Statistiken — KPI-Grid + Performance-Tabelle */
+
+.dgptm-vw-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+}
+.dgptm-vw-kpi {
+    text-align: center;
+    padding: 20px 12px;
+}
+.dgptm-vw-kpi-number {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--dd-primary);
+    line-height: 1.1;
+    margin-bottom: 6px;
+}
+.dgptm-vw-kpi-label {
+    font-size: 13px;
+    color: var(--dd-muted);
+}
+
+/* Performance-Tabelle */
+.dgptm-vw-performance h3 { margin-bottom: 12px; }
+.dgptm-vw-stats-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 14px;
+}
+.dgptm-vw-stats-table th,
+.dgptm-vw-stats-table td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--dd-border);
+}
+.dgptm-vw-stats-table thead th {
+    color: var(--dd-muted);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    cursor: pointer;
+    user-select: none;
+}
+.dgptm-vw-stats-table thead th[data-sort]:hover { color: var(--dd-primary); }
+.dgptm-vw-stats-table thead th.is-sorted-asc::after { content: ' ▲'; font-size: 10px; }
+.dgptm-vw-stats-table thead th.is-sorted-desc::after { content: ' ▼'; font-size: 10px; }
+.dgptm-vw-stats-table tbody tr:hover { background: var(--dd-primary-light); }
+.dgptm-vw-stats-table tbody tr:last-child td { border-bottom: none; }
+
+/* Sparkline */
+.dgptm-vw-sparkline {
+    width: 80px;
+    height: 6px;
+    background: var(--dd-primary-light);
+    border-radius: 999px;
+    position: relative;
+    overflow: hidden;
+}
+.dgptm-vw-sparkline::after {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: calc(var(--rate, 0) * 1%);
+    background: var(--dd-primary);
+    transition: width .3s;
+}
+
+/* Mobile <768px — Tabelle zu Karten */
+@media (max-width: 768px) {
+    .dgptm-vw-kpi-grid { grid-template-columns: 1fr; }
+    .dgptm-vw-stats-table thead { display: none; }
+    .dgptm-vw-stats-table,
+    .dgptm-vw-stats-table tbody,
+    .dgptm-vw-stats-table tr,
+    .dgptm-vw-stats-table td {
+        display: block;
+        width: 100%;
+    }
+    .dgptm-vw-stats-table tbody tr {
+        background: var(--dd-card);
+        border: 1px solid var(--dd-border);
+        border-radius: var(--dd-radius);
+        padding: 12px;
+        margin-bottom: 12px;
+    }
+    .dgptm-vw-stats-table tbody tr:hover { background: var(--dd-card); }
+    .dgptm-vw-stats-table td {
+        padding: 4px 0;
+        border: none;
+        display: grid;
+        grid-template-columns: 140px 1fr;
+        gap: 8px;
+    }
+    .dgptm-vw-stats-table td::before {
+        content: attr(data-label);
+        color: var(--dd-muted);
+        font-size: 13px;
+    }
+    .dgptm-vw-sparkline { width: 100%; }
+}

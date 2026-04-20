@@ -1,5 +1,27 @@
 # Changelog - DGPTM Vimeo Webinare
 
+## [2.0.0] — 2026-04-20
+
+### Changed
+- Shortcode-Struktur aufgeteilt: `[vimeo_webinar_liste]` (Frontend),
+  `[vimeo_webinar_manager]` (Admin), `[vimeo_webinar_statistiken]` (neu).
+- Manager und Statistiken sind jetzt als Tabs im Mitglieder-Dashboard vorgesehen.
+- UI komplett an Dashboard-Design angeglichen (Tokens `--dd-*`, Dashicons statt
+  Emojis, `.dgptm-card`-Komponenten).
+- Inline-Editor ersetzt Modal-Dialog im Manager.
+- Mobile-Layout (<768 px): Tabellen klappen zu Karten.
+- N+1-Problem der Statistik-Abfrage behoben (Repository + `get_stats_batch`).
+
+### Added
+- ACF-basierte Autorisierung via Feld `webinar`.
+- `dgptm-badge--muted`, `dgptm-btn--ghost`, `dgptm-toast`, `dgptm-progress`
+  als neue Dashboard-kompatible Komponenten.
+
+### Removed
+- Stats-Tab aus `[vimeo_webinar_manager]` (jetzt eigener Shortcode).
+- Modal-Dialoge aus dem Manager.
+- `ReflectionMethod`-Zugriffe aus Templates.
+
 ## Version 1.2.4 - Umfangreiches Logging für Debugging (2025-11-27)
 
 ### 🔍 Debugging-Verbesserungen

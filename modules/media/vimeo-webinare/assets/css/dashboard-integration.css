@@ -1,0 +1,163 @@
+/*
+ * Dashboard-Design-Tokens für vimeo-webinare.
+ * Spiegelt die Tokens aus modules/business/mitglieder-dashboard/assets/css/dashboard.css,
+ * damit der Frontend-Katalog auch auf Seiten ohne aktives Dashboard-Modul
+ * konsistent aussieht.
+ */
+.dgptm-vw {
+    --dd-primary: #005792;
+    --dd-primary-dark: #004577;
+    --dd-primary-light: #e8f0f8;
+    --dd-accent: #bd1622;
+    --dd-accent-light: #fce8ea;
+    --dd-border: #e2e6ea;
+    --dd-text: #1d2327;
+    --dd-muted: #646970;
+    --dd-bg: #f5f7fa;
+    --dd-card: #fff;
+    --dd-radius: 6px;
+    --dd-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: var(--dd-font);
+    color: var(--dd-text);
+}
+
+/* Karte */
+.dgptm-vw .dgptm-card {
+    background: var(--dd-card);
+    border: 1px solid var(--dd-border);
+    border-radius: var(--dd-radius);
+    padding: 16px;
+    margin-bottom: 16px;
+}
+.dgptm-vw .dgptm-card h3 { margin: 0 0 10px; font-size: 15px; }
+
+/* Data-Liste (dt/dd-Grid) */
+.dgptm-vw .dgptm-data-list {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 4px 12px;
+    font-size: 14px;
+}
+.dgptm-vw .dgptm-data-list dt { color: var(--dd-muted); }
+.dgptm-vw .dgptm-data-list dd { margin: 0; }
+
+/* Badges */
+.dgptm-vw .dgptm-badge {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+.dgptm-vw .dgptm-badge--primary { background: var(--dd-primary-light); color: var(--dd-primary); }
+.dgptm-vw .dgptm-badge--success { background: #ecfdf5; color: #059669; }
+.dgptm-vw .dgptm-badge--accent  { background: var(--dd-accent-light); color: var(--dd-accent); }
+.dgptm-vw .dgptm-badge--muted   { background: var(--dd-bg); color: var(--dd-muted); }
+
+/* Buttons */
+.dgptm-vw .dgptm-btn--primary,
+.dgptm-vw a.dgptm-btn--primary,
+.dgptm-vw button.dgptm-btn--primary {
+    display: inline-block;
+    padding: 8px 16px;
+    background: var(--dd-primary);
+    color: #fff !important;
+    border: none;
+    border-radius: var(--dd-radius);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background .15s;
+}
+.dgptm-vw .dgptm-btn--primary:hover { background: var(--dd-primary-dark); }
+
+.dgptm-vw .dgptm-btn--ghost,
+.dgptm-vw a.dgptm-btn--ghost,
+.dgptm-vw button.dgptm-btn--ghost {
+    display: inline-block;
+    padding: 7px 15px;
+    background: transparent;
+    color: var(--dd-primary);
+    border: 1px solid var(--dd-primary);
+    border-radius: var(--dd-radius);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background .15s;
+}
+.dgptm-vw .dgptm-btn--ghost:hover { background: var(--dd-primary-light); }
+
+/* Toast */
+.dgptm-vw-toast-layer {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+}
+.dgptm-toast {
+    background: var(--dd-card, #fff);
+    border: 1px solid var(--dd-border, #e2e6ea);
+    border-left-width: 3px;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.08);
+    pointer-events: auto;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity .2s, transform .2s;
+}
+.dgptm-toast.is-visible { opacity: 1; transform: translateY(0); }
+.dgptm-toast--success { border-left-color: #059669; }
+.dgptm-toast--error   { border-left-color: var(--dd-accent, #bd1622); }
+
+/* Progress-Bar */
+.dgptm-progress {
+    width: 100%;
+    height: 6px;
+    background: var(--dd-primary-light);
+    border-radius: 999px;
+    overflow: hidden;
+}
+.dgptm-progress-fill {
+    height: 100%;
+    background: var(--dd-primary);
+    transition: width .3s;
+}
+
+/* Form-Controls (in Manager und Liste-Filter) */
+.dgptm-vw input[type="text"],
+.dgptm-vw input[type="number"],
+.dgptm-vw textarea,
+.dgptm-vw select {
+    font-family: var(--dd-font);
+    font-size: 14px;
+    padding: 8px 10px;
+    border: 1px solid var(--dd-border);
+    border-radius: var(--dd-radius);
+    background: var(--dd-card);
+    color: var(--dd-text);
+    width: 100%;
+    box-sizing: border-box;
+}
+.dgptm-vw input[type="text"]:focus,
+.dgptm-vw input[type="number"]:focus,
+.dgptm-vw textarea:focus,
+.dgptm-vw select:focus {
+    outline: 2px solid var(--dd-primary);
+    outline-offset: -1px;
+    border-color: var(--dd-primary);
+}
+
+/* Dashicon-Helper */
+.dgptm-vw .dashicons {
+    vertical-align: middle;
+    line-height: 1;
+}

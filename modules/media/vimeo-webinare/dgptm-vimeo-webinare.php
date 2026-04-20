@@ -3,7 +3,7 @@
  * Plugin Name: DGPTM - Vimeo Webinare
  * Plugin URI: https://dgptm.de
  * Description: Vimeo Videos als Webinare mit dynamischen URLs, automatischen Fortbildungspunkten, Zertifikaten und Frontend-Manager
- * Version: 1.3.1
+ * Version: 2.0.0
  * Author: Sebastian Melzer
  * Author URI: https://dgptm.de
  * License: GPL v2 or later
@@ -12,6 +12,11 @@
 
 if (!defined('ABSPATH')) {
     exit;
+}
+
+// ACF-Feld für Manager/Statistiken-Berechtigung (zentral konfigurierbar)
+if (!defined('DGPTM_VW_PERMISSION_FIELD')) {
+    define('DGPTM_VW_PERMISSION_FIELD', 'webinar');
 }
 
 /**
@@ -92,6 +97,21 @@ class DGPTM_Vimeo_Webinare {
         $this->plugin_path = plugin_dir_path(__FILE__);
         $this->plugin_url = plugin_dir_url(__FILE__);
 
+        // Repository-Klasse für Daten- und Stats-Zugriffe
+        require_once $this->plugin_path . 'includes/class-webinar-repository.php';
+
+        // Shortcode-Klasse: Manager (registriert eigene Shortcode- und AJAX-Handler)
+        require_once $this->plugin_path . 'includes/class-shortcode-manager.php';
+        DGPTM_VW_Shortcode_Manager::get_instance();
+
+        // Shortcode-Klasse: Statistiken
+        require_once $this->plugin_path . 'includes/class-shortcode-statistiken.php';
+        DGPTM_VW_Shortcode_Statistiken::get_instance();
+
+        // Shortcode-Klasse: Frontend-Liste
+        require_once $this->plugin_path . 'includes/class-shortcode-liste.php';
+        DGPTM_VW_Shortcode_Liste::get_instance();
+
         // Datenbank-Check bei erster Nutzung (nicht bei Aktivierung)
         add_action('init', [$this, 'maybe_create_tables'], 1);
 
@@ -105,17 +125,15 @@ class DGPTM_Vimeo_Webinare {
 
         // Shortcodes
         add_shortcode('vimeo_webinar', [$this, 'webinar_player_shortcode']);
-        add_shortcode('vimeo_webinar_manager', [$this, 'webinar_manager_shortcode']);
-        add_shortcode('vimeo_webinar_liste', [$this, 'webinar_liste_shortcode']);
+        // vimeo_webinar_manager wird in DGPTM_VW_Shortcode_Manager registriert
+        // vimeo_webinar_liste wird in DGPTM_VW_Shortcode_Liste registriert
+        // vimeo_webinar_statistiken wird in DGPTM_VW_Shortcode_Statistiken registriert
 
         // AJAX Handlers - Logged in users
         add_action('wp_ajax_vw_track_progress', [$this, 'ajax_track_progress']);
         add_action('wp_ajax_vw_complete_webinar', [$this, 'ajax_complete_webinar']);
         add_action('wp_ajax_vw_generate_certificate', [$this, 'ajax_generate_certificate']);
-        add_action('wp_ajax_vw_manager_create', [$this, 'ajax_manager_create']);
-        add_action('wp_ajax_vw_manager_update', [$this, 'ajax_manager_update']);
-        add_action('wp_ajax_vw_manager_delete', [$this, 'ajax_manager_delete']);
-        add_action('wp_ajax_vw_manager_stats', [$this, 'ajax_manager_stats']);
+        // vw_manager_* AJAX-Handler wurden durch dgptm_vw_* in DGPTM_VW_Shortcode_Manager ersetzt
         add_action('wp_ajax_vw_transfer_cookie_progress', [$this, 'ajax_transfer_cookie_progress']);
         add_action('wp_ajax_vw_preview_certificate', [$this, 'ajax_preview_certificate']);
 
@@ -136,6 +154,22 @@ class DGPTM_Vimeo_Webinare {
         // Admin
         add_action('admin_menu', [$this, 'add_admin_menu']);
         add_action('admin_enqueue_scripts', [$this, 'admin_enqueue_scripts']);
+    }
+
+    /**
+     * Autorisierungs-Pruefung fuer schreibende Manager-Operationen.
+     *
+     * Prueft eingeloggt + ACF-Feld DGPTM_VW_PERMISSION_FIELD am User.
+     * Bewusst kein current_user_can() / Rollencheck - Berechtigung ist
+     * Sache der ACF-Konfiguration im User-Profil.
+     */
+    public function user_can_manage_webinars(): bool {
+        if (!is_user_logged_in()) return false;
+        if (!function_exists('get_field')) return false;
+        return (bool) get_field(
+            DGPTM_VW_PERMISSION_FIELD,
+            'user_' . get_current_user_id()
+        );
     }
 
     /**
@@ -538,15 +572,80 @@ class DGPTM_Vimeo_Webinare {
         }
 
         $content = $post->post_content ?? '';
-        $has_shortcode = has_shortcode($content, 'vimeo_webinar') ||
-                        has_shortcode($content, 'vimeo_webinar_manager') ||
-                        has_shortcode($content, 'vimeo_webinar_liste');
+        $has_player_shortcode = has_shortcode($content, 'vimeo_webinar');
+        $has_manager         = has_shortcode($content, 'vimeo_webinar_manager');
+        $has_liste           = has_shortcode($content, 'vimeo_webinar_liste');
+        $has_stats           = has_shortcode($content, 'vimeo_webinar_statistiken');
+        $has_any_shortcode   = $has_player_shortcode || $has_manager || $has_liste || $has_stats;
 
-        if (!$has_shortcode && get_post_type() !== 'vimeo_webinar') {
+        if (!$has_any_shortcode && get_post_type() !== 'vimeo_webinar') {
             return;
         }
 
+        // Legacy-Assets (Player und alte Liste nutzen style.css/script.js)
         $this->force_enqueue_assets();
+
+        // Dashboard-Design-Tokens + neue Komponenten fuer alle drei neuen Shortcodes
+        if ($has_manager || $has_liste || $has_stats) {
+            wp_enqueue_style(
+                'dgptm-vw-dashboard-integration',
+                $this->plugin_url . 'assets/css/dashboard-integration.css',
+                [],
+                '2.0.0'
+            );
+            wp_enqueue_style('dashicons');
+        }
+
+        // Manager (Dashboard-Tab)
+        if ($has_manager) {
+            wp_enqueue_style(
+                'dgptm-vw-manager',
+                $this->plugin_url . 'assets/css/manager.css',
+                ['dgptm-vw-dashboard-integration'],
+                '2.0.0'
+            );
+            wp_enqueue_script(
+                'dgptm-vw-manager',
+                $this->plugin_url . 'assets/js/manager.js',
+                ['jquery'],
+                '2.0.0',
+                true
+            );
+        }
+
+        // Statistiken (Dashboard-Tab)
+        if ($has_stats) {
+            wp_enqueue_style(
+                'dgptm-vw-statistiken',
+                $this->plugin_url . 'assets/css/statistiken.css',
+                ['dgptm-vw-dashboard-integration'],
+                '2.0.0'
+            );
+            wp_enqueue_script(
+                'dgptm-vw-statistiken',
+                $this->plugin_url . 'assets/js/statistiken.js',
+                ['jquery'],
+                '2.0.0',
+                true
+            );
+        }
+
+        // Frontend-Liste (oeffentliche Seite)
+        if ($has_liste) {
+            wp_enqueue_style(
+                'dgptm-vw-liste',
+                $this->plugin_url . 'assets/css/liste.css',
+                ['dgptm-vw-dashboard-integration'],
+                '2.0.0'
+            );
+            wp_enqueue_script(
+                'dgptm-vw-liste',
+                $this->plugin_url . 'assets/js/liste.js',
+                ['jquery'],
+                '2.0.0',
+                true
+            );
+        }
     }
 
     /**
@@ -664,49 +763,6 @@ class DGPTM_Vimeo_Webinare {
 
         ob_start();
         include $this->plugin_path . 'templates/player.php';
-        return ob_get_clean();
-    }
-
-    /**
-     * Shortcode: Webinar Liste für Benutzer
-     * Usage: [vimeo_webinar_liste]
-     */
-    public function webinar_liste_shortcode($atts) {
-        $user_id = get_current_user_id();
-        $is_logged_in = is_user_logged_in();
-
-        // Get all webinars
-        $webinars = get_posts([
-            'post_type' => 'vimeo_webinar',
-            'posts_per_page' => -1,
-            'post_status' => 'publish',
-            'orderby' => 'title',
-            'order' => 'ASC',
-        ]);
-
-        // Force assets to load
-        $this->force_enqueue_assets();
-
-        ob_start();
-        include $this->plugin_path . 'templates/liste.php';
-        return ob_get_clean();
-    }
-
-    /**
-     * Shortcode: Frontend Manager
-     * Usage: [vimeo_webinar_manager]
-     * Note: Berechtigung wird anderweitig vergeben (z.B. via Seiten-Zugriffskontrolle)
-     */
-    public function webinar_manager_shortcode($atts) {
-        if (!is_user_logged_in()) {
-            return '<div class="vw-error-message"><p>Sie müssen angemeldet sein.</p></div>';
-        }
-
-        // Force assets to load
-        $this->force_enqueue_assets();
-
-        ob_start();
-        include $this->plugin_path . 'templates/manager.php';
         return ob_get_clean();
     }
 
@@ -1830,156 +1886,6 @@ class DGPTM_Vimeo_Webinare {
      */
     public function get_webinar_url($webinar_id) {
         return home_url('/wissen/webinar/' . $webinar_id);
-    }
-
-    /**
-     * AJAX: Manager Create Webinar
-     */
-    public function ajax_manager_create() {
-        check_ajax_referer('vw_nonce', 'nonce');
-
-        if (!is_user_logged_in()) {
-            wp_send_json_error(['message' => 'Keine Berechtigung']);
-        }
-
-        $title = sanitize_text_field($_POST['title'] ?? '');
-        $description = wp_kses_post($_POST['description'] ?? '');
-        $vimeo_id = sanitize_text_field($_POST['vimeo_id'] ?? '');
-        $completion = intval($_POST['completion_percentage'] ?? 90);
-        $points = floatval($_POST['points'] ?? 1);
-        $vnr = sanitize_text_field($_POST['vnr'] ?? '');
-
-        if (!$title || !$vimeo_id) {
-            wp_send_json_error(['message' => 'Titel und Vimeo ID sind erforderlich']);
-        }
-
-        $post_id = wp_insert_post([
-            'post_type' => 'vimeo_webinar',
-            'post_title' => $title,
-            'post_content' => $description,
-            'post_status' => 'publish',
-        ]);
-
-        if (!$post_id) {
-            wp_send_json_error(['message' => 'Fehler beim Erstellen']);
-        }
-
-        update_field('vimeo_id', $vimeo_id, $post_id);
-        update_field('completion_percentage', $completion, $post_id);
-        update_field('ebcp_points', $points, $post_id);
-        update_field('vnr', $vnr, $post_id);
-
-        wp_send_json_success(['post_id' => $post_id, 'message' => 'Webinar erstellt']);
-    }
-
-    /**
-     * AJAX: Manager Update Webinar
-     */
-    public function ajax_manager_update() {
-        check_ajax_referer('vw_nonce', 'nonce');
-
-        if (!is_user_logged_in()) {
-            wp_send_json_error(['message' => 'Keine Berechtigung']);
-        }
-
-        $post_id = intval($_POST['post_id'] ?? 0);
-
-        if (!$post_id || get_post_type($post_id) !== 'vimeo_webinar') {
-            wp_send_json_error(['message' => 'Ungültige Webinar ID']);
-        }
-
-        $title = sanitize_text_field($_POST['title'] ?? '');
-        $description = wp_kses_post($_POST['description'] ?? '');
-        $vimeo_id = sanitize_text_field($_POST['vimeo_id'] ?? '');
-        $completion = intval($_POST['completion_percentage'] ?? 90);
-        $points = floatval($_POST['points'] ?? 1);
-        $vnr = sanitize_text_field($_POST['vnr'] ?? '');
-
-        wp_update_post([
-            'ID' => $post_id,
-            'post_title' => $title,
-            'post_content' => $description,
-        ]);
-
-        update_field('vimeo_id', $vimeo_id, $post_id);
-        update_field('completion_percentage', $completion, $post_id);
-        update_field('ebcp_points', $points, $post_id);
-        update_field('vnr', $vnr, $post_id);
-
-        wp_send_json_success(['message' => 'Webinar aktualisiert']);
-    }
-
-    /**
-     * AJAX: Manager Delete Webinar
-     */
-    public function ajax_manager_delete() {
-        check_ajax_referer('vw_nonce', 'nonce');
-
-        if (!is_user_logged_in()) {
-            wp_send_json_error(['message' => 'Keine Berechtigung']);
-        }
-
-        $post_id = intval($_POST['post_id'] ?? 0);
-
-        if (!$post_id || get_post_type($post_id) !== 'vimeo_webinar') {
-            wp_send_json_error(['message' => 'Ungültige Webinar ID']);
-        }
-
-        $result = wp_delete_post($post_id, true);
-
-        if (!$result) {
-            wp_send_json_error(['message' => 'Fehler beim Löschen']);
-        }
-
-        wp_send_json_success(['message' => 'Webinar gelöscht']);
-    }
-
-    /**
-     * AJAX: Manager Statistics
-     */
-    public function ajax_manager_stats() {
-        check_ajax_referer('vw_nonce', 'nonce');
-
-        if (!is_user_logged_in()) {
-            wp_send_json_error(['message' => 'Keine Berechtigung']);
-        }
-
-        $webinar_id = intval($_POST['webinar_id'] ?? 0);
-
-        if (!$webinar_id) {
-            wp_send_json_error(['message' => 'Webinar ID erforderlich']);
-        }
-
-        $stats = $this->get_webinar_stats($webinar_id);
-
-        wp_send_json_success($stats);
-    }
-
-    /**
-     * Helper: Get Webinar Statistics
-     */
-    private function get_webinar_stats($webinar_id) {
-        global $wpdb;
-
-        // Count completed users
-        $meta_key = '_vw_completed_' . $webinar_id;
-        $completed = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(DISTINCT user_id) FROM {$wpdb->usermeta} WHERE meta_key = %s AND meta_value = '1'",
-            $meta_key
-        ));
-
-        // Get users with progress > 0
-        $progress_meta_key = '_vw_progress_' . $webinar_id;
-        $in_progress = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(DISTINCT user_id) FROM {$wpdb->usermeta} WHERE meta_key = %s AND CAST(meta_value AS DECIMAL) > 0 AND CAST(meta_value AS DECIMAL) < 100",
-            $progress_meta_key
-        ));
-
-        return [
-            'completed' => intval($completed),
-            'in_progress' => intval($in_progress),
-            'total_views' => intval($completed) + intval($in_progress),
-        ];
     }
 
     /**

@@ -55,61 +55,102 @@
 .dgptm-vw .dgptm-badge--accent  { background: var(--dd-accent-light); color: var(--dd-accent); }
 .dgptm-vw .dgptm-badge--muted   { background: var(--dd-bg); color: var(--dd-muted); }
 
-/* Buttons */
-.dgptm-vw .dgptm-btn--primary,
-.dgptm-vw a.dgptm-btn--primary,
-.dgptm-vw a.dgptm-btn--primary:link,
-.dgptm-vw a.dgptm-btn--primary:visited,
-.dgptm-vw button.dgptm-btn--primary {
+/* Buttons — Spezifität per html body + !important gegen Theme-Overrides */
+html body .dgptm-vw .dgptm-btn--primary,
+html body .dgptm-vw a.dgptm-btn--primary,
+html body .dgptm-vw a.dgptm-btn--primary:link,
+html body .dgptm-vw a.dgptm-btn--primary:visited,
+html body .dgptm-vw button.dgptm-btn--primary {
     display: inline-flex !important;
     align-items: center;
+    justify-content: center;
     gap: 6px;
-    padding: 8px 16px !important;
+    padding: 9px 18px !important;
+    min-height: 38px !important;
     background: var(--dd-primary) !important;
     background-image: none !important;
     color: #fff !important;
-    border: none !important;
+    border: 1px solid var(--dd-primary) !important;
     border-radius: var(--dd-radius) !important;
     text-decoration: none !important;
+    font-family: var(--dd-font) !important;
     font-size: 14px !important;
-    font-weight: 500 !important;
-    line-height: 1.4 !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+    letter-spacing: normal !important;
     cursor: pointer;
-    transition: background .15s;
+    transition: background .15s, border-color .15s, box-shadow .15s;
     text-transform: none !important;
+    box-shadow: 0 1px 2px rgba(0, 87, 146, 0.15) !important;
+    text-shadow: none !important;
 }
-.dgptm-vw .dgptm-btn--primary:hover,
-.dgptm-vw a.dgptm-btn--primary:hover {
+html body .dgptm-vw .dgptm-btn--primary:hover,
+html body .dgptm-vw a.dgptm-btn--primary:hover,
+html body .dgptm-vw button.dgptm-btn--primary:hover {
     background: var(--dd-primary-dark) !important;
+    border-color: var(--dd-primary-dark) !important;
     color: #fff !important;
+    box-shadow: 0 2px 6px rgba(0, 87, 146, 0.25) !important;
 }
-.dgptm-vw .dgptm-btn--primary .dashicons {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
+html body .dgptm-vw .dgptm-btn--primary:active,
+html body .dgptm-vw button.dgptm-btn--primary:active {
+    box-shadow: 0 1px 1px rgba(0, 87, 146, 0.2) inset !important;
+}
+html body .dgptm-vw .dgptm-btn--primary:focus-visible,
+html body .dgptm-vw button.dgptm-btn--primary:focus-visible {
+    outline: 2px solid var(--dd-primary) !important;
+    outline-offset: 2px !important;
+}
+html body .dgptm-vw .dgptm-btn--primary .dashicons {
+    font-size: 18px !important;
+    width: 18px !important;
+    height: 18px !important;
+    line-height: 1 !important;
 }
 
-.dgptm-vw .dgptm-btn--ghost,
-.dgptm-vw a.dgptm-btn--ghost,
-.dgptm-vw a.dgptm-btn--ghost:link,
-.dgptm-vw a.dgptm-btn--ghost:visited,
-.dgptm-vw button.dgptm-btn--ghost {
+html body .dgptm-vw .dgptm-btn--ghost,
+html body .dgptm-vw a.dgptm-btn--ghost,
+html body .dgptm-vw a.dgptm-btn--ghost:link,
+html body .dgptm-vw a.dgptm-btn--ghost:visited,
+html body .dgptm-vw button.dgptm-btn--ghost {
     display: inline-flex !important;
     align-items: center;
+    justify-content: center;
     gap: 6px;
-    padding: 7px 15px !important;
-    background: transparent !important;
+    padding: 8px 17px !important;
+    min-height: 38px !important;
+    background: var(--dd-card) !important;
+    background-image: none !important;
     color: var(--dd-primary) !important;
     border: 1px solid var(--dd-primary) !important;
     border-radius: var(--dd-radius) !important;
     text-decoration: none !important;
+    font-family: var(--dd-font) !important;
     font-size: 14px !important;
-    font-weight: 500 !important;
-    line-height: 1.4 !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+    letter-spacing: normal !important;
     cursor: pointer;
-    transition: background .15s;
+    transition: background .15s, color .15s;
+    text-transform: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
 }
-.dgptm-vw .dgptm-btn--ghost:hover { background: var(--dd-primary-light) !important; }
+html body .dgptm-vw .dgptm-btn--ghost:hover,
+html body .dgptm-vw button.dgptm-btn--ghost:hover {
+    background: var(--dd-primary-light) !important;
+    color: var(--dd-primary-dark) !important;
+}
+html body .dgptm-vw .dgptm-btn--ghost:focus-visible,
+html body .dgptm-vw button.dgptm-btn--ghost:focus-visible {
+    outline: 2px solid var(--dd-primary) !important;
+    outline-offset: 2px !important;
+}
+html body .dgptm-vw .dgptm-btn--ghost .dashicons {
+    font-size: 18px !important;
+    width: 18px !important;
+    height: 18px !important;
+}
 
 /* Toast */
 .dgptm-vw-toast-layer {

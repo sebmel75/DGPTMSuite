@@ -607,6 +607,23 @@ class DGPTM_Vimeo_Webinare {
                 true
             );
         }
+
+        // Statistiken (Dashboard-Tab)
+        if ($has_stats) {
+            wp_enqueue_style(
+                'dgptm-vw-statistiken',
+                $this->plugin_url . 'assets/css/statistiken.css',
+                ['dgptm-vw-dashboard-integration'],
+                '2.0.0'
+            );
+            wp_enqueue_script(
+                'dgptm-vw-statistiken',
+                $this->plugin_url . 'assets/js/statistiken.js',
+                ['jquery'],
+                '2.0.0',
+                true
+            );
+        }
     }
 
     /**

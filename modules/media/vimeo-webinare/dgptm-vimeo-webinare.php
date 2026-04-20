@@ -576,7 +576,23 @@ class DGPTM_Vimeo_Webinare {
         $has_manager         = has_shortcode($content, 'vimeo_webinar_manager');
         $has_liste           = has_shortcode($content, 'vimeo_webinar_liste');
         $has_stats           = has_shortcode($content, 'vimeo_webinar_statistiken');
-        $has_any_shortcode   = $has_player_shortcode || $has_manager || $has_liste || $has_stats;
+
+        // Wenn Mitglieder-Dashboard auf der Seite ist: Tab-Konfiguration durchsuchen.
+        // Das Dashboard rendert Tab-Inhalte erst per AJAX nach (dgptm_dash_load_tab);
+        // dort feuert wp_enqueue_scripts nicht mehr. Deshalb muessen die Assets schon
+        // beim initialen Page-Load mit erkannt und geladen werden, auch wenn unsere
+        // Shortcodes nur im Tab-Content (nicht im post_content) vorkommen.
+        if (has_shortcode($content, 'dgptm_dashboard') && class_exists('DGPTM_Dashboard_Tabs')) {
+            $dash_tabs = DGPTM_Dashboard_Tabs::get_instance()->get_all();
+            foreach ($dash_tabs as $t) {
+                $tc = $t['content'] ?? '';
+                if (strpos($tc, 'vimeo_webinar_manager') !== false)      $has_manager = true;
+                if (strpos($tc, 'vimeo_webinar_liste') !== false)        $has_liste   = true;
+                if (strpos($tc, 'vimeo_webinar_statistiken') !== false)  $has_stats   = true;
+            }
+        }
+
+        $has_any_shortcode = $has_player_shortcode || $has_manager || $has_liste || $has_stats;
 
         if (!$has_any_shortcode && get_post_type() !== 'vimeo_webinar') {
             return;

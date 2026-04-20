@@ -14,6 +14,11 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// ACF-Feld für Manager/Statistiken-Berechtigung (zentral konfigurierbar)
+if (!defined('DGPTM_VW_PERMISSION_FIELD')) {
+    define('DGPTM_VW_PERMISSION_FIELD', 'webinar');
+}
+
 /**
  * Helper-Funktion fuer Vimeo Webinare Settings
  * Verwendet das zentrale DGPTM Settings-System mit Fallback auf alte Options
@@ -92,6 +97,9 @@ class DGPTM_Vimeo_Webinare {
         $this->plugin_path = plugin_dir_path(__FILE__);
         $this->plugin_url = plugin_dir_url(__FILE__);
 
+        // Repository-Klasse für Daten- und Stats-Zugriffe
+        require_once $this->plugin_path . 'includes/class-webinar-repository.php';
+
         // Datenbank-Check bei erster Nutzung (nicht bei Aktivierung)
         add_action('init', [$this, 'maybe_create_tables'], 1);
 
@@ -136,6 +144,22 @@ class DGPTM_Vimeo_Webinare {
         // Admin
         add_action('admin_menu', [$this, 'add_admin_menu']);
         add_action('admin_enqueue_scripts', [$this, 'admin_enqueue_scripts']);
+    }
+
+    /**
+     * Autorisierungs-Pruefung fuer schreibende Manager-Operationen.
+     *
+     * Prueft eingeloggt + ACF-Feld DGPTM_VW_PERMISSION_FIELD am User.
+     * Bewusst kein current_user_can() / Rollencheck - Berechtigung ist
+     * Sache der ACF-Konfiguration im User-Profil.
+     */
+    public function user_can_manage_webinars(): bool {
+        if (!is_user_logged_in()) return false;
+        if (!function_exists('get_field')) return false;
+        return (bool) get_field(
+            DGPTM_VW_PERMISSION_FIELD,
+            'user_' . get_current_user_id()
+        );
     }
 
     /**

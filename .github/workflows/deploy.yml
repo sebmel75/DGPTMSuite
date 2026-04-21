@@ -37,12 +37,18 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '7.4'
-          tools: php-parallel-lint
+          tools: php-parallel-lint, composer
+
+      - name: Validate Module composer.json
+        run: |
+          if [ -f modules/media/vimeo-webinare/composer.json ]; then
+            composer validate --working-dir=modules/media/vimeo-webinare --strict --no-check-publish
+          fi
 
       - name: PHP Syntax Check
         run: |
           echo "Checking PHP syntax..."
-          find . -name "*.php" -not -path "./vendor/*" | head -100 | xargs -I {} php -l {} || true
+          find . -name "*.php" -not -path "./vendor/*" -not -path "*/vendor/*" | head -100 | xargs -I {} php -l {} || true
           echo "Syntax check completed"
 
       - name: Check Critical Files
@@ -70,10 +76,32 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          tools: composer
+
+      - name: Install Composer Dependencies (vimeo-webinare)
+        run: |
+          if [ -f modules/media/vimeo-webinare/composer.json ]; then
+            echo "Installing composer deps for vimeo-webinare…"
+            composer install \
+              --no-dev \
+              --no-progress \
+              --no-interaction \
+              --optimize-autoloader \
+              --working-dir=modules/media/vimeo-webinare
+            echo "✓ vendor/ generated at modules/media/vimeo-webinare/vendor"
+          else
+            echo "No composer.json in vimeo-webinare module, skipping."
+          fi
+
       - name: Create Deployment Package
         run: |
           echo "Creating deployment package..."
-          # Exclude unnecessary files
+          # Exclude unnecessary files — vendor/ wird BEHALTEN, damit mPDF/Dompdf
+          # mitdeployed wird. composer.json/lock fliegen raus (nur Build-Artefakte).
           rsync -av --exclude='.git' \
                     --exclude='.github' \
                     --exclude='*.md' \
@@ -81,8 +109,12 @@ jobs:
                     --exclude='exports/' \
                     --exclude='*.log' \
                     --exclude='.gitignore' \
+                    --exclude='composer.json' \
+                    --exclude='composer.lock' \
                     ./ ./deploy-package/
           echo "Package created"
+          echo "Vendor present?:"
+          ls -la ./deploy-package/modules/media/vimeo-webinare/ 2>/dev/null | grep -E "vendor|composer" || true
 
       - name: Install sshpass
         run: sudo apt-get install -y sshpass

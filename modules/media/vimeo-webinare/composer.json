@@ -1,0 +1,16 @@
+{
+    "name": "dgptm/vimeo-webinare",
+    "description": "Zusatzbibliotheken für das vimeo-webinare-Modul der DGPTM Plugin Suite.",
+    "type": "wordpress-plugin-module",
+    "license": "proprietary",
+    "require": {
+        "php": ">=7.4",
+        "dompdf/dompdf": "^2.0"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {}
+    }
+}

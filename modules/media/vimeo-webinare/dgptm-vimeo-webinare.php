@@ -100,6 +100,9 @@ class DGPTM_Vimeo_Webinare {
         // Repository-Klasse für Daten- und Stats-Zugriffe
         require_once $this->plugin_path . 'includes/class-webinar-repository.php';
 
+        // Zertifikat-Presets
+        require_once $this->plugin_path . 'includes/class-certificate-presets.php';
+
         // Shortcode-Klasse: Manager (registriert eigene Shortcode- und AJAX-Handler)
         require_once $this->plugin_path . 'includes/class-shortcode-manager.php';
         DGPTM_VW_Shortcode_Manager::get_instance();
@@ -1573,7 +1576,123 @@ class DGPTM_Vimeo_Webinare {
     /**
      * Helper: Generate Certificate PDF
      */
+    /**
+     * Platzhalter-Mapping fuer Zertifikat-Templates.
+     */
+    private function get_certificate_placeholders($user_id, $webinar_id): array {
+        $user = get_userdata($user_id);
+        $webinar = get_post($webinar_id);
+        $settings = dgptm_vw_get_certificate_settings();
+
+        $points = get_field('ebcp_points', $webinar_id) ?: 1;
+        $vnr    = get_field('vnr', $webinar_id) ?: '';
+        $location = get_field('location', $webinar_id) ?: 'Online';
+        $fortbildung_type = get_field('fortbildung_type', $webinar_id) ?: 'Webinar';
+
+        $webinar_date_raw = (string) get_field('webinar_date', $webinar_id);
+        $webinar_date_display = '';
+        if ($webinar_date_raw) {
+            $ts = strtotime($webinar_date_raw);
+            if ($ts) $webinar_date_display = date_i18n('d.m.Y', $ts);
+        }
+        $today = current_time('d.m.Y');
+
+        $full_name = trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''));
+        if ($full_name === '') $full_name = $user->display_name ?? '';
+
+        return [
+            '{{user_name}}'        => $full_name,
+            '{{user_email}}'       => $user->user_email ?? '',
+            '{{webinar_title}}'    => $webinar->post_title ?? '',
+            '{{webinar_date}}'     => $webinar_date_display,
+            '{{issue_date}}'       => $today,
+            '{{date}}'             => $webinar_date_display ?: $today,
+            '{{ebcp_points}}'      => number_format_i18n((float) $points, 1),
+            '{{vnr}}'              => $vnr,
+            '{{location}}'         => $location,
+            '{{fortbildung_type}}' => $fortbildung_type,
+            '{{site_name}}'        => get_bloginfo('name'),
+            '{{header_text}}'      => $settings['header_text']    ?? '',
+            '{{footer_text}}'      => $settings['footer_text']    ?? '',
+            '{{signature_text}}'   => $settings['signature_text'] ?? '',
+        ];
+    }
+
+    /**
+     * HTML/CSS-Template via Dompdf rendern.
+     * Rueckgabe: PDF-URL oder false bei Fehler.
+     */
+    private function generate_certificate_html_to_pdf($user_id, $webinar_id) {
+        $autoload = $this->plugin_path . 'vendor/autoload.php';
+        if (!file_exists($autoload)) {
+            dgptm_log_error('Certificate (HTML) - Dompdf vendor nicht gefunden: ' . $autoload, 'vimeo-webinare');
+            return false;
+        }
+        require_once $autoload;
+        if (!class_exists('Dompdf\\Dompdf')) {
+            dgptm_log_error('Certificate (HTML) - Dompdf-Klasse nicht geladen', 'vimeo-webinare');
+            return false;
+        }
+
+        $settings = dgptm_vw_get_certificate_settings();
+        $template_html = (string) ($settings['template_html'] ?? '');
+        if (trim($template_html) === '') return false;
+        $template_css = (string) ($settings['template_css'] ?? '');
+        $orientation = $settings['orientation'] ?? 'L';
+
+        $replacements = $this->get_certificate_placeholders($user_id, $webinar_id);
+        $rendered = str_replace(array_keys($replacements), array_values($replacements), $template_html);
+
+        $html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'
+              . $template_css
+              . '</style></head><body>' . $rendered . '</body></html>';
+
+        try {
+            $options = new \Dompdf\Options();
+            $options->set('isRemoteEnabled', true);
+            $options->set('isHtml5ParserEnabled', true);
+            $options->set('defaultFont', 'DejaVu Sans');
+
+            $dompdf = new \Dompdf\Dompdf($options);
+            $dompdf->setPaper('A4', ($orientation === 'L') ? 'landscape' : 'portrait');
+            $dompdf->loadHtml($html, 'UTF-8');
+            $dompdf->render();
+
+            $upload_dir = wp_upload_dir();
+            $pdf_dir = $upload_dir['basedir'] . '/webinar-certificates/';
+            if (!file_exists($pdf_dir)) wp_mkdir_p($pdf_dir);
+            $filename = 'zertifikat-' . $webinar_id . '-' . $user_id . '-' . time() . '.pdf';
+            $pdf_path = $pdf_dir . $filename;
+
+            $bytes = @file_put_contents($pdf_path, $dompdf->output());
+            if ($bytes === false) {
+                dgptm_log_error('Certificate (HTML) - PDF konnte nicht geschrieben werden: ' . $pdf_path, 'vimeo-webinare');
+                return false;
+            }
+
+            return $upload_dir['baseurl'] . '/webinar-certificates/' . $filename;
+        } catch (\Throwable $e) {
+            dgptm_log_error('Certificate (HTML) - Dompdf-Fehler: ' . $e->getMessage(), 'vimeo-webinare');
+            return false;
+        }
+    }
+
+    /**
+     * Vordefinierte Starter-Templates.
+     */
+    public function get_certificate_presets(): array {
+        return DGPTM_VW_Certificate_Presets::get_all();
+    }
+
     private function generate_certificate_pdf($user_id, $webinar_id) {
+        // Neuer Pfad: HTML/CSS-Template via Dompdf, sofern vorhanden.
+        $settings_early = dgptm_vw_get_certificate_settings();
+        if (trim((string) ($settings_early['template_html'] ?? '')) !== '') {
+            $html_url = $this->generate_certificate_html_to_pdf($user_id, $webinar_id);
+            if ($html_url !== false) return $html_url;
+            dgptm_log_warning('Certificate - HTML-Rendering fehlgeschlagen, Fallback auf FPDF', 'vimeo-webinare');
+        }
+        // Fallback: klassisches FPDF-Rendering
         // Load FPDF
         $fpdf_path = defined('DGPTM_SUITE_PATH') ? DGPTM_SUITE_PATH . 'libraries/fpdf/fpdf.php' : '';
 
@@ -2085,6 +2204,15 @@ class DGPTM_Vimeo_Webinare {
             echo '<div class="notice notice-success"><p>Zertifikat-Einstellungen gespeichert!</p></div>';
         }
 
+        // Save HTML/CSS-Template
+        if (isset($_POST['vw_save_template']) && check_admin_referer('vw_certificate_nonce', 'vw_certificate_nonce')) {
+            $settings = dgptm_vw_get_certificate_settings();
+            $settings['template_html'] = wp_unslash($_POST['template_html'] ?? '');
+            $settings['template_css']  = wp_unslash($_POST['template_css']  ?? '');
+            update_option('vw_certificate_settings', $settings);
+            echo '<div class="notice notice-success"><p>HTML/CSS-Template gespeichert.</p></div>';
+        }
+
         // Import JSON (mit optionalem Nachladen externer Bilder)
         $import_msg = '';
         if (isset($_POST['vw_import_certificate']) && check_admin_referer('vw_certificate_nonce', 'vw_certificate_nonce')) {
@@ -2148,6 +2276,10 @@ class DGPTM_Vimeo_Webinare {
                     'opacity'  => (int) ($settings['watermark_opacity'] ?? 30),
                     'position' => $settings['watermark_position'] ?? 'center',
                 ]),
+            ],
+            'template' => [
+                'html' => (string) ($settings['template_html'] ?? ''),
+                'css'  => (string) ($settings['template_css']  ?? ''),
             ],
         ];
 
@@ -2220,8 +2352,9 @@ class DGPTM_Vimeo_Webinare {
         $orientation = sanitize_text_field($data['orientation'] ?? 'L');
         if (!in_array($orientation, ['L', 'P'], true)) $orientation = 'L';
 
-        $texts = is_array($data['texts'] ?? null) ? $data['texts'] : [];
-        $mail  = is_array($data['mail']  ?? null) ? $data['mail']  : [];
+        $texts    = is_array($data['texts']    ?? null) ? $data['texts']    : [];
+        $mail     = is_array($data['mail']     ?? null) ? $data['mail']     : [];
+        $template = is_array($data['template'] ?? null) ? $data['template'] : [];
 
         $settings = array_merge(
             dgptm_vw_get_certificate_settings() ?: [],
@@ -2238,6 +2371,8 @@ class DGPTM_Vimeo_Webinare {
                 'mail_subject'       => sanitize_text_field($mail['subject']    ?? 'Ihr Webinar-Zertifikat: {webinar_title}'),
                 'mail_body'          => wp_kses_post($mail['body']              ?? ''),
                 'mail_from'          => sanitize_email($mail['from']            ?? get_option('admin_email')),
+                'template_html'      => (string) ($template['html'] ?? ''),
+                'template_css'       => (string) ($template['css']  ?? ''),
             ]
         );
 

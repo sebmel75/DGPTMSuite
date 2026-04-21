@@ -215,6 +215,137 @@ $signature_text = $settings['signature_text'] ?? '';
 
     <hr style="margin:32px 0;">
 
+    <?php
+    $tpl_html = $settings['template_html'] ?? '';
+    $tpl_css  = $settings['template_css']  ?? '';
+    $presets  = class_exists('DGPTM_VW_Certificate_Presets') ? DGPTM_VW_Certificate_Presets::get_all() : [];
+    $vendor_ready = file_exists($this->plugin_path . 'vendor/autoload.php');
+    ?>
+
+    <div class="postbox vw-html-template" style="padding:16px;">
+        <h2 style="margin-top:0;">Template (HTML / CSS) — neue Render-Engine</h2>
+        <p class="description">
+            Wenn HTML vorhanden ist, wird das Zertifikat ab sofort per Dompdf aus diesem Template gerendert.
+            Der klassische FPDF-Designer oben bleibt als Fallback (leeres HTML ⇒ FPDF).
+            <?php if (!$vendor_ready): ?>
+                <br><strong style="color:#bd1622;">Hinweis:</strong> Dompdf-Vendor-Verzeichnis nicht gefunden — das Rendering funktioniert erst nach dem nächsten erfolgreichen Deploy.
+            <?php endif; ?>
+        </p>
+
+        <details style="margin: 12px 0 18px;">
+            <summary><strong>Verfügbare Platzhalter</strong> (im HTML verwenden, z. B. <code>{{user_name}}</code>)</summary>
+            <ul style="columns:2;font-family:monospace;font-size:12px;list-style:none;padding-left:0;margin:8px 0;">
+                <li><code>{{user_name}}</code> — Vor- und Nachname</li>
+                <li><code>{{user_email}}</code></li>
+                <li><code>{{webinar_title}}</code></li>
+                <li><code>{{webinar_date}}</code> — Datum des Webinars</li>
+                <li><code>{{issue_date}}</code> — Heutiges Datum (Ausstellung)</li>
+                <li><code>{{date}}</code> — Webinar-Datum oder heute</li>
+                <li><code>{{ebcp_points}}</code></li>
+                <li><code>{{vnr}}</code></li>
+                <li><code>{{location}}</code></li>
+                <li><code>{{fortbildung_type}}</code></li>
+                <li><code>{{site_name}}</code></li>
+                <li><code>{{header_text}}</code>, <code>{{footer_text}}</code>, <code>{{signature_text}}</code></li>
+            </ul>
+        </details>
+
+        <form method="post" action="">
+            <?php wp_nonce_field('vw_certificate_nonce', 'vw_certificate_nonce'); ?>
+
+            <p>
+                <strong>Preset laden:</strong>
+                <?php foreach ($presets as $key => $preset): ?>
+                    <button type="button" class="button vw-tpl-preset" data-preset="<?php echo esc_attr($key); ?>">
+                        <?php echo esc_html(ucfirst($key)); ?>
+                    </button>
+                <?php endforeach; ?>
+                <button type="button" class="button vw-tpl-clear">Leeren</button>
+            </p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <label>
+                    <strong>HTML</strong>
+                    <textarea name="template_html" id="vw-template-html" rows="22" style="width:100%;font-family:monospace;font-size:12px;line-height:1.4;"><?php echo esc_textarea($tpl_html); ?></textarea>
+                </label>
+                <label>
+                    <strong>CSS</strong>
+                    <textarea name="template_css" id="vw-template-css" rows="22" style="width:100%;font-family:monospace;font-size:12px;line-height:1.4;"><?php echo esc_textarea($tpl_css); ?></textarea>
+                </label>
+            </div>
+
+            <h3 style="margin-top:24px;">Live-Vorschau</h3>
+            <p class="description">Die Vorschau rendert im Browser mit Beispieldaten. Das tatsächliche PDF wird vom Server per Dompdf erzeugt — leichte Abweichungen sind normal.</p>
+            <iframe id="vw-template-preview" style="width:100%;height:520px;border:1px solid #ccc;background:#fff;"></iframe>
+
+            <p class="submit">
+                <input type="submit" name="vw_save_template" class="button button-primary" value="HTML/CSS-Template speichern">
+            </p>
+        </form>
+    </div>
+
+    <script>
+    (function(){
+        var $html = document.getElementById('vw-template-html');
+        var $css  = document.getElementById('vw-template-css');
+        var $frame = document.getElementById('vw-template-preview');
+        var presets = <?php echo wp_json_encode($presets); ?> || {};
+
+        var demo = {
+            '{{user_name}}': 'Max Mustermann',
+            '{{user_email}}': 'max@example.com',
+            '{{webinar_title}}': 'Erweiterte Perfusiologie in der extrakorporalen Zirkulation',
+            '{{webinar_date}}': '15.04.2026',
+            '{{issue_date}}': '<?php echo esc_js(current_time('d.m.Y')); ?>',
+            '{{date}}': '15.04.2026',
+            '{{ebcp_points}}': '1,0',
+            '{{vnr}}': 'VNR-2026-042',
+            '{{location}}': 'Online',
+            '{{fortbildung_type}}': 'Webinar',
+            '{{site_name}}': '<?php echo esc_js(get_bloginfo('name')); ?>',
+            '{{header_text}}': '<?php echo esc_js($settings['header_text'] ?? 'Teilnahmebescheinigung'); ?>',
+            '{{footer_text}}': '<?php echo esc_js($settings['footer_text'] ?? ''); ?>',
+            '{{signature_text}}': '<?php echo esc_js($settings['signature_text'] ?? ''); ?>'
+        };
+
+        function applyReplacements(s) {
+            Object.keys(demo).forEach(function(k){ s = s.split(k).join(demo[k]); });
+            return s;
+        }
+
+        function refresh() {
+            var html = applyReplacements($html.value || '');
+            var css  = $css.value || '';
+            var doc = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>html,body{margin:0;padding:0;}' + css + '</style></head><body>' + html + '</body></html>';
+            $frame.srcdoc = doc;
+        }
+
+        $html.addEventListener('input', refresh);
+        $css.addEventListener('input', refresh);
+        refresh();
+
+        document.querySelectorAll('.vw-tpl-preset').forEach(function(btn){
+            btn.addEventListener('click', function(){
+                var key = btn.getAttribute('data-preset');
+                if (!presets[key]) return;
+                if (!confirm('Aktuelles Template mit Preset "' + key + '" überschreiben?')) return;
+                $html.value = presets[key].html || '';
+                $css.value  = presets[key].css  || '';
+                refresh();
+            });
+        });
+        var $clear = document.querySelector('.vw-tpl-clear');
+        if ($clear) $clear.addEventListener('click', function(){
+            if (!confirm('HTML und CSS wirklich leeren? (Danach fällt der Renderer wieder auf FPDF zurück.)')) return;
+            $html.value = '';
+            $css.value  = '';
+            refresh();
+        });
+    })();
+    </script>
+
+    <hr style="margin:32px 0;">
+
     <div class="postbox vw-export-import" style="padding:16px;">
         <h2 style="margin-top:0;">Export / Import (JSON)</h2>
         <p class="description">

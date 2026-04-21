@@ -280,6 +280,18 @@ $signature_text = $settings['signature_text'] ?? '';
 
             <p class="submit">
                 <input type="submit" name="vw_save_template" class="button button-primary" value="HTML/CSS-Template speichern">
+                <button type="submit"
+                        class="button"
+                        name="vw_preview_pdf"
+                        value="1"
+                        formaction="<?php echo esc_url(admin_url('admin-post.php?action=dgptm_vw_preview_certificate')); ?>"
+                        formtarget="_blank"
+                        style="margin-left:8px;">
+                    📄 PDF-Vorschau (neuer Tab)
+                </button>
+                <span class="description" style="margin-left:8px;">
+                    Nutzt den aktuellen Textarea-Inhalt (ungespeichert geht auch) und rendert per Dompdf mit Beispieldaten.
+                </span>
             </p>
         </form>
     </div>

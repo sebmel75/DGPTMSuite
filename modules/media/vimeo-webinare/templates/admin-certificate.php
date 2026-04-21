@@ -212,6 +212,80 @@ $signature_text = $settings['signature_text'] ?? '';
             </form>
         </div>
     </div>
+
+    <hr style="margin:32px 0;">
+
+    <div class="postbox vw-export-import" style="padding:16px;">
+        <h2 style="margin-top:0;">Export / Import (JSON)</h2>
+        <p class="description">
+            Austauschformat für Claude: Die Zertifikat-Konfiguration wird als strukturiertes JSON exportiert
+            und kann nach Bearbeitung wieder importiert werden. Beim Import werden externe Bild-URLs, die hier nicht als
+            Attachment existieren, automatisch in die Mediathek heruntergeladen.
+        </p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:16px;">
+            <div>
+                <h3 style="margin-top:0;">Export</h3>
+                <p class="description">Aktuelle Konfiguration als JSON. Kopieren oder als Datei herunterladen.</p>
+                <textarea id="vw-cert-export" readonly rows="14" style="width:100%;font-family:monospace;font-size:12px;" onclick="this.select();"><?php echo esc_textarea($export_json); ?></textarea>
+                <p>
+                    <button type="button" class="button" id="vw-cert-export-copy">In Zwischenablage kopieren</button>
+                    <button type="button" class="button" id="vw-cert-export-download">Als Datei herunterladen</button>
+                </p>
+            </div>
+
+            <div>
+                <h3 style="margin-top:0;">Import</h3>
+                <p class="description">
+                    JSON einfügen oder Datei wählen. Überschreibt die aktuellen Einstellungen
+                    <strong>ohne Rückfrage</strong> nach Bestätigung.
+                </p>
+                <form method="post" enctype="multipart/form-data" onsubmit="return confirm('Aktuelle Zertifikat-Konfiguration wirklich durch Import überschreiben?');">
+                    <?php wp_nonce_field('vw_certificate_nonce', 'vw_certificate_nonce'); ?>
+                    <textarea name="vw_import_json" rows="10" style="width:100%;font-family:monospace;font-size:12px;" placeholder='{"$schema":"dgptm-vimeo-webinare-certificate","version":1, ...}'></textarea>
+                    <p>
+                        <label>
+                            <strong>Oder Datei:</strong>
+                            <input type="file" name="vw_import_file" accept=".json,application/json,text/plain" />
+                        </label>
+                    </p>
+                    <p>
+                        <button type="submit" name="vw_import_certificate" class="button button-primary">Importieren</button>
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function(){
+        var $copy = document.getElementById('vw-cert-export-copy');
+        var $dl   = document.getElementById('vw-cert-export-download');
+        var $ta   = document.getElementById('vw-cert-export');
+        if ($copy && $ta) {
+            $copy.addEventListener('click', function(){
+                $ta.select();
+                try {
+                    navigator.clipboard.writeText($ta.value).then(function(){
+                        $copy.textContent = 'Kopiert!';
+                        setTimeout(function(){ $copy.textContent = 'In Zwischenablage kopieren'; }, 1500);
+                    });
+                } catch (e) { document.execCommand('copy'); }
+            });
+        }
+        if ($dl && $ta) {
+            $dl.addEventListener('click', function(){
+                var blob = new Blob([$ta.value], {type: 'application/json'});
+                var a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'dgptm-vimeo-webinare-certificate.json';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 100);
+            });
+        }
+    })();
+    </script>
 </div>
 
 <style>

@@ -151,6 +151,9 @@ class DGPTM_Vimeo_Webinare {
         add_action('wp_ajax_vw_transfer_cookie_progress', [$this, 'ajax_transfer_cookie_progress']);
         add_action('wp_ajax_vw_preview_certificate', [$this, 'ajax_preview_certificate']);
 
+        // PDF-Live-Preview fuer den HTML/CSS-Template-Designer
+        add_action('admin_post_dgptm_vw_preview_certificate', [$this, 'handle_preview_certificate_pdf']);
+
         // AJAX Handlers - Non-logged in users (für Cookie-Tracking)
         add_action('wp_ajax_nopriv_vw_track_progress', [$this, 'ajax_track_progress_nopriv']);
 
@@ -1693,6 +1696,75 @@ class DGPTM_Vimeo_Webinare {
      */
     public function get_certificate_presets(): array {
         return DGPTM_VW_Certificate_Presets::get_all();
+    }
+
+    /**
+     * Live-Vorschau: rendert HTML/CSS aus POST mit Beispieldaten als PDF
+     * und streamt es inline in den Browser. Wird vom "PDF-Vorschau"-Button
+     * im Zertifikat-Designer aufgerufen (admin-post.php).
+     */
+    public function handle_preview_certificate_pdf() {
+        if (!current_user_can('manage_options')) {
+            wp_die('Keine Berechtigung.');
+        }
+        check_admin_referer('vw_certificate_nonce', 'vw_certificate_nonce');
+
+        $template_html = wp_unslash($_POST['template_html'] ?? '');
+        $template_css  = wp_unslash($_POST['template_css']  ?? '');
+        if (trim($template_html) === '') {
+            wp_die('Kein HTML-Template vorhanden. Bitte HTML eingeben oder ein Preset laden.');
+        }
+
+        $autoload = $this->plugin_path . 'vendor/autoload.php';
+        if (!file_exists($autoload)) {
+            wp_die('Dompdf-Vendor-Verzeichnis nicht gefunden. PDF-Vorschau ist erst nach dem nächsten Deploy verfügbar.');
+        }
+        require_once $autoload;
+        if (!class_exists('Dompdf\\Dompdf')) {
+            wp_die('Dompdf-Klasse nicht geladen.');
+        }
+
+        $settings = dgptm_vw_get_certificate_settings();
+        $orientation = $settings['orientation'] ?? 'L';
+
+        $replacements = [
+            '{{user_name}}'        => 'Max Mustermann',
+            '{{user_email}}'       => 'max.mustermann@example.com',
+            '{{webinar_title}}'    => 'Erweiterte Perfusiologie in der extrakorporalen Zirkulation',
+            '{{webinar_date}}'     => '15.04.2026',
+            '{{issue_date}}'       => current_time('d.m.Y'),
+            '{{date}}'             => '15.04.2026',
+            '{{ebcp_points}}'      => '1,0',
+            '{{vnr}}'              => 'VNR-2026-042',
+            '{{location}}'         => 'Online',
+            '{{fortbildung_type}}' => 'Webinar',
+            '{{site_name}}'        => get_bloginfo('name'),
+            '{{header_text}}'      => $settings['header_text']    ?? 'Teilnahmebescheinigung',
+            '{{footer_text}}'      => $settings['footer_text']    ?? get_bloginfo('name'),
+            '{{signature_text}}'   => $settings['signature_text'] ?? 'Präsidium',
+        ];
+        $rendered = str_replace(array_keys($replacements), array_values($replacements), $template_html);
+        $html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'
+              . $template_css
+              . '</style></head><body>' . $rendered . '</body></html>';
+
+        try {
+            $options = new \Dompdf\Options();
+            $options->set('isRemoteEnabled', true);
+            $options->set('isHtml5ParserEnabled', true);
+            $options->set('defaultFont', 'DejaVu Sans');
+
+            $dompdf = new \Dompdf\Dompdf($options);
+            $dompdf->setPaper('A4', ($orientation === 'L') ? 'landscape' : 'portrait');
+            $dompdf->loadHtml($html, 'UTF-8');
+            $dompdf->render();
+
+            while (ob_get_level() > 0) ob_end_clean();
+            $dompdf->stream('zertifikat-vorschau.pdf', ['Attachment' => false]);
+            exit;
+        } catch (\Throwable $e) {
+            wp_die('Dompdf-Fehler bei der Vorschau: ' . esc_html($e->getMessage()));
+        }
     }
 
     private function generate_certificate_pdf($user_id, $webinar_id) {

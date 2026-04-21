@@ -2074,7 +2074,28 @@ class DGPTM_Vimeo_Webinare {
             echo '<div class="notice notice-success"><p>Zertifikat-Einstellungen gespeichert!</p></div>';
         }
 
+        // Import JSON (mit optionalem Nachladen externer Bilder)
+        $import_msg = '';
+        if (isset($_POST['vw_import_certificate']) && check_admin_referer('vw_certificate_nonce', 'vw_certificate_nonce')) {
+            $json_raw = wp_unslash($_POST['vw_import_json'] ?? '');
+
+            // File-Upload hat Vorrang vor Textarea, wenn vorhanden
+            if (!empty($_FILES['vw_import_file']['tmp_name']) && is_uploaded_file($_FILES['vw_import_file']['tmp_name'])) {
+                $file_content = @file_get_contents($_FILES['vw_import_file']['tmp_name']);
+                if ($file_content !== false) $json_raw = $file_content;
+            }
+
+            $result = $this->import_certificate_from_json($json_raw);
+            if (is_wp_error($result)) {
+                echo '<div class="notice notice-error"><p><strong>Import fehlgeschlagen:</strong> ' . esc_html($result->get_error_message()) . '</p></div>';
+            } else {
+                $detail = !empty($result['sideloaded']) ? ' (' . count($result['sideloaded']) . ' Bild(er) aus URLs nachgeladen)' : '';
+                echo '<div class="notice notice-success"><p>Zertifikat-Konfiguration importiert' . esc_html($detail) . '.</p></div>';
+            }
+        }
+
         $settings = dgptm_vw_get_certificate_settings();
+        $export_json = $this->export_certificate_as_json($settings);
 
         wp_localize_script('vw-admin-script', 'vwCertData', [
             'ajaxUrl' => admin_url('admin-ajax.php'),
@@ -2082,6 +2103,136 @@ class DGPTM_Vimeo_Webinare {
         ]);
 
         include $this->plugin_path . 'templates/admin-certificate.php';
+    }
+
+    /**
+     * Serialisiert die aktuellen Zertifikat-Einstellungen als JSON.
+     * Claude-freundliche Struktur: beschreibende Keys, Images mit id/url/filename.
+     */
+    public function export_certificate_as_json(array $settings): string {
+        $bg  = $this->image_to_export_obj($settings['background_image'] ?? 0);
+        $lg  = $this->image_to_export_obj($settings['logo_image'] ?? 0);
+        $wm  = $this->image_to_export_obj($settings['watermark_image'] ?? 0);
+
+        $data = [
+            '$schema'     => 'dgptm-vimeo-webinare-certificate',
+            'version'     => 1,
+            'exported_at' => gmdate('c'),
+            'site_url'    => home_url(),
+            'orientation' => $settings['orientation'] ?? 'L',
+            'texts' => [
+                'header'    => $settings['header_text'] ?? '',
+                'footer'    => $settings['footer_text'] ?? '',
+                'signature' => $settings['signature_text'] ?? '',
+            ],
+            'mail' => [
+                'subject' => $settings['mail_subject'] ?? '',
+                'body'    => $settings['mail_body'] ?? '',
+                'from'    => $settings['mail_from'] ?? '',
+            ],
+            'images' => [
+                'background' => $bg,
+                'logo'       => $lg,
+                'watermark'  => array_merge($wm, [
+                    'opacity'  => (int) ($settings['watermark_opacity'] ?? 30),
+                    'position' => $settings['watermark_position'] ?? 'center',
+                ]),
+            ],
+        ];
+
+        return wp_json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    }
+
+    private function image_to_export_obj($id) {
+        $id = (int) $id;
+        if ($id <= 0) return ['id' => 0, 'url' => '', 'filename' => ''];
+        $url = wp_get_attachment_url($id);
+        if (!$url) return ['id' => 0, 'url' => '', 'filename' => ''];
+        $path = get_attached_file($id);
+        return [
+            'id'       => $id,
+            'url'      => $url,
+            'filename' => $path ? basename($path) : '',
+        ];
+    }
+
+    /**
+     * Importiert Zertifikat-Konfiguration aus JSON.
+     *
+     * Bilder werden so aufgelöst:
+     *   1. Wenn "id" angegeben und Attachment existiert → Attachment-ID verwendet.
+     *   2. Sonst: wenn "url" angegeben → per media_sideload_image() in Media Library geladen.
+     *   3. Sonst: leer (ID 0).
+     *
+     * @return array|WP_Error ['settings' => array, 'sideloaded' => array<string,int>]
+     */
+    public function import_certificate_from_json(string $json_raw) {
+        $json_raw = trim($json_raw);
+        if ($json_raw === '') return new WP_Error('empty', 'Kein JSON übergeben.');
+
+        $data = json_decode($json_raw, true);
+        if (!is_array($data)) {
+            return new WP_Error('invalid_json', 'Kein gültiges JSON: ' . json_last_error_msg());
+        }
+        if (($data['$schema'] ?? '') !== 'dgptm-vimeo-webinare-certificate') {
+            return new WP_Error('wrong_schema', 'Unbekanntes Schema. Erwartet: dgptm-vimeo-webinare-certificate');
+        }
+        $version = (int) ($data['version'] ?? 0);
+        if ($version !== 1) {
+            return new WP_Error('unsupported_version', 'Unbekannte Version: ' . $version);
+        }
+
+        $sideloaded = [];
+        $resolve_image = function ($node, $key) use (&$sideloaded) {
+            $id = (int) ($node['id'] ?? 0);
+            if ($id > 0 && wp_get_attachment_url($id)) return $id;
+            $url = isset($node['url']) ? (string) $node['url'] : '';
+            if ($url === '') return 0;
+            require_once ABSPATH . 'wp-admin/includes/media.php';
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            require_once ABSPATH . 'wp-admin/includes/image.php';
+            $new_id = media_sideload_image($url, 0, null, 'id');
+            if (is_wp_error($new_id)) return 0;
+            $sideloaded[$key] = (int) $new_id;
+            return (int) $new_id;
+        };
+
+        $images = $data['images'] ?? [];
+        $bg_id = $resolve_image($images['background'] ?? [], 'background');
+        $lg_id = $resolve_image($images['logo']       ?? [], 'logo');
+        $wm_id = $resolve_image($images['watermark']  ?? [], 'watermark');
+
+        $watermark_opacity  = (int) ($images['watermark']['opacity'] ?? 30);
+        if ($watermark_opacity < 0 || $watermark_opacity > 100) $watermark_opacity = 30;
+        $watermark_position = sanitize_text_field($images['watermark']['position'] ?? 'center');
+
+        $orientation = sanitize_text_field($data['orientation'] ?? 'L');
+        if (!in_array($orientation, ['L', 'P'], true)) $orientation = 'L';
+
+        $texts = is_array($data['texts'] ?? null) ? $data['texts'] : [];
+        $mail  = is_array($data['mail']  ?? null) ? $data['mail']  : [];
+
+        $settings = array_merge(
+            dgptm_vw_get_certificate_settings() ?: [],
+            [
+                'orientation'        => $orientation,
+                'background_image'   => $bg_id,
+                'logo_image'         => $lg_id,
+                'watermark_image'    => $wm_id,
+                'watermark_opacity'  => $watermark_opacity,
+                'watermark_position' => $watermark_position,
+                'header_text'        => sanitize_text_field($texts['header']    ?? 'Teilnahmebescheinigung'),
+                'footer_text'        => sanitize_text_field($texts['footer']    ?? get_bloginfo('name')),
+                'signature_text'     => sanitize_text_field($texts['signature'] ?? ''),
+                'mail_subject'       => sanitize_text_field($mail['subject']    ?? 'Ihr Webinar-Zertifikat: {webinar_title}'),
+                'mail_body'          => wp_kses_post($mail['body']              ?? ''),
+                'mail_from'          => sanitize_email($mail['from']            ?? get_option('admin_email')),
+            ]
+        );
+
+        update_option('vw_certificate_settings', $settings);
+
+        return ['settings' => $settings, 'sideloaded' => $sideloaded];
     }
 
     /**

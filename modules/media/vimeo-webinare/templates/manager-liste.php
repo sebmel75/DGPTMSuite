@@ -25,6 +25,7 @@ if (!defined('ABSPATH')) exit;
         <thead>
             <tr>
                 <th>Titel</th>
+                <th>Datum</th>
                 <th>Vimeo-ID</th>
                 <th>EBCP</th>
                 <th>Erforderlich</th>

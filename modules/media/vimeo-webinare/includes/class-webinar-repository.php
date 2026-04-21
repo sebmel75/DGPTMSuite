@@ -61,6 +61,7 @@ if (!class_exists('DGPTM_VW_Webinar_Repository')) {
                 'ebcp_points'            => (float) (get_field('ebcp_points', $p->ID) ?: 1),
                 'completion_percentage'  => (int) (get_field('completion_percentage', $p->ID) ?: 90),
                 'vnr'                    => (string) get_field('vnr', $p->ID),
+                'webinar_date'           => (string) get_field('webinar_date', $p->ID),
             ];
         }
 
@@ -155,6 +156,11 @@ if (!class_exists('DGPTM_VW_Webinar_Repository')) {
             $completion = max(1, min(100, intval($data['completion_percentage'] ?? 90)));
             $points = floatval($data['points'] ?? 1);
             $vnr = sanitize_text_field($data['vnr'] ?? '');
+            $webinar_date = sanitize_text_field($data['webinar_date'] ?? '');
+            // Nur YYYY-MM-DD akzeptieren; sonst leer
+            if ($webinar_date !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $webinar_date)) {
+                $webinar_date = '';
+            }
 
             if (empty($title)) return new WP_Error('empty_title', 'Titel fehlt');
             if (empty($vimeo_id)) return new WP_Error('empty_vimeo_id', 'Vimeo-ID fehlt');
@@ -177,6 +183,7 @@ if (!class_exists('DGPTM_VW_Webinar_Repository')) {
             update_field('completion_percentage', $completion, $result);
             update_field('ebcp_points', $points, $result);
             update_field('vnr', $vnr, $result);
+            update_field('webinar_date', $webinar_date, $result);
 
             return (int) $result;
         }

@@ -9,6 +9,7 @@ if (!defined('ABSPATH')) exit;
 $w = $w ?? [
     'id' => 0, 'title' => '', 'description' => '', 'vimeo_id' => '',
     'completion_percentage' => 90, 'ebcp_points' => 1, 'vnr' => '',
+    'webinar_date' => '',
 ];
 $is_edit = $w['id'] > 0;
 ?>
@@ -50,6 +51,14 @@ $is_edit = $w['id'] > 0;
         <label class="dgptm-vw-form-field">
             <span>VNR</span>
             <input type="text" name="vnr" value="<?php echo esc_attr($w['vnr']); ?>" />
+        </label>
+    </div>
+
+    <div class="dgptm-vw-form-row">
+        <label class="dgptm-vw-form-field">
+            <span>Datum des Webinars</span>
+            <input type="date" name="webinar_date" value="<?php echo esc_attr($w['webinar_date']); ?>" />
+            <small>Optional. Wird in der Liste angezeigt.</small>
         </label>
     </div>
 

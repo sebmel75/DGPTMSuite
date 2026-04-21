@@ -563,6 +563,17 @@ class DGPTM_Vimeo_Webinare {
                     'required' => 0,
                 ],
                 [
+                    'key' => 'field_vw_webinar_date',
+                    'label' => 'Datum',
+                    'name' => 'webinar_date',
+                    'type' => 'date_picker',
+                    'required' => 0,
+                    'display_format' => 'd.m.Y',
+                    'return_format' => 'Y-m-d',
+                    'first_day' => 1,
+                    'instructions' => 'Optional: Datum des Webinars (wird in der Liste angezeigt)',
+                ],
+                [
                     'key' => 'field_vw_type',
                     'label' => 'Art der Fortbildung',
                     'name' => 'fortbildung_type',

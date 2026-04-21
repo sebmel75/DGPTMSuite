@@ -63,6 +63,7 @@
         $form.find('[name="completion_percentage"]').val(webinar.completion_percentage || 90);
         $form.find('[name="points"]').val(webinar.ebcp_points || 1);
         $form.find('[name="vnr"]').val(webinar.vnr || '');
+        $form.find('[name="webinar_date"]').val(webinar.webinar_date || '');
         $form.find('h3').text(webinar.id ? 'Webinar bearbeiten' : 'Neues Webinar');
         $form.data('dirty', false);
     }
@@ -95,11 +96,12 @@
         var seed = {
             id: id,
             title: $row.find('.dgptm-vw-cell-title').text().trim(),
-            vimeo_id: $row.find('td').eq(1).text().trim(),
-            ebcp_points: parseFloat($row.find('td').eq(2).text().replace(',', '.')) || 1,
-            completion_percentage: parseInt($row.find('td').eq(3).text(), 10) || 90,
+            vimeo_id: $row.find('td[data-label="Vimeo-ID"]').text().trim(),
+            ebcp_points: parseFloat(($row.find('td[data-label="EBCP-Punkte"]').text() || '').replace(',', '.')) || 1,
+            completion_percentage: parseInt($row.find('td[data-label="Erforderlich"]').text(), 10) || 90,
             description: $row.data('description') || '',
             vnr: $row.data('vnr') || '',
+            webinar_date: $row.data('webinar-date') || '',
         };
         populateForm($form, seed);
         $form.find('[name="title"]').focus();

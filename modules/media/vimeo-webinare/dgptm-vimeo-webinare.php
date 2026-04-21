@@ -49,27 +49,38 @@ if (!function_exists('dgptm_vw_get_setting')) {
 
 /**
  * Helper fuer Certificate Settings (Array)
+ *
+ * Basis ist immer die Option "vw_certificate_settings" — enthaelt ALLE
+ * Felder (orientation, Bilder, Texte, Template-HTML/CSS, Mail). Nur die
+ * drei Mail-Felder koennen optional aus dem zentralen DGPTM-Module-
+ * Settings-System ueberschrieben werden, falls dort gepflegt.
+ *
+ * Fixt zwei Altbugs:
+ *   - Rueckgabe verlor alle Nicht-Mail-Felder, sobald zentrale Mail-
+ *     Settings existierten (Template-Felder wurden so nach dem Speichern
+ *     sofort wieder als leer gelesen).
+ *   - Endlos-Rekursion im Fallback-Zweig (Funktion rief sich selbst).
  */
 if (!function_exists('dgptm_vw_get_certificate_settings')) {
     function dgptm_vw_get_certificate_settings() {
-        // Zuerst im zentralen System suchen
-        if (function_exists('dgptm_get_module_setting')) {
-            $mail_subject = dgptm_get_module_setting('vimeo-webinare', 'mail_subject', null);
-            $mail_body = dgptm_get_module_setting('vimeo-webinare', 'mail_body', null);
-            $mail_from = dgptm_get_module_setting('vimeo-webinare', 'mail_from', null);
+        $settings = get_option('vw_certificate_settings', []);
+        if (!is_array($settings)) $settings = [];
 
-            // Wenn zentrale Settings vorhanden sind, verwende sie
-            if ($mail_subject !== null || $mail_body !== null || $mail_from !== null) {
-                return [
-                    'mail_subject' => $mail_subject ?: 'Ihre Fortbildungsbescheinigung',
-                    'mail_body' => $mail_body ?: '',
-                    'mail_from' => $mail_from ?: get_option('admin_email')
-                ];
+        if (function_exists('dgptm_get_module_setting')) {
+            foreach (['mail_subject', 'mail_body', 'mail_from'] as $k) {
+                $v = dgptm_get_module_setting('vimeo-webinare', $k, null);
+                if ($v !== null && $v !== '') {
+                    $settings[$k] = $v;
+                }
             }
         }
 
-        // Fallback auf alte Option
-        return dgptm_vw_get_certificate_settings();
+        // Defensive Defaults (nur wenn nichts in DB)
+        if (empty($settings['mail_subject'])) $settings['mail_subject'] = 'Ihre Fortbildungsbescheinigung';
+        if (!isset($settings['mail_from']) || $settings['mail_from'] === '') $settings['mail_from'] = get_option('admin_email');
+        if (!isset($settings['mail_body'])) $settings['mail_body'] = '';
+
+        return $settings;
     }
 }
 

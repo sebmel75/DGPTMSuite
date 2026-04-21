@@ -3,7 +3,7 @@
  * Plugin Name: DGPTM - Vimeo Webinare
  * Plugin URI: https://dgptm.de
  * Description: Vimeo Videos als Webinare mit dynamischen URLs, automatischen Fortbildungspunkten, Zertifikaten und Frontend-Manager
- * Version: 2.0.0
+ * Version: 2.0.1
  * Author: Sebastian Melzer
  * Author URI: https://dgptm.de
  * License: GPL v2 or later
@@ -190,7 +190,7 @@ class DGPTM_Vimeo_Webinare {
                 'dgptm-vw-dashboard-integration',
                 $this->plugin_url . 'assets/css/dashboard-integration.css',
                 [],
-                '2.0.0'
+                '2.0.1'
             );
         }
         wp_enqueue_style('dashicons');
@@ -208,7 +208,7 @@ class DGPTM_Vimeo_Webinare {
                 $handle,
                 $this->plugin_url . 'assets/css/' . $assets[$which]['css'],
                 ['dgptm-vw-dashboard-integration'],
-                '2.0.0'
+                '2.0.1'
             );
         }
         if (!wp_script_is($handle, 'enqueued')) {
@@ -216,7 +216,7 @@ class DGPTM_Vimeo_Webinare {
                 $handle,
                 $this->plugin_url . 'assets/js/' . $assets[$which]['js'],
                 ['jquery'],
-                '2.0.0',
+                '2.0.1',
                 true
             );
         }
@@ -691,7 +691,7 @@ class DGPTM_Vimeo_Webinare {
                 'dgptm-vw-dashboard-integration',
                 $this->plugin_url . 'assets/css/dashboard-integration.css',
                 [],
-                '2.0.0'
+                '2.0.1'
             );
             wp_enqueue_style('dashicons');
         }
@@ -702,13 +702,13 @@ class DGPTM_Vimeo_Webinare {
                 'dgptm-vw-manager',
                 $this->plugin_url . 'assets/css/manager.css',
                 ['dgptm-vw-dashboard-integration'],
-                '2.0.0'
+                '2.0.1'
             );
             wp_enqueue_script(
                 'dgptm-vw-manager',
                 $this->plugin_url . 'assets/js/manager.js',
                 ['jquery'],
-                '2.0.0',
+                '2.0.1',
                 true
             );
         }
@@ -719,13 +719,13 @@ class DGPTM_Vimeo_Webinare {
                 'dgptm-vw-statistiken',
                 $this->plugin_url . 'assets/css/statistiken.css',
                 ['dgptm-vw-dashboard-integration'],
-                '2.0.0'
+                '2.0.1'
             );
             wp_enqueue_script(
                 'dgptm-vw-statistiken',
                 $this->plugin_url . 'assets/js/statistiken.js',
                 ['jquery'],
-                '2.0.0',
+                '2.0.1',
                 true
             );
         }
@@ -736,13 +736,13 @@ class DGPTM_Vimeo_Webinare {
                 'dgptm-vw-liste',
                 $this->plugin_url . 'assets/css/liste.css',
                 ['dgptm-vw-dashboard-integration'],
-                '2.0.0'
+                '2.0.1'
             );
             wp_enqueue_script(
                 'dgptm-vw-liste',
                 $this->plugin_url . 'assets/js/liste.js',
                 ['jquery'],
-                '2.0.0',
+                '2.0.1',
                 true
             );
         }

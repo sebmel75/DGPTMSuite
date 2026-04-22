@@ -2,7 +2,7 @@
     "id": "frontend-page-editor",
     "name": "Frontend Seiteneditor",
     "description": "Ermöglicht Benutzern ohne Admin-Rechte die Bearbeitung zugewiesener Seiten mit Elementor oder WordPress Editor. Konfigurierbarer Session-Timeout, Heartbeat-Verlängerung, Dashboard-kompatibel.",
-    "version": "4.2.0",
+    "version": "4.4.0",
     "author": "Sebastian Melzer",
     "main_file": "frontend-page-editor.php",
     "dependencies": [],

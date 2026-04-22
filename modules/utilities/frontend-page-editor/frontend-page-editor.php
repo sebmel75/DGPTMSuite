@@ -2,9 +2,14 @@
 /**
  * Plugin Name: DGPTM Frontend Seiteneditor
  * Description: Ermöglicht Benutzern die Bearbeitung ausgewählter Seiten mit Elementor oder WordPress Editor
- * Version: 4.3.0
+ * Version: 4.4.0
  * Author: Sebastian Melzer
  * Text Domain: dgptm-fpe
+ *
+ * CHANGELOG v4.4.0:
+ * - Members-Plugin-Bypass entfernt (Members nicht mehr im Einsatz)
+ * - wp_redirect-Filter entfernt (war nur Gegengewicht zu Members)
+ * - Toten AJAX-Allowlist-Code aus restrict_backend_access entfernt
  *
  * CHANGELOG v4.1.0 (CRITICAL SECURITY FIX):
  * - Entfernte allgemeine edit_pages und edit_published_pages Capabilities
@@ -67,7 +72,7 @@ class DGPTM_Frontend_Page_Editor {
         'dgptm-fpe-style', // Einzigartiger Name für dein Stylesheet
         plugin_dir_url(__FILE__) . 'css/frontend-page-editor.css', // Der Pfad zur CSS-Datei
         [], // Keine Abhängigkeiten
-        '4.3.0'
+        '4.4.0'
     );
 }
 
@@ -108,40 +113,6 @@ class DGPTM_Frontend_Page_Editor {
 
         // BYPASS: Frueher Hook um Session vor Admin-Load zu setzen
         add_action('init', [$this, 'early_session_setup'], 1);
-
-        // BYPASS: Members Plugin + andere Admin-Blocker bei aktiver Edit-Session
-        add_action('plugins_loaded', function() {
-            if (!is_admin()) return;
-            if (!is_user_logged_in()) return;
-            $editing = get_transient('dgptm_editing_' . get_current_user_id());
-            if (!$editing) return;
-
-            // Members access_check aus admin_init entfernen
-            global $wp_filter;
-            if (isset($wp_filter['admin_init'])) {
-                foreach ($wp_filter['admin_init']->callbacks as $priority => &$callbacks) {
-                    foreach ($callbacks as $key => $callback) {
-                        if ((is_string($key) && strpos($key, 'access_check') !== false) ||
-                            (is_string($callback['function'] ?? null) && strpos($callback['function'], 'access_check') !== false)) {
-                            unset($callbacks[$key]);
-                        }
-                    }
-                }
-            }
-        }, 999);
-
-        // Fallback: Homepage-Redirects bei aktiver Edit-Session unterdruecken
-        add_filter('wp_redirect', function($location, $status) {
-            $editing = get_transient('dgptm_editing_' . get_current_user_id());
-            if (!$editing) return $location;
-
-            $home = untrailingslashit(home_url());
-            $target = untrailingslashit(rtrim($location, '/'));
-            if ($target === $home || strpos($location, 'wp-login.php') !== false) {
-                return false;
-            }
-            return $location;
-        }, 0, 2);
 
         // Settings-Seite
         add_action('admin_menu', [$this, 'register_settings_page'], 25);
@@ -535,29 +506,8 @@ class DGPTM_Frontend_Page_Editor {
             $current_page = intval($_POST['post_ID']);
         }
 
-        // AJAX-Requests für Elementor/WP Editor erlauben
-        if (wp_doing_ajax()) {
-            // Prüfe ob es ein erlaubter AJAX-Request ist
-            $allowed_actions = [
-                'elementor_ajax',
-                'heartbeat',
-                'upload-attachment',
-                'query-attachments',
-                'save-attachment',
-                'save-attachment-compat',
-                'editpost',
-                'inline-save',
-                'wp_link_ajax',
-                'autocomplete-user'
-            ];
-
-            $action = isset($_REQUEST['action']) ? $_REQUEST['action'] : '';
-            if (in_array($action, $allowed_actions)) {
-                return;
-            }
-        }
-
-        // Erlaube nur post.php mit der richtigen Seite
+        // Erlaube nur post.php mit der richtigen Seite.
+        // AJAX ist bereits am Funktionsanfang (DOING_AJAX) durchgelassen worden.
         global $pagenow;
         $allowed_pages = ['post.php', 'admin-ajax.php', 'async-upload.php', 'media-upload.php', 'upload.php'];
 
@@ -669,7 +619,7 @@ class DGPTM_Frontend_Page_Editor {
             'dgptm-fpe-security',
             plugin_dir_url(__FILE__) . 'js/security.js',
             ['jquery'],
-            '4.3.0',
+            '4.4.0',
             true
         );
         wp_localize_script('dgptm-fpe-security', 'dgptmFpeHomeUrl', home_url('/'));

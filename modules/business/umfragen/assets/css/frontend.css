@@ -982,3 +982,32 @@ select + .dgptm-other-text-input {
 .dgptm-text-response-item:last-child {
     border-bottom: none;
 }
+
+/* Post-Edit-Feature: Edit-Prompt + Edit-Banner (v1.8.0) */
+.dgptm-survey-edit-prompt {
+    background: var(--dgptm-primary-light);
+    border: 1px solid #c7d2fe;
+    border-radius: var(--dgptm-radius-sm);
+    padding: 20px 24px;
+    margin: 16px 0;
+    color: var(--dgptm-gray-800);
+}
+.dgptm-survey-edit-prompt p {
+    margin: 0 0 8px 0;
+}
+.dgptm-survey-edit-prompt-meta {
+    font-size: 13px;
+    color: var(--dgptm-gray-500);
+}
+.dgptm-survey-edit-prompt .dgptm-btn-primary {
+    margin-top: 8px;
+}
+.dgptm-survey-edit-notice {
+    background: var(--dgptm-warning-light);
+    border: 1px solid #fde68a;
+    border-radius: var(--dgptm-radius-sm);
+    padding: 12px 16px;
+    margin: 12px 0;
+    font-size: 14px;
+    color: var(--dgptm-gray-800);
+}

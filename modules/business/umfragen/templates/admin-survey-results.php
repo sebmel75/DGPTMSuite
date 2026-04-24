@@ -208,7 +208,12 @@ $view_response = isset($_GET['response_id']) ? absint($_GET['response_id']) : 0;
                                 <td><?php echo esc_html($r->id); ?></td>
                                 <td><?php echo esc_html($r->respondent_name ?: '-'); ?></td>
                                 <td><?php echo esc_html($r->respondent_email ?: '-'); ?></td>
-                                <td><?php echo esc_html(wp_date('d.m.Y H:i', strtotime($r->completed_at ?: $r->started_at))); ?></td>
+                                <td>
+                                    <?php echo esc_html(wp_date('d.m.Y H:i', strtotime($r->completed_at ?: $r->started_at))); ?>
+                                    <?php if (!empty($r->last_edited_at)) : ?>
+                                        <br><small style="color:#777;">bearbeitet: <?php echo esc_html(wp_date('d.m.Y H:i', strtotime($r->last_edited_at))); ?></small>
+                                    <?php endif; ?>
+                                </td>
                                 <td><?php echo esc_html($r->respondent_ip); ?></td>
                                 <td>
                                     <a href="<?php echo esc_url(admin_url('admin.php?page=dgptm-umfragen&view=results&survey_id=' . $survey_id . '&response_id=' . $r->id)); ?>"

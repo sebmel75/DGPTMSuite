@@ -75,13 +75,26 @@ class DGPTM_Survey_Frontend {
             return '<div class="dgptm-survey-login-required"><p>Bitte melden Sie sich an, um an dieser Umfrage teilzunehmen.</p></div>';
         }
 
-        // Duplicate check
+        // Duplicate check mit Post-Edit-Verzweigung
         if ($this->has_already_responded($survey)) {
-            return '<div class="dgptm-survey-already-done"><p>Sie haben diese Umfrage bereits ausgefuellt. Vielen Dank fuer Ihre Teilnahme!</p></div>';
-        }
+            $own = $this->get_own_completed_response($survey);
 
-        // Check for resume token
-        $resume_data = $this->get_resume_data($survey);
+            // Edit-Modus: wenn Umfrage aktiv, allow_post_edit gesetzt und User bewusst auf "Bearbeiten" geklickt
+            if ($own && $survey->status === 'active' && !empty($survey->allow_post_edit) && !empty($_GET['dgptm_edit'])) {
+                $resume_data = $this->build_resume_data_from_response($own);
+                $edit_mode = true;
+                // Frontend-Form unten durchlaufen lassen
+            } elseif ($own && $survey->status === 'active' && !empty($survey->allow_post_edit)) {
+                // Edit-Prompt: Bestaetigungsseite mit "Antworten bearbeiten"-Button
+                return $this->render_edit_prompt($survey, $own);
+            } else {
+                return '<div class="dgptm-survey-already-done"><p>Sie haben diese Umfrage bereits ausgefuellt. Vielen Dank fuer Ihre Teilnahme!</p></div>';
+            }
+        } else {
+            // Check for resume token (in_progress response)
+            $resume_data = $this->get_resume_data($survey);
+            $edit_mode = false;
+        }
 
         // Get questions
         $questions = $wpdb->get_results($wpdb->prepare(
@@ -190,6 +203,94 @@ class DGPTM_Survey_Frontend {
         ];
     }
 
+    /**
+     * Find the current user's own completed response for this survey.
+     * Returns the response row or null.
+     */
+    private function get_own_completed_response($survey) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'dgptm_survey_responses';
+
+        // Logged-in: Zuerst nach user_id suchen
+        if (is_user_logged_in()) {
+            $user_id = get_current_user_id();
+            $row = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM $table WHERE survey_id = %d AND user_id = %d AND status = 'completed' ORDER BY id DESC LIMIT 1",
+                $survey->id, $user_id
+            ));
+            if ($row) return $row;
+        }
+
+        // Cookie-basiert
+        $cookie_name = 'dgptm_survey_' . $survey->id;
+        $cookie = isset($_COOKIE[$cookie_name]) ? sanitize_text_field($_COOKIE[$cookie_name]) : '';
+        if ($cookie) {
+            $row = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM $table WHERE survey_id = %d AND respondent_cookie = %s AND status = 'completed' ORDER BY id DESC LIMIT 1",
+                $survey->id, $cookie
+            ));
+            if ($row) return $row;
+        }
+
+        // IP-basiert (nur wenn duplicate_check dafuer konfiguriert ist)
+        if (in_array($survey->duplicate_check, ['ip', 'cookie_ip'], true)) {
+            $ip = $this->get_client_ip();
+            $row = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM $table WHERE survey_id = %d AND respondent_ip = %s AND status = 'completed' ORDER BY id DESC LIMIT 1",
+                $survey->id, $ip
+            ));
+            if ($row) return $row;
+        }
+
+        return null;
+    }
+
+    /**
+     * Build resume-style prefill data from a completed response.
+     */
+    private function build_resume_data_from_response($response) {
+        global $wpdb;
+        $answers = $wpdb->get_results($wpdb->prepare(
+            "SELECT question_id, answer_value FROM {$wpdb->prefix}dgptm_survey_answers WHERE response_id = %d",
+            $response->id
+        ));
+        $data = [];
+        foreach ($answers as $a) {
+            $data[$a->question_id] = $a->answer_value;
+        }
+        return [
+            'response_id' => $response->id,
+            'answers'     => $data,
+        ];
+    }
+
+    /**
+     * Render the two-step "Antworten bearbeiten"-Prompt for returning respondents.
+     */
+    private function render_edit_prompt($survey, $response) {
+        $completed_human = $response->completed_at
+            ? wp_date('d.m.Y H:i', strtotime($response->completed_at))
+            : '';
+        $edited_human = !empty($response->last_edited_at)
+            ? wp_date('d.m.Y H:i', strtotime($response->last_edited_at))
+            : '';
+
+        // Edit-Link: dieselbe URL plus ?dgptm_edit=1
+        $edit_url = add_query_arg('dgptm_edit', '1');
+
+        $html  = '<div class="dgptm-survey-edit-prompt">';
+        $html .= '<p><strong>Sie haben diese Umfrage bereits ausgefuellt'
+            . ($completed_human ? ' am ' . esc_html($completed_human) : '')
+            . '.</strong></p>';
+        if ($edited_human) {
+            $html .= '<p class="dgptm-survey-edit-prompt-meta">Zuletzt geaendert am ' . esc_html($edited_human) . '.</p>';
+        }
+        $html .= '<p>Sie koennen Ihre Antworten bis zur Schliessung der Umfrage nachtraeglich bearbeiten.</p>';
+        $html .= '<p><a href="' . esc_url($edit_url) . '" class="dgptm-btn dgptm-btn-primary">Antworten bearbeiten</a></p>';
+        $html .= '</div>';
+        return $html;
+    }
+
     // --- AJAX handlers ---
 
     /**
@@ -214,8 +315,20 @@ class DGPTM_Survey_Frontend {
             wp_send_json_error(['message' => 'Umfrage nicht verfuegbar']);
         }
 
-        // Duplicate check
-        if ($this->has_already_responded($survey)) {
+        // Duplicate check — mit Edit-Bypass
+        $posted_response_id = absint($_POST['response_id'] ?? 0);
+        $is_editing_own = false;
+        if ($posted_response_id && !empty($survey->allow_post_edit)) {
+            $posted_response = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM {$wpdb->prefix}dgptm_survey_responses WHERE id = %d AND survey_id = %d",
+                $posted_response_id, $survey_id
+            ));
+            if ($posted_response && $this->response_belongs_to_current_user($survey, $posted_response)) {
+                $is_editing_own = true;
+            }
+        }
+
+        if (!$is_editing_own && $this->has_already_responded($survey)) {
             wp_send_json_error(['message' => 'Sie haben diese Umfrage bereits ausgefuellt.']);
         }
 
@@ -268,23 +381,35 @@ class DGPTM_Survey_Frontend {
             }
         }
 
-        // Check for existing in-progress response (from resume)
+        // Check for existing response (from resume oder edit)
         $response_id = absint($_POST['response_id'] ?? 0);
         $now = current_time('mysql');
+        $is_edit_submit = false;
 
         if ($response_id) {
-            // Update existing response
-            $wpdb->update(
-                $wpdb->prefix . 'dgptm_survey_responses',
-                [
-                    'status'           => 'completed',
-                    'respondent_ip'    => $ip,
-                    'respondent_name'  => sanitize_text_field($_POST['respondent_name'] ?? ''),
-                    'respondent_email' => sanitize_email($_POST['respondent_email'] ?? ''),
-                    'completed_at'     => $now,
-                ],
-                ['id' => $response_id]
-            );
+            // Bestehenden Status auslesen — entscheidet ueber Edit- vs. Resume-Submit
+            $existing_status = $wpdb->get_var($wpdb->prepare(
+                "SELECT status FROM {$wpdb->prefix}dgptm_survey_responses WHERE id = %d",
+                $response_id
+            ));
+
+            $update_data = [
+                'respondent_ip'    => $ip,
+                'respondent_name'  => sanitize_text_field($_POST['respondent_name'] ?? ''),
+                'respondent_email' => sanitize_email($_POST['respondent_email'] ?? ''),
+            ];
+
+            if ($existing_status === 'completed') {
+                // Edit-Submit: completed_at unveraendert lassen, last_edited_at setzen
+                $update_data['last_edited_at'] = $now;
+                $is_edit_submit = true;
+            } else {
+                // Resume-Submit (in_progress -> completed)
+                $update_data['status']       = 'completed';
+                $update_data['completed_at'] = $now;
+            }
+
+            $wpdb->update($wpdb->prefix . 'dgptm_survey_responses', $update_data, ['id' => $response_id]);
             // Delete old answers before re-inserting
             $wpdb->delete($wpdb->prefix . 'dgptm_survey_answers', ['response_id' => $response_id]);
         } else {
@@ -337,7 +462,11 @@ class DGPTM_Survey_Frontend {
         }
 
         if (function_exists('dgptm_log_info')) {
-            dgptm_log_info('Umfrage-Antwort eingegangen: Survey=' . $survey_id . ', Response=' . $response_id, 'umfragen');
+            if ($is_edit_submit) {
+                dgptm_log_info('Umfrage-Antwort bearbeitet: Survey=' . $survey_id . ', Response=' . $response_id, 'umfragen');
+            } else {
+                dgptm_log_info('Umfrage-Antwort eingegangen: Survey=' . $survey_id . ', Response=' . $response_id, 'umfragen');
+            }
         }
 
         /**
@@ -350,9 +479,25 @@ class DGPTM_Survey_Frontend {
         do_action('dgptm_survey_completed', $survey_id, $response_id, $survey);
 
         wp_send_json_success([
-            'message'     => 'Vielen Dank fuer Ihre Teilnahme!',
+            'message'     => $is_edit_submit ? 'Ihre Aenderungen wurden gespeichert.' : 'Vielen Dank fuer Ihre Teilnahme!',
             'response_id' => $response_id,
+            'edited'      => $is_edit_submit,
         ]);
+    }
+
+    /**
+     * Check if a response belongs to the current requesting user (via user_id or cookie).
+     */
+    private function response_belongs_to_current_user($survey, $response) {
+        if (is_user_logged_in() && (int)$response->user_id === get_current_user_id()) {
+            return true;
+        }
+        $cookie_name = 'dgptm_survey_' . $survey->id;
+        $cookie = isset($_COOKIE[$cookie_name]) ? sanitize_text_field($_COOKIE[$cookie_name]) : '';
+        if ($cookie && $cookie === $response->respondent_cookie) {
+            return true;
+        }
+        return false;
     }
 
     /**

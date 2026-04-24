@@ -38,6 +38,13 @@ if ($resume_data) {
         </div>
     <?php endif; ?>
 
+    <?php if (!empty($edit_mode)) : ?>
+        <div class="dgptm-survey-edit-notice">
+            <strong>Sie bearbeiten Ihre bereits abgesendete Antwort.</strong>
+            Aenderungen ueberschreiben die bisherigen Werte.
+        </div>
+    <?php endif; ?>
+
     <div class="dgptm-survey-header">
         <h2 class="dgptm-survey-title"><?php echo esc_html($survey->title); ?></h2>
         <?php if ($survey->description) : ?>
@@ -490,7 +497,7 @@ if ($resume_data) {
             <?php endif; ?>
 
             <button type="submit" class="dgptm-btn dgptm-btn-primary dgptm-btn-submit" <?php if ($total_groups > 1) echo 'style="display:none;"'; ?>>
-                Absenden
+                <?php echo !empty($edit_mode) ? 'Aenderungen speichern' : 'Absenden'; ?>
             </button>
         </div>
     </form>

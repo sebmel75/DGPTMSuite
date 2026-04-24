@@ -40,6 +40,67 @@ class DGPTM_Survey_Exporter {
     private function __construct() {}
 
     /**
+     * Parst einen gespeicherten Antwortwert im Format "base|||text|||number".
+     * Fehlende Bestandteile werden als leere Strings zurueckgegeben.
+     */
+    private function parse_value($raw) {
+        if (!is_string($raw)) {
+            return ['base' => '', 'text' => '', 'number' => ''];
+        }
+        $parts = explode('|||', $raw, 3);
+        return [
+            'base'   => $parts[0] ?? '',
+            'text'   => $parts[1] ?? '',
+            'number' => $parts[2] ?? '',
+        ];
+    }
+
+    /**
+     * Normalisiert einen Choice-Basiswert fuer die Anzeige.
+     * __other__ -> "Sonstiges"; sonst Rohwert.
+     */
+    private function display_label($base) {
+        return $base === '__other__' ? 'Sonstiges' : $base;
+    }
+
+    /**
+     * Liest die Antwort einer radio/select/checkbox-Frage in eine einheitliche
+     * Liste geparster Items auf (auch bei Einzelantworten).
+     *
+     * @return array<int, array{base:string,text:string,number:string}>
+     */
+    private function read_choice_items($question, $answer) {
+        if (!$answer || $answer->answer_value === null) {
+            return [];
+        }
+        $raw = $answer->answer_value;
+        if ($question->question_type === 'checkbox') {
+            $arr = json_decode($raw, true);
+            if (!is_array($arr)) {
+                return [];
+            }
+            $out = [];
+            foreach ($arr as $v) {
+                $out[] = $this->parse_value((string) $v);
+            }
+            return $out;
+        }
+        return [$this->parse_value((string) $raw)];
+    }
+
+    /**
+     * Sucht in einer Item-Liste das Item mit passender Choice-Base (inkl. __other__).
+     */
+    private function find_choice_item($items, $target_base) {
+        foreach ($items as $item) {
+            if ($item['base'] === $target_base) {
+                return $item;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Export survey results as CSV download
      */
     public function export_csv() {
@@ -98,29 +159,78 @@ class DGPTM_Survey_Exporter {
         $headers = ['Antwort-ID', 'Name', 'E-Mail', 'IP', 'Datum'];
 
         // Question columns
-        $question_columns = []; // Maps column index to question info
+        // Mode-Uebersicht:
+        //   matrix        : bestehendes Verhalten (eine Spalte pro Zeile bzw. Zelle)
+        //   simple        : Eine Spalte mit Rohwert (number, text, textarea, file, ohne |||-Features)
+        //   choice_plain  : Eine Spalte mit gewaehlten Label(s), fuer radio/select/checkbox ohne Features
+        //   choice_number : Eine Spalte pro Choice bei choices_with_number, Wert = Zahl
+        //   choice_text   : Zusatzspalte pro Choice mit choices_with_text, Wert = Freitext
+        //   other_text    : Zusatzspalte fuer __other__-Freitext (Sonstiges)
+        $question_columns = [];
         foreach ($questions as $q) {
             if ($q->question_type === 'matrix') {
                 $choices = json_decode($q->choices, true);
                 $matrix_type = isset($choices['matrix_input_type']) ? $choices['matrix_input_type'] : 'radio';
                 if ($matrix_type === 'number' && isset($choices['rows']) && isset($choices['columns'])) {
-                    // Number matrix: one column per row×col combination
                     foreach ($choices['rows'] as $row) {
                         foreach ($choices['columns'] as $col) {
                             $headers[] = $q->question_text . ' - ' . $row . ' / ' . $col;
-                            $question_columns[] = ['question' => $q, 'matrix_row' => sanitize_title($row), 'matrix_col' => sanitize_title($col), 'matrix_type' => 'number'];
+                            $question_columns[] = ['question' => $q, 'mode' => 'matrix', 'matrix_row' => sanitize_title($row), 'matrix_col' => sanitize_title($col), 'matrix_type' => 'number'];
                         }
                     }
                 } elseif (isset($choices['rows'])) {
-                    // Radio matrix: one column per row
                     foreach ($choices['rows'] as $row) {
                         $headers[] = $q->question_text . ' - ' . $row;
-                        $question_columns[] = ['question' => $q, 'matrix_row' => sanitize_title($row), 'matrix_col' => null, 'matrix_type' => 'radio'];
+                        $question_columns[] = ['question' => $q, 'mode' => 'matrix', 'matrix_row' => sanitize_title($row), 'matrix_col' => null, 'matrix_type' => 'radio'];
+                    }
+                }
+            } elseif (in_array($q->question_type, ['radio', 'select', 'checkbox'], true)) {
+                $choices    = $q->choices ? json_decode($q->choices, true) : [];
+                $validation = $q->validation_rules ? json_decode($q->validation_rules, true) : [];
+                if (!is_array($choices))    $choices = [];
+                if (!is_array($validation)) $validation = [];
+
+                $cwt = isset($validation['choices_with_text']) ? (array) $validation['choices_with_text'] : [];
+                $cwn_raw = isset($validation['choices_with_number']) ? (array) $validation['choices_with_number'] : [];
+                $cwn_choices = [];
+                foreach ($cwn_raw as $cn) {
+                    if (is_array($cn) && isset($cn['choice'])) {
+                        $cwn_choices[] = $cn['choice'];
+                    }
+                }
+                $allow_other = !empty($validation['allow_other']);
+
+                if (!empty($cwn_choices)) {
+                    // Choices_with_number: eine Spalte pro Choice, Wert = Zahl (oder leer)
+                    foreach ($choices as $choice) {
+                        $headers[] = $q->question_text . ' — ' . $choice;
+                        $question_columns[] = ['question' => $q, 'mode' => 'choice_number', 'choice' => $choice];
+                    }
+                    if ($allow_other) {
+                        $headers[] = $q->question_text . ' — Sonstiges — Freitext';
+                        $question_columns[] = ['question' => $q, 'mode' => 'other_text'];
+                    }
+                } else {
+                    // Hauptspalte mit Label(s)
+                    $headers[] = $q->question_text;
+                    $question_columns[] = ['question' => $q, 'mode' => 'choice_plain'];
+
+                    // Zusatzspalten fuer Choices mit Freitext
+                    foreach ($choices as $choice) {
+                        if (in_array($choice, $cwt, true)) {
+                            $headers[] = $q->question_text . ' — ' . $choice . ' — Freitext';
+                            $question_columns[] = ['question' => $q, 'mode' => 'choice_text', 'choice' => $choice];
+                        }
+                    }
+                    if ($allow_other) {
+                        $headers[] = $q->question_text . ' — Sonstiges — Freitext';
+                        $question_columns[] = ['question' => $q, 'mode' => 'other_text'];
                     }
                 }
             } else {
+                // number, text, textarea, file
                 $headers[] = $q->question_text;
-                $question_columns[] = ['question' => $q, 'matrix_row' => null];
+                $question_columns[] = ['question' => $q, 'mode' => 'simple'];
             }
         }
 
@@ -148,42 +258,79 @@ class DGPTM_Survey_Exporter {
             foreach ($question_columns as $col) {
                 $q = $col['question'];
                 $answer = isset($answers_map[$q->id]) ? $answers_map[$q->id] : null;
+                $mode = $col['mode'] ?? 'simple';
 
                 if (!$answer) {
                     $row[] = '';
                     continue;
                 }
 
-                if ($q->question_type === 'matrix' && !empty($col['matrix_row'])) {
-                    $vals = json_decode($answer->answer_value, true);
-                    if (!empty($col['matrix_col']) && isset($col['matrix_type']) && $col['matrix_type'] === 'number') {
-                        // Number matrix: row→col→value
-                        $row[] = is_array($vals) && isset($vals[$col['matrix_row']][$col['matrix_col']]) ? $vals[$col['matrix_row']][$col['matrix_col']] : '';
-                    } else {
-                        // Radio matrix: row→value
-                        $row[] = is_array($vals) && isset($vals[$col['matrix_row']]) ? $vals[$col['matrix_row']] : '';
+                switch ($mode) {
+                    case 'matrix': {
+                        $vals = json_decode($answer->answer_value, true);
+                        if (!empty($col['matrix_col']) && ($col['matrix_type'] ?? '') === 'number') {
+                            $row[] = is_array($vals) && isset($vals[$col['matrix_row']][$col['matrix_col']])
+                                ? $vals[$col['matrix_row']][$col['matrix_col']]
+                                : '';
+                        } else {
+                            $row[] = is_array($vals) && isset($vals[$col['matrix_row']])
+                                ? $vals[$col['matrix_row']]
+                                : '';
+                        }
+                        break;
                     }
-                } elseif ($q->question_type === 'checkbox') {
-                    $vals = json_decode($answer->answer_value, true);
-                    $row[] = is_array($vals) ? implode('; ', $vals) : ($answer->answer_value ?: '');
-                } elseif ($q->question_type === 'file') {
-                    if ($answer->file_ids) {
-                        $fids = json_decode($answer->file_ids, true);
-                        $urls = [];
-                        if (is_array($fids)) {
-                            foreach ($fids as $fid) {
-                                $url = wp_get_attachment_url(absint($fid));
-                                if ($url) {
-                                    $urls[] = $url;
+
+                    case 'choice_number': {
+                        $items = $this->read_choice_items($q, $answer);
+                        $found = $this->find_choice_item($items, $col['choice']);
+                        $row[] = $found ? $found['number'] : '';
+                        break;
+                    }
+
+                    case 'choice_text': {
+                        $items = $this->read_choice_items($q, $answer);
+                        $found = $this->find_choice_item($items, $col['choice']);
+                        $row[] = $found ? $found['text'] : '';
+                        break;
+                    }
+
+                    case 'other_text': {
+                        $items = $this->read_choice_items($q, $answer);
+                        $found = $this->find_choice_item($items, '__other__');
+                        $row[] = $found ? $found['text'] : '';
+                        break;
+                    }
+
+                    case 'choice_plain': {
+                        $items = $this->read_choice_items($q, $answer);
+                        $labels = [];
+                        foreach ($items as $item) {
+                            if ($item['base'] === '') continue;
+                            $labels[] = $this->display_label($item['base']);
+                        }
+                        $row[] = implode('; ', $labels);
+                        break;
+                    }
+
+                    case 'simple':
+                    default: {
+                        if ($q->question_type === 'file') {
+                            $urls = [];
+                            if ($answer->file_ids) {
+                                $fids = json_decode($answer->file_ids, true);
+                                if (is_array($fids)) {
+                                    foreach ($fids as $fid) {
+                                        $url = wp_get_attachment_url(absint($fid));
+                                        if ($url) $urls[] = $url;
+                                    }
                                 }
                             }
+                            $row[] = implode('; ', $urls);
+                        } else {
+                            $row[] = $answer->answer_value ?: '';
                         }
-                        $row[] = implode('; ', $urls);
-                    } else {
-                        $row[] = '';
+                        break;
                     }
-                } else {
-                    $row[] = $answer->answer_value ?: '';
                 }
             }
 

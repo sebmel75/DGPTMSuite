@@ -169,6 +169,7 @@
                     duplicate_check: $form.find('[name="duplicate_check"]').val(),
                     show_progress: $form.find('[name="show_progress"]').is(':checked') ? 1 : 0,
                     allow_save_resume: $form.find('[name="allow_save_resume"]').is(':checked') ? 1 : 0,
+                    allow_post_edit: $form.find('[name="allow_post_edit"]').is(':checked') ? 1 : 0,
                     completion_text: $form.find('[name="completion_text"]').val() || '',
                     shared_with: $form.find('[name="shared_with"]').val() || ''
                 };

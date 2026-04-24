@@ -98,6 +98,11 @@ $question_types = [
                             <input type="checkbox" name="allow_save_resume" value="1" <?php checked($survey ? $survey->allow_save_resume : 0); ?>>
                             Zwischenspeichern erlauben
                         </label>
+                        <br>
+                        <label>
+                            <input type="checkbox" name="allow_post_edit" value="1" <?php checked($survey ? $survey->allow_post_edit : 0); ?>>
+                            Antworten nachträglich bearbeitbar (bis zur Schließung)
+                        </label>
                     </td>
                 </tr>
                 <tr>

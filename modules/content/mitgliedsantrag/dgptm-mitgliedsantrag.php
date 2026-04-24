@@ -677,8 +677,9 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
         }
 
         /**
-         * Setzt im CRM das Flag mails_guarantor_sendet = true und ergänzt im
-         * Bemerkung-Feld " | Bürgen angeschrieben: dd.mm.YYYY HH:MM".
+         * Setzt im CRM das Flag mails_guarantor_sendet = true.
+         * Das Bemerkung-Feld bleibt unveraendert — es ist der Geschaeftsstelle
+         * fuer manuelle Notizen vorbehalten.
          * Nicht blockierend — Fehler landen nur im Log.
          */
         private function mark_buergen_mails_sent($contact) {
@@ -687,11 +688,6 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 $this->log('WARN mark_buergen_mails_sent: kein OAuth-Token verfügbar');
                 return;
             }
-
-            $zeitstempel    = current_time('d.m.Y H:i');
-            $alt_bemerkung  = trim((string) ($contact['Bemerkung'] ?? ''));
-            $suffix         = 'Bürgen angeschrieben: ' . $zeitstempel;
-            $neue_bemerkung = $alt_bemerkung !== '' ? $alt_bemerkung . ' | ' . $suffix : $suffix;
 
             $response = wp_remote_request(
                 'https://www.zohoapis.eu/crm/v8/Contacts/' . $contact['id'],
@@ -702,8 +698,7 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                         'Content-Type'  => 'application/json'
                     ],
                     'body'    => wp_json_encode(['data' => [[
-                        'mails_guarantor_sendet' => true,
-                        'Bemerkung'              => $neue_bemerkung
+                        'mails_guarantor_sendet' => true
                     ]]]),
                     'timeout' => 30
                 ]
@@ -1925,18 +1920,11 @@ if (!class_exists('DGPTM_Mitgliedsantrag')) {
                 }
             }
 
-            // Always add remark
-            $contact_data['Bemerkung'] = 'Mitgliedsantrag über Online-Formular eingereicht';
-
-            // Add student certificate URL if applicable
-            if ($data['ist_student'] && $studienbescheinigung_id > 0) {
-                $file_url = wp_get_attachment_url($studienbescheinigung_id);
-                $contact_data['Bemerkung'] .= ' | Studienbescheinigung: ' . $file_url;
-            }
-
-            // Qualifikationsnachweis-URL landet nicht im Bemerkung-Feld —
-            // er liegt ohnehin als File-Upload im QualiNachweisDirekt-Feld und ist
-            // über den Download-Proxy im Vorstandsgenehmigungs-Flow erreichbar.
+            // Das Bemerkung-Feld bleibt beim Anlegen/Updaten bewusst leer.
+            // Es ist der Geschaeftsstelle fuer manuelle Notizen vorbehalten.
+            // Studienbescheinigung und Qualifikationsnachweis liegen als
+            // Dateiuploads in den jeweiligen CRM-Feldern und sind ueber den
+            // Download-Proxy im Vorstandsgenehmigungs-Flow erreichbar.
 
             dgptm_log_info('Contact payload: ' . substr(wp_json_encode($contact_data), 0, 2000), 'mitgliedsantrag');
 

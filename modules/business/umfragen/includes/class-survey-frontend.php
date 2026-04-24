@@ -386,12 +386,22 @@ class DGPTM_Survey_Frontend {
         $now = current_time('mysql');
         $is_edit_submit = false;
 
+        // Ownership-Check: response_id wird nur akzeptiert, wenn die Response
+        // dem aktuellen Nutzer gehoert (via user_id oder cookie).
         if ($response_id) {
-            // Bestehenden Status auslesen — entscheidet ueber Edit- vs. Resume-Submit
-            $existing_status = $wpdb->get_var($wpdb->prepare(
-                "SELECT status FROM {$wpdb->prefix}dgptm_survey_responses WHERE id = %d",
-                $response_id
+            $existing_row = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM {$wpdb->prefix}dgptm_survey_responses WHERE id = %d AND survey_id = %d",
+                $response_id, $survey_id
             ));
+            if (!$existing_row || !$this->response_belongs_to_current_user($survey, $existing_row)) {
+                // Fremde oder nicht-existente Response-ID — ignorieren, neue Response anlegen
+                $response_id = 0;
+            }
+        }
+
+        if ($response_id) {
+            // $existing_row wurde oben bereits geladen, Status daraus nehmen
+            $existing_status = $existing_row->status;
 
             $update_data = [
                 'respondent_ip'    => $ip,

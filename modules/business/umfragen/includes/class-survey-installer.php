@@ -32,6 +32,7 @@ class DGPTM_Survey_Installer {
             survey_token VARCHAR(64) DEFAULT NULL,
             show_progress TINYINT(1) NOT NULL DEFAULT 1,
             allow_save_resume TINYINT(1) NOT NULL DEFAULT 0,
+            allow_post_edit TINYINT(1) NOT NULL DEFAULT 0,
             completion_text TEXT DEFAULT NULL,
             shared_with TEXT DEFAULT NULL,
             created_by BIGINT(20) UNSIGNED NOT NULL DEFAULT 0,
@@ -77,6 +78,7 @@ class DGPTM_Survey_Installer {
             resume_token VARCHAR(64) DEFAULT NULL,
             started_at DATETIME NOT NULL,
             completed_at DATETIME DEFAULT NULL,
+            last_edited_at DATETIME DEFAULT NULL,
             PRIMARY KEY (id),
             KEY survey_id (survey_id),
             KEY respondent_cookie (respondent_cookie),
@@ -165,6 +167,16 @@ class DGPTM_Survey_Installer {
 
         if (!$has($questions, 'is_privacy_sensitive')) {
             $wpdb->query("ALTER TABLE $questions ADD COLUMN is_privacy_sensitive TINYINT(1) NOT NULL DEFAULT 0");
+        }
+
+        $responses = $wpdb->prefix . 'dgptm_survey_responses';
+
+        if (!$has($surveys, 'allow_post_edit')) {
+            $wpdb->query("ALTER TABLE $surveys ADD COLUMN allow_post_edit TINYINT(1) NOT NULL DEFAULT 0");
+        }
+
+        if (!$has($responses, 'last_edited_at')) {
+            $wpdb->query("ALTER TABLE $responses ADD COLUMN last_edited_at DATETIME DEFAULT NULL");
         }
 
         // Backfill: generate survey_token for existing surveys that don't have one

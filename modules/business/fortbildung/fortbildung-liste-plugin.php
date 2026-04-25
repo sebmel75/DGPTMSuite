@@ -739,36 +739,41 @@ class Quiz_Report_Importer {
                     else{
                         $quiz_title='Unbekanntes Quiz';
                         if(is_array($data_arr) && !empty($data_arr['quiz_name'])){ $quiz_title=$data_arr['quiz_name']; }
-                        $current_date=current_time('Y-m-d');
-                        $pid=wp_insert_post(array('post_title'=>$quiz_title,'post_type'=>'fortbildung','post_status'=>'publish'));
-                        if(is_wp_error($pid)){ $errors++; }
-                        else{
-                            update_field('type','Quiz',$pid);
-                            update_field('location','Online',$pid);
-                            update_field('user',intval($report->user_id),$pid);
-                            update_field('date',$current_date,$pid);
-                            $this_year=date('Y');
-                            // Quiz-Punkte-Cap pro User/Jahr: max 6 (= 12 bestandene Quiz x 0,5 Punkte)
-                            $q=new WP_Query(array(
-                                'post_type'      => 'fortbildung',
-                                'fields'         => 'ids',
-                                'posts_per_page' => -1,
-                                'post__not_in'   => array($pid),
-                                'meta_query'     => array(
-                                    array('key'=>'type','value'=>'Quiz'),
-                                    array('key'=>'user','value'=>intval($report->user_id)),
-                                    array('key'=>'date','value'=>$this_year.'-','compare'=>'LIKE'),
-                                ),
-                            ));
-                            $existing_points = 0.0;
-                            foreach ($q->posts as $existing_pid) {
-                                $existing_points += floatval(get_post_meta($existing_pid, 'points', true));
+                        $user_id_int = intval($report->user_id);
+
+                        // Doubletten-Check: gleicher User + gleiches Quiz-Thema (Titel) -> NICHT importieren.
+                        // Quiz pro Thema wird nur einmal gezaehlt, egal wie oft wiederholt.
+                        $dup_q = new WP_Query(array(
+                            'post_type'      => 'fortbildung',
+                            'post_status'    => 'publish',
+                            'posts_per_page' => 1,
+                            'fields'         => 'ids',
+                            'no_found_rows'  => true,
+                            'title'          => $quiz_title,
+                            'meta_query'     => array(
+                                'relation' => 'AND',
+                                array('key'=>'type','value'=>'Quiz'),
+                                array('key'=>'user','value'=>$user_id_int),
+                            ),
+                        ));
+                        if (!empty($dup_q->posts)) {
+                            $skipped++;
+                        } else {
+                            $current_date=current_time('Y-m-d');
+                            $pid=wp_insert_post(array('post_title'=>$quiz_title,'post_type'=>'fortbildung','post_status'=>'publish'));
+                            if(is_wp_error($pid)){ $errors++; }
+                            else{
+                                update_field('type','Quiz',$pid);
+                                update_field('location','Online',$pid);
+                                update_field('user',$user_id_int,$pid);
+                                update_field('date',$current_date,$pid);
+                                // Quiz gibt IMMER 0,5 Punkte. Cap = 6 ergibt sich automatisch,
+                                // weil pro Thema nur ein Eintrag erlaubt ist.
+                                update_field('points',0.5,$pid);
+                                update_post_meta($pid,'quiz_report_id',$report->unique_code);
+                                update_field('freigegeben',true,$pid);
+                                $processed++;
                             }
-                            $points = (($existing_points + 0.5) <= 6.0) ? 0.5 : 0.0;
-                            update_field('points',$points,$pid);
-                            update_post_meta($pid,'quiz_report_id',$report->unique_code);
-                            update_field('freigegeben',true,$pid);
-                            $processed++;
                         }
                     }
                 }
@@ -2279,21 +2284,28 @@ require_once plugin_dir_path(__FILE__) . 'vnr-neubewertung.php';
 require_once plugin_dir_path(__FILE__) . 'fortbildung-csv-import.php';
 
 /* ============================================================
- * Einmalige Migration: Quiz-Einträge auf korrekte Punktzahl setzen.
- * Regel: pro User+Jahr bekommen die ersten 12 Quiz-Einträge
- * 0,5 Punkte (= max 6 Punkte/Jahr), ab dem 13. wird 0 vergeben.
- * Sortierung: chronologisch nach Feld 'date', bei Gleichheit nach post_date.
- * Idempotent über Option-Flag, läuft auf admin_init genau einmal.
+ * Quiz-Doubletten-Bereinigung
+ *
+ * Regel: Pro User + Quiz-Titel ist nur EIN Eintrag erlaubt
+ * (egal an welchem Tag absolviert). Mehrfache Eintraege werden
+ * geloescht, der aelteste Eintrag bleibt. Verbleibende Quiz-
+ * Eintraege bekommen pauschal 0,5 Punkte. Der Jahres-Cap von
+ * 6 Punkten ergibt sich automatisch (max. 12 unterschiedliche
+ * Quiz-Themen).
  * ============================================================ */
 
-if ( ! function_exists( 'fobi_quiz_points_migration_v2' ) ) {
-    function fobi_quiz_points_migration_v2() {
-        $option_key = 'fobi_quiz_points_migration_v2_done';
-        if ( get_option( $option_key ) ) {
-            return;
-        }
+if ( ! function_exists( 'fobi_quiz_dedupe_and_normalize' ) ) {
+    /**
+     * Findet und loescht Quiz-Doubletten, normalisiert verbleibende
+     * Eintraege auf 0,5 Punkte. Liefert Statistik zurueck.
+     *
+     * @return array{deleted:int,normalized:int,groups:int}
+     */
+    function fobi_quiz_dedupe_and_normalize() {
+        $stats = array( 'deleted' => 0, 'normalized' => 0, 'groups' => 0 );
+
         if ( ! function_exists( 'update_field' ) ) {
-            return; // ACF noch nicht geladen
+            return $stats;
         }
 
         $q = new WP_Query( array(
@@ -2307,22 +2319,14 @@ if ( ! function_exists( 'fobi_quiz_points_migration_v2' ) ) {
             ),
         ) );
 
-        // Gruppieren nach User + Jahr, jeweils mit Datum für die Sortierung.
+        // Gruppieren nach (user_id | normalisierter Titel)
         $grouped = array();
         foreach ( $q->posts as $pid ) {
             $user_id = intval( get_post_meta( $pid, 'user', true ) );
+            $title   = trim( (string) get_the_title( $pid ) );
+            $title_n = strtolower( preg_replace( '/\s+/', ' ', $title ) );
             $date    = (string) get_post_meta( $pid, 'date', true );
-            $year    = '';
-            if ( $date !== '' ) {
-                $ts = strtotime( $date );
-                if ( $ts ) {
-                    $year = date( 'Y', $ts );
-                }
-            }
-            if ( $year === '' ) {
-                $year = get_the_date( 'Y', $pid );
-            }
-            $key = $user_id . '|' . $year;
+            $key     = $user_id . '|' . $title_n;
             $grouped[ $key ][] = array(
                 'pid'       => $pid,
                 'date'      => $date !== '' ? $date : get_the_date( 'Y-m-d', $pid ),
@@ -2330,37 +2334,70 @@ if ( ! function_exists( 'fobi_quiz_points_migration_v2' ) ) {
             );
         }
 
-        $set_05 = 0;
-        $set_0  = 0;
+        $stats['groups'] = count( $grouped );
+
         foreach ( $grouped as $entries ) {
+            // Aeltesten Eintrag behalten: nach Datum aufsteigend, dann post_date.
             usort( $entries, function ( $a, $b ) {
                 $cmp = strcmp( $a['date'], $b['date'] );
                 if ( $cmp !== 0 ) return $cmp;
                 return strcmp( $a['post_date'], $b['post_date'] );
             } );
-            foreach ( $entries as $i => $entry ) {
-                if ( $i < 12 ) {
-                    update_field( 'points', 0.5, $entry['pid'] );
-                    $set_05++;
-                } else {
-                    update_field( 'points', 0.0, $entry['pid'] );
-                    $set_0++;
-                }
+
+            // Erster Eintrag bleibt, normalisiert auf 0,5 Punkte.
+            $keep = array_shift( $entries );
+            update_field( 'points', 0.5, $keep['pid'] );
+            $stats['normalized']++;
+
+            // Restliche Eintraege loeschen (komplett, kein Trash).
+            foreach ( $entries as $entry ) {
+                wp_delete_post( $entry['pid'], true );
+                $stats['deleted']++;
             }
         }
 
-        update_option( $option_key, array(
-            'done_at' => current_time( 'mysql' ),
-            'set_05'  => $set_05,
-            'set_0'   => $set_0,
-            'groups'  => count( $grouped ),
-        ) );
+        return $stats;
+    }
+}
 
-        if ( function_exists( 'error_log' ) ) {
-            error_log( '[DGPTM fortbildung] Quiz-Punkte-Migration v2 abgeschlossen: ' . $set_05 . ' Einträge auf 0,5; ' . $set_0 . ' Einträge auf 0; ' . count( $grouped ) . ' User-Jahr-Gruppen.' );
+/**
+ * Wird vom Quiz-Import-Cron nach dem Lauf aufgerufen.
+ * Sicheres safety-net, falls beim Insert doch eine Doublette durchgerutscht ist.
+ */
+if ( ! function_exists( 'fobi_run_dedupe_once' ) ) {
+    function fobi_run_dedupe_once() {
+        $stats = fobi_quiz_dedupe_and_normalize();
+        if ( function_exists( 'error_log' ) && ( $stats['deleted'] > 0 || $stats['normalized'] > 0 ) ) {
+            error_log( '[DGPTM fortbildung] Cron-Dedupe: ' . $stats['deleted'] . ' Doubletten geloescht, ' . $stats['normalized'] . ' normalisiert.' );
         }
     }
-    add_action( 'admin_init', 'fobi_quiz_points_migration_v2', 20 );
+}
+
+/* ============================================================
+ * Einmalige Migration v3: Doubletten loeschen, alle Quiz auf 0,5.
+ * Loest die alten v1/v2-Migrationen ab (die Cap-Logik ist jetzt
+ * implizit ueber Doubletten-Verbot statt expliziten Punkte-Caps).
+ * Idempotent ueber Option-Flag, laeuft auf admin_init genau einmal.
+ * ============================================================ */
+
+if ( ! function_exists( 'fobi_quiz_points_migration_v3' ) ) {
+    function fobi_quiz_points_migration_v3() {
+        $option_key = 'fobi_quiz_points_migration_v3_done';
+        if ( get_option( $option_key ) ) {
+            return;
+        }
+        $stats = fobi_quiz_dedupe_and_normalize();
+        update_option( $option_key, array(
+            'done_at'    => current_time( 'mysql' ),
+            'deleted'    => $stats['deleted'],
+            'normalized' => $stats['normalized'],
+            'groups'     => $stats['groups'],
+        ) );
+        if ( function_exists( 'error_log' ) ) {
+            error_log( '[DGPTM fortbildung] Quiz-Migration v3 abgeschlossen: ' . $stats['deleted'] . ' Doubletten geloescht, ' . $stats['normalized'] . ' Eintraege auf 0,5 normalisiert (' . $stats['groups'] . ' Gruppen).' );
+        }
+    }
+    add_action( 'admin_init', 'fobi_quiz_points_migration_v3', 20 );
 }
 require_once plugin_dir_path(__FILE__) . 'doublettencheck.php';
 require_once plugin_dir_path(__FILE__) . 'erweiterte-suche.php';

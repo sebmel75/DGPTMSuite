@@ -1,6 +1,6 @@
 <?php
 /**
- * Entscheidungsvorlage fuer das Workshop-Buchung-Modul.
+ * Entscheidungsvorlage für das Workshop-Buchung-Modul.
  *
  * Stellt zwei Shortcodes bereit:
  *   [dgptm_workshop_entscheidungsvorlage]        — Review + Kommentare + Freigabe
@@ -61,14 +61,14 @@ class DGPTM_Workshop_Entscheidungsvorlage {
             'section-ziel'              => '1. Worum geht es?',
             'section-ausgangslage'      => '2. Was haben wir heute?',
             'section-entscheidungen'    => '3. Fragestellungen zur Entscheidung',
-            'section-architektur'       => '4. Wie ist die Loesung aufgebaut?',
-            'section-datenfluss'        => '5. So laeuft eine Buchung ab',
+            'section-architektur'       => '4. Wie ist die Lösung aufgebaut?',
+            'section-datenfluss'        => '5. So läuft eine Buchung ab',
             'section-kompatibilitaet'   => '6. Zusammenspiel mit bestehenden Funktionen',
             'section-crm-erweiterungen' => '7. Anpassungen im Zoho CRM',
             'section-abhaengigkeiten'   => '8. Externe Dienste',
             'section-out-of-scope'      => '9. Was ist NICHT enthalten?',
-            'section-offene-punkte'     => '10. Offene Fragen fuer dich',
-            'section-zertifikate'       => '11. Teilnahmezertifikate',
+            'section-offene-punkte'     => '10. Offene Fragen für dich',
+            'section-zertifikate'       => '11. Teilnahmebescheinigungen',
         ];
     }
 
@@ -83,7 +83,7 @@ class DGPTM_Workshop_Entscheidungsvorlage {
 
         $user = wp_get_current_user();
         if (!$this->user_can_interact()) {
-            return '<p class="dgptm-wsb-evl-hinweis">Dieses Dokument ist nur fuer Mitglieder zugaenglich.</p>';
+            return '<p class="dgptm-wsb-evl-hinweis">Dieses Dokument ist nur für Mitglieder zugänglich.</p>';
         }
 
         wp_enqueue_style('dgptm-wsb-evl');
@@ -154,7 +154,7 @@ class DGPTM_Workshop_Entscheidungsvorlage {
     }
 
     /* ──────────────────────────────────────────────
-     * AJAX — Kommentar hinzufuegen
+     * AJAX — Kommentar hinzufügen
      * ────────────────────────────────────────────── */
 
     public function ajax_add_comment() {
@@ -195,7 +195,7 @@ class DGPTM_Workshop_Entscheidungsvorlage {
     }
 
     /* ──────────────────────────────────────────────
-     * AJAX — Kommentar loeschen
+     * AJAX — Kommentar löschen
      * ────────────────────────────────────────────── */
 
     public function ajax_delete_comment() {
@@ -264,7 +264,7 @@ class DGPTM_Workshop_Entscheidungsvorlage {
     }
 
     /* ──────────────────────────────────────────────
-     * AJAX — Freigabe zurueckziehen
+     * AJAX — Freigabe zurückziehen
      * ────────────────────────────────────────────── */
 
     public function ajax_revoke() {
@@ -299,7 +299,7 @@ class DGPTM_Workshop_Entscheidungsvorlage {
 
         $comment_ids = json_decode(wp_unslash($_POST['comment_ids'] ?? '[]'), true);
         if (!is_array($comment_ids)) {
-            wp_send_json_error('Ungueltige IDs.');
+            wp_send_json_error('Ungültige IDs.');
         }
 
         $comments = $this->get_comments();
@@ -433,7 +433,7 @@ class DGPTM_Workshop_Entscheidungsvorlage {
     <td style="background:#f9fafb;padding:16px 30px;border-top:1px solid #e5e7eb;">
       <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">
         Diese Nachricht wurde automatisch gesendet, weil du am Freigabe-Prozess &bdquo;' . $doc_name . '&ldquo; beteiligt bist.<br>
-        Deutsche Gesellschaft fuer Perfusiologie und Technische Medizin e.V.
+        Deutsche Gesellschaft für Perfusiologie und Technische Medizin e.V.
       </p>
     </td>
   </tr>
@@ -488,7 +488,7 @@ class DGPTM_Workshop_Entscheidungsvorlage {
 
         $row_id = sanitize_text_field(wp_unslash($_POST['row_id'] ?? ''));
         if (empty($row_id) || !preg_match('/^[a-z0-9_\-]+$/i', $row_id)) {
-            wp_send_json_error('Ungueltige Zeilen-ID.');
+            wp_send_json_error('Ungültige Zeilen-ID.');
         }
 
         $user = wp_get_current_user();
@@ -541,7 +541,7 @@ class DGPTM_Workshop_Entscheidungsvorlage {
         $html .= '    <strong>' . esc_html($comment['user_name']) . '</strong>';
         $html .= '    <span class="dgptm-wsb-evl-comment-date">' . esc_html($ts) . '</span>';
         if ($can_delete) {
-            $html .= '    <button type="button" class="dgptm-wsb-evl-comment-delete" data-id="' . esc_attr($comment['id']) . '" title="Kommentar loeschen">&times;</button>';
+            $html .= '    <button type="button" class="dgptm-wsb-evl-comment-delete" data-id="' . esc_attr($comment['id']) . '" title="Kommentar löschen">&times;</button>';
         }
         $html .= '  </div>';
         $html .= '  <div class="dgptm-wsb-evl-comment-text">' . nl2br(esc_html($comment['text'])) . '</div>';

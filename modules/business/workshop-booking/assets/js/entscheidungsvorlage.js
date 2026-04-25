@@ -9,7 +9,7 @@
         $(this).toggleClass('open');
     });
 
-    /* Kommentar hinzufuegen */
+    /* Kommentar hinzufügen */
     $(document).on('click', '.dgptm-wsb-evl-comment-submit', function () {
         var $block  = $(this).closest('.dgptm-wsb-evl-comments-block');
         var section = $block.data('section');
@@ -50,9 +50,9 @@
         }
     });
 
-    /* Kommentar loeschen */
+    /* Kommentar löschen */
     $(document).on('click', '.dgptm-wsb-evl-comment-delete', function () {
-        if (!confirm('Kommentar wirklich loeschen?')) return;
+        if (!confirm('Kommentar wirklich löschen?')) return;
 
         var $comment = $(this).closest('.dgptm-wsb-evl-comment');
         var $block   = $(this).closest('.dgptm-wsb-evl-comments-block');
@@ -69,7 +69,7 @@
                     updateCommentCount($block);
                 });
             } else {
-                alert(res.data || 'Fehler beim Loeschen.');
+                alert(res.data || 'Fehler beim Löschen.');
             }
         });
     });
@@ -109,7 +109,7 @@
 
     /* Freigabe erteilen */
     $(document).on('click', '#dgptm-wsb-evl-approve, #dgptm-wsb-evl-approve-footer', function () {
-        if (!confirm('Moechten Sie diese Entscheidungsvorlage freigeben? Sie koennen die Freigabe spaeter wieder zurueckziehen.')) return;
+        if (!confirm('Möchten Sie diese Entscheidungsvorlage freigeben? Sie können die Freigabe spaeter wieder zurückziehen.')) return;
 
         var $btn = $(this);
         $btn.prop('disabled', true).text('Wird gespeichert...');
@@ -146,7 +146,7 @@
             if (res.success) {
                 var approved = (res.data.action === 'approved');
                 $btn.toggleClass('is-approved dgptm-fe-btn-primary', approved);
-                $btn.attr('title', approved ? 'Klicken zum Zuruecknehmen' : 'Diesem Vorschlag zustimmen');
+                $btn.attr('title', approved ? 'Klicken zum Zurücknehmen' : 'Diesem Vorschlag zustimmen');
                 $btn.find('.dgptm-wsb-evl-row-approve-icon').html(approved ? '&#10003;' : '&#9744;');
                 $btn.find('.dgptm-wsb-evl-row-approve-label').text(approved ? 'Zugestimmt' : 'Vorschlag mittragen');
                 var $count = $btn.find('.dgptm-wsb-evl-row-approve-count');
@@ -186,9 +186,9 @@
         $btn.toggleClass('open');
     });
 
-    /* Freigabe zurueckziehen */
+    /* Freigabe zurückziehen */
     $(document).on('click', '#dgptm-wsb-evl-revoke', function () {
-        if (!confirm('Freigabe wirklich zurueckziehen?')) return;
+        if (!confirm('Freigabe wirklich zurückziehen?')) return;
 
         $.post(config.ajaxUrl, {
             action: 'dgptm_wsb_evl_revoke',

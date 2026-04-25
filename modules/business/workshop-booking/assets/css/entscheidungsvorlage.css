@@ -33,7 +33,7 @@
 }
 .dgptm-wsb-evl-status-icon { font-size: 22px; }
 
-/* Buttons selbst werden ueber dgptm-fe-btn (core/assets/css/dgptm-shared-buttons.css) gestylt. */
+/* Buttons selbst werden über dgptm-fe-btn (core/assets/css/dgptm-shared-buttons.css) gestylt. */
 
 .dgptm-wsb-evl-approved-info {
     display: flex;

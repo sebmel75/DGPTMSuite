@@ -62,9 +62,13 @@ class DGPTM_Stipendium_Dashboard_Tab {
     /**
      * Dashboard-Tabs synchronisieren — bei jedem Init.
      *
-     * Idempotent: vorhandene Tabs werden auf den Soll-Stand gebracht
-     * (Permission, Inhalt, Sichtbarkeit), fehlende Tabs werden ergaenzt.
-     * Andere Tabs des Dashboards bleiben unangetastet.
+     * Es gibt nur EINEN Stipendium-Tab im Mitglieder-Dashboard:
+     *   "Stipendien" → [dgptm_stipendium_dashboard]
+     * Die Auswertung wird im selben Tab je nach Berechtigung gerendert.
+     *
+     * Frueher angelegte Tabs (stipendien_auswertung, stipendien_freigabe)
+     * werden aktiv entfernt — Konzept-Freigabe lebt ausschliesslich auf
+     * der eigenen Seite via [dgptm_stipendium_freigabe].
      */
     public function ensure_dashboard_tabs() {
         $option_key = 'dgptm_dash_tabs_v3';
@@ -84,35 +88,22 @@ class DGPTM_Stipendium_Dashboard_Tab {
                 'content_mobile' => '',
                 'visibility' => 'all',
             ],
-            'stipendien_auswertung' => [
-                'id'         => 'stipendien_auswertung',
-                'label'      => 'Auswertung',
-                'parent'     => 'stipendien',
-                'active'     => true,
-                'order'      => 61,
-                'permission' => 'sc:dgptm_stip_perm_vorsitz',
-                'link'       => '',
-                'content'    => '[dgptm_stipendium_auswertung]',
-                'content_mobile' => '',
-                'visibility' => 'all',
-            ],
-            'stipendien_freigabe' => [
-                'id'         => 'stipendien_freigabe',
-                'label'      => 'Konzept-Freigabe',
-                'parent'     => 'stipendien',
-                'active'     => true,
-                'order'      => 62,
-                'permission' => 'sc:dgptm_stip_perm_vorsitz',
-                'link'       => '',
-                'content'    => '[dgptm_stipendium_freigabe]',
-                'content_mobile' => '',
-                'visibility' => 'all',
-            ],
         ];
+
+        // Tabs, die NICHT mehr existieren sollen — werden aktiv entfernt.
+        $remove_ids = ['stipendien_auswertung', 'stipendien_freigabe'];
 
         $changed = false;
         $known_ids = array_keys($soll);
         $found_ids = [];
+
+        $tabs = array_values(array_filter($tabs, function ($t) use ($remove_ids, &$changed) {
+            if (in_array($t['id'] ?? '', $remove_ids, true)) {
+                $changed = true;
+                return false;
+            }
+            return true;
+        }));
 
         foreach ($tabs as $idx => $existing) {
             $eid = $existing['id'] ?? '';
@@ -126,7 +117,6 @@ class DGPTM_Stipendium_Dashboard_Tab {
             }
         }
 
-        // Fehlende Tabs anhaengen
         foreach ($known_ids as $eid) {
             if (!in_array($eid, $found_ids, true)) {
                 $tabs[] = $soll[$eid];
@@ -149,12 +139,17 @@ class DGPTM_Stipendium_Dashboard_Tab {
         if (!is_user_logged_in()) return '';
 
         $user_id = get_current_user_id();
-        if (!self::user_has_flag($user_id, 'stipendiumsrat_mitglied')
-            && !self::user_has_flag($user_id, 'stipendiumsrat_vorsitz')) {
-            return '';
+        $is_vorsitz  = self::user_has_flag($user_id, 'stipendiumsrat_vorsitz');
+        $is_mitglied = self::user_has_flag($user_id, 'stipendiumsrat_mitglied');
+
+        if (!$is_vorsitz && !$is_mitglied) return '';
+
+        // Vorsitz erhaelt das vollstaendige Dashboard direkt im Haupt-Tab.
+        if ($is_vorsitz && $this->vorsitz_dashboard) {
+            return $this->vorsitz_dashboard->render();
         }
 
-        // Aktive Runden ermitteln
+        // Mitglieder sehen die Runden-Uebersicht.
         $typen = $this->settings->get('stipendientypen');
         $aktive_runden = array_filter($typen, function ($t) {
             return !empty($t['runde']);
@@ -177,7 +172,7 @@ class DGPTM_Stipendium_Dashboard_Tab {
                             <?php endif; ?>
                         </p>
                         <p style="margin:8px 0 0;color:#888;font-style:italic;">
-                            Bewerbungsliste und Bewertungsbogen werden nach Freigabe des Konzepts freigeschaltet.
+                            Die Bewertung erfolgt persönlich über den Einladungslink des Vorsitzenden.
                         </p>
                     </div>
                 <?php endforeach; ?>

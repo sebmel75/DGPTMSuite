@@ -1,6 +1,38 @@
 /* DGPTM Stipendium — Vorsitzenden-Dashboard
  * Designsprache: Umfragen-Modul (modules/business/umfragen/assets/css/frontend.css)
+ *
+ * Hinweis: Elementor injiziert sehr spezifische Selektoren (z.B.
+ * .elementor-button, .e-con-inner button). Damit unsere Styles greifen,
+ * verwenden wir den Wurzel-Scope .dgptm-vorsitz-wrap und in kritischen
+ * Stellen !important. Das ist hier bewusst — siehe CLAUDE.md
+ * (Frontend-Designsprache).
  */
+
+/* === Reset gegen Elementor-/Theme-Vererbung === */
+.dgptm-vorsitz-wrap,
+.dgptm-vorsitz-wrap * {
+    box-sizing: border-box;
+}
+
+.dgptm-vorsitz-wrap button,
+.dgptm-vorsitz-wrap input,
+.dgptm-vorsitz-wrap select,
+.dgptm-vorsitz-wrap textarea {
+    font-family: inherit !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+}
+
+.dgptm-vorsitz-wrap button {
+    background-image: none !important;
+    text-shadow: none !important;
+    box-shadow: none;
+}
+
+.dgptm-vorsitz-wrap a,
+.dgptm-vorsitz-wrap a:hover {
+    text-decoration: none;
+}
 
 /* === Design-Tokens (1:1 aus Umfragen-Modul) === */
 .dgptm-vorsitz-wrap {
@@ -327,68 +359,78 @@
     letter-spacing: 0.04em;
 }
 
-/* === Buttons === */
-.dgptm-vorsitz-btn {
-    display: inline-flex;
+/* === Buttons (Elementor-resistent) === */
+.dgptm-vorsitz-wrap .dgptm-vorsitz-btn {
+    display: inline-flex !important;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 10px 20px;
-    border: 1.5px solid transparent;
-    border-radius: var(--dgptm-radius-sm);
-    font-size: 14px;
-    font-weight: 600;
-    font-family: inherit;
+    padding: 10px 20px !important;
+    border: 1.5px solid transparent !important;
+    border-radius: var(--dgptm-radius-sm) !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    font-family: inherit !important;
+    line-height: 1.2 !important;
     cursor: pointer;
     transition: all var(--dgptm-transition);
     white-space: nowrap;
-    letter-spacing: 0.01em;
+    letter-spacing: 0.01em !important;
+    text-decoration: none !important;
+    text-transform: none !important;
+    background-image: none !important;
+    text-shadow: none !important;
+    height: auto !important;
+    width: auto !important;
+    min-height: 0 !important;
 }
 
-.dgptm-vorsitz-btn:not(:disabled):active {
+.dgptm-vorsitz-wrap .dgptm-vorsitz-btn:not(:disabled):active {
     transform: scale(0.98);
 }
 
-.dgptm-vorsitz-btn--primary {
-    background: var(--dgptm-primary);
-    color: #fff;
-    box-shadow: 0 1px 2px rgba(79, 70, 229, 0.3);
+.dgptm-vorsitz-wrap .dgptm-vorsitz-btn--primary {
+    background-color: var(--dgptm-primary) !important;
+    color: #fff !important;
+    border-color: var(--dgptm-primary) !important;
+    box-shadow: 0 1px 2px rgba(79, 70, 229, 0.3) !important;
 }
 
-.dgptm-vorsitz-btn--primary:hover:not(:disabled) {
-    background: var(--dgptm-primary-hover);
-    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+.dgptm-vorsitz-wrap .dgptm-vorsitz-btn--primary:hover:not(:disabled) {
+    background-color: var(--dgptm-primary-hover) !important;
+    border-color: var(--dgptm-primary-hover) !important;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3) !important;
 }
 
-.dgptm-vorsitz-btn--danger {
-    background: #fff;
-    color: var(--dgptm-error);
-    border-color: #fca5a5;
+.dgptm-vorsitz-wrap .dgptm-vorsitz-btn--danger {
+    background-color: #fff !important;
+    color: var(--dgptm-error) !important;
+    border-color: #fca5a5 !important;
 }
 
-.dgptm-vorsitz-btn--danger:hover:not(:disabled) {
-    background: var(--dgptm-error-light);
-    border-color: var(--dgptm-error);
+.dgptm-vorsitz-wrap .dgptm-vorsitz-btn--danger:hover:not(:disabled) {
+    background-color: var(--dgptm-error-light) !important;
+    border-color: var(--dgptm-error) !important;
 }
 
-.dgptm-vorsitz-btn--outline {
-    background: #fff;
-    color: var(--dgptm-gray-700);
-    border-color: var(--dgptm-gray-300);
+.dgptm-vorsitz-wrap .dgptm-vorsitz-btn--outline {
+    background-color: #fff !important;
+    color: var(--dgptm-gray-700) !important;
+    border-color: var(--dgptm-gray-300) !important;
 }
 
-.dgptm-vorsitz-btn--outline:hover:not(:disabled) {
-    background: var(--dgptm-gray-50);
-    border-color: var(--dgptm-gray-400);
+.dgptm-vorsitz-wrap .dgptm-vorsitz-btn--outline:hover:not(:disabled) {
+    background-color: var(--dgptm-gray-50) !important;
+    border-color: var(--dgptm-gray-400) !important;
 }
 
-.dgptm-vorsitz-btn--sm  { padding: 7px 14px; font-size: 13px; }
-.dgptm-vorsitz-btn--xs  { padding: 5px 10px; font-size: 12px; }
+.dgptm-vorsitz-wrap .dgptm-vorsitz-btn--sm { padding: 7px 14px !important; font-size: 13px !important; }
+.dgptm-vorsitz-wrap .dgptm-vorsitz-btn--xs { padding: 5px 10px !important; font-size: 12px !important; }
 
-.dgptm-vorsitz-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
+.dgptm-vorsitz-wrap .dgptm-vorsitz-btn:disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
 }
 
 /* === Bulk-Actions === */
@@ -503,28 +545,29 @@
     margin-left: 2px;
 }
 
-.dgptm-vorsitz-field input,
-.dgptm-vorsitz-field select,
-.dgptm-vorsitz-field textarea {
-    width: 100%;
-    padding: 10px 14px;
-    border: 1.5px solid var(--dgptm-gray-200);
-    border-radius: var(--dgptm-radius-sm);
-    font-size: 14px;
-    font-family: inherit;
-    color: var(--dgptm-gray-700);
-    background: var(--dgptm-gray-50);
+.dgptm-vorsitz-wrap .dgptm-vorsitz-field input,
+.dgptm-vorsitz-wrap .dgptm-vorsitz-field select,
+.dgptm-vorsitz-wrap .dgptm-vorsitz-field textarea {
+    width: 100% !important;
+    padding: 10px 14px !important;
+    border: 1.5px solid var(--dgptm-gray-200) !important;
+    border-radius: var(--dgptm-radius-sm) !important;
+    font-size: 14px !important;
+    font-family: inherit !important;
+    color: var(--dgptm-gray-700) !important;
+    background-color: var(--dgptm-gray-50) !important;
     box-sizing: border-box;
+    height: auto !important;
     transition: border-color var(--dgptm-transition), box-shadow var(--dgptm-transition), background var(--dgptm-transition);
 }
 
-.dgptm-vorsitz-field input:focus,
-.dgptm-vorsitz-field select:focus,
-.dgptm-vorsitz-field textarea:focus {
-    outline: none;
-    border-color: var(--dgptm-primary);
-    background: #fff;
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+.dgptm-vorsitz-wrap .dgptm-vorsitz-field input:focus,
+.dgptm-vorsitz-wrap .dgptm-vorsitz-field select:focus,
+.dgptm-vorsitz-wrap .dgptm-vorsitz-field textarea:focus {
+    outline: none !important;
+    border-color: var(--dgptm-primary) !important;
+    background-color: #fff !important;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1) !important;
 }
 
 .dgptm-vorsitz-field input::placeholder,

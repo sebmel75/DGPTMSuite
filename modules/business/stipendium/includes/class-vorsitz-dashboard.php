@@ -157,18 +157,25 @@ class DGPTM_Stipendium_Vorsitz_Dashboard {
         include $this->plugin_path . 'templates/vorsitz-dashboard.php';
         $html = ob_get_clean();
 
-        // Inline-Fallback: bei AJAX-geladenen Dashboard-Tabs ist wp_footer schon
-        // gelaufen — Style/Script wurden nicht ausgeliefert. Nur dann nachladen.
-        $needs_fallback = did_action('wp_footer')
-            && !wp_script_is('dgptm-vorsitz-dashboard', 'done');
-
-        if ($needs_fallback) {
+        // Inline-Fallback: wenn das Script-Tag noch nicht im DOM ist, liefern
+        // wir es mit aus. Greift bei AJAX-geladenen Tabs UND wenn Elementor
+        // den Asset-Hook unterdrueckt. jQuery wird mit ausgeliefert, falls
+        // noch nicht geladen.
+        if (!wp_script_is('dgptm-vorsitz-dashboard', 'done')) {
             $config_json = wp_json_encode($this->build_localize_data());
             $script_src  = esc_url($this->plugin_url . 'assets/js/vorsitz-dashboard.js?ver=1.2.0');
             $style_href  = esc_url($this->plugin_url . 'assets/css/vorsitz-dashboard.css?ver=1.2.0');
+
+            $jquery_tag = '';
+            if (!wp_script_is('jquery', 'done') && !wp_script_is('jquery', 'enqueued')) {
+                $jquery_url = esc_url(includes_url('js/jquery/jquery.min.js'));
+                $jquery_tag = '<script src="' . $jquery_url . '"></script>';
+            }
+
             $html .= '<link rel="stylesheet" href="' . $style_href . '">';
             $html .= '<script>window.dgptmVorsitz = ' . $config_json . ';</script>';
-            $html .= '<script src="' . $script_src . '" defer></script>';
+            $html .= $jquery_tag;
+            $html .= '<script src="' . $script_src . '"></script>';
         }
 
         return $html;

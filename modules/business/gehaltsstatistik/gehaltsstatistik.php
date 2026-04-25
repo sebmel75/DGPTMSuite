@@ -571,7 +571,10 @@ JS;
     private $ajax_scripts_output = false;
 
     private function get_inline_js(): string {
-        return <<<JS
+        // NOWDOC (<<<'JS') - keine Variableninterpolation, keine Escapes noetig.
+        // Verhindert, dass JS-Variablen wie $mapContainer von PHP fehlinterpretiert
+        // werden und macht den Code robust gegen Cache/Minifier-Verhalten.
+        return <<<'JS'
 jQuery(function($){
 
     /* --------- Löschen (Frontend-Statistik-Liste) --------- */
@@ -597,19 +600,19 @@ jQuery(function($){
     });
 
     /* --------- Deutschlandkarte mit Regionen --------- */
-    const \$mapContainer = $('#gb-map-container');
-    const \$year = $('#gb-year-select');
-    const \$range = $('#gb-overall-range');
-    const \$avg = $('#gb-yearly-average');
+    const $mapContainer = $('#gb-map-container');
+    const $year         = $('#gb-year-select');
+    const $range        = $('#gb-overall-range');
+    const $avg          = $('#gb-yearly-average');
 
-    if(\$mapContainer.length){
+    if($mapContainer.length){
         loadRegionData();
-        \$year.on('change', loadRegionData);
+        $year.on('change', loadRegionData);
     }
 
     function loadRegionData(){
-        const yearVal = (\$year.length ? parseInt(\$year.val(), 10) : (new Date().getFullYear())) || (new Date().getFullYear());
-        
+        const yearVal = ($year.length ? parseInt($year.val(), 10) : (new Date().getFullYear())) || (new Date().getFullYear());
+
         $.post(gb_ajax_obj.ajax_url, {
             action : 'gb_region_data',
             nonce  : gb_ajax_obj.region_nonce,
@@ -618,42 +621,42 @@ jQuery(function($){
             if(res && res.success && res.data){
                 updateMap(res.data, yearVal);
             }else{
-                \$range.text('Keine Daten verfügbar.');
-                \$avg.text('');
+                $range.text('Keine Daten verfügbar.');
+                $avg.text('');
                 $('.gb-region').removeClass('has-data').attr('data-salary', '');
             }
         }).fail(function(){
-            \$range.text('Fehler beim Laden der Daten.');
-            \$avg.text('');
+            $range.text('Fehler beim Laden der Daten.');
+            $avg.text('');
         });
     }
 
     function updateMap(data, year){
         // Gesamtstatistik anzeigen
         if(data.overall_min > 0){
-            \$range.text('Gehaltsspanne ' + year + ': ' + data.overall_min.toLocaleString('de-DE') + ' € – ' + data.overall_max.toLocaleString('de-DE') + ' €');
+            $range.text('Gehaltsspanne ' + year + ': ' + data.overall_min.toLocaleString('de-DE') + ' € – ' + data.overall_max.toLocaleString('de-DE') + ' €');
         } else {
-            \$range.text('');
+            $range.text('');
         }
 
         if(data.yearly_average > 0){
-            \$avg.html('<strong>Durchschnittsgehalt ' + year + ': ' + data.yearly_average.toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' €</strong>');
+            $avg.html('<strong>Durchschnittsgehalt ' + year + ': ' + data.yearly_average.toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' €</strong>');
         } else {
-            \$avg.text('');
+            $avg.text('');
         }
 
         // Regionen aktualisieren
         $('.gb-region').each(function(){
-            const \$region = $(this);
-            const regionName = \$region.data('region');
+            const $region    = $(this);
+            const regionName = $region.data('region');
             const regionData = data.regions[regionName];
 
             if(regionData && regionData.avg > 0){
-                \$region.addClass('has-data')
+                $region.addClass('has-data')
                     .attr('data-salary', regionData.avg.toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' €')
                     .attr('data-count', regionData.count);
             } else {
-                \$region.removeClass('has-data')
+                $region.removeClass('has-data')
                     .attr('data-salary', '')
                     .attr('data-count', '0');
             }

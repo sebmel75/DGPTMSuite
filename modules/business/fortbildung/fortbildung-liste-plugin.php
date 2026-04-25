@@ -748,13 +748,23 @@ class Quiz_Report_Importer {
                             update_field('user',intval($report->user_id),$pid);
                             update_field('date',$current_date,$pid);
                             $this_year=date('Y');
-                            $q=new WP_Query(array('post_type'=>'fortbildung','fields'=>'ids','meta_query'=>array(
-                                array('key'=>'type','value'=>'Quiz'),
-                                array('key'=>'user','value'=>intval($report->user_id)),
-                                array('key'=>'date','value'=>$this_year.'-','compare'=>'LIKE'),
-                            )));
-                            $quiz_count=intval($q->found_posts); $already_counted=max(0,$quiz_count-1);
-                            $points=($already_counted<12)?0.5:0;
+                            // Quiz-Punkte-Cap pro User/Jahr: max 6 (= 12 bestandene Quiz x 0,5 Punkte)
+                            $q=new WP_Query(array(
+                                'post_type'      => 'fortbildung',
+                                'fields'         => 'ids',
+                                'posts_per_page' => -1,
+                                'post__not_in'   => array($pid),
+                                'meta_query'     => array(
+                                    array('key'=>'type','value'=>'Quiz'),
+                                    array('key'=>'user','value'=>intval($report->user_id)),
+                                    array('key'=>'date','value'=>$this_year.'-','compare'=>'LIKE'),
+                                ),
+                            ));
+                            $existing_points = 0.0;
+                            foreach ($q->posts as $existing_pid) {
+                                $existing_points += floatval(get_post_meta($existing_pid, 'points', true));
+                            }
+                            $points = (($existing_points + 0.5) <= 6.0) ? 0.5 : 0.0;
                             update_field('points',$points,$pid);
                             update_post_meta($pid,'quiz_report_id',$report->unique_code);
                             update_field('freigegeben',true,$pid);
@@ -2267,6 +2277,52 @@ function fortbildung_bestaetigung_shortcode() {
 require_once plugin_dir_path(__FILE__) . 'fortbildungsupload.php';
 require_once plugin_dir_path(__FILE__) . 'vnr-neubewertung.php';
 require_once plugin_dir_path(__FILE__) . 'fortbildung-csv-import.php';
+
+/* ============================================================
+ * Einmalige Migration: alle Quiz-Einträge auf 0,5 Punkte setzen.
+ * Hintergrund: in einer früheren Version wurden Quiz-Importe mit
+ * 0 Punkten angelegt. Diese Routine korrigiert die Altdaten genau
+ * einmal. Steuerung über Option-Flag, idempotent.
+ * ============================================================ */
+
+if ( ! function_exists( 'fobi_quiz_points_migration_v1' ) ) {
+    function fobi_quiz_points_migration_v1() {
+        $option_key = 'fobi_quiz_points_migration_v1_done';
+        if ( get_option( $option_key ) ) {
+            return;
+        }
+        if ( ! function_exists( 'update_field' ) ) {
+            return; // ACF noch nicht geladen
+        }
+
+        $q = new WP_Query( array(
+            'post_type'      => 'fortbildung',
+            'post_status'    => 'publish',
+            'posts_per_page' => -1,
+            'fields'         => 'ids',
+            'no_found_rows'  => true,
+            'meta_query'     => array(
+                array( 'key' => 'type', 'value' => 'Quiz', 'compare' => '=' ),
+            ),
+        ) );
+
+        $migrated = 0;
+        foreach ( $q->posts as $pid ) {
+            update_field( 'points', 0.5, $pid );
+            $migrated++;
+        }
+
+        update_option( $option_key, array(
+            'done_at'  => current_time( 'mysql' ),
+            'migrated' => $migrated,
+        ) );
+
+        if ( function_exists( 'error_log' ) ) {
+            error_log( '[DGPTM fortbildung] Quiz-Punkte-Migration abgeschlossen: ' . $migrated . ' Einträge auf 0,5 gesetzt.' );
+        }
+    }
+    add_action( 'admin_init', 'fobi_quiz_points_migration_v1', 20 );
+}
 require_once plugin_dir_path(__FILE__) . 'doublettencheck.php';
 require_once plugin_dir_path(__FILE__) . 'erweiterte-suche.php';
 require_once plugin_dir_path(__FILE__) . 'FortbildungStatistikAdon.php';

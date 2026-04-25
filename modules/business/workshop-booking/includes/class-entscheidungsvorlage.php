@@ -64,7 +64,7 @@ class DGPTM_Workshop_Entscheidungsvorlage {
             'section-architektur'       => '4. Wie ist die Loesung aufgebaut?',
             'section-datenfluss'        => '5. So laeuft eine Buchung ab',
             'section-kompatibilitaet'   => '6. Zusammenspiel mit bestehenden Funktionen',
-            'section-crm-erweiterungen' => '7. Anpassungen im Mitglieder-System',
+            'section-crm-erweiterungen' => '7. Anpassungen im Zoho CRM',
             'section-abhaengigkeiten'   => '8. Externe Dienste',
             'section-out-of-scope'      => '9. Was ist NICHT enthalten?',
             'section-offene-punkte'     => '10. Offene Fragen fuer dich',

@@ -201,7 +201,7 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                 <li>Workshops, die bereits intern gepflegt sind, erscheinen automatisch auf der Webseite.</li>
                 <li>Mitglieder und Gaeste koennen mit wenigen Klicks anmelden.</li>
                 <li>Die Bezahlung laeuft sicher ueber unseren bestehenden Zahlungsanbieter.</li>
-                <li>Die Anmeldung wird automatisch ins Mitglieder-System eingetragen.</li>
+                <li>Die Anmeldung wird automatisch ins Zoho CRM eingetragen.</li>
                 <li>Der/die Teilnehmer:in erhaelt sofort eine Bestaetigung mit Termin fuer den Kalender.</li>
                 <li>Mitglieder sehen alle ihre Tickets (auch aeltere und solche aus Zoho Backstage) im Mitgliederbereich an einer Stelle.</li>
                 <li>Jedes Ticket traegt einen QR-Code fuer die Einlasskontrolle am Workshop-Tag.</li>
@@ -218,7 +218,7 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
             <table class="dgptm-wsb-evl-table">
                 <thead><tr><th>Heute vorhanden</th><th>Was fehlt</th></tr></thead>
                 <tbody>
-                    <tr><td>Workshops sind im internen Mitglieder-System gepflegt.</td><td>Sie sind nicht online buchbar.</td></tr>
+                    <tr><td>Workshops sind im internen Zoho CRM gepflegt.</td><td>Sie sind nicht online buchbar.</td></tr>
                     <tr><td>Auf der Webseite werden Workshops bereits als Liste angezeigt (Edugrant-Modul).</td><td>Eine Buchung von dort aus ist nicht moeglich.</td></tr>
                     <tr><td>Bezahlung per Kreditkarte/SEPA gibt es bereits an anderer Stelle.</td><td>Diese ist an alte Formulare gekoppelt und nicht fuer Workshops nutzbar.</td></tr>
                     <tr><td>Webinare laufen ueber eine eigene, fertige Loesung.</td><td>Sie hat keine Anmelde- und Buchungslogik &mdash; das war auch nicht ihr Zweck.</td></tr>
@@ -268,7 +268,7 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
             <table class="dgptm-wsb-evl-table">
                 <thead><tr><th>#</th><th>Frage</th><th>Vorschlag</th><th>Begruendung</th></tr></thead>
                 <tbody>
-                    <tr><td>13</td><td><strong>Verbindung zu Zoho Backstage</strong></td><td>Wir pruefen, ob bereits in Backstage gepflegte Buchungen automatisch ins eigene Mitglieder-System gespiegelt werden koennen. Mitglieder sehen alle Tickets an einer Stelle &mdash; unabhaengig von der Quelle (Backstage oder Homepage).</td><td>Keine doppelte Pflege. Eine einheitliche Sicht fuer Teilnehmer:innen.</td></tr>
+                    <tr><td>13</td><td><strong>Verbindung zu Zoho Backstage</strong></td><td>Wir pruefen, ob bereits in Backstage gepflegte Buchungen automatisch ins eigene Zoho CRM gespiegelt werden koennen. Mitglieder sehen alle Tickets an einer Stelle &mdash; unabhaengig von der Quelle (Backstage oder Homepage).</td><td>Keine doppelte Pflege. Eine einheitliche Sicht fuer Teilnehmer:innen.</td></tr>
                     <?php $render_row_actions('entscheidung-row-13'); ?>
                     <tr><td>14</td><td><strong>Ticketnummern</strong></td><td>Numerische Ticketnummern im gleichen Format wie Zoho Backstage (z.&thinsp;B. 8-stellige Zahlenfolge).</td><td>Damit beide Systeme kompatibel bleiben und Tickets eindeutig sind.</td></tr>
                     <?php $render_row_actions('entscheidung-row-14'); ?>
@@ -305,10 +305,10 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
             <table class="dgptm-wsb-evl-table">
                 <thead><tr><th>Baustein</th><th>Aufgabe</th></tr></thead>
                 <tbody>
-                    <tr><td><strong>Workshops lesen</strong></td><td>Holt aktive Workshops aus dem Mitglieder-System auf die Webseite.</td></tr>
+                    <tr><td><strong>Workshops lesen</strong></td><td>Holt aktive Workshops aus dem Zoho CRM auf die Webseite.</td></tr>
                     <tr><td><strong>Buchung pruefen</strong></td><td>Prueft, ob noch Plaetze frei sind, und legt die Anmeldung an.</td></tr>
                     <tr><td><strong>Bezahlung</strong></td><td>Schickt die Person zur Stripe-Bezahlseite und nimmt das Ergebnis entgegen.</td></tr>
-                    <tr><td><strong>Mitglieder-System schreiben</strong></td><td>Traegt die Anmeldung in unsere Teilnehmer:innen-Liste ein.</td></tr>
+                    <tr><td><strong>Zoho CRM schreiben</strong></td><td>Traegt die Anmeldung in unsere Teilnehmer:innen-Liste ein.</td></tr>
                     <tr><td><strong>E-Mails</strong></td><td>Versendet Bestaetigung, Warteliste, Storno &mdash; mit Termin-Anhang fuer den Kalender.</td></tr>
                     <tr><td><strong>Warteliste</strong></td><td>Ueberwacht freie Plaetze und benachrichtigt Nachruecker:innen automatisch.</td></tr>
                     <tr><td><strong>Webseite (Frontend)</strong></td><td>Was Nutzer:innen sehen: Workshop-Karten, Buchungsformular, Bestaetigungsseite.</td></tr>
@@ -317,7 +317,7 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                     <tr><td><strong>Ticketpruefung (Webtool)</strong></td><td>Mobile-Webseite, mit der Geschaeftsstelle/Kursleitung am Workshop-Tag Tickets prueft &mdash; per QR-Scan im Browser oder direkter Eingabe der Ticketnummer. Keine App-Installation noetig.</td></tr>
                     <tr><td><strong>Persoenliche-Link-Verwaltung</strong></td><td>Erzeugt und prueft die Zugangs-Links fuer Nicht-Mitglieder und externe Designer:innen.</td></tr>
                     <tr><td><strong>Zertifikat-Generator</strong></td><td>Erzeugt das Teilnahme-PDF nach dem Workshop &mdash; nutzt die bestehende Vimeo-Webinare-Engine.</td></tr>
-                    <tr><td><strong>Backstage-Spiegelung</strong></td><td>Holt Buchungen, die direkt in Zoho Backstage entstanden sind, ins eigene Mitglieder-System (Konzept &mdash; siehe offene Fragen).</td></tr>
+                    <tr><td><strong>Backstage-Spiegelung</strong></td><td>Holt Buchungen, die direkt in Zoho Backstage entstanden sind, ins eigene Zoho CRM (Konzept &mdash; siehe offene Fragen).</td></tr>
                 </tbody>
             </table>
             <p><em>Hintergrund:</em> Diese Trennung ermoeglicht es, einzelne Bausteine spaeter auszutauschen oder fuer Webinare und Kongresse wiederzuverwenden &mdash; ohne das ganze Modul anzufassen.</p>
@@ -328,7 +328,7 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
         <div class="dgptm-wsb-evl-section" id="section-datenfluss">
             <h3>5. So laeuft eine Buchung ab</h3>
             <ol class="dgptm-wsb-evl-steps-list">
-                <li><strong>Workshop entdecken</strong> &mdash; Auf der Webseite werden alle kommenden Workshops als Karten gezeigt. Die Inhalte kommen direkt aus dem Mitglieder-System.</li>
+                <li><strong>Workshop entdecken</strong> &mdash; Auf der Webseite werden alle kommenden Workshops als Karten gezeigt. Die Inhalte kommen direkt aus dem Zoho CRM.</li>
                 <li><strong>Ticket auswaehlen</strong> &mdash; Die Person waehlt ein Ticket (z.&thinsp;B. &bdquo;Vollpreis&ldquo;, &bdquo;Mitgliedspreis&ldquo;).</li>
                 <li><strong>Daten eintragen</strong> &mdash; Bei eingeloggten Mitgliedern automatisch vorausgefuellt. Gaeste tragen Vor-/Nachname und E-Mail ein.</li>
                 <li><strong>Bezahlen</strong> &mdash; Weiterleitung zur Bezahlseite von Stripe. Wer nicht zahlt, dessen Buchung verfaellt automatisch &mdash; der Platz wird wieder freigegeben.</li>
@@ -345,7 +345,7 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
         <div class="dgptm-wsb-evl-section" id="section-kompatibilitaet">
             <h3>6. Zusammenspiel mit bestehenden Funktionen</h3>
             <ul>
-                <li><strong>Zoho Backstage:</strong> Tickets, die direkt in Backstage angelegt wurden, werden ins eigene Mitglieder-System gespiegelt. Mitglieder sehen <em>alle</em> ihre Tickets im Mitgliederbereich an einer Stelle &mdash; egal aus welchem Tool. Wie genau die Spiegelung erfolgen soll (Echtzeit, Cron-Lauf, einmaliger Import), ist eine offene Frage (siehe Abschnitt 10).</li>
+                <li><strong>Zoho Backstage:</strong> Tickets, die direkt in Backstage angelegt wurden, werden ins eigene Zoho CRM gespiegelt. Mitglieder sehen <em>alle</em> ihre Tickets im Mitgliederbereich an einer Stelle &mdash; egal aus welchem Tool. Wie genau die Spiegelung erfolgen soll (Echtzeit, Cron-Lauf, einmaliger Import), ist eine offene Frage (siehe Abschnitt 10).</li>
                 <li><strong>Edugrant-Foerderung:</strong> Wenn fuer einen Workshop eine Foerderung verfuegbar ist, erscheint auf der Buchungs-Karte ein Hinweis und ein Link zum Foerderantrag. Das vermeidet doppelte Erfassung.</li>
                 <li><strong>Webinar-Buchung (in Vorbereitung):</strong> Die Bausteine fuer Mitglieder-Erkennung und Anmelde-Datensaetze werden so gebaut, dass die Webinar-Buchung sie spaeter direkt mitnutzen kann &mdash; ohne Doppelarbeit.</li>
                 <li><strong>vimeo-webinare (live):</strong> Bleibt unveraendert. Wir nutzen aber dessen bestehende Zertifikat-Engine fuer das neue Workshop-Zertifikat &mdash; einmal gebaut, an zwei Stellen verwendet.</li>
@@ -355,8 +355,8 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
 
         <!-- ───── Abschnitt 7 ───── -->
         <div class="dgptm-wsb-evl-section" id="section-crm-erweiterungen">
-            <h3>7. Anpassungen im Mitglieder-System</h3>
-            <p>Damit das Modul funktioniert, sind ein paar kleine Anpassungen im internen Mitglieder-System noetig. Diese muessen mit der Geschaeftsstelle abgestimmt werden.</p>
+            <h3>7. Anpassungen im Zoho CRM</h3>
+            <p>Damit das Modul funktioniert, sind ein paar kleine Anpassungen im internen Zoho CRM noetig. Diese muessen mit der Geschaeftsstelle abgestimmt werden.</p>
             <div class="dgptm-wsb-evl-highlight orange">
                 <strong>Veranstaltungs-Stammdaten</strong> &mdash; neues Feld &bdquo;Storno-Frist (Tage)&ldquo;, Standardwert z.&thinsp;B. 14 Tage. So kann pro Workshop entschieden werden, wie lange Teilnehmer:innen selbst stornieren duerfen.
                 <em>&rarr; Abstimmung mit Geschaeftsstelle noetig.</em>
@@ -393,7 +393,7 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                 <thead><tr><th>Dienst</th><th>Wofuer</th><th>Stand</th></tr></thead>
                 <tbody>
                     <tr><td><strong>Stripe</strong> (Zahlungsanbieter)</td><td>Bezahlung und automatische Erstattung</td><td>aktiv, Konto vorhanden</td></tr>
-                    <tr><td><strong>Mitglieder-System</strong> (Zoho)</td><td>Workshop-Daten lesen, Anmeldungen schreiben</td><td>aktiv, Zugriffsrechte vorhanden</td></tr>
+                    <tr><td><strong>Zoho CRM</strong></td><td>Workshop-Daten lesen, Anmeldungen schreiben</td><td>aktiv, Zugriffsrechte vorhanden</td></tr>
                     <tr><td><strong>EIV-Fobi</strong> (Fortbildungspunkte)</td><td>Aktuell kein direkter Anschluss &mdash; Fortbildungspunkte werden weiter manuell vergeben.</td><td>folgt in Version 2</td></tr>
                 </tbody>
             </table>

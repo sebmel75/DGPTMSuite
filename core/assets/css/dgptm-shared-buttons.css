@@ -1,0 +1,90 @@
+/**
+ * DGPTM Shared Buttons
+ * ────────────────────────────────────────────────────────────
+ * Plugin-weite Button-Klassen, identisch zum Umfragen-Modul.
+ * Wird via Asset-Registry mit always:true geladen, sodass alle
+ * Module diese Klassen ohne lokale Duplizierung nutzen koennen.
+ *
+ * Verwendung:
+ *   <button class="dgptm-fe-btn">Neutral</button>
+ *   <button class="dgptm-fe-btn dgptm-fe-btn-primary">Hauptaktion</button>
+ *   <button class="dgptm-fe-btn dgptm-fe-btn-secondary">Sekundaer</button>
+ *   <button class="dgptm-fe-btn dgptm-fe-btn-small">Kompakt</button>
+ *   <button class="dgptm-fe-btn dgptm-fe-btn-danger">Loeschen</button>
+ *
+ * Toggle-Status (z.B. zugestimmt):
+ *   <button class="dgptm-fe-btn">Vorschlag mittragen</button>      <!-- inaktiv -->
+ *   <button class="dgptm-fe-btn dgptm-fe-btn-primary">Zugestimmt</button>  <!-- aktiv -->
+ */
+
+.dgptm-fe-btn {
+    display: inline-block;
+    padding: 8px 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    background: #f0f0f1;
+    color: #50575e;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+    font-family: inherit;
+    line-height: 1.4;
+    vertical-align: middle;
+}
+
+.dgptm-fe-btn:hover {
+    background: #e0e0e0;
+    border-color: #999;
+    color: #1d2327;
+    text-decoration: none;
+}
+
+.dgptm-fe-btn:focus {
+    outline: 2px solid rgba(34, 113, 177, 0.4);
+    outline-offset: 1px;
+}
+
+.dgptm-fe-btn-primary {
+    background: #2271b1;
+    color: #fff !important;
+    border-color: #2271b1;
+}
+
+.dgptm-fe-btn-primary:hover {
+    background: #135e96;
+    border-color: #135e96;
+    color: #fff;
+}
+
+.dgptm-fe-btn-secondary {
+    background: #f6f7f7;
+    color: #50575e;
+}
+
+.dgptm-fe-btn-small {
+    padding: 4px 10px;
+    font-size: 12px;
+}
+
+.dgptm-fe-btn-danger {
+    color: #dc3232;
+    border-color: #dc3232;
+    background: #fff;
+}
+
+.dgptm-fe-btn-danger:hover {
+    background: #dc3232;
+    color: #fff;
+}
+
+.dgptm-fe-btn:disabled,
+.dgptm-fe-btn[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.dgptm-fe-btn-icon {
+    padding: 6px 10px;
+}

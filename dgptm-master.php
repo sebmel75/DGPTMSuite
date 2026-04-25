@@ -28,6 +28,7 @@ define('DGPTM_SUITE_BASENAME', plugin_basename(__FILE__));
 require_once DGPTM_SUITE_PATH . 'core/class-logger-installer.php';
 require_once DGPTM_SUITE_PATH . 'core/class-logger.php';
 require_once DGPTM_SUITE_PATH . 'core/class-asset-registry.php';
+require_once DGPTM_SUITE_PATH . 'core/class-core-assets.php';
 require_once DGPTM_SUITE_PATH . 'core/class-dgptm-colors.php';
 require_once DGPTM_SUITE_PATH . 'core/class-module-base.php';
 require_once DGPTM_SUITE_PATH . 'core/class-dependency-manager.php';
@@ -90,6 +91,9 @@ final class DGPTM_Plugin_Suite {
 
         // Health-Check REST API
         DGPTM_Health_Check::get_instance();
+
+        // Plugin-weite Assets (z.B. dgptm-fe-btn) registrieren
+        DGPTM_Core_Assets::get_instance();
 
         // Bei Bedarf Logger-DB erstellen/aktualisieren (nach Plugin-Updates)
         add_action('admin_init', [$this, 'maybe_upgrade_logger_db']);

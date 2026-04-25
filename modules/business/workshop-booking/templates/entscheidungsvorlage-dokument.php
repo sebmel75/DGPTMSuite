@@ -55,12 +55,18 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
             </div>
             <div class="dgptm-wsb-evl-comment-form">
                 <textarea class="dgptm-wsb-evl-comment-input" rows="2" placeholder="Kommentar zu diesem Abschnitt..."></textarea>
-                <button type="button" class="dgptm-wsb-evl-comment-submit">Kommentar senden</button>
+                <button type="button" class="dgptm-fe-btn dgptm-fe-btn-primary dgptm-fe-btn-small dgptm-wsb-evl-comment-submit">Kommentar senden</button>
             </div>
         </div>
     </div>
     <?php
 };
+
+/* ──────────────────────────────────────────────
+ * Hinweis: Buttons innerhalb der naechsten Closure verwenden
+ * die globalen dgptm-fe-btn Klassen aus core/assets/css/dgptm-shared-buttons.css.
+ * Modulspezifische Klassen (dgptm-wsb-evl-row-*) bleiben fuer JS-Selektoren erhalten.
+ * ────────────────────────────────────────────── */
 
 $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_approvals, $current_user_id) {
     $approvers   = isset($row_approvals[$row_id]) ? $row_approvals[$row_id] : [];
@@ -75,7 +81,7 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
         <td colspan="<?php echo (int) $colspan; ?>">
             <div class="dgptm-wsb-evl-row-actions-bar">
                 <button type="button"
-                        class="dgptm-wsb-evl-row-approve-btn<?php echo $approved ? ' is-approved' : ''; ?>"
+                        class="dgptm-fe-btn dgptm-fe-btn-small<?php echo $approved ? ' dgptm-fe-btn-primary' : ''; ?> dgptm-wsb-evl-row-approve-btn<?php echo $approved ? ' is-approved' : ''; ?>"
                         data-row="<?php echo esc_attr($row_id); ?>"
                         title="<?php echo $approved ? 'Klicken zum Zuruecknehmen' : 'Diesem Vorschlag zustimmen'; ?>">
                     <span class="dgptm-wsb-evl-row-approve-icon"><?php echo $approved ? '&#10003;' : '&#9744;'; ?></span>
@@ -93,7 +99,7 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                     </span>
                 <?php endif; ?>
                 <button type="button"
-                        class="dgptm-wsb-evl-row-comments-toggle"
+                        class="dgptm-fe-btn dgptm-fe-btn-small dgptm-wsb-evl-row-comments-toggle"
                         data-row="<?php echo esc_attr($row_id); ?>">
                     &#128172; Kommentare <span class="dgptm-wsb-evl-row-comments-count">(<?php echo (int) $comment_count; ?>)</span>
                     <span class="dgptm-wsb-evl-row-comments-arrow">&#9660;</span>
@@ -116,7 +122,7 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                                     <button type="button" class="dgptm-wsb-evl-comment-delete" data-id="<?php echo esc_attr($c['id']); ?>" title="Kommentar loeschen">&times;</button>
                                 <?php endif; ?>
                                 <?php if (current_user_can('manage_options') && !$is_read) : ?>
-                                    <button type="button" class="dgptm-wsb-evl-comment-mark-read" data-id="<?php echo esc_attr($c['id']); ?>" title="Als eingearbeitet markieren">&#10003; eingearbeitet</button>
+                                    <button type="button" class="dgptm-fe-btn dgptm-fe-btn-small dgptm-wsb-evl-comment-mark-read" data-id="<?php echo esc_attr($c['id']); ?>" title="Als eingearbeitet markieren">&#10003; eingearbeitet</button>
                                 <?php endif; ?>
                             </div>
                             <div class="dgptm-wsb-evl-comment-text"><?php echo nl2br(esc_html($c['text'])); ?></div>
@@ -125,7 +131,7 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                 </div>
                 <div class="dgptm-wsb-evl-comment-form">
                     <textarea class="dgptm-wsb-evl-comment-input" rows="2" placeholder="Kommentar zu dieser Zeile..."></textarea>
-                    <button type="button" class="dgptm-wsb-evl-comment-submit">Senden</button>
+                    <button type="button" class="dgptm-fe-btn dgptm-fe-btn-primary dgptm-fe-btn-small dgptm-wsb-evl-comment-submit">Senden</button>
                 </div>
             </div>
         </td>
@@ -143,13 +149,13 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
             <strong><?php echo $approval_count; ?> Freigabe<?php echo $approval_count !== 1 ? 'n' : ''; ?></strong> erteilt
         </div>
         <?php if (!$user_approved) : ?>
-            <button type="button" class="dgptm-wsb-evl-approve-btn" id="dgptm-wsb-evl-approve">
+            <button type="button" class="dgptm-fe-btn dgptm-fe-btn-primary" id="dgptm-wsb-evl-approve">
                 Entscheidungsvorlage freigeben
             </button>
         <?php else : ?>
             <div class="dgptm-wsb-evl-approved-info">
                 Du hast freigegeben
-                <button type="button" class="dgptm-wsb-evl-revoke-btn" id="dgptm-wsb-evl-revoke">
+                <button type="button" class="dgptm-fe-btn dgptm-fe-btn-small" id="dgptm-wsb-evl-revoke">
                     Freigabe zurueckziehen
                 </button>
             </div>
@@ -494,7 +500,7 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                 <?php echo $approval_count; ?> Freigabe<?php echo $approval_count !== 1 ? 'n' : ''; ?> | <?php echo count($comments); ?> Kommentar<?php echo count($comments) !== 1 ? 'e' : ''; ?>
             </div>
             <?php if (!$user_approved) : ?>
-                <button type="button" class="dgptm-wsb-evl-approve-btn" id="dgptm-wsb-evl-approve-footer">
+                <button type="button" class="dgptm-fe-btn dgptm-fe-btn-primary" id="dgptm-wsb-evl-approve-footer">
                     Entscheidungsvorlage freigeben
                 </button>
             <?php else : ?>

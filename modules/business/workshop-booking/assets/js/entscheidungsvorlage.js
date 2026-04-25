@@ -145,7 +145,8 @@
         }, function (res) {
             if (res.success) {
                 var approved = (res.data.action === 'approved');
-                $btn.toggleClass('is-approved', approved);
+                $btn.toggleClass('is-approved dgptm-fe-btn-primary', approved);
+                $btn.attr('title', approved ? 'Klicken zum Zuruecknehmen' : 'Diesem Vorschlag zustimmen');
                 $btn.find('.dgptm-wsb-evl-row-approve-icon').html(approved ? '&#10003;' : '&#9744;');
                 $btn.find('.dgptm-wsb-evl-row-approve-label').text(approved ? 'Zugestimmt' : 'Vorschlag mittragen');
                 var $count = $btn.find('.dgptm-wsb-evl-row-approve-count');

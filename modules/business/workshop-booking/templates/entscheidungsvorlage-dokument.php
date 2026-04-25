@@ -268,7 +268,7 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
             <table class="dgptm-wsb-evl-table">
                 <thead><tr><th>#</th><th>Frage</th><th>Vorschlag</th><th>Begruendung</th></tr></thead>
                 <tbody>
-                    <tr><td>13</td><td><strong>Verbindung zu Zoho Backstage</strong></td><td>Wir pruefen, ob bereits in Backstage gepflegte Buchungen automatisch ins eigene Mitglieder-System gespiegelt werden koennen. Mitglieder sehen alle Tickets an einer Stelle &mdash; egal woher sie kommen.</td><td>Keine doppelte Pflege. Eine einheitliche Sicht fuer Teilnehmer:innen.</td></tr>
+                    <tr><td>13</td><td><strong>Verbindung zu Zoho Backstage</strong></td><td>Wir pruefen, ob bereits in Backstage gepflegte Buchungen automatisch ins eigene Mitglieder-System gespiegelt werden koennen. Mitglieder sehen alle Tickets an einer Stelle &mdash; unabhaengig von der Quelle (Backstage oder Homepage).</td><td>Keine doppelte Pflege. Eine einheitliche Sicht fuer Teilnehmer:innen.</td></tr>
                     <?php $render_row_actions('entscheidung-row-13'); ?>
                     <tr><td>14</td><td><strong>Ticketnummern</strong></td><td>Numerische Ticketnummern im gleichen Format wie Zoho Backstage (z.&thinsp;B. 8-stellige Zahlenfolge).</td><td>Damit beide Systeme kompatibel bleiben und Tickets eindeutig sind.</td></tr>
                     <?php $render_row_actions('entscheidung-row-14'); ?>

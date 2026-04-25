@@ -22,6 +22,36 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **GitHub:** https://github.com/sebmel75/DGPTMSuite
 **Production:** perfusiologie.de (Linux, deployed via GitHub Actions rsync over SSH)
 
+## Frontend-Designsprache (verbindlich)
+
+Frontend-Komponenten in DGPTMSuite folgen der Designsprache des Moduls **Umfragen**
+(`modules/business/umfragen/assets/css/frontend.css`). Page-Builder- oder
+Theme-Stile (Elementor, Astra, Hello-Theme) werden **nicht** übernommen, auch
+wenn die ausgebende Seite mit Elementor gebaut ist.
+
+**Design-Tokens** (kopieren oder via Dependency `dgptm-umfragen-frontend`
+referenzieren):
+- Primär: `--dgptm-primary: #4f46e5`, Hover `#4338ca`, Light `#eef2ff`
+- Status: `--dgptm-success: #10b981`, `--dgptm-error: #ef4444`, `--dgptm-warning: #f59e0b`
+- Gray-Skala: `--dgptm-gray-50` bis `--dgptm-gray-900`
+- Radius: `--dgptm-radius: 12px` (Cards), `--dgptm-radius-sm: 8px` (Inputs/Buttons)
+- Schatten: `--dgptm-shadow`, `--dgptm-shadow-md`, `--dgptm-shadow-lg`
+- Transition: `--dgptm-transition: 0.2s ease`
+- Schrift: `-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, ...`
+
+**Komponenten-Konventionen:**
+- Cards/Panels: weiß, 1px Border `--dgptm-gray-200`, `--dgptm-radius`, `--dgptm-shadow`
+- Buttons: 12px/28px Padding, `--dgptm-radius-sm`, semibold; primär = `--dgptm-primary` mit subtilem Schatten; sekundär = `--dgptm-gray-100`
+- Inputs: 10px/14px Padding, 1.5px Border `--dgptm-gray-200`, Background `--dgptm-gray-50`, Focus = primary mit `0 0 0 3px rgba(79,70,229,0.1)` Ring
+- Modals: weiß, `--dgptm-radius`, `--dgptm-shadow-lg`, mobile-first
+
+**Klassen-Präfixe** sind modulspezifisch (`dgptm-survey-*`, `dgptm-vorsitz-*`,
+`dgptm-gutachten-*`), aber visuell gleich. Keine `elementor-*`-Vererbung.
+
+**E-Mail-Templates** (HTML-Mails) nutzen weiterhin den DGPTM-Header in
+`#003366` — siehe `class-mail-templates.php`. Diese Konvention betrifft nur
+das Frontend-CSS im Mitgliederbereich/Backend.
+
 ## Project Overview
 
 DGPTM Plugin Suite is a WordPress meta-plugin that consolidates 67 individual modules into a unified administration interface for DGPTM (Deutsche Gesellschaft für Perfusiologie und Technische Medizin e.V.). It provides centralized activation/deactivation, dependency management, module metadata (flags/comments), version switching, standalone export, and logging.

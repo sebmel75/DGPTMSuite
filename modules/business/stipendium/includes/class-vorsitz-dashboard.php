@@ -46,7 +46,11 @@ class DGPTM_Stipendium_Vorsitz_Dashboard {
     }
 
     /**
-     * Assets registrieren.
+     * Assets registrieren — und fuer berechtigte User vorab enqueuen.
+     *
+     * Wird auf wp_enqueue_scripts gehookt, damit Stylesheets/Scripts auch dann
+     * im DOM landen, wenn der Shortcode-Output spaeter (z.B. via AJAX-Tab-Load)
+     * generiert wird. Localize liefert alle Konfigurationsdaten.
      */
     public function register_assets() {
         wp_register_style(
@@ -62,52 +66,46 @@ class DGPTM_Stipendium_Vorsitz_Dashboard {
             '1.2.0',
             true
         );
+
+        if ($this->user_is_vorsitz()) {
+            wp_enqueue_style('dgptm-vorsitz-dashboard');
+            wp_enqueue_script('dgptm-vorsitz-dashboard');
+            wp_localize_script('dgptm-vorsitz-dashboard', 'dgptmVorsitz', $this->build_localize_data());
+        }
     }
 
     /**
-     * Dashboard rendern (aufgerufen von class-dashboard-tab.php).
-     *
-     * @return string HTML-Output
+     * Daten fuer das JS-Localize aufbereiten.
      */
-    public function render() {
-        if (!$this->user_is_vorsitz()) return '';
-
-        wp_enqueue_style('dgptm-vorsitz-dashboard');
-        wp_enqueue_script('dgptm-vorsitz-dashboard');
-
-        // Verfuegbare Runden/Typen aus Settings
+    private function build_localize_data() {
         $typen = $this->settings ? $this->settings->get('stipendientypen') : [];
-        $aktive_runden = array_filter($typen, function ($t) {
+        $aktive_runden = array_filter((array) $typen, function ($t) {
             return !empty($t['runde']);
         });
 
-        // Default-Runde (erste aktive)
         $default_runde = '';
-        $default_typ = '';
+        $default_typ   = '';
         if (!empty($aktive_runden)) {
             $first = reset($aktive_runden);
             $default_runde = $first['runde'];
-            $default_typ = $first['bezeichnung'];
+            $default_typ   = $first['bezeichnung'];
         }
 
-        // Gutachter-Frist aus Settings
         $frist_tage = $this->settings ? ($this->settings->get('gutachter_frist_tage') ?: 28) : 28;
         $frist_datum = date_i18n('d.m.Y', strtotime("+{$frist_tage} days"));
 
         $stipendientypen = [];
-        if ($this->settings) {
-            foreach ((array) $this->settings->get('stipendientypen') as $t) {
-                if (!empty($t['bezeichnung'])) {
-                    $stipendientypen[] = [
-                        'id'          => $t['id'] ?? '',
-                        'bezeichnung' => $t['bezeichnung'],
-                        'runde'       => $t['runde'] ?? '',
-                    ];
-                }
+        foreach ((array) $typen as $t) {
+            if (!empty($t['bezeichnung'])) {
+                $stipendientypen[] = [
+                    'id'          => $t['id'] ?? '',
+                    'bezeichnung' => $t['bezeichnung'],
+                    'runde'       => $t['runde'] ?? '',
+                ];
             }
         }
 
-        wp_localize_script('dgptm-vorsitz-dashboard', 'dgptmVorsitz', [
+        return [
             'ajaxUrl'         => admin_url('admin-ajax.php'),
             'nonce'           => wp_create_nonce(self::NONCE_ACTION),
             'orcidNonce'      => wp_create_nonce('dgptm_stipendium_orcid_nonce'),
@@ -129,11 +127,51 @@ class DGPTM_Stipendium_Vorsitz_Dashboard {
                 'manuell_gespeichert' => 'Bewerbung wurde gespeichert.',
                 'orcid_fehler'        => 'ORCID-Daten konnten nicht abgerufen werden.',
             ],
-        ]);
+        ];
+    }
+
+    /**
+     * Dashboard rendern (aufgerufen von class-dashboard-tab.php).
+     *
+     * @return string HTML-Output
+     */
+    public function render() {
+        if (!$this->user_is_vorsitz()) return '';
+
+        // Doppel-Enqueue ist idempotent (WP deduped). Falls register_assets()
+        // wegen spaeter Shortcode-Auswertung nicht mehr greift, holen wir die
+        // Assets hier nach — inkl. Localize, damit dgptmVorsitz garantiert da ist.
+        wp_enqueue_style('dgptm-vorsitz-dashboard');
+        wp_enqueue_script('dgptm-vorsitz-dashboard');
+        wp_localize_script('dgptm-vorsitz-dashboard', 'dgptmVorsitz', $this->build_localize_data());
+
+        $typen = $this->settings ? $this->settings->get('stipendientypen') : [];
+        $aktive_runden = array_filter((array) $typen, function ($t) {
+            return !empty($t['runde']);
+        });
+
+        $frist_tage = $this->settings ? ($this->settings->get('gutachter_frist_tage') ?: 28) : 28;
+        $frist_datum = date_i18n('d.m.Y', strtotime("+{$frist_tage} days"));
 
         ob_start();
         include $this->plugin_path . 'templates/vorsitz-dashboard.php';
-        return ob_get_clean();
+        $html = ob_get_clean();
+
+        // Inline-Fallback: bei AJAX-geladenen Dashboard-Tabs ist wp_footer schon
+        // gelaufen — Style/Script wurden nicht ausgeliefert. Nur dann nachladen.
+        $needs_fallback = did_action('wp_footer')
+            && !wp_script_is('dgptm-vorsitz-dashboard', 'done');
+
+        if ($needs_fallback) {
+            $config_json = wp_json_encode($this->build_localize_data());
+            $script_src  = esc_url($this->plugin_url . 'assets/js/vorsitz-dashboard.js?ver=1.2.0');
+            $style_href  = esc_url($this->plugin_url . 'assets/css/vorsitz-dashboard.css?ver=1.2.0');
+            $html .= '<link rel="stylesheet" href="' . $style_href . '">';
+            $html .= '<script>window.dgptmVorsitz = ' . $config_json . ';</script>';
+            $html .= '<script src="' . $script_src . '" defer></script>';
+        }
+
+        return $html;
     }
 
     /* ──────────────────────────────────────────

@@ -314,6 +314,7 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                     <tr><td><strong>Webseite (Frontend)</strong></td><td>Was Nutzer:innen sehen: Workshop-Karten, Buchungsformular, Bestaetigungsseite.</td></tr>
                     <tr><td><strong>Mitgliederbereich-Anzeige</strong></td><td>Zeigt eingeloggten Mitgliedern alle ihre Tickets gesammelt &mdash; aus dem eigenen Tool und aus Zoho Backstage.</td></tr>
                     <tr><td><strong>QR-Code-Generator</strong></td><td>Erzeugt fuer jedes Ticket einen scanbaren Code mit der Ticketnummer.</td></tr>
+                    <tr><td><strong>Ticketpruefung (Webtool)</strong></td><td>Mobile-Webseite, mit der Geschaeftsstelle/Kursleitung am Workshop-Tag Tickets prueft &mdash; per QR-Scan im Browser oder direkter Eingabe der Ticketnummer. Keine App-Installation noetig.</td></tr>
                     <tr><td><strong>Persoenliche-Link-Verwaltung</strong></td><td>Erzeugt und prueft die Zugangs-Links fuer Nicht-Mitglieder und externe Designer:innen.</td></tr>
                     <tr><td><strong>Zertifikat-Generator</strong></td><td>Erzeugt das Teilnahme-PDF nach dem Workshop &mdash; nutzt die bestehende Vimeo-Webinare-Engine.</td></tr>
                     <tr><td><strong>Backstage-Spiegelung</strong></td><td>Holt Buchungen, die direkt in Zoho Backstage entstanden sind, ins eigene Mitglieder-System (Konzept &mdash; siehe offene Fragen).</td></tr>

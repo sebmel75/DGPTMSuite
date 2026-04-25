@@ -295,6 +295,17 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                     <?php $render_row_actions('entscheidung-row-21'); ?>
                 </tbody>
             </table>
+
+            <h4 style="margin-top:24px;">Erweiterte Funktionen</h4>
+            <table class="dgptm-wsb-evl-table">
+                <thead><tr><th>#</th><th>Frage</th><th>Vorschlag</th><th>Begruendung</th></tr></thead>
+                <tbody>
+                    <tr><td>22</td><td><strong>Variable Pflichtfelder pro Ticket-Typ</strong></td><td>Pro Ticket-Typ koennen zusaetzliche Pflichtfelder definiert werden (z.&thinsp;B. fuer Sponsorenkarten Firmenname und USt-ID, fuer Ehrenamts-Tickets Bestaetigung der Funktion). Verwaltung im CRM am Workshop-Datensatz.</td><td>Vermeidet Sammelmails, hebt Sonderbedingungen direkt im Buchungsfluss ab.</td></tr>
+                    <?php $render_row_actions('entscheidung-row-22'); ?>
+                    <tr><td>23</td><td><strong>Webinar-Modul direkt verbunden</strong></td><td>Das bestehende vimeo-webinare-Modul wird von Anfang an angebunden. Webinar-Anmeldungen laufen ueber denselben Buchungs-Kern (Tickets, Zahlung, QR, Mitgliederbereich, Zertifikat). Keine spaetere Migration noetig.</td><td>Eine Buchungs-Logik fuer Workshops und Webinare. Spart Doppelbau und reduziert Wartungsaufwand.</td></tr>
+                    <?php $render_row_actions('entscheidung-row-23'); ?>
+                </tbody>
+            </table>
             <?php $render_section_comments('section-entscheidungen'); ?>
         </div>
 
@@ -347,8 +358,8 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
             <ul>
                 <li><strong>Zoho Backstage:</strong> Tickets, die direkt in Backstage angelegt wurden, werden ins eigene Zoho CRM gespiegelt. Mitglieder sehen <em>alle</em> ihre Tickets im Mitgliederbereich an einer Stelle &mdash; egal aus welchem Tool. Wie genau die Spiegelung erfolgen soll (Echtzeit, Cron-Lauf, einmaliger Import), ist eine offene Frage (siehe Abschnitt 10).</li>
                 <li><strong>Edugrant-Foerderung:</strong> Wenn fuer einen Workshop eine Foerderung verfuegbar ist, erscheint auf der Buchungs-Karte ein Hinweis und ein Link zum Foerderantrag. Das vermeidet doppelte Erfassung.</li>
-                <li><strong>Webinar-Buchung (in Vorbereitung):</strong> Die Bausteine fuer Mitglieder-Erkennung und Anmelde-Datensaetze werden so gebaut, dass die Webinar-Buchung sie spaeter direkt mitnutzen kann &mdash; ohne Doppelarbeit.</li>
-                <li><strong>vimeo-webinare (live):</strong> Bleibt unveraendert. Wir nutzen aber dessen bestehende Zertifikat-Engine fuer das neue Workshop-Zertifikat &mdash; einmal gebaut, an zwei Stellen verwendet.</li>
+                <li><strong>vimeo-webinare:</strong> Wird von Anfang an direkt eingebunden. Webinar-Anmeldungen laufen ueber denselben Buchungs-Kern (Tickets, Zahlung, QR, Mitgliederbereich, Zertifikat). Die bestehende Zertifikat-Engine wird gemeinsam genutzt.</li>
+                <li><strong>Kongresse und Sachkundekurse:</strong> Laufen unveraendert weiter ueber Zoho Backstage. Tickets daraus werden ueber die Backstage-Spiegelung (Punkt 13) im Mitgliederbereich angezeigt.</li>
             </ul>
             <?php $render_section_comments('section-kompatibilitaet'); ?>
         </div>
@@ -405,12 +416,8 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
             <h3>9. Was ist NICHT enthalten?</h3>
             <p>Damit klar ist, was diese Version <em>nicht</em> kann:</p>
             <ul>
-                <li>Erfassung der Fortbildungspunkte-Nummer im Buchungsformular &mdash; folgt in Version 2.</li>
-                <li>Gemeinsame Buchung mehrerer Personen mit nur einem Zahler &mdash; geht aktuell nur, wenn eine Person mehrere Tickets in <em>einer</em> Buchung kauft.</li>
-                <li>Variable Pflichtfelder pro Ticket-Typ (z.&thinsp;B. fuer manche Tickets zusaetzliche Angaben).</li>
-                <li>Webinar- und Kongress-Buchung &mdash; folgen als eigene Module, die diesen Kern wiederverwenden.</li>
-                <li>Vollstaendige Migration alter Buchungen aus dem alten System &mdash; nur die kuenftigen und ggf. die noch aktiven Backstage-Buchungen werden abgebildet.</li>
-                <li>Anwesenheits-Erfassung per QR-Scanner-App: in V1 erfolgt das Scannen mit dem Smartphone-Browser auf einer einfachen Kontroll-Seite. Eine eigene App ist nicht geplant.</li>
+                <li><strong>Kongresse und Sachkundekurse:</strong> Laufen unveraendert weiter ueber Zoho Backstage &mdash; keine Buchungslogik in diesem Modul. Tickets erscheinen aber im Mitgliederbereich (Backstage-Spiegelung).</li>
+                <li><strong>Fortbildungspunkte-Erfassung im Buchungsformular fuer Nicht-Mitglieder/Aerzt:innen:</strong> Aktuell nicht geplant. Fuer DGPTM-Mitglieder ist die EFN ueber Zoho CRM bereits hinterlegt und wird automatisch genutzt.</li>
             </ul>
             <?php $render_section_comments('section-out-of-scope'); ?>
         </div>
@@ -434,6 +441,8 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                         <tr><td>9</td><td><strong>Wer darf Designer:innen einladen?</strong></td><td>Vorschlag: nur Geschaeftsstelle. Kontrolle bleibt zentral.</td></tr>
                         <tr><td>10</td><td><strong>Standard-Layout des Zertifikats</strong></td><td>Welches der vorhandenen Webinar-Layouts (classic, corporate, elegant, minimal) wird Standard? Oder ein neues, eigens fuer Workshops?</td></tr>
                         <tr><td>11</td><td><strong>Wie wird Anwesenheit erfasst?</strong></td><td>Vorschlag: per QR-Code-Scan am Einlass <em>und</em> manuelle Nachpflege moeglich. Bei Online-Workshops: aus Zoom/Vimeo-Anwesenheitsdaten oder manuell.</td></tr>
+                        <tr><td>12</td><td><strong>Online-Tool oder eigene App fuer Anwesenheits-Erfassung?</strong></td><td>Vorschlag: in V1 als Web-Tool (Smartphone-Browser, kein App-Store-Eintrag). Eine native App fuer iOS/Android nur, wenn sich der Web-Weg im Echtbetrieb als unzureichend erweist.</td></tr>
+                        <tr><td>13</td><td><strong>Gemeinsame Buchung mehrerer Personen mit einem Zahler:</strong> notwendig?</td><td>Heute deckt das System ab: eine Person bucht und bezahlt mehrere Tickets in einer Buchung &mdash; jede:r Teilnehmer:in bekommt eigene Daten und Zertifikat. Brauchen wir zusaetzlich getrennte Zahler:innen pro Ticket? Vorschlag: nein, ist bisher nie aufgetreten.</td></tr>
                     </tbody>
                 </table>
             </div>

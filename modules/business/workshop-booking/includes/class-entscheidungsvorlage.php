@@ -15,9 +15,10 @@ class DGPTM_Workshop_Entscheidungsvorlage {
     private $plugin_path;
     private $plugin_url;
 
-    const OPT_APPROVALS = 'dgptm_wsb_evl_approvals';
-    const OPT_COMMENTS  = 'dgptm_wsb_evl_comments';
-    const NONCE_ACTION  = 'dgptm_wsb_evl_nonce';
+    const OPT_APPROVALS     = 'dgptm_wsb_evl_approvals';
+    const OPT_COMMENTS      = 'dgptm_wsb_evl_comments';
+    const OPT_ROW_APPROVALS = 'dgptm_wsb_evl_row_approvals';
+    const NONCE_ACTION      = 'dgptm_wsb_evl_nonce';
 
     public function __construct($plugin_path, $plugin_url) {
         $this->plugin_path = $plugin_path;
@@ -33,6 +34,7 @@ class DGPTM_Workshop_Entscheidungsvorlage {
         add_action('wp_ajax_dgptm_wsb_evl_revoke',         [$this, 'ajax_revoke']);
         add_action('wp_ajax_dgptm_wsb_evl_mark_read',      [$this, 'ajax_mark_comments_read']);
         add_action('wp_ajax_dgptm_wsb_evl_export',         [$this, 'ajax_export_comments']);
+        add_action('wp_ajax_dgptm_wsb_evl_toggle_row',     [$this, 'ajax_toggle_row_approval']);
     }
 
     public function register_assets() {
@@ -58,7 +60,7 @@ class DGPTM_Workshop_Entscheidungsvorlage {
         return [
             'section-ziel'              => '1. Worum geht es?',
             'section-ausgangslage'      => '2. Was haben wir heute?',
-            'section-entscheidungen'    => '3. Was wurde wie entschieden?',
+            'section-entscheidungen'    => '3. Fragestellungen zur Entscheidung',
             'section-architektur'       => '4. Wie ist die Loesung aufgebaut?',
             'section-datenfluss'        => '5. So laeuft eine Buchung ab',
             'section-kompatibilitaet'   => '6. Zusammenspiel mit bestehenden Funktionen',
@@ -92,10 +94,11 @@ class DGPTM_Workshop_Entscheidungsvorlage {
             'userId'  => $user->ID,
         ]);
 
-        $approvals     = $this->get_approvals();
-        $comments      = $this->get_comments();
-        $user_approved = $this->has_user_approved($user->ID);
-        $sections      = $this->get_sections();
+        $approvals      = $this->get_approvals();
+        $comments       = $this->get_comments();
+        $row_approvals  = $this->get_row_approvals();
+        $user_approved  = $this->has_user_approved($user->ID);
+        $sections       = $this->get_sections();
 
         ob_start();
         include $this->plugin_path . 'templates/entscheidungsvorlage-dokument.php';
@@ -453,8 +456,71 @@ class DGPTM_Workshop_Entscheidungsvorlage {
             || in_array('administrator', (array) $user->roles, true);
     }
 
-    private function get_approvals() { return get_option(self::OPT_APPROVALS, []); }
-    private function get_comments()  { return get_option(self::OPT_COMMENTS,  []); }
+    private function get_approvals()     { return get_option(self::OPT_APPROVALS, []); }
+    private function get_comments()      { return get_option(self::OPT_COMMENTS,  []); }
+    public  function get_row_approvals() { return get_option(self::OPT_ROW_APPROVALS, []); }
+
+    public function has_user_approved_row($user_id, $row_id) {
+        $rows = $this->get_row_approvals();
+        return isset($rows[$row_id]) && isset($rows[$row_id][(int) $user_id]);
+    }
+
+    public function get_row_approval_count($row_id) {
+        $rows = $this->get_row_approvals();
+        return isset($rows[$row_id]) ? count($rows[$row_id]) : 0;
+    }
+
+    public function get_row_approvers($row_id) {
+        $rows = $this->get_row_approvals();
+        return isset($rows[$row_id]) ? $rows[$row_id] : [];
+    }
+
+    /* ──────────────────────────────────────────────
+     * AJAX — Zustimmung pro Zeile (toggle)
+     * ────────────────────────────────────────────── */
+
+    public function ajax_toggle_row_approval() {
+        check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+        if (!$this->user_can_interact()) {
+            wp_send_json_error('Keine Berechtigung.', 403);
+        }
+
+        $row_id = sanitize_text_field(wp_unslash($_POST['row_id'] ?? ''));
+        if (empty($row_id) || !preg_match('/^[a-z0-9_\-]+$/i', $row_id)) {
+            wp_send_json_error('Ungueltige Zeilen-ID.');
+        }
+
+        $user = wp_get_current_user();
+        $rows = $this->get_row_approvals();
+
+        if (!isset($rows[$row_id])) {
+            $rows[$row_id] = [];
+        }
+
+        $now      = current_time('mysql');
+        $approved = isset($rows[$row_id][$user->ID]);
+
+        if ($approved) {
+            unset($rows[$row_id][$user->ID]);
+            $action = 'revoked';
+        } else {
+            $rows[$row_id][$user->ID] = [
+                'user_name' => $user->display_name,
+                'timestamp' => $now,
+            ];
+            $action = 'approved';
+        }
+
+        update_option(self::OPT_ROW_APPROVALS, $rows, false);
+
+        wp_send_json_success([
+            'action'    => $action,
+            'row_id'    => $row_id,
+            'count'     => count($rows[$row_id]),
+            'approvers' => array_values(array_map(function ($a) { return $a['user_name']; }, $rows[$row_id])),
+        ]);
+    }
 
     private function has_user_approved($user_id) {
         foreach ($this->get_approvals() as $a) {

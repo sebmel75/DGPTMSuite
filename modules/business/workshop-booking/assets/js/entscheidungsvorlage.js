@@ -75,8 +75,12 @@
     });
 
     function updateCommentCount($block) {
-        var count = $block.find('.dgptm-wsb-evl-comment').length;
+        var count   = $block.find('.dgptm-wsb-evl-comment').length;
+        var section = $block.data('section');
         $block.find('.dgptm-wsb-evl-comments-count').text(count);
+        if (section) {
+            $('.dgptm-wsb-evl-row-comments-toggle[data-row="' + section + '"] .dgptm-wsb-evl-row-comments-count').text('(' + count + ')');
+        }
     }
 
     /* Als eingearbeitet markieren (Admin) */
@@ -124,6 +128,61 @@
             alert('Verbindungsfehler.');
             $btn.prop('disabled', false).text('Entscheidungsvorlage freigeben');
         });
+    });
+
+    /* Pro-Zeile-Zustimmung toggle */
+    $(document).on('click', '.dgptm-wsb-evl-row-approve-btn', function () {
+        var $btn  = $(this);
+        var rowId = $btn.data('row');
+        if (!rowId) return;
+
+        $btn.prop('disabled', true);
+
+        $.post(config.ajaxUrl, {
+            action: 'dgptm_wsb_evl_toggle_row',
+            nonce:  config.nonce,
+            row_id: rowId
+        }, function (res) {
+            if (res.success) {
+                var approved = (res.data.action === 'approved');
+                $btn.toggleClass('is-approved', approved);
+                $btn.find('.dgptm-wsb-evl-row-approve-icon').html(approved ? '&#10003;' : '&#9744;');
+                $btn.find('.dgptm-wsb-evl-row-approve-label').text(approved ? 'Zugestimmt' : 'Vorschlag mittragen');
+                var $count = $btn.find('.dgptm-wsb-evl-row-approve-count');
+                $count.text(res.data.count > 0 ? '(' + res.data.count + ')' : '');
+                $count.attr('data-count', res.data.count);
+
+                /* Approver-Liste neben Button aktualisieren */
+                var $approvers = $btn.closest('.dgptm-wsb-evl-row-actions-bar').find('.dgptm-wsb-evl-row-approvers');
+                if (res.data.count > 0) {
+                    var names = res.data.approvers || [];
+                    var first = names.slice(0, 3).join(', ');
+                    if (names.length > 3) first += ' ...';
+                    if ($approvers.length) {
+                        $approvers.text(first).attr('title', names.join(', '));
+                    } else {
+                        $btn.after('<span class="dgptm-wsb-evl-row-approvers" title="' + names.join(', ') + '">' + first + '</span>');
+                    }
+                } else {
+                    $approvers.remove();
+                }
+            } else {
+                alert(res.data || 'Fehler beim Speichern.');
+            }
+        }).fail(function () {
+            alert('Verbindungsfehler. Bitte erneut versuchen.');
+        }).always(function () {
+            $btn.prop('disabled', false);
+        });
+    });
+
+    /* Pro-Zeile-Kommentare ein-/ausklappen */
+    $(document).on('click', '.dgptm-wsb-evl-row-comments-toggle', function () {
+        var $btn  = $(this);
+        var rowId = $btn.data('row');
+        var $panel = $btn.closest('.dgptm-wsb-evl-row-actions').find('.dgptm-wsb-evl-row-comments-block[data-section="' + rowId + '"]');
+        $panel.slideToggle(180);
+        $btn.toggleClass('open');
     });
 
     /* Freigabe zurueckziehen */

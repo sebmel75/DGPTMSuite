@@ -100,21 +100,46 @@
     }
 
     /**
+     * Helfer: gemeinsamer Karten-Header inkl. Manuell-Tag.
+     */
+    function cardHeader(item) {
+        var manualTag = item.is_manual
+            ? ' <span class="dgptm-vorsitz-card-tag dgptm-vorsitz-card-tag--manual">manuell</span>'
+            : '';
+        return '<div class="dgptm-vorsitz-card-header">'
+            + '<strong>' + escHtml(item.name) + '</strong>'
+            + '<span class="dgptm-vorsitz-card-tag">' + escHtml(item.stipendientyp) + '</span>'
+            + manualTag
+            + '</div>'
+            + (item.projekt_titel ? '<div class="dgptm-vorsitz-card-projekt">' + escHtml(item.projekt_titel) + '</div>' : '')
+            + (item.bemerkung ? '<div class="dgptm-vorsitz-card-bemerkung">' + escHtml(item.bemerkung) + '</div>' : '');
+    }
+
+    /**
+     * Helfer: Edit/Delete-Buttons fuer manuelle Bewerbungen.
+     */
+    function manualButtons(item) {
+        if (!item.is_manual) return '';
+        return '<button class="dgptm-vorsitz-btn dgptm-vorsitz-btn--sm dgptm-vorsitz-btn--outline" '
+            + 'data-action="manuell-edit" data-id="' + item.id + '">Bearbeiten</button>'
+            + '<button class="dgptm-vorsitz-btn dgptm-vorsitz-btn--sm dgptm-vorsitz-btn--danger" '
+            + 'data-action="manuell-delete" data-id="' + item.id + '">Löschen</button>';
+    }
+
+    /**
      * Karte: Geprueft (Freigeben/Ablehnen).
      */
     function renderGeprueftCard(item) {
         var datum = item.eingangsdatum ? formatDate(item.eingangsdatum) : '';
         return '<div class="dgptm-vorsitz-card">'
-            + '<div class="dgptm-vorsitz-card-header">'
-            + '<strong>' + escHtml(item.name) + '</strong>'
-            + '<span class="dgptm-vorsitz-card-tag">' + escHtml(item.stipendientyp) + '</span>'
-            + '</div>'
+            + cardHeader(item)
             + (datum ? '<div class="dgptm-vorsitz-card-meta">Eingang: ' + datum + '</div>' : '')
             + '<div class="dgptm-vorsitz-card-actions">'
             + '<button class="dgptm-vorsitz-btn dgptm-vorsitz-btn--sm dgptm-vorsitz-btn--primary" '
             + 'data-action="freigeben" data-id="' + item.id + '">Freigeben</button>'
             + '<button class="dgptm-vorsitz-btn dgptm-vorsitz-btn--sm dgptm-vorsitz-btn--danger" '
             + 'data-action="ablehnen" data-id="' + item.id + '">Ablehnen</button>'
+            + manualButtons(item)
             + '</div></div>';
     }
 
@@ -137,15 +162,13 @@
         }
 
         return '<div class="dgptm-vorsitz-card">'
-            + '<div class="dgptm-vorsitz-card-header">'
-            + '<strong>' + escHtml(item.name) + '</strong>'
-            + '<span class="dgptm-vorsitz-card-tag">' + escHtml(item.stipendientyp) + '</span>'
-            + '</div>'
+            + cardHeader(item)
             + '<div class="dgptm-vorsitz-card-meta">Gutachter: ' + item.gutachter_done + '/' + item.gutachter_total + ' zugewiesen</div>'
             + gutachterHtml
             + '<div class="dgptm-vorsitz-card-actions">'
             + '<button class="dgptm-vorsitz-btn dgptm-vorsitz-btn--sm dgptm-vorsitz-btn--primary" '
             + 'data-action="einladen" data-id="' + item.id + '" data-name="' + escAttr(item.name) + '">+ Gutachter einladen</button>'
+            + manualButtons(item)
             + '</div></div>';
     }
 
@@ -167,15 +190,13 @@
         }
 
         return '<div class="dgptm-vorsitz-card">'
-            + '<div class="dgptm-vorsitz-card-header">'
-            + '<strong>' + escHtml(item.name) + '</strong>'
-            + '<span class="dgptm-vorsitz-card-tag">' + escHtml(item.stipendientyp) + '</span>'
-            + '</div>'
+            + cardHeader(item)
             + '<div class="dgptm-vorsitz-card-meta">' + item.gutachter_done + '/' + item.gutachter_total + ' Gutachten abgeschlossen</div>'
             + gutachterHtml
             + '<div class="dgptm-vorsitz-card-actions">'
             + '<button class="dgptm-vorsitz-btn dgptm-vorsitz-btn--sm dgptm-vorsitz-btn--primary" '
             + 'data-action="einladen" data-id="' + item.id + '" data-name="' + escAttr(item.name) + '">+ Weiteren Gutachter einladen</button>'
+            + manualButtons(item)
             + '</div></div>';
     }
 
@@ -313,6 +334,341 @@
         });
     }
 
+    /* ──────────────────────────────────────────
+     * Stipendiums-Runde — Modal
+     * ────────────────────────────────────────── */
+
+    function populateRundeTypDropdown() {
+        var $sel = $('#dgptm-runde-typ-id');
+        if (!$sel.length) return;
+        $sel.find('option:not(:first)').remove();
+        var typen = config.stipendientypen || [];
+        typen.forEach(function(t) {
+            if (!t.id) return;
+            $sel.append('<option value="' + escAttr(t.id) + '" data-bezeichnung="' + escAttr(t.bezeichnung || '') + '" data-runde="' + escAttr(t.runde || '') + '">'
+                + escHtml(t.bezeichnung || t.id) + (t.runde ? ' — ' + escHtml(t.runde) : '')
+                + '</option>');
+        });
+    }
+
+    function openRundeModal() {
+        $('#dgptm-runde-typ-id').val('');
+        $('#dgptm-runde-bezeichnung').val('');
+        $('#dgptm-runde-name').val('');
+        $('#dgptm-runde-start').val('');
+        $('#dgptm-runde-ende').val('');
+        $('#dgptm-runde-modal').fadeIn(150);
+    }
+
+    function closeRundeModal() {
+        $('#dgptm-runde-modal').fadeOut(150);
+    }
+
+    function saveRunde() {
+        var typId       = $('#dgptm-runde-typ-id').val();
+        var bezeichnung = $('#dgptm-runde-bezeichnung').val().trim();
+        var runde       = $('#dgptm-runde-name').val().trim();
+        var start       = $('#dgptm-runde-start').val();
+        var ende        = $('#dgptm-runde-ende').val();
+
+        if (!bezeichnung || !runde) {
+            alert('Bitte Bezeichnung und Runden-Name angeben.');
+            return;
+        }
+
+        var $btn = $('#dgptm-runde-save');
+        $btn.prop('disabled', true).text('Speichern...');
+
+        $.ajax({
+            url: ajaxUrl,
+            method: 'POST',
+            data: {
+                action: 'dgptm_stipendium_save_runde',
+                nonce: nonce,
+                typ_id: typId,
+                bezeichnung: bezeichnung,
+                runde: runde,
+                start: start,
+                ende: ende
+            },
+            success: function(response) {
+                if (response.success) {
+                    closeRundeModal();
+                    var neueRunden = response.data.runden || [];
+                    config.stipendientypen = neueRunden.map(function(r){
+                        return { id: r.id, bezeichnung: r.bezeichnung, runde: r.runde };
+                    });
+                    populateRundeTypDropdown();
+                    populateTypDropdown();
+                    refreshRundenFilter(neueRunden, response.data.typ);
+                    loadBewerbungen();
+                } else {
+                    alert(response.data?.message || response.data || strings.fehler);
+                }
+            },
+            error: function() { alert(strings.fehler || 'Fehler beim Speichern.'); },
+            complete: function() {
+                $btn.prop('disabled', false).text('Runde speichern');
+            }
+        });
+    }
+
+    function refreshRundenFilter(runden, gewaehlt) {
+        var $sel = $('#dgptm-vorsitz-runde');
+        if (!$sel.length) return;
+        var current = $sel.val();
+        $sel.empty();
+        runden.forEach(function(t) {
+            $sel.append('<option value="' + escAttr(t.runde) + '" data-typ="' + escAttr(t.bezeichnung) + '">'
+                + escHtml(t.bezeichnung) + ' — ' + escHtml(t.runde) + '</option>');
+        });
+        if (gewaehlt && gewaehlt.runde) {
+            $sel.val(gewaehlt.runde);
+        } else if (current) {
+            $sel.val(current);
+        }
+    }
+
+    /* ──────────────────────────────────────────
+     * Manuelle Bewerbung — Modal
+     * ────────────────────────────────────────── */
+
+    var $manuellModal;
+
+    function populateTypDropdown() {
+        var $sel = $('#dgptm-manuell-typ');
+        if (!$sel.length) return;
+        $sel.empty();
+        var typen = config.stipendientypen || [];
+        if (!typen.length) {
+            $sel.append('<option value="Promotionsstipendium">Promotionsstipendium</option>');
+            $sel.append('<option value="Josef Güttler Stipendium">Josef Güttler Stipendium</option>');
+        } else {
+            typen.forEach(function(t) {
+                var label = t.bezeichnung || t.id;
+                $sel.append('<option value="' + escAttr(label) + '" data-runde="' + escAttr(t.runde || '') + '">' + escHtml(label) + '</option>');
+            });
+        }
+    }
+
+    function openManuellModal(editData) {
+        if (!$manuellModal) $manuellModal = $('#dgptm-manuell-modal');
+
+        // Felder leeren
+        $('#dgptm-manuell-id').val('');
+        $('#dgptm-manuell-orcid').val('');
+        $('#dgptm-manuell-orcid-status').text('');
+        $('#dgptm-manuell-name').val('');
+        $('#dgptm-manuell-email').val('');
+        $('#dgptm-manuell-institution').val('');
+        $('#dgptm-manuell-projekt-titel').val('');
+        $('#dgptm-manuell-projekt-zus').val('');
+        $('#dgptm-manuell-projekt-meth').val('');
+        $('#dgptm-manuell-doc-lebenslauf').val('');
+        $('#dgptm-manuell-doc-motivation').val('');
+        $('#dgptm-manuell-doc-expose').val('');
+        $('#dgptm-manuell-doc-empfehlung').val('');
+        $('#dgptm-manuell-doc-studien').val('');
+        $('#dgptm-manuell-doc-publikationen').val('');
+        $('#dgptm-manuell-doc-zusatz').val('');
+        $('#dgptm-manuell-bemerkung').val('');
+        $('#dgptm-manuell-eingang').val(new Date().toISOString().slice(0,10));
+        $('#dgptm-manuell-status').val('Freigegeben');
+
+        // Default-Runde aus Filter uebernehmen
+        var aktuelleRunde = $('#dgptm-vorsitz-runde').val() || (config.defaultRunde || '');
+        var aktuellerTyp  = $('#dgptm-vorsitz-runde option:selected').data('typ') || '';
+        $('#dgptm-manuell-runde').val(aktuelleRunde);
+        if (aktuellerTyp) {
+            $('#dgptm-manuell-typ').val(aktuellerTyp);
+        }
+
+        if (editData && editData.raw) {
+            var r = editData.raw;
+            $('#dgptm-manuell-title').text('Bewerbung bearbeiten');
+            $('#dgptm-manuell-id').val(r.id || '');
+            $('#dgptm-manuell-typ').val(r.stipendientyp || '');
+            $('#dgptm-manuell-runde').val(r.runde || '');
+            $('#dgptm-manuell-orcid').val(r.bewerber_orcid || '');
+            $('#dgptm-manuell-name').val(r.bewerber_name || '');
+            $('#dgptm-manuell-email').val(r.bewerber_email || '');
+            $('#dgptm-manuell-institution').val(r.bewerber_institution || '');
+            $('#dgptm-manuell-projekt-titel').val(r.projekt_titel || '');
+            $('#dgptm-manuell-projekt-zus').val(r.projekt_zusammenfassung || '');
+            $('#dgptm-manuell-projekt-meth').val(r.projekt_methodik || '');
+            $('#dgptm-manuell-bemerkung').val(r.bemerkung || '');
+            $('#dgptm-manuell-eingang').val(r.eingangsdatum || '');
+            $('#dgptm-manuell-status').val(r.status || 'Freigegeben');
+
+            var d = r.dokument_urls_decoded || {};
+            $('#dgptm-manuell-doc-lebenslauf').val(d.lebenslauf || '');
+            $('#dgptm-manuell-doc-motivation').val(d.motivationsschreiben || '');
+            $('#dgptm-manuell-doc-expose').val(d.expose || '');
+            $('#dgptm-manuell-doc-empfehlung').val(d.empfehlungsschreiben || '');
+            $('#dgptm-manuell-doc-studien').val(d.studienleistungen || '');
+            $('#dgptm-manuell-doc-publikationen').val(d.publikationen || '');
+            $('#dgptm-manuell-doc-zusatz').val(d.zusatzqualifikationen || '');
+        } else {
+            $('#dgptm-manuell-title').text('Antrag manuell einpflegen');
+        }
+
+        $manuellModal.fadeIn(150);
+    }
+
+    function closeManuellModal() {
+        if ($manuellModal) $manuellModal.fadeOut(150);
+    }
+
+    function collectManuellData() {
+        return {
+            stipendientyp:           $('#dgptm-manuell-typ').val(),
+            runde:                   $('#dgptm-manuell-runde').val().trim(),
+            status:                  $('#dgptm-manuell-status').val(),
+            bewerber_orcid:          $('#dgptm-manuell-orcid').val().trim(),
+            bewerber_name:           $('#dgptm-manuell-name').val().trim(),
+            bewerber_email:          $('#dgptm-manuell-email').val().trim(),
+            bewerber_institution:    $('#dgptm-manuell-institution').val().trim(),
+            projekt_titel:           $('#dgptm-manuell-projekt-titel').val(),
+            projekt_zusammenfassung: $('#dgptm-manuell-projekt-zus').val(),
+            projekt_methodik:        $('#dgptm-manuell-projekt-meth').val(),
+            bemerkung:               $('#dgptm-manuell-bemerkung').val(),
+            eingangsdatum:           $('#dgptm-manuell-eingang').val(),
+            dokument_urls: {
+                lebenslauf:           $('#dgptm-manuell-doc-lebenslauf').val().trim(),
+                motivationsschreiben: $('#dgptm-manuell-doc-motivation').val().trim(),
+                expose:               $('#dgptm-manuell-doc-expose').val().trim(),
+                empfehlungsschreiben: $('#dgptm-manuell-doc-empfehlung').val().trim(),
+                studienleistungen:    $('#dgptm-manuell-doc-studien').val().trim(),
+                publikationen:        $('#dgptm-manuell-doc-publikationen').val().trim(),
+                zusatzqualifikationen:$('#dgptm-manuell-doc-zusatz').val().trim()
+            }
+        };
+    }
+
+    function saveManuell() {
+        var id = $('#dgptm-manuell-id').val();
+        var data = collectManuellData();
+
+        if (!data.stipendientyp || !data.runde || !data.bewerber_name) {
+            alert('Stipendientyp, Runde und Bewerber-Name sind Pflichtfelder.');
+            return;
+        }
+
+        var $btn = $('#dgptm-manuell-save');
+        $btn.prop('disabled', true).text('Speichern...');
+
+        var action = id ? 'dgptm_stipendium_manual_update' : 'dgptm_stipendium_manual_create';
+        var post = { action: action, nonce: nonce, data: JSON.stringify(data) };
+        if (id) post.id = id;
+
+        $.ajax({
+            url: ajaxUrl,
+            method: 'POST',
+            data: post,
+            success: function(response) {
+                if (response.success) {
+                    closeManuellModal();
+                    loadBewerbungen();
+                } else {
+                    alert(response.data?.message || response.data || strings.fehler);
+                }
+            },
+            error: function() { alert(strings.fehler || 'Fehler beim Speichern.'); },
+            complete: function() {
+                $btn.prop('disabled', false).text('Bewerbung speichern');
+            }
+        });
+    }
+
+    function deleteManuell(id) {
+        if (!confirm(strings.confirm_delete || 'Wirklich löschen?')) return;
+        $.ajax({
+            url: ajaxUrl, method: 'POST',
+            data: { action: 'dgptm_stipendium_manual_delete', nonce: nonce, id: id },
+            success: function(response) {
+                if (response.success) {
+                    loadBewerbungen();
+                } else {
+                    alert(response.data?.message || response.data || strings.fehler);
+                }
+            },
+            error: function() { alert(strings.fehler); }
+        });
+    }
+
+    function editManuell(id) {
+        $.ajax({
+            url: ajaxUrl, method: 'POST',
+            data: { action: 'dgptm_stipendium_manual_get', nonce: nonce, id: id },
+            success: function(response) {
+                if (response.success) {
+                    openManuellModal(response.data);
+                } else {
+                    alert(response.data?.message || response.data || strings.fehler);
+                }
+            },
+            error: function() { alert(strings.fehler); }
+        });
+    }
+
+    /* ──────────────────────────────────────────
+     * ORCID-Lookup
+     * ────────────────────────────────────────── */
+
+    function lookupOrcid() {
+        var orcid = $('#dgptm-manuell-orcid').val().trim();
+        var $status = $('#dgptm-manuell-orcid-status');
+        if (!/^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/.test(orcid)) {
+            $status.css('color', '#dc2626').text('Ungültiges ORCID-Format. Bitte: 0000-0000-0000-0000');
+            return;
+        }
+        $status.css('color', '#6b7280').text('Daten werden abgerufen...');
+
+        $.ajax({
+            url: ajaxUrl,
+            method: 'POST',
+            data: {
+                action: 'dgptm_stipendium_lookup_orcid',
+                nonce: config.orcidNonce,
+                orcid: orcid
+            },
+            success: function(response) {
+                if (response.success && response.data && response.data.data) {
+                    var d = response.data.data;
+                    if (d.name && !$('#dgptm-manuell-name').val()) $('#dgptm-manuell-name').val(d.name);
+                    if (d.institution && !$('#dgptm-manuell-institution').val()) $('#dgptm-manuell-institution').val(d.institution);
+                    if (d.email && !$('#dgptm-manuell-email').val()) $('#dgptm-manuell-email').val(d.email);
+                    $status.css('color', '#15803d').text('ORCID-Daten übernommen.');
+                } else {
+                    var msg = (response.data && response.data.message) ? response.data.message : (strings.orcid_fehler || 'ORCID-Lookup fehlgeschlagen.');
+                    $status.css('color', '#dc2626').text(msg);
+                }
+            },
+            error: function() {
+                $status.css('color', '#dc2626').text(strings.orcid_fehler || 'Verbindungsfehler.');
+            }
+        });
+    }
+
+    /* ──────────────────────────────────────────
+     * Gutachter-Pool im Einladungs-Modal
+     * ────────────────────────────────────────── */
+
+    function populateGutachterPool() {
+        var pool = config.gutachterPool || [];
+        if (!pool.length) {
+            $('#dgptm-einladung-pool-wrap').hide();
+            return;
+        }
+        var $sel = $('#dgptm-einladung-pool');
+        $sel.find('option:not(:first)').remove();
+        pool.forEach(function(g) {
+            $sel.append('<option value="' + escAttr(g.gutachter_email) + '" data-name="' + escAttr(g.gutachter_name) + '">'
+                + escHtml(g.gutachter_name) + ' &lt;' + escHtml(g.gutachter_email) + '&gt;</option>');
+        });
+        $('#dgptm-einladung-pool-wrap').show();
+    }
+
     /**
      * Hilfsfunktionen.
      */
@@ -339,6 +695,11 @@
      * Initialisierung.
      */
     $(document).ready(function() {
+        // Stipendientypen ins Manuell-Modal + Runden-Modal
+        populateTypDropdown();
+        populateRundeTypDropdown();
+        populateGutachterPool();
+
         // Initial laden
         loadBewerbungen();
 
@@ -370,6 +731,12 @@
                 case 'pdf':
                     executeAction('pdf', '');
                     break;
+                case 'manuell-edit':
+                    editManuell(id);
+                    break;
+                case 'manuell-delete':
+                    deleteManuell(id);
+                    break;
             }
         });
 
@@ -379,8 +746,35 @@
             $('#dgptm-einladung-modal').fadeOut(200);
         });
 
-        // Modal schliessen bei Klick ausserhalb
-        $('#dgptm-einladung-modal').on('click', function(e) {
+        // Pool: bei Auswahl Name + Mail uebernehmen
+        $('#dgptm-einladung-pool').on('change', function() {
+            var $opt = $(this).find('option:selected');
+            var email = $(this).val();
+            var name  = $opt.data('name') || '';
+            if (email) {
+                $('#dgptm-einladung-name').val(name);
+                $('#dgptm-einladung-email').val(email);
+            }
+        });
+
+        // Runden-Modal
+        $('#dgptm-vorsitz-btn-runde-add').on('click', openRundeModal);
+        $('#dgptm-runde-close, #dgptm-runde-cancel').on('click', closeRundeModal);
+        $('#dgptm-runde-save').on('click', saveRunde);
+        $('#dgptm-runde-typ-id').on('change', function() {
+            var $opt = $(this).find('option:selected');
+            $('#dgptm-runde-bezeichnung').val($opt.data('bezeichnung') || '');
+            // Runden-Bezeichnung leer lassen (neue Runde fuer bestehenden Typ)
+        });
+
+        // Manuell-Modal
+        $('#dgptm-vorsitz-btn-manuell-add').on('click', function() { openManuellModal(null); });
+        $('#dgptm-manuell-close, #dgptm-manuell-cancel').on('click', closeManuellModal);
+        $('#dgptm-manuell-save').on('click', saveManuell);
+        $('#dgptm-manuell-orcid-btn').on('click', lookupOrcid);
+
+        // Modals schliessen bei Klick ausserhalb
+        $('#dgptm-einladung-modal, #dgptm-manuell-modal, #dgptm-runde-modal').on('click', function(e) {
             if ($(e.target).hasClass('dgptm-vorsitz-modal-overlay')) {
                 $(this).fadeOut(200);
             }

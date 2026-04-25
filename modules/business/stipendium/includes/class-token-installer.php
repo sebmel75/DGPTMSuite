@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) exit;
 class DGPTM_Stipendium_Token_Installer {
 
     const DB_VERSION_KEY = 'dgptm_stipendium_token_db_version';
-    const DB_VERSION     = '1.0';
+    const DB_VERSION     = '1.1';
 
     /**
      * Tabelle erstellen oder aktualisieren.
@@ -24,10 +24,11 @@ class DGPTM_Stipendium_Token_Installer {
         }
 
         global $wpdb;
-        $table_name = $wpdb->prefix . 'dgptm_stipendium_tokens';
         $charset_collate = $wpdb->get_charset_collate();
+        $token_table  = $wpdb->prefix . 'dgptm_stipendium_tokens';
+        $manual_table = $wpdb->prefix . 'dgptm_stipendium_manual';
 
-        $sql = "CREATE TABLE {$table_name} (
+        $sql_tokens = "CREATE TABLE {$token_table} (
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
             token VARCHAR(64) NOT NULL,
             stipendium_id VARCHAR(50) NOT NULL,
@@ -47,27 +48,65 @@ class DGPTM_Stipendium_Token_Installer {
             KEY expires_at (expires_at)
         ) {$charset_collate};";
 
+        $sql_manual = "CREATE TABLE {$manual_table} (
+            id VARCHAR(20) NOT NULL,
+            runde VARCHAR(100) NOT NULL,
+            stipendientyp VARCHAR(100) NOT NULL,
+            status VARCHAR(30) NOT NULL DEFAULT 'Geprueft',
+            bewerber_name VARCHAR(255) NOT NULL,
+            bewerber_email VARCHAR(255) DEFAULT '',
+            bewerber_orcid VARCHAR(20) DEFAULT '',
+            bewerber_institution VARCHAR(255) DEFAULT '',
+            projekt_titel TEXT,
+            projekt_zusammenfassung LONGTEXT,
+            projekt_methodik LONGTEXT,
+            dokument_urls LONGTEXT,
+            eingangsdatum DATE DEFAULT NULL,
+            freigabedatum DATE DEFAULT NULL,
+            vergeben TINYINT(1) NOT NULL DEFAULT 0,
+            vergabedatum DATE DEFAULT NULL,
+            bemerkung TEXT,
+            created_by BIGINT(20) UNSIGNED NOT NULL DEFAULT 0,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT NULL,
+            PRIMARY KEY  (id),
+            KEY runde (runde),
+            KEY stipendientyp (stipendientyp),
+            KEY status (status)
+        ) {$charset_collate};";
+
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-        dbDelta($sql);
+        dbDelta($sql_tokens);
+        dbDelta($sql_manual);
 
         update_option(self::DB_VERSION_KEY, self::DB_VERSION);
     }
 
     /**
-     * Tabelle loeschen (bei Deinstallation).
+     * Tabellen loeschen (bei Deinstallation).
      */
     public static function uninstall() {
         global $wpdb;
-        $table_name = $wpdb->prefix . 'dgptm_stipendium_tokens';
-        $wpdb->query("DROP TABLE IF EXISTS {$table_name}");
+        $token_table  = $wpdb->prefix . 'dgptm_stipendium_tokens';
+        $manual_table = $wpdb->prefix . 'dgptm_stipendium_manual';
+        $wpdb->query("DROP TABLE IF EXISTS {$token_table}");
+        $wpdb->query("DROP TABLE IF EXISTS {$manual_table}");
         delete_option(self::DB_VERSION_KEY);
     }
 
     /**
-     * Tabellennamen zurueckgeben.
+     * Tabellenname Token-Tabelle.
      */
     public static function table_name() {
         global $wpdb;
         return $wpdb->prefix . 'dgptm_stipendium_tokens';
+    }
+
+    /**
+     * Tabellenname manuelle Bewerbungen.
+     */
+    public static function manual_table_name() {
+        global $wpdb;
+        return $wpdb->prefix . 'dgptm_stipendium_manual';
     }
 }

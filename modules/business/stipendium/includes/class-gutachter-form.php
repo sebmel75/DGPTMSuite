@@ -48,13 +48,13 @@ class DGPTM_Stipendium_Gutachter_Form {
             'dgptm-gutachten',
             $this->plugin_url . 'assets/css/gutachten.css',
             [],
-            '1.1.0'
+            '1.2.0'
         );
         wp_register_script(
             'dgptm-gutachten',
             $this->plugin_url . 'assets/js/gutachten.js',
             ['jquery'],
-            '1.1.0',
+            '1.2.0',
             true
         );
     }
@@ -331,6 +331,14 @@ class DGPTM_Stipendium_Gutachter_Form {
      * @return array Stipendium-Daten
      */
     private function get_stipendium_data($stipendium_id) {
+        // Manuelle Bewerbung (lokal in WP-DB)
+        if (strpos($stipendium_id, 'MAN_') === 0 && class_exists('DGPTM_Stipendium_Bewerbung_Manuell')) {
+            $manual = DGPTM_Stipendium_Bewerbung_Manuell::get_by_id($stipendium_id);
+            if ($manual) {
+                return $manual;
+            }
+        }
+
         // Demo-Modus: Vollstaendige Testdaten liefern
         if (!$this->zoho || strpos($stipendium_id, 'DEMO') === 0) {
             return [
@@ -377,6 +385,7 @@ class DGPTM_Stipendium_Gutachter_Form {
         $felder = [
             'Lebenslauf_URL'            => 'Lebenslauf',
             'Motivationsschreiben_URL'  => 'Motivationsschreiben',
+            'Expose_URL'                => 'Expose / Projektbeschreibung',
             'Empfehlungsschreiben_URL'  => 'Empfehlungsschreiben',
             'Studienleistungen_URL'     => 'Studienleistungen',
             'Publikationen_URL'         => 'Publikationen',

@@ -8,8 +8,6 @@ class DGPTM_Stipendium_Dashboard_Tab {
     private $settings;
     private $vorsitz_dashboard;
 
-    const TABS_REGISTERED_KEY = 'dgptm_stipendium_tabs_registered_v1';
-
     public function __construct($plugin_path, $plugin_url, $settings, $vorsitz_dashboard = null) {
         $this->plugin_path       = $plugin_path;
         $this->plugin_url        = $plugin_url;
@@ -17,56 +15,128 @@ class DGPTM_Stipendium_Dashboard_Tab {
         $this->vorsitz_dashboard = $vorsitz_dashboard;
 
         add_action('init', [$this, 'ensure_dashboard_tabs']);
-        add_shortcode('dgptm_stipendium_dashboard', [$this, 'render_dashboard']);
+        add_shortcode('dgptm_stipendium_dashboard',  [$this, 'render_dashboard']);
         add_shortcode('dgptm_stipendium_auswertung', [$this, 'render_auswertung']);
+
+        // Permission-Wrapper: das Mitglieder-Dashboard prueft "sc:..."-Berechtigungen
+        // ueber den Shortcode-Output ('1'/'0'). Wir liefern hier eine robuste
+        // Auswertung von ACF *und* user_meta, damit auch Toggles, die nicht ueber
+        // ACF gesetzt wurden, akzeptiert werden.
+        add_shortcode('dgptm_stip_perm_mitglied', [$this, 'sc_perm_mitglied']);
+        add_shortcode('dgptm_stip_perm_vorsitz',  [$this, 'sc_perm_vorsitz']);
+    }
+
+    /* ──────────────────────────────────────────
+     * Permission-Helfer
+     * ────────────────────────────────────────── */
+
+    /**
+     * Robust: ACF-Feld ODER user_meta ODER Admin.
+     */
+    public static function user_has_flag($user_id, $field) {
+        if (!$user_id) return false;
+        if (user_can($user_id, 'manage_options')) return true;
+        if (function_exists('get_field')) {
+            $v = get_field($field, 'user_' . $user_id);
+            if (!empty($v)) return true;
+        }
+        $v = get_user_meta($user_id, $field, true);
+        return !empty($v);
+    }
+
+    public function sc_perm_mitglied() {
+        $uid = get_current_user_id();
+        if (!$uid) return '0';
+        // Vorsitz schliesst Mitglied automatisch ein
+        if (self::user_has_flag($uid, 'stipendiumsrat_mitglied')) return '1';
+        if (self::user_has_flag($uid, 'stipendiumsrat_vorsitz'))  return '1';
+        return '0';
+    }
+
+    public function sc_perm_vorsitz() {
+        $uid = get_current_user_id();
+        if (!$uid) return '0';
+        return self::user_has_flag($uid, 'stipendiumsrat_vorsitz') ? '1' : '0';
     }
 
     /**
-     * Dashboard-Tabs registrieren (einmalig).
+     * Dashboard-Tabs synchronisieren — bei jedem Init.
      *
-     * Fuegt den "Stipendien"-Tab und den Unter-Tab "Auswertung"
-     * in das Mitglieder-Dashboard ein.
+     * Idempotent: vorhandene Tabs werden auf den Soll-Stand gebracht
+     * (Permission, Inhalt, Sichtbarkeit), fehlende Tabs werden ergaenzt.
+     * Andere Tabs des Dashboards bleiben unangetastet.
      */
     public function ensure_dashboard_tabs() {
-        if (get_option(self::TABS_REGISTERED_KEY)) return;
+        $option_key = 'dgptm_dash_tabs_v3';
+        $tabs = get_option($option_key, []);
+        if (!is_array($tabs)) $tabs = [];
 
-        $tabs = get_option('dgptm_dash_tabs_v3', []);
-
-        // Pruefen ob Tab bereits existiert
-        $existing_ids = array_column($tabs, 'id');
-
-        if (!in_array('stipendien', $existing_ids)) {
-            $tabs[] = [
+        $soll = [
+            'stipendien' => [
                 'id'         => 'stipendien',
                 'label'      => 'Stipendien',
                 'parent'     => '',
                 'active'     => true,
                 'order'      => 60,
-                'permission' => 'acf:stipendiumsrat_mitglied',
+                'permission' => 'sc:dgptm_stip_perm_mitglied',
                 'link'       => '',
                 'content'    => '[dgptm_stipendium_dashboard]',
                 'content_mobile' => '',
                 'visibility' => 'all',
-            ];
-        }
-
-        if (!in_array('stipendien_auswertung', $existing_ids)) {
-            $tabs[] = [
+            ],
+            'stipendien_auswertung' => [
                 'id'         => 'stipendien_auswertung',
                 'label'      => 'Auswertung',
                 'parent'     => 'stipendien',
                 'active'     => true,
                 'order'      => 61,
-                'permission' => 'acf:stipendiumsrat_vorsitz',
+                'permission' => 'sc:dgptm_stip_perm_vorsitz',
                 'link'       => '',
                 'content'    => '[dgptm_stipendium_auswertung]',
                 'content_mobile' => '',
                 'visibility' => 'all',
-            ];
+            ],
+            'stipendien_freigabe' => [
+                'id'         => 'stipendien_freigabe',
+                'label'      => 'Konzept-Freigabe',
+                'parent'     => 'stipendien',
+                'active'     => true,
+                'order'      => 62,
+                'permission' => 'sc:dgptm_stip_perm_vorsitz',
+                'link'       => '',
+                'content'    => '[dgptm_stipendium_freigabe]',
+                'content_mobile' => '',
+                'visibility' => 'all',
+            ],
+        ];
+
+        $changed = false;
+        $known_ids = array_keys($soll);
+        $found_ids = [];
+
+        foreach ($tabs as $idx => $existing) {
+            $eid = $existing['id'] ?? '';
+            if (isset($soll[$eid])) {
+                $found_ids[] = $eid;
+                $merged = array_merge($existing, $soll[$eid]);
+                if ($merged !== $existing) {
+                    $tabs[$idx] = $merged;
+                    $changed = true;
+                }
+            }
         }
 
-        update_option('dgptm_dash_tabs_v3', $tabs, false);
-        update_option(self::TABS_REGISTERED_KEY, 1);
+        // Fehlende Tabs anhaengen
+        foreach ($known_ids as $eid) {
+            if (!in_array($eid, $found_ids, true)) {
+                $tabs[] = $soll[$eid];
+                $changed = true;
+            }
+        }
+
+        if ($changed) {
+            update_option($option_key, $tabs, false);
+        }
     }
 
     /**
@@ -79,8 +149,10 @@ class DGPTM_Stipendium_Dashboard_Tab {
         if (!is_user_logged_in()) return '';
 
         $user_id = get_current_user_id();
-        $ist_mitglied = get_field('stipendiumsrat_mitglied', 'user_' . $user_id);
-        if (!$ist_mitglied && !current_user_can('manage_options')) return '';
+        if (!self::user_has_flag($user_id, 'stipendiumsrat_mitglied')
+            && !self::user_has_flag($user_id, 'stipendiumsrat_vorsitz')) {
+            return '';
+        }
 
         // Aktive Runden ermitteln
         $typen = $this->settings->get('stipendientypen');
@@ -122,8 +194,7 @@ class DGPTM_Stipendium_Dashboard_Tab {
         if (!is_user_logged_in()) return '';
 
         $user_id = get_current_user_id();
-        $ist_vorsitz = get_field('stipendiumsrat_vorsitz', 'user_' . $user_id);
-        if (!$ist_vorsitz && !current_user_can('manage_options')) return '';
+        if (!self::user_has_flag($user_id, 'stipendiumsrat_vorsitz')) return '';
 
         // An Vorsitzenden-Dashboard delegieren
         if ($this->vorsitz_dashboard) {

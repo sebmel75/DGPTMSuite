@@ -42,6 +42,7 @@ class DGPTM_Stipendium_Vorsitz_Dashboard {
         add_action('wp_ajax_dgptm_stipendium_vergeben', [$this, 'ajax_vergeben']);
         add_action('wp_ajax_dgptm_stipendium_archivieren', [$this, 'ajax_archivieren']);
         add_action('wp_ajax_dgptm_stipendium_load_bewerbungen', [$this, 'ajax_load_bewerbungen']);
+        add_action('wp_ajax_dgptm_stipendium_save_runde', [$this, 'ajax_save_runde']);
     }
 
     /**
@@ -52,13 +53,13 @@ class DGPTM_Stipendium_Vorsitz_Dashboard {
             'dgptm-vorsitz-dashboard',
             $this->plugin_url . 'assets/css/vorsitz-dashboard.css',
             [],
-            '1.1.0'
+            '1.2.0'
         );
         wp_register_script(
             'dgptm-vorsitz-dashboard',
             $this->plugin_url . 'assets/js/vorsitz-dashboard.js',
             ['jquery'],
-            '1.1.0',
+            '1.2.0',
             true
         );
     }
@@ -93,21 +94,40 @@ class DGPTM_Stipendium_Vorsitz_Dashboard {
         $frist_tage = $this->settings ? ($this->settings->get('gutachter_frist_tage') ?: 28) : 28;
         $frist_datum = date_i18n('d.m.Y', strtotime("+{$frist_tage} days"));
 
+        $stipendientypen = [];
+        if ($this->settings) {
+            foreach ((array) $this->settings->get('stipendientypen') as $t) {
+                if (!empty($t['bezeichnung'])) {
+                    $stipendientypen[] = [
+                        'id'          => $t['id'] ?? '',
+                        'bezeichnung' => $t['bezeichnung'],
+                        'runde'       => $t['runde'] ?? '',
+                    ];
+                }
+            }
+        }
+
         wp_localize_script('dgptm-vorsitz-dashboard', 'dgptmVorsitz', [
-            'ajaxUrl'       => admin_url('admin-ajax.php'),
-            'nonce'         => wp_create_nonce(self::NONCE_ACTION),
-            'defaultRunde'  => $default_runde,
-            'defaultTyp'    => $default_typ,
-            'fristDatum'    => $frist_datum,
-            'runden'        => array_values($aktive_runden),
-            'strings'       => [
+            'ajaxUrl'         => admin_url('admin-ajax.php'),
+            'nonce'           => wp_create_nonce(self::NONCE_ACTION),
+            'orcidNonce'      => wp_create_nonce('dgptm_stipendium_orcid_nonce'),
+            'defaultRunde'    => $default_runde,
+            'defaultTyp'      => $default_typ,
+            'fristDatum'      => $frist_datum,
+            'runden'          => array_values($aktive_runden),
+            'stipendientypen' => $stipendientypen,
+            'gutachterPool'   => $this->get_gutachter_pool(),
+            'strings'         => [
                 'confirm_freigeben'   => 'Bewerbung freigeben?',
                 'confirm_ablehnen'    => 'Bewerbung ablehnen? Dies kann rueckgaengig gemacht werden.',
                 'confirm_vergeben'    => 'Stipendium an diese/n Bewerber/in vergeben?',
                 'confirm_archivieren' => 'Alle abgeschlossenen Bewerbungen dieser Runde archivieren?',
+                'confirm_delete'      => 'Manuelle Bewerbung wirklich loeschen? Vergebene Tokens werden ebenfalls entfernt.',
                 'einladung_gesendet'  => 'Einladung wurde gesendet.',
                 'fehler'              => 'Ein Fehler ist aufgetreten.',
                 'laden'               => 'Wird geladen...',
+                'manuell_gespeichert' => 'Bewerbung wurde gespeichert.',
+                'orcid_fehler'        => 'ORCID-Daten konnten nicht abgerufen werden.',
             ],
         ]);
 
@@ -133,21 +153,35 @@ class DGPTM_Stipendium_Vorsitz_Dashboard {
             wp_send_json_error('Runde ist ein Pflichtfeld.');
         }
 
-        if (!$this->zoho) {
-            // Demo-Modus: Testdaten zurueckgeben
+        // Manuelle Bewerbungen (lokal in WordPress) laden
+        $manuelle = [];
+        if (class_exists('DGPTM_Stipendium_Bewerbung_Manuell')) {
+            $manuelle = DGPTM_Stipendium_Bewerbung_Manuell::list_by_runde($runde, $typ ?: null);
+        }
+
+        // Stipendien aus CRM laden (sofern verfuegbar)
+        $crm = [];
+        if ($this->zoho) {
+            $crm_result = $this->zoho->get_stipendien_by_runde($runde, $typ ?: null);
+            if (is_wp_error($crm_result)) {
+                // CRM-Fehler nicht hart durchreichen, manuelle Bewerbungen weiter anzeigen
+                if (function_exists('dgptm_log_error')) {
+                    dgptm_log_error('Stipendium CRM-Fehler: ' . $crm_result->get_error_message(), 'stipendium');
+                }
+            } elseif (is_array($crm_result)) {
+                $crm = $crm_result;
+            }
+        }
+
+        $alle = array_merge($crm, $manuelle);
+
+        // Demo-Daten nur, wenn weder Zoho noch manuelle Eintraege vorhanden sind
+        if (empty($alle) && !$this->zoho) {
             wp_send_json_success($this->get_demo_data($runde, $typ));
             return;
         }
 
-        // Stipendien aus CRM laden
-        $stipendien = $this->zoho->get_stipendien_by_runde($runde, $typ ?: null);
-        if (is_wp_error($stipendien)) {
-            wp_send_json_error($stipendien->get_error_message());
-        }
-
-        // Tokens aus lokaler DB laden und zuordnen
-        $result = $this->group_by_status($stipendien ?: []);
-
+        $result = $this->group_by_status($alle);
         wp_send_json_success($result);
     }
 
@@ -186,18 +220,47 @@ class DGPTM_Stipendium_Vorsitz_Dashboard {
                 }
             }
 
+            // Score aus Tokens lokal aggregieren (Demo/manuelle Bewerbungen)
+            $local_score = null;
+            $local_count = 0;
+            if ($total > 0) {
+                $sum = 0.0;
+                foreach ($tokens as $t) {
+                    if ($t['bewertung_status'] === 'abgeschlossen' && !empty($t['bewertung_data'])) {
+                        $bd = json_decode($t['bewertung_data'], true);
+                        if (is_array($bd) && isset($bd['Gesamtscore'])) {
+                            $sum += (float) $bd['Gesamtscore'];
+                            $local_count++;
+                        }
+                    }
+                }
+                if ($local_count > 0) {
+                    $local_score = round($sum / $local_count, 2);
+                }
+            }
+
+            $score = $stip['Gesamtscore_Mittelwert'] ?? $local_score;
+            $foerderfaehig = isset($stip['Foerderfaehig'])
+                ? !empty($stip['Foerderfaehig'])
+                : ($score !== null && (float) $score >= 6.0);
+
             $entry = [
                 'id'              => $id,
                 'name'            => $stip['Name'] ?? ($stip['Bewerber']['name'] ?? 'Unbekannt'),
                 'stipendientyp'   => $stip['Stipendientyp'] ?? '',
                 'eingangsdatum'   => $stip['Eingangsdatum'] ?? '',
-                'gesamtscore'     => $stip['Gesamtscore_Mittelwert'] ?? null,
+                'gesamtscore'     => $score,
                 'rang'            => $stip['Rang'] ?? null,
-                'foerderfaehig'   => !empty($stip['Foerderfaehig']),
+                'foerderfaehig'   => $foerderfaehig,
                 'vergeben'        => !empty($stip['Vergeben']),
                 'gutachter_total' => $total,
                 'gutachter_done'  => $completed,
                 'gutachter'       => $gutachter_list,
+                'is_manual'       => !empty($stip['is_manual']),
+                'bemerkung'       => $stip['bemerkung'] ?? '',
+                'projekt_titel'   => $stip['projekt_titel'] ?? '',
+                'institution'     => $stip['bewerber_institution'] ?? '',
+                'orcid'           => $stip['bewerber_orcid'] ?? '',
             ];
 
             if (isset($gruppen[$status_key])) {
@@ -239,19 +302,15 @@ class DGPTM_Stipendium_Vorsitz_Dashboard {
             wp_send_json_error('Stipendium-ID fehlt.');
         }
 
-        if ($this->zoho) {
-            $result = $this->zoho->update_stipendium($stipendium_id, [
-                'Stipendium_Status' => 'Freigegeben',
-                'Freigabedatum'     => date('Y-m-d'),
-            ]);
-            if (is_wp_error($result)) {
-                wp_send_json_error($result->get_error_message());
-            }
-            // Cache invalidieren
-            $runde = sanitize_text_field($_POST['runde'] ?? '');
-            if ($runde) {
-                $this->zoho->invalidate_stipendien_cache($runde);
-            }
+        $result = $this->update_status($stipendium_id, [
+            'Stipendium_Status' => 'Freigegeben',
+            'Freigabedatum'     => date('Y-m-d'),
+        ], [
+            'status'        => 'Freigegeben',
+            'freigabedatum' => date('Y-m-d'),
+        ]);
+        if (is_wp_error($result)) {
+            wp_send_json_error($result->get_error_message());
         }
 
         wp_send_json_success(['message' => 'Bewerbung freigegeben.']);
@@ -272,17 +331,13 @@ class DGPTM_Stipendium_Vorsitz_Dashboard {
             wp_send_json_error('Stipendium-ID fehlt.');
         }
 
-        if ($this->zoho) {
-            $result = $this->zoho->update_stipendium($stipendium_id, [
-                'Stipendium_Status' => 'Abgelehnt',
-            ]);
-            if (is_wp_error($result)) {
-                wp_send_json_error($result->get_error_message());
-            }
-            $runde = sanitize_text_field($_POST['runde'] ?? '');
-            if ($runde) {
-                $this->zoho->invalidate_stipendien_cache($runde);
-            }
+        $result = $this->update_status($stipendium_id, [
+            'Stipendium_Status' => 'Abgelehnt',
+        ], [
+            'status' => 'Abgelehnt',
+        ]);
+        if (is_wp_error($result)) {
+            wp_send_json_error($result->get_error_message());
         }
 
         wp_send_json_success(['message' => 'Bewerbung abgelehnt.']);
@@ -444,18 +499,15 @@ class DGPTM_Stipendium_Vorsitz_Dashboard {
             wp_send_json_error('Stipendium-ID fehlt.');
         }
 
-        if ($this->zoho) {
-            $result = $this->zoho->update_stipendium($stipendium_id, [
-                'Vergeben'     => true,
-                'Vergabedatum' => date('Y-m-d'),
-            ]);
-            if (is_wp_error($result)) {
-                wp_send_json_error($result->get_error_message());
-            }
-            $runde = sanitize_text_field($_POST['runde'] ?? '');
-            if ($runde) {
-                $this->zoho->invalidate_stipendien_cache($runde);
-            }
+        $result = $this->update_status($stipendium_id, [
+            'Vergeben'     => true,
+            'Vergabedatum' => date('Y-m-d'),
+        ], [
+            'vergeben'     => 1,
+            'vergabedatum' => date('Y-m-d'),
+        ]);
+        if (is_wp_error($result)) {
+            wp_send_json_error($result->get_error_message());
         }
 
         wp_send_json_success(['message' => 'Stipendium wurde vergeben.']);
@@ -509,15 +561,162 @@ class DGPTM_Stipendium_Vorsitz_Dashboard {
     }
 
     /* ──────────────────────────────────────────
+     * AJAX: Stipendiums-Runde anlegen / aktualisieren
+     * ────────────────────────────────────────── */
+
+    public function ajax_save_runde() {
+        check_ajax_referer(self::NONCE_ACTION, 'nonce');
+        if (!$this->user_is_vorsitz()) {
+            wp_send_json_error('Keine Berechtigung.', 403);
+        }
+
+        $typ_id      = sanitize_key(wp_unslash($_POST['typ_id'] ?? ''));
+        $bezeichnung = sanitize_text_field(wp_unslash($_POST['bezeichnung'] ?? ''));
+        $runde       = sanitize_text_field(wp_unslash($_POST['runde'] ?? ''));
+        $start       = sanitize_text_field(wp_unslash($_POST['start'] ?? ''));
+        $ende        = sanitize_text_field(wp_unslash($_POST['ende'] ?? ''));
+
+        if (empty($bezeichnung) || empty($runde)) {
+            wp_send_json_error('Stipendientyp-Bezeichnung und Runden-Name sind Pflichtfelder.');
+        }
+
+        if ($start && $ende && strtotime($start) > strtotime($ende)) {
+            wp_send_json_error('Bewerbungsstart darf nicht nach dem Ende liegen.');
+        }
+
+        if (!$this->settings) {
+            wp_send_json_error('Settings-Komponente nicht verfuegbar.');
+        }
+
+        $all = $this->settings->get_all();
+        $typen = isset($all['stipendientypen']) && is_array($all['stipendientypen']) ? $all['stipendientypen'] : [];
+
+        if (empty($typ_id)) {
+            // Neuen Typ aus Bezeichnung ableiten (slugify, eindeutig)
+            $base = sanitize_title($bezeichnung);
+            if (empty($base)) $base = 'stipendientyp';
+            $candidate = $base;
+            $existing_ids = array_column($typen, 'id');
+            $i = 2;
+            while (in_array($candidate, $existing_ids, true)) {
+                $candidate = $base . '_' . $i;
+                $i++;
+            }
+            $typ_id = $candidate;
+        }
+
+        $eintrag = [
+            'id'          => $typ_id,
+            'bezeichnung' => $bezeichnung,
+            'runde'       => $runde,
+            'start'       => $start,
+            'ende'        => $ende,
+        ];
+
+        $found = false;
+        foreach ($typen as $idx => $t) {
+            if (($t['id'] ?? '') === $typ_id) {
+                $typen[$idx] = $eintrag;
+                $found = true;
+                break;
+            }
+        }
+        if (!$found) {
+            $typen[] = $eintrag;
+        }
+
+        $all['stipendientypen'] = array_values($typen);
+        update_option(\DGPTM_Stipendium_Settings::OPTION_KEY, $all, false);
+
+        wp_send_json_success([
+            'message' => $found ? 'Runde aktualisiert.' : 'Neue Runde wurde angelegt.',
+            'typ'     => $eintrag,
+            'runden'  => array_values(array_filter($typen, function($t) { return !empty($t['runde']); })),
+        ]);
+    }
+
+    /* ──────────────────────────────────────────
+     * Helfer: Gutachter-Pool aus bestehenden Tokens
+     * ────────────────────────────────────────── */
+
+    /**
+     * Liefert distincte Gutachter aus allen bisherigen Token-Eintraegen,
+     * damit der Vorsitzende sie schnell erneut einladen kann.
+     */
+    private function get_gutachter_pool() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'dgptm_stipendium_tokens';
+        $rows = $wpdb->get_results(
+            "SELECT gutachter_name, gutachter_email, MAX(created_at) AS letzter_einsatz
+             FROM {$table}
+             GROUP BY gutachter_email
+             ORDER BY letzter_einsatz DESC
+             LIMIT 50",
+            ARRAY_A
+        ) ?: [];
+        return $rows;
+    }
+
+    /* ──────────────────────────────────────────
+     * Helfer: Status-Update (CRM oder lokal)
+     * ────────────────────────────────────────── */
+
+    /**
+     * Aktualisiert den Status einer Bewerbung.
+     * Routet basierend auf der ID (MAN_* lokal, sonst CRM).
+     *
+     * @param string $stipendium_id
+     * @param array  $crm_fields    Felder fuer Zoho CRM (API-Namen)
+     * @param array  $manual_fields Felder fuer lokale DB (Spalten)
+     * @return true|WP_Error
+     */
+    private function update_status($stipendium_id, $crm_fields, $manual_fields) {
+        $runde = sanitize_text_field($_POST['runde'] ?? '');
+
+        // Manuelle Bewerbung
+        if (strpos($stipendium_id, 'MAN_') === 0) {
+            if (!class_exists('DGPTM_Stipendium_Bewerbung_Manuell')) {
+                return new WP_Error('module_missing', 'Modul fuer manuelle Bewerbungen nicht verfuegbar.');
+            }
+            $ok = DGPTM_Stipendium_Bewerbung_Manuell::update_fields($stipendium_id, $manual_fields);
+            if (!$ok) {
+                return new WP_Error('update_failed', 'Lokale Aktualisierung fehlgeschlagen.');
+            }
+            return true;
+        }
+
+        // CRM-Bewerbung
+        if (!$this->zoho) {
+            // Demo-IDs ohne CRM: nur Erfolg simulieren
+            return true;
+        }
+
+        $result = $this->zoho->update_stipendium($stipendium_id, $crm_fields);
+        if (is_wp_error($result)) {
+            return $result;
+        }
+        if ($runde) {
+            $this->zoho->invalidate_stipendien_cache($runde);
+        }
+        return true;
+    }
+
+    /* ──────────────────────────────────────────
      * Berechtigungspruefung
      * ────────────────────────────────────────── */
 
     private function user_is_vorsitz() {
         if (!is_user_logged_in()) return false;
         if (current_user_can('manage_options')) return true;
-
-        $user_id = get_current_user_id();
-        return (bool) get_field('stipendiumsrat_vorsitz', 'user_' . $user_id);
+        if (class_exists('DGPTM_Stipendium_Dashboard_Tab')) {
+            return DGPTM_Stipendium_Dashboard_Tab::user_has_flag(
+                get_current_user_id(),
+                'stipendiumsrat_vorsitz'
+            );
+        }
+        $uid = get_current_user_id();
+        if (function_exists('get_field') && get_field('stipendiumsrat_vorsitz', 'user_' . $uid)) return true;
+        return (bool) get_user_meta($uid, 'stipendiumsrat_vorsitz', true);
     }
 
     /* ──────────────────────────────────────────

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM Stipendienvergabe
  * Description: Digitales Bewerbungs- und Bewertungsverfahren fuer DGPTM-Stipendien
- * Version: 1.1.0
+ * Version: 1.2.0
  */
 if (!defined('ABSPATH')) exit;
 
@@ -20,6 +20,7 @@ if (!class_exists('DGPTM_Stipendium')) {
         private $gutachter_form;
         private $orcid_lookup;
         private $vorsitz_dashboard;
+        private $bewerbung_manuell;
 
         public static function get_instance() {
             if (null === self::$instance) {
@@ -45,6 +46,10 @@ if (!class_exists('DGPTM_Stipendium')) {
             // Freigabe-Komponente (bereits implementiert)
             require_once $this->plugin_path . 'includes/class-freigabe.php';
             new DGPTM_Stipendium_Freigabe($this->plugin_path, $this->plugin_url);
+
+            // Seeder fuer Freigaben/Kommentare aus dem Diskussionsstand
+            require_once $this->plugin_path . 'includes/class-freigabe-seeder.php';
+            DGPTM_Stipendium_Freigabe_Seeder::maybe_seed();
 
             // Einstellungen
             if (file_exists($this->plugin_path . 'includes/class-settings.php')) {
@@ -84,6 +89,10 @@ if (!class_exists('DGPTM_Stipendium')) {
                 $this->token_manager,
                 $this->zoho
             );
+
+            // Manuell eingepflegte Bewerbungen (lokale Tabelle)
+            require_once $this->plugin_path . 'includes/class-bewerbung-manuell.php';
+            $this->bewerbung_manuell = new DGPTM_Stipendium_Bewerbung_Manuell();
 
             // Vorsitzenden-Dashboard
             require_once $this->plugin_path . 'includes/class-vorsitz-dashboard.php';

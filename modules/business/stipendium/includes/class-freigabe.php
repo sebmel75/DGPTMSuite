@@ -121,15 +121,16 @@ class DGPTM_Stipendium_Freigabe {
      * ────────────────────────────────────────────── */
 
     public function render_shortcode($atts) {
-        // Rollencheck: nur "mitglied"
+        // Zugang: Mitglied/Admin-Rolle ODER ACF-Toggle stipendiumsrat_vorsitz/_mitglied
         if (!is_user_logged_in()) {
             return '<p class="dgptm-freigabe-hinweis">Bitte melden Sie sich an, um dieses Dokument einzusehen.</p>';
         }
 
-        $user = wp_get_current_user();
-        if (!in_array('mitglied', (array) $user->roles) && !in_array('administrator', (array) $user->roles)) {
-            return '<p class="dgptm-freigabe-hinweis">Dieses Dokument ist nur fuer Mitglieder zugaenglich.</p>';
+        if (!$this->user_can_interact()) {
+            return '<p class="dgptm-freigabe-hinweis">Dieses Dokument ist nur fuer den Stipendiumsrat zugaenglich.</p>';
         }
+
+        $user = wp_get_current_user();
 
         wp_enqueue_style('dgptm-freigabe');
         wp_enqueue_script('dgptm-freigabe');
@@ -390,7 +391,7 @@ class DGPTM_Stipendium_Freigabe {
 
         // Einladungsmail senden
         if (class_exists('DGPTM_Stipendium_Mail_Templates')) {
-            $gutachten_url = home_url('/karriere/stipendien/gutachten/?token=' . $token_data['token']);
+            $gutachten_url = home_url('/karriere/stipendien/stipendium-gutachten/?token=' . $token_data['token']);
 
             DGPTM_Stipendium_Mail_Templates::send_einladung([
                 'gutachter_name'  => $user->display_name,
@@ -542,8 +543,18 @@ class DGPTM_Stipendium_Freigabe {
     private function user_can_interact() {
         if (!is_user_logged_in()) return false;
         $user = wp_get_current_user();
-        return in_array('mitglied', (array) $user->roles)
-            || in_array('administrator', (array) $user->roles);
+
+        // Klassische Rollen-Pruefung
+        if (in_array('administrator', (array) $user->roles)) return true;
+        if (in_array('mitglied', (array) $user->roles)) return true;
+
+        // Robuste ACF-/user_meta-Pruefung via Dashboard-Tab-Helfer
+        if (class_exists('DGPTM_Stipendium_Dashboard_Tab')) {
+            if (DGPTM_Stipendium_Dashboard_Tab::user_has_flag($user->ID, 'stipendiumsrat_vorsitz')) return true;
+            if (DGPTM_Stipendium_Dashboard_Tab::user_has_flag($user->ID, 'stipendiumsrat_mitglied')) return true;
+        }
+
+        return false;
     }
 
     private function get_approvals() {

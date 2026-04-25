@@ -419,6 +419,124 @@
     font-size: 14px;
 }
 
+/* === Toolbar / Banner / Manuell-Modal === */
+
+.dgptm-vorsitz-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.dgptm-vorsitz-info-banner {
+    background: #f0f5fa;
+    border-left: 4px solid #003366;
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin-bottom: 18px;
+    font-size: 13px;
+    color: #1f2937;
+    line-height: 1.5;
+}
+
+.dgptm-vorsitz-modal--wide {
+    width: 720px;
+    max-width: 95vw;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.dgptm-vorsitz-modal--wide .dgptm-vorsitz-modal-body {
+    overflow-y: auto;
+    flex: 1 1 auto;
+}
+
+.dgptm-vorsitz-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+@media (max-width: 600px) {
+    .dgptm-vorsitz-grid-2 { grid-template-columns: 1fr; }
+}
+
+.dgptm-vorsitz-fieldset {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 12px 14px 4px;
+    margin: 0 0 14px;
+}
+
+.dgptm-vorsitz-fieldset legend {
+    font-size: 13px;
+    font-weight: 600;
+    color: #003366;
+    padding: 0 6px;
+}
+
+.dgptm-vorsitz-field textarea,
+.dgptm-vorsitz-field select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.dgptm-vorsitz-field textarea:focus,
+.dgptm-vorsitz-field select:focus {
+    outline: none;
+    border-color: #003366;
+    box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1);
+}
+
+.dgptm-vorsitz-orcid-row {
+    display: flex;
+    gap: 8px;
+}
+
+.dgptm-vorsitz-orcid-row input {
+    flex: 1 1 auto;
+}
+
+.dgptm-vorsitz-hint-text {
+    display: block;
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 4px;
+}
+
+.dgptm-vorsitz-field label .req {
+    color: #dc2626;
+    margin-left: 2px;
+}
+
+.dgptm-vorsitz-card-tag--manual {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.dgptm-vorsitz-card-projekt {
+    font-size: 12px;
+    color: #4b5563;
+    margin: 4px 0 0;
+    font-style: italic;
+}
+
+.dgptm-vorsitz-card-bemerkung {
+    background: #fffbeb;
+    border-left: 3px solid #fbbf24;
+    padding: 6px 10px;
+    margin: 8px 0 0;
+    font-size: 12px;
+    color: #78350f;
+    border-radius: 0 4px 4px 0;
+}
+
 /* === Responsive === */
 @media (max-width: 640px) {
     .dgptm-vorsitz-header {

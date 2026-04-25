@@ -76,7 +76,7 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
             </button>
         <?php else : ?>
             <div class="dgptm-wsb-evl-approved-info">
-                Sie haben freigegeben
+                Du hast freigegeben
                 <button type="button" class="dgptm-wsb-evl-revoke-btn" id="dgptm-wsb-evl-revoke">
                     Freigabe zurueckziehen
                 </button>
@@ -100,51 +100,71 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
     <div class="dgptm-wsb-evl-dokument">
 
         <div class="dgptm-wsb-evl-header">
-            <h2>Workshop-Buchung &mdash; Entscheidungsvorlage</h2>
-            <p class="dgptm-wsb-evl-subtitle">Design-Zwischenstand zur Abstimmung</p>
-            <p class="dgptm-wsb-evl-meta">DGPTM | Stand: 22.04.2026 | Empfaenger: Vorstand, Geschaeftsstelle, Kursleitungen</p>
+            <h2>Workshops online buchbar machen &mdash; Entscheidungsvorlage</h2>
+            <p class="dgptm-wsb-evl-subtitle">Was wird gebaut? Was muss noch entschieden werden?</p>
+            <p class="dgptm-wsb-evl-meta">DGPTM | Stand: 22.04.2026 | Empfaenger:innen: Vorstand, Geschaeftsstelle, Kursleitungen</p>
+        </div>
+
+        <div class="dgptm-wsb-evl-highlight blue">
+            <strong>Worum dich dieses Dokument bittet:</strong>
+            <ol style="margin:6px 0 0 18px;">
+                <li>Lies die geplanten Entscheidungen (Abschnitt 3) und die offenen Fragen (Abschnitt 10).</li>
+                <li>Hinterlasse pro Abschnitt einen Kommentar, wenn du etwas anders entscheiden moechtest.</li>
+                <li>Klicke auf <em>&bdquo;Entscheidungsvorlage freigeben&ldquo;</em>, sobald du einverstanden bist.</li>
+            </ol>
         </div>
 
         <!-- ───── Abschnitt 1 ───── -->
         <div class="dgptm-wsb-evl-section" id="section-ziel">
-            <h3>1. Ziel des Moduls</h3>
-            <p>Neues DGPTMSuite-Modul <strong><code>workshop-booking</code></strong>, das zukuenftige Veranstaltungen (Workshops) aus dem Zoho CRM (<code>DGfK_Events</code>) liest und online buchbar macht. Die Buchung laeuft entweder kostenlos (Freiticket) oder ueber Stripe-Zahlung. Jede Buchung erzeugt einen Eintrag im CRM-Modul <code>Veranstal_X_Contacts</code> mit Status <em>Nicht abgerechnet</em> und Blueprint <em>Angemeldet</em>. Das Modul ist so gebaut, dass spaetere Module (Webinar-Buchung, Kongress-Buchung) die Kernkomponenten wiederverwenden koennen.</p>
+            <h3>1. Worum geht es?</h3>
+            <p>Wir wollen unsere <strong>Workshops online buchbar</strong> machen &mdash; inklusive direkter Bezahlung. Bisher laufen Anmeldung und Bezahlung ueber E-Mail an die Geschaeftsstelle und manuelle Rechnungen.</p>
+            <p>Mit dem neuen Modul soll Folgendes moeglich werden:</p>
+            <ul>
+                <li>Workshops, die bereits intern gepflegt sind, erscheinen automatisch auf der Webseite.</li>
+                <li>Mitglieder und Gaeste koennen mit wenigen Klicks anmelden.</li>
+                <li>Die Bezahlung laeuft sicher ueber unseren bestehenden Zahlungsanbieter.</li>
+                <li>Die Anmeldung wird automatisch ins Mitglieder-System eingetragen.</li>
+                <li>Der/die Teilnehmer:in erhaelt sofort eine Bestaetigung mit Termin fuer den Kalender.</li>
+            </ul>
+            <p><em>Hinweis:</em> Das Modul ist der erste Baustein. Spaeter sollen Webinare und Kongresse mit derselben Mechanik buchbar werden.</p>
             <?php $render_section_comments('section-ziel'); ?>
         </div>
 
         <!-- ───── Abschnitt 2 ───── -->
         <div class="dgptm-wsb-evl-section" id="section-ausgangslage">
-            <h3>2. Ausgangslage</h3>
+            <h3>2. Was haben wir heute?</h3>
             <table class="dgptm-wsb-evl-table">
-                <thead><tr><th>Element</th><th>Stand</th></tr></thead>
+                <thead><tr><th>Heute vorhanden</th><th>Was fehlt</th></tr></thead>
                 <tbody>
-                    <tr><td><strong>Edugrant-Modul</strong></td><td>Liest bereits Events aus <code>DGfK_Events</code>, zeigt Karten-UI. Dient als Blaupause fuer das Event-Listing.</td></tr>
-                    <tr><td><strong>vimeo-webinare (v2.0.1)</strong></td><td>Live, eigene Webinar-Logik mit PDF-Zertifikat. Existierende Ticket-/Buchungs-Logik: keine.</td></tr>
-                    <tr><td><strong>Webinar-CRM-Sync (Spec v. 15.04.26)</strong></td><td>Plant bidirektionale Sync zwischen Zoho Meeting und CRM. <strong>Billing ausdruecklich out of scope</strong> &mdash; genau diese Luecke fuellt das neue Modul.</td></tr>
-                    <tr><td><strong>stripe-formidable</strong></td><td>Bestehende Stripe-Integration, jedoch Formidable-Forms-gekoppelt. Wird nicht wiederverwendet.</td></tr>
+                    <tr><td>Workshops sind im internen Mitglieder-System gepflegt.</td><td>Sie sind nicht online buchbar.</td></tr>
+                    <tr><td>Auf der Webseite werden Workshops bereits als Liste angezeigt (Edugrant-Modul).</td><td>Eine Buchung von dort aus ist nicht moeglich.</td></tr>
+                    <tr><td>Bezahlung per Kreditkarte/SEPA gibt es bereits an anderer Stelle.</td><td>Diese ist an alte Formulare gekoppelt und nicht fuer Workshops nutzbar.</td></tr>
+                    <tr><td>Webinare laufen ueber eine eigene, fertige Loesung.</td><td>Sie hat keine Anmelde- und Buchungslogik &mdash; das war auch nicht ihr Zweck.</td></tr>
                 </tbody>
             </table>
+            <p><strong>Konsequenz heute:</strong> Wer einen Workshop buchen moechte, schreibt eine E-Mail an die Geschaeftsstelle. Bezahlung folgt per Rechnung. Das ist viel manueller Aufwand und unbequem fuer Teilnehmer:innen.</p>
             <?php $render_section_comments('section-ausgangslage'); ?>
         </div>
 
         <!-- ───── Abschnitt 3 ───── -->
         <div class="dgptm-wsb-evl-section" id="section-entscheidungen">
-            <h3>3. Getroffene Design-Entscheidungen</h3>
+            <h3>3. Was wurde wie entschieden?</h3>
+            <p>Diese Entscheidungen liegen dem geplanten Modul zugrunde. Stimmst du nicht zu, hinterlass bitte einen Kommentar im jeweiligen Abschnitt.</p>
             <table class="dgptm-wsb-evl-table">
-                <thead><tr><th>#</th><th>Entscheidungspunkt</th><th>Gewaehlt</th><th>Begruendung</th></tr></thead>
+                <thead><tr><th>#</th><th>Frage</th><th>Entscheidung</th><th>Warum</th></tr></thead>
                 <tbody>
-                    <tr><td>1</td><td><strong>Modul-Scope</strong></td><td>Workshop-Modul jetzt, Komponenten fuer spaetere Verallgemeinerung vorbereitet</td><td>Ueberschaubarer Scope, zukunftssicher ohne Over-Engineering</td></tr>
-                    <tr><td>2</td><td><strong>User-Authentifizierung</strong></td><td>Hybrid: Eingeloggte one-click, Gaeste per Formular</td><td>Maximale Reichweite; Vor-/Nachname + E-Mail reichen als Einstieg</td></tr>
-                    <tr><td>3</td><td><strong>Bezahl-Integration</strong></td><td>Stripe Checkout Session (hosted); bei Nicht-Zahlung wird Buchung wieder geloescht</td><td>Weniger Code, volle PCI-Compliance durch Stripe, SEPA/Apple Pay umsonst</td></tr>
-                    <tr><td>4</td><td><strong>Tickets pro Buchung</strong></td><td>Mehrere Tickets mit Teilnehmer:innen-Daten; pro Person ein Veranstal_X_Contacts-Eintrag</td><td>Korrekte Zertifikats- und Fortbildungspunkte-Vergabe pro Person</td></tr>
-                    <tr><td>5</td><td><strong>Erfasste Daten pro Ticket</strong></td><td>Minimal (Vor-/Nachname, E-Mail) + Adresse optional; Smart-Form blendet Felder aus, wenn CRM-Match</td><td>Datensparsam, benutzerfreundlich fuer Bestands-Mitglieder</td></tr>
-                    <tr><td>6</td><td><strong>Kontakt-Matching</strong></td><td>4-Felder-E-Mail-Suche (<code>Email</code>, <code>Secondary_Email</code>, <code>Third_Email</code>, <code>Fourth_Email</code> via COQL-Fallback). Kein Treffer &rarr; Contact-Neuanlage</td><td>Kompatibel mit vorhandener Webinar-Sync-Logik, keine Dubletten</td></tr>
-                    <tr><td>7</td><td><strong>UI-Integration</strong></td><td>Shortcodes: <code>[dgptm_workshops]</code> (Liste/Detail/Formular) und <code>[dgptm_workshops_success]</code> (Bestaetigung)</td><td>Freie Gestaltung der WP-Seite durch Geschaeftsstelle; etabliertes DGPTMSuite-Muster</td></tr>
-                    <tr><td>8</td><td><strong>Kapazitaet</strong></td><td>Hartes Limit pro Event + automatische Warteliste mit 24-h-Nachrueck-Frist</td><td>Faire FIFO-Logik, keine Enttaeuschung durch dauerhafte Sperre</td></tr>
-                    <tr><td>9</td><td><strong>Storno</strong></td><td>Hybrid: User kann bis zur Frist selbst stornieren (Stripe-Refund automatisch); danach nur Geschaeftsstelle, kein/teilweiser Refund</td><td>Entlastet Geschaeftsstelle, AGB-konform</td></tr>
-                    <tr><td>10</td><td><strong>E-Mails</strong></td><td>Hybrid: Transactional (Bestaetigung, Warteliste, Nachruecker, Storno) ueber <code>wp_mail</code>; Info-/Erinnerungs-Mails ueber Zoho CRM / Marketing Automation</td><td>Zeitkritische Mails sofort, ICS-Anhang moeglich; Marketing-Content flexibel</td></tr>
-                    <tr><td>11</td><td><strong>Promo-Codes</strong></td><td>Stripe-nativ: Option <code>allow_promotion_codes: true</code>. <code>PromoCodesCSV</code> aus CRM wird optional zu Stripe-Coupons gespiegelt</td><td>Keine eigene Promo-UI noetig</td></tr>
-                    <tr><td>12</td><td><strong>Architektur-Ansatz</strong></td><td>Eigenstaendiges Modul mit Service-Interfaces (<code>EventSource</code>, <code>PaymentGateway</code>, <code>BookingWriter</code>, <code>MailSender</code>, <code>WaitlistStore</code>)</td><td>Spaetere Extraktion in Shared-Modul per Namespace-Umzug trivial</td></tr>
+                    <tr><td>1</td><td><strong>Wie gross soll das Modul sein?</strong></td><td>Erst nur Workshops. Bausteine werden so gebaut, dass Webinare/Kongresse spaeter daran andocken koennen.</td><td>Schritt fuer Schritt &mdash; kein Mammut-Projekt, aber zukunftsfaehig.</td></tr>
+                    <tr><td>2</td><td><strong>Muessen Buchende eingeloggt sein?</strong></td><td>Beides: Mitglieder buchen mit einem Klick. Gaeste fuellen ein kurzes Formular aus.</td><td>Maximal einfach fuer Mitglieder, gleichzeitig offen fuer Externe.</td></tr>
+                    <tr><td>3</td><td><strong>Wie wird bezahlt?</strong></td><td>Ueber Stripe (gleicher Anbieter wie heute). Die Bezahlseite laeuft direkt bei Stripe &mdash; wir beruehren keine Kreditkartendaten.</td><td>Sicher (internationaler Sicherheitsstandard), Apple Pay und SEPA-Lastschrift sind automatisch dabei.</td></tr>
+                    <tr><td>4</td><td><strong>Was, wenn jemand mehrere Plaetze bucht?</strong></td><td>Pro Person ein eigener Eintrag mit eigenen Kontaktdaten.</td><td>Damit jede:r Teilnehmer:in eine eigene Bestaetigung und ggf. Fortbildungspunkte erhaelt.</td></tr>
+                    <tr><td>5</td><td><strong>Welche Daten werden erfasst?</strong></td><td>Pflicht: Vor- und Nachname, E-Mail. Adresse nur, wenn benoetigt. Bei bekannten Mitgliedern werden vorhandene Daten automatisch eingeblendet.</td><td>So wenig wie moeglich, so viel wie noetig.</td></tr>
+                    <tr><td>6</td><td><strong>Wie erkennt das System Bestandsmitglieder?</strong></td><td>Es prueft alle bekannten E-Mail-Adressen. Findet es niemanden, wird ein neuer Kontakt angelegt.</td><td>Keine Doppel-Eintraege, keine Karteileichen.</td></tr>
+                    <tr><td>7</td><td><strong>Wie wird die Buchung in die Webseite eingebunden?</strong></td><td>Ueber zwei Platzhalter, die die Geschaeftsstelle frei auf jeder Seite einbauen kann.</td><td>Volle Gestaltungsfreiheit fuer die Geschaeftsstelle.</td></tr>
+                    <tr><td>8</td><td><strong>Was, wenn ein Workshop voll ist?</strong></td><td>Automatische Warteliste. Wird ein Platz frei, hat die naechste Person 24 Stunden Zeit zum Buchen.</td><td>Faire Reihenfolge ohne dauerhafte Sperre.</td></tr>
+                    <tr><td>9</td><td><strong>Storno durch Teilnehmer:in?</strong></td><td>Bis zu einer Frist (Vorschlag: 14 Tage vor dem Workshop) selbst moeglich, Geld kommt automatisch zurueck. Danach nur ueber die Geschaeftsstelle.</td><td>Entlastet die Geschaeftsstelle, bleibt im Rahmen unserer AGB.</td></tr>
+                    <tr><td>10</td><td><strong>Welche E-Mails verschickt das System?</strong></td><td>Bestaetigung, Warteliste-Info, Nachrueck-Einladung, Storno-Bestaetigung &mdash; sofort und automatisch. Erinnerungen und Werbung weiter ueber das bestehende Marketing-Tool.</td><td>Wichtige Mails sofort. Marketing-Inhalte bleiben flexibel.</td></tr>
+                    <tr><td>11</td><td><strong>Rabattcodes?</strong></td><td>Direkt ueber Stripe verwaltet &mdash; keine extra Pflege in unserem System.</td><td>Spart Aufwand. Es gibt nur eine Stelle, an der Codes gepflegt werden.</td></tr>
+                    <tr><td>12</td><td><strong>Wie wird das Modul gebaut?</strong></td><td>Mit austauschbaren Bausteinen (siehe Abschnitt 4), damit Webinar- und Kongress-Buchung spaeter denselben Kern nutzen koennen.</td><td>Spart bei den naechsten Modulen Zeit und Geld.</td></tr>
                 </tbody>
             </table>
             <?php $render_section_comments('section-entscheidungen'); ?>
@@ -152,128 +172,117 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
 
         <!-- ───── Abschnitt 4 ───── -->
         <div class="dgptm-wsb-evl-section" id="section-architektur">
-            <h3>4. Architektur-Kern</h3>
-            <pre class="dgptm-wsb-evl-codeblock">modules/business/workshop-booking/
-├── src/
-│   ├── Contracts/           Interfaces
-│   ├── Events/              CRM-Event-Abruf + Ticket-Parsing
-│   ├── Booking/             Orchestrator + Value Objects
-│   ├── Payment/             Stripe-Checkout + Webhook
-│   ├── Crm/                 Veranstal_X_Contacts + 4-Felder-Lookup
-│   ├── Mail/                wp_mail + ICS-Builder
-│   ├── Waitlist/            Nachrueck-Logik, Cron-Watcher
-│   ├── Ajax/                Contact-Lookup + Booking-Submit
-│   └── Shortcodes/          [dgptm_workshops], [dgptm_workshops_success]
-├── templates/               Frontend + E-Mail-Templates
-├── assets/                  CSS + JS
-└── cron/                    Warteliste-Watcher (15 min)</pre>
-            <p><strong>Oeffentlicher Einstiegspunkt:</strong> <code>BookingService::get_instance()-&gt;book($event_id, $attendees)</code> gibt ein <code>BookingResult</code>-Objekt mit entweder <code>checkout_url</code>, <code>confirmation</code> oder <code>waitlist_position</code>.</p>
+            <h3>4. Wie ist die Loesung aufgebaut?</h3>
+            <p>Das Modul besteht aus klar getrennten Bausteinen. Jeder Baustein hat eine Aufgabe und kann fuer spaetere Module (Webinare, Kongresse) wiederverwendet werden.</p>
+            <table class="dgptm-wsb-evl-table">
+                <thead><tr><th>Baustein</th><th>Aufgabe</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Workshops lesen</strong></td><td>Holt aktive Workshops aus dem Mitglieder-System auf die Webseite.</td></tr>
+                    <tr><td><strong>Buchung pruefen</strong></td><td>Prueft, ob noch Plaetze frei sind, und legt die Anmeldung an.</td></tr>
+                    <tr><td><strong>Bezahlung</strong></td><td>Schickt die Person zur Stripe-Bezahlseite und nimmt das Ergebnis entgegen.</td></tr>
+                    <tr><td><strong>Mitglieder-System schreiben</strong></td><td>Traegt die Anmeldung in unsere Teilnehmer:innen-Liste ein.</td></tr>
+                    <tr><td><strong>E-Mails</strong></td><td>Versendet Bestaetigung, Warteliste, Storno &mdash; mit Termin-Anhang fuer den Kalender.</td></tr>
+                    <tr><td><strong>Warteliste</strong></td><td>Ueberwacht freie Plaetze und benachrichtigt Nachruecker:innen automatisch.</td></tr>
+                    <tr><td><strong>Webseite (Frontend)</strong></td><td>Was Nutzer:innen sehen: Workshop-Karten, Buchungsformular, Bestaetigungsseite.</td></tr>
+                </tbody>
+            </table>
+            <p><em>Hintergrund:</em> Diese Trennung ermoeglicht es, einzelne Bausteine spaeter auszutauschen oder fuer Webinare und Kongresse wiederzuverwenden &mdash; ohne das ganze Modul anzufassen.</p>
             <?php $render_section_comments('section-architektur'); ?>
         </div>
 
         <!-- ───── Abschnitt 5 ───── -->
         <div class="dgptm-wsb-evl-section" id="section-datenfluss">
-            <h3>5. Datenfluss</h3>
+            <h3>5. So laeuft eine Buchung ab</h3>
             <ol class="dgptm-wsb-evl-steps-list">
-                <li><strong>Event-Anzeige</strong> &mdash; Cron-unabhaengig: Live-Abruf aus CRM ueber bestehendes <code>crm-abruf</code>-Modul, Filter <code>Event_Type = "Workshop"</code> + <code>From_Date &gt;= heute</code>.</li>
-                <li><strong>Ticket-Auswahl</strong> &mdash; Tickets kommen aus dem Event-Record (<code>Tickets</code>-Array von Zoho Backstage).</li>
-                <li><strong>Buchungs-Submit</strong> &mdash; Capacity-Check &rarr; Veranstal_X_Contacts-Eintrag mit Status <em>Zahlung ausstehend</em> (oder <em>Warteliste</em>) &rarr; bei bezahlten Tickets: Stripe Checkout Session erzeugen.</li>
-                <li><strong>Stripe-Webhook</strong>
-                    <ul>
-                        <li><code>checkout.session.completed</code> &rarr; Status auf <em>Nicht abgerechnet</em>, Blueprint auf <em>Angemeldet</em>, Bestaetigungs-Mail mit ICS.</li>
-                        <li><code>checkout.session.expired</code> &rarr; Veranstal_X_Contacts-Eintrag wird geloescht, Platz frei.</li>
-                    </ul>
-                </li>
-                <li><strong>Warteliste-Watcher</strong> (15 min) &mdash; Prueft Luecken zwischen belegten Plaetzen und <code>Maximum_Attendees</code>; bei Luecke: aeltester Wartelisten-Eintrag wird per E-Mail mit 24-h-Zahlungslink benachrichtigt.</li>
+                <li><strong>Workshop entdecken</strong> &mdash; Auf der Webseite werden alle kommenden Workshops als Karten gezeigt. Die Inhalte kommen direkt aus dem Mitglieder-System.</li>
+                <li><strong>Ticket auswaehlen</strong> &mdash; Die Person waehlt ein Ticket (z.&thinsp;B. &bdquo;Vollpreis&ldquo;, &bdquo;Mitgliedspreis&ldquo;).</li>
+                <li><strong>Daten eintragen</strong> &mdash; Bei eingeloggten Mitgliedern automatisch vorausgefuellt. Gaeste tragen Vor-/Nachname und E-Mail ein.</li>
+                <li><strong>Bezahlen</strong> &mdash; Weiterleitung zur Bezahlseite von Stripe. Wer nicht zahlt, dessen Buchung verfaellt automatisch &mdash; der Platz wird wieder freigegeben.</li>
+                <li><strong>Bestaetigung</strong> &mdash; Sofort nach Zahlungseingang: Bestaetigungs-E-Mail mit Kalender-Anhang.</li>
+                <li><strong>Falls voll</strong> &mdash; Die Person landet automatisch auf der Warteliste. Wird ein Platz frei, erhaelt sie eine E-Mail mit 24-Stunden-Zahlungslink.</li>
             </ol>
             <?php $render_section_comments('section-datenfluss'); ?>
         </div>
 
         <!-- ───── Abschnitt 6 ───── -->
         <div class="dgptm-wsb-evl-section" id="section-kompatibilitaet">
-            <h3>6. Kompatibilitaet zu bestehenden Modulen</h3>
+            <h3>6. Zusammenspiel mit bestehenden Funktionen</h3>
             <ul>
-                <li><strong>Edugrant</strong> &mdash; Workshop-Buchungsmodul prueft, ob Event eine Edugrant-Foerderung hat (<code>Maximum_Promotion</code> gesetzt). Falls ja: Hinweis auf Karte (&bdquo;Fuer diese Veranstaltung ist EduGrant moeglich&ldquo;) + Link zum Edugrant-Antrag. Keine Funktions-Duplizierung.</li>
-                <li><strong>Webinar-CRM-Sync</strong> &mdash; Shared <code>Crm\VeranstalXContactsWriter</code> und <code>ContactLookup</code> werden so gestaltet, dass die Webinar-Sync-Spec sie spaeter referenzieren kann. Die 4-Felder-Mail-Logik wird einmalig implementiert und beiden Modulen zur Verfuegung gestellt (nach Verschiebung in Shared-Modul).</li>
-                <li><strong>vimeo-webinare</strong> &mdash; Kein direkter Konflikt; spaetere Verallgemeinerung des Moduls auf Webinar-Buchung ist vorbereitet.</li>
+                <li><strong>Edugrant-Foerderung:</strong> Wenn fuer einen Workshop eine Foerderung verfuegbar ist, erscheint auf der Buchungs-Karte ein Hinweis und ein Link zum Foerderantrag. Das vermeidet doppelte Erfassung.</li>
+                <li><strong>Webinar-Buchung (in Vorbereitung):</strong> Die Bausteine fuer Mitglieder-Erkennung und Anmelde-Datensaetze werden so gebaut, dass die Webinar-Buchung sie spaeter direkt mitnutzen kann &mdash; ohne Doppelarbeit.</li>
+                <li><strong>vimeo-webinare (live):</strong> Bleibt unveraendert. Das Workshop-Modul greift nicht in die laufende Webinar-Loesung ein.</li>
             </ul>
             <?php $render_section_comments('section-kompatibilitaet'); ?>
         </div>
 
         <!-- ───── Abschnitt 7 ───── -->
         <div class="dgptm-wsb-evl-section" id="section-crm-erweiterungen">
-            <h3>7. Neue Felder / Erweiterungen im CRM</h3>
+            <h3>7. Anpassungen im Mitglieder-System</h3>
+            <p>Damit das Modul funktioniert, sind ein paar kleine Anpassungen im internen Mitglieder-System noetig. Diese muessen mit der Geschaeftsstelle abgestimmt werden.</p>
             <div class="dgptm-wsb-evl-highlight orange">
-                <strong>DGfK_Events</strong> &mdash; Vorschlag fuer neues Feld <code>Storno_Frist_Tage</code> (Zahl, Standard 14). Steuert Self-Service-Storno-Frist.
+                <strong>Veranstaltungs-Stammdaten</strong> &mdash; neues Feld &bdquo;Storno-Frist (Tage)&ldquo;, Standardwert z.&thinsp;B. 14 Tage. So kann pro Workshop entschieden werden, wie lange Teilnehmer:innen selbst stornieren duerfen.
                 <em>&rarr; Abstimmung mit Geschaeftsstelle noetig.</em>
             </div>
             <div class="dgptm-wsb-evl-highlight orange">
-                <strong>Veranstal_X_Contacts</strong> &mdash; Neue Status-Werte ggf. erforderlich:
+                <strong>Anmelde-Status</strong> &mdash; neue Status-Werte fuer die Teilnehmer:innen-Liste:
                 <ul>
-                    <li><em>Zahlung ausstehend</em> (waehrend Stripe-Session offen)</li>
-                    <li><em>Warteliste</em> (Capacity-Ueberlauf)</li>
-                    <li><em>Nachruecker &ndash; Zahlung ausstehend</em> (24-h-Frist aktiv)</li>
-                    <li><em>Storniert</em> (Refund erfolgt)</li>
+                    <li><em>Zahlung ausstehend</em> &mdash; waehrend die Person noch auf der Bezahlseite ist</li>
+                    <li><em>Warteliste</em> &mdash; Workshop ist voll</li>
+                    <li><em>Nachruecker:in &ndash; Zahlung ausstehend</em> &mdash; 24-Stunden-Frist laeuft</li>
+                    <li><em>Storniert</em> &mdash; Geld erstattet</li>
                 </ul>
-                <em>&rarr; Abstimmung mit Blueprint-Verantwortlichen noetig.</em>
+                <em>&rarr; Abstimmung mit Verantwortlichen fuer den Anmelde-Workflow noetig.</em>
             </div>
             <?php $render_section_comments('section-crm-erweiterungen'); ?>
         </div>
 
         <!-- ───── Abschnitt 8 ───── -->
         <div class="dgptm-wsb-evl-section" id="section-abhaengigkeiten">
-            <h3>8. Externe Abhaengigkeiten</h3>
-            <ul>
-                <li><strong>Stripe-Konto</strong> &mdash; Aktiv. Webhook-Secret muss konfiguriert werden (Endpoint: <code>/wp-json/dgptm-workshop/v1/stripe-webhook</code>).</li>
-                <li><strong>Zoho CRM</strong> &mdash; Schreibzugriff auf <code>Veranstal_X_Contacts</code> + <code>Contacts</code>; Lese-/Blueprint-Transition-Rechte.</li>
-                <li><strong>EIV-Fobi</strong> &mdash; Aktuell kein direkter Touchpoint (VNR-Erfassung erst in v2).</li>
-            </ul>
+            <h3>8. Externe Dienste</h3>
+            <table class="dgptm-wsb-evl-table">
+                <thead><tr><th>Dienst</th><th>Wofuer</th><th>Stand</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Stripe</strong> (Zahlungsanbieter)</td><td>Bezahlung und automatische Erstattung</td><td>aktiv, Konto vorhanden</td></tr>
+                    <tr><td><strong>Mitglieder-System</strong> (Zoho)</td><td>Workshop-Daten lesen, Anmeldungen schreiben</td><td>aktiv, Zugriffsrechte vorhanden</td></tr>
+                    <tr><td><strong>EIV-Fobi</strong> (Fortbildungspunkte)</td><td>Aktuell kein direkter Anschluss &mdash; Fortbildungspunkte werden weiter manuell vergeben.</td><td>folgt in Version 2</td></tr>
+                </tbody>
+            </table>
             <?php $render_section_comments('section-abhaengigkeiten'); ?>
         </div>
 
         <!-- ───── Abschnitt 9 ───── -->
         <div class="dgptm-wsb-evl-section" id="section-out-of-scope">
-            <h3>9. Nicht im Scope (v1)</h3>
+            <h3>9. Was ist NICHT enthalten?</h3>
+            <p>Damit klar ist, was diese Version <em>nicht</em> kann:</p>
             <ul>
-                <li>VNR/EIV-Fobi-Erfassung im Buchungsformular &rarr; v2</li>
-                <li>Gruppenanmeldung mit einem gemeinsamen Zahler fuer mehrere Personen (geht bereits indirekt)</li>
-                <li>Conditional-Field-Logik pro Ticket-Typ (Pflichtfelder variabel)</li>
-                <li>Webinar- und Kongress-Buchung &rarr; spaetere Module, die den Core wiederverwenden</li>
-                <li>Automatische Migration bestehender Backstage-Buchungen</li>
+                <li>Erfassung der Fortbildungspunkte-Nummer im Buchungsformular &mdash; folgt in Version 2.</li>
+                <li>Gemeinsame Buchung mehrerer Personen mit nur einem Zahler &mdash; geht aktuell nur, wenn eine Person mehrere Tickets in <em>einer</em> Buchung kauft.</li>
+                <li>Variable Pflichtfelder pro Ticket-Typ (z.&thinsp;B. fuer manche Tickets zusaetzliche Angaben).</li>
+                <li>Webinar- und Kongress-Buchung &mdash; folgen als eigene Module, die diesen Kern wiederverwenden.</li>
+                <li>Automatische Uebernahme bestehender Buchungen aus alten Systemen.</li>
+                <li>Automatische Erstellung von Teilnahme-Zertifikaten &mdash; laeuft weiter ueber die bestehende Fortbildungs-Funktion.</li>
             </ul>
             <?php $render_section_comments('section-out-of-scope'); ?>
         </div>
 
         <!-- ───── Abschnitt 10 ───── -->
         <div class="dgptm-wsb-evl-section" id="section-offene-punkte">
-            <h3>10. Offene Punkte zur Entscheidung</h3>
+            <h3>10. Offene Fragen fuer dich</h3>
+            <p>Diese Punkte brauchen eine Entscheidung, bevor wir mit der Umsetzung starten. Hinterlass deine Meinung bitte als Kommentar in diesem Abschnitt.</p>
             <div class="dgptm-wsb-evl-highlight blue">
-                <ol>
-                    <li><strong>Storno-Frist:</strong> Einheitlich (z.B. 14 Tage) oder pro Event konfigurierbar? &rarr; Vorschlag: neues Feld <code>Storno_Frist_Tage</code> am Event.</li>
-                    <li><strong>Refund-Politik nach Frist:</strong> Gar kein Refund, 50&thinsp;%, nach Kulanz? &rarr; braucht AGB-Abstimmung.</li>
-                    <li><strong>Blueprint-Status-Wording:</strong> Wie sollen die neuen Status heissen? &rarr; Vorschlag: &bdquo;Zahlung ausstehend&ldquo;, &bdquo;Warteliste&ldquo;, &bdquo;Nachruecker &ndash; Zahlung ausstehend&ldquo;, &bdquo;Storniert&ldquo;.</li>
-                    <li><strong>EduGrant-Verknuepfung:</strong> Nur Hinweis/Link auf der Karte, oder integrierter Flow &bdquo;Ich beantrage EduGrant zu dieser Buchung&ldquo;? v1-Vorschlag: nur Hinweis.</li>
-                    <li><strong>Stripe-Konto:</strong> Das Konto der Gesellschaft wird verwendet? Oder separates Sub-Konto? &rarr; Finanz-/Buchhaltungs-Entscheidung.</li>
-                    <li><strong>Teilnahme-Zertifikat</strong> nach Workshop: Bereits in diesem Modul, oder weiterhin durch <code>fortbildung</code>-Post-Type (manuell)? &rarr; v1-Vorschlag: out of scope, kommt via bestehendem <code>fortbildung</code>-Flow.</li>
-                </ol>
+                <table class="dgptm-wsb-evl-table" style="background:transparent;">
+                    <thead><tr><th>#</th><th>Frage</th><th>Vorschlag</th></tr></thead>
+                    <tbody>
+                        <tr><td>1</td><td><strong>Wie lange duerfen Teilnehmer:innen selbst stornieren?</strong></td><td>14 Tage einheitlich, pro Workshop aenderbar</td></tr>
+                        <tr><td>2</td><td><strong>Was passiert, wenn nach der Frist storniert wird?</strong></td><td>Vorschlag: keine Erstattung. Haertefaelle nach Kulanz &mdash; muss mit AGB abgestimmt werden.</td></tr>
+                        <tr><td>3</td><td><strong>Wie sollen die neuen Anmelde-Status heissen?</strong></td><td>Vorschlag: &bdquo;Zahlung ausstehend&ldquo;, &bdquo;Warteliste&ldquo;, &bdquo;Nachruecker:in &ndash; Zahlung ausstehend&ldquo;, &bdquo;Storniert&ldquo;</td></tr>
+                        <tr><td>4</td><td><strong>Edugrant-Foerderung:</strong> Nur Hinweis und Link &mdash; oder integrierter Antrag aus der Buchung heraus?</td><td>Vorschlag: erstmal nur Hinweis und Link.</td></tr>
+                        <tr><td>5</td><td><strong>Welches Stripe-Konto wird verwendet?</strong></td><td>Vorhandenes DGPTM-Konto oder ein eigenes Sub-Konto fuer Workshops? &mdash; Buchhaltungs-Entscheidung.</td></tr>
+                        <tr><td>6</td><td><strong>Teilnahme-Zertifikat nach Workshop direkt aus diesem Modul?</strong></td><td>Vorschlag: nein, weiterhin ueber die bestehende Fortbildungs-Funktion.</td></tr>
+                    </tbody>
+                </table>
             </div>
             <?php $render_section_comments('section-offene-punkte'); ?>
-        </div>
-
-        <!-- ───── Abschnitt 11 ───── -->
-        <div class="dgptm-wsb-evl-section" id="section-zeitplan">
-            <h3>11. Zeitplan (Schaetzung)</h3>
-            <table class="dgptm-wsb-evl-table">
-                <thead><tr><th>Phase</th><th>Aufwand</th></tr></thead>
-                <tbody>
-                    <tr><td>Implementierung Core (Events, Booking, Stripe, CRM, Mail)</td><td>~3 Personentage</td></tr>
-                    <tr><td>Frontend (Shortcodes, Templates, JS-Progressive-Form)</td><td>~1,5 Personentage</td></tr>
-                    <tr><td>Warteliste, Storno, Webhook-Edge-Cases</td><td>~1,5 Personentage</td></tr>
-                    <tr><td>Test auf Staging + Anpassungen</td><td>~1 Personentag</td></tr>
-                    <tr><td><strong>Summe</strong></td><td><strong>~7 Personentage</strong></td></tr>
-                </tbody>
-            </table>
-            <?php $render_section_comments('section-zeitplan'); ?>
         </div>
 
     </div><!-- /.dgptm-wsb-evl-dokument -->

@@ -56,17 +56,16 @@ class DGPTM_Workshop_Entscheidungsvorlage {
      */
     public function get_sections() {
         return [
-            'section-ziel'              => '1. Ziel des Moduls',
-            'section-ausgangslage'      => '2. Ausgangslage',
-            'section-entscheidungen'    => '3. Getroffene Design-Entscheidungen',
-            'section-architektur'       => '4. Architektur-Kern',
-            'section-datenfluss'        => '5. Datenfluss',
-            'section-kompatibilitaet'   => '6. Kompatibilitaet zu bestehenden Modulen',
-            'section-crm-erweiterungen' => '7. Neue Felder / Erweiterungen im CRM',
-            'section-abhaengigkeiten'   => '8. Externe Abhaengigkeiten',
-            'section-out-of-scope'      => '9. Nicht im Scope (v1)',
-            'section-offene-punkte'     => '10. Offene Punkte zur Entscheidung',
-            'section-zeitplan'          => '11. Zeitplan',
+            'section-ziel'              => '1. Worum geht es?',
+            'section-ausgangslage'      => '2. Was haben wir heute?',
+            'section-entscheidungen'    => '3. Was wurde wie entschieden?',
+            'section-architektur'       => '4. Wie ist die Loesung aufgebaut?',
+            'section-datenfluss'        => '5. So laeuft eine Buchung ab',
+            'section-kompatibilitaet'   => '6. Zusammenspiel mit bestehenden Funktionen',
+            'section-crm-erweiterungen' => '7. Anpassungen im Mitglieder-System',
+            'section-abhaengigkeiten'   => '8. Externe Dienste',
+            'section-out-of-scope'      => '9. Was ist NICHT enthalten?',
+            'section-offene-punkte'     => '10. Offene Fragen fuer dich',
         ];
     }
 
@@ -76,7 +75,7 @@ class DGPTM_Workshop_Entscheidungsvorlage {
 
     public function render_shortcode($atts) {
         if (!is_user_logged_in()) {
-            return '<p class="dgptm-wsb-evl-hinweis">Bitte melden Sie sich an, um dieses Dokument einzusehen.</p>';
+            return '<p class="dgptm-wsb-evl-hinweis">Bitte melde dich an, um dieses Dokument einzusehen.</p>';
         }
 
         $user = wp_get_current_user();
@@ -241,7 +240,7 @@ class DGPTM_Workshop_Entscheidungsvorlage {
 
         foreach ($approvals as $a) {
             if ((int) $a['user_id'] === $user->ID) {
-                wp_send_json_error('Sie haben bereits freigegeben.');
+                wp_send_json_error('Du hast bereits freigegeben.');
             }
         }
 
@@ -429,7 +428,7 @@ class DGPTM_Workshop_Entscheidungsvorlage {
   <tr>
     <td style="background:#f9fafb;padding:16px 30px;border-top:1px solid #e5e7eb;">
       <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">
-        Diese Nachricht wurde automatisch gesendet, weil Sie am Freigabe-Prozess &bdquo;' . $doc_name . '&ldquo; beteiligt sind.<br>
+        Diese Nachricht wurde automatisch gesendet, weil du am Freigabe-Prozess &bdquo;' . $doc_name . '&ldquo; beteiligt bist.<br>
         Deutsche Gesellschaft fuer Perfusiologie und Technische Medizin e.V.
       </p>
     </td>

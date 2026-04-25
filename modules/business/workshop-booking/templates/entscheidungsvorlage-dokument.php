@@ -195,12 +195,12 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
         <!-- ───── Abschnitt 1 ───── -->
         <div class="dgptm-wsb-evl-section" id="section-ziel">
             <h3>1. Worum geht es?</h3>
-            <p>Wir wollen unsere <strong>Workshops online buchbar</strong> machen &mdash; inklusive direkter Bezahlung. Bisher laufen Anmeldung und Bezahlung über E-Mail an die Geschäftsstelle und manuelle Rechnungen.</p>
+            <p>Bisher läuft die Buchung <em>aller</em> Veranstaltungen über <strong>Zoho Backstage</strong>. Für große Formate (Kongresse, Sachkundekurse) ist das passend &mdash; für kleine Workshops verursacht es überproportionalen Einrichtungs- und Wartungsaufwand pro Veranstaltung. Wir wollen kleinere Workshops daher direkt über die DGPTM-Webseite buchbar machen.</p>
             <p><strong>Hauptmotivation:</strong></p>
             <ul>
-                <li><strong>Entkopplung kleinerer Veranstaltungen von Zoho Backstage</strong> &mdash; reduziert Wartungs- und Einrichtungsaufwand, der pro Workshop aktuell anfällt.</li>
+                <li><strong>Entkopplung kleinerer Veranstaltungen von Zoho Backstage</strong> &mdash; reduziert den hohen Einrichtungs- und Wartungsaufwand, der dort pro Workshop aktuell anfällt.</li>
                 <li><strong>Eigenverantwortung der Arbeitsgemeinschaften</strong> &mdash; AGs können ihre Workshops selbst anlegen. Die Geschäftsstelle prüft und gibt frei, bevor die Buchung öffentlich wird.</li>
-                <li><strong>Komfort für Teilnehmer:innen</strong> &mdash; ein zentraler Online-Buchungsweg statt E-Mail-Pingpong.</li>
+                <li><strong>Einheitliche Sicht für Teilnehmer:innen</strong> &mdash; Buchungen aus dem neuen Tool und aus Backstage erscheinen gemeinsam im Mitgliederbereich (siehe Punkt 13).</li>
             </ul>
             <p>Mit dem neuen Modul soll Folgendes möglich werden:</p>
             <ul>
@@ -222,15 +222,15 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
         <div class="dgptm-wsb-evl-section" id="section-ausgangslage">
             <h3>2. Was haben wir heute?</h3>
             <table class="dgptm-wsb-evl-table">
-                <thead><tr><th>Heute vorhanden</th><th>Was fehlt</th></tr></thead>
+                <thead><tr><th>Heute vorhanden</th><th>Was fehlt / belastet</th></tr></thead>
                 <tbody>
-                    <tr><td>Workshops sind im internen Zoho CRM gepflegt.</td><td>Sie sind nicht online buchbar.</td></tr>
-                    <tr><td>Auf der Webseite werden Workshops bereits als Liste angezeigt (Edugrant-Modul).</td><td>Eine Buchung von dort aus ist nicht möglich.</td></tr>
+                    <tr><td>Alle Veranstaltungen (Workshops, Kongresse, Sachkundekurse) werden in <strong>Zoho Backstage</strong> angelegt und buchbar gemacht.</td><td>Pro Workshop fällt der gleiche Einrichtungs- und Wartungsaufwand wie für eine große Veranstaltung an &mdash; unverhältnismäßig für kleine Formate.</td></tr>
+                    <tr><td>Auf der Webseite werden Workshops bereits als Liste angezeigt (Edugrant-Modul).</td><td>Direkte Buchung von der Webseite aus ist nicht möglich &mdash; Klick führt nach Backstage.</td></tr>
                     <tr><td>Bezahlung per Kreditkarte/SEPA gibt es bereits an anderer Stelle.</td><td>Diese ist an alte Formulare gekoppelt und nicht für Workshops nutzbar.</td></tr>
-                    <tr><td>Webinare laufen über eine eigene, fertige Lösung.</td><td>Sie hat keine Anmelde- und Buchungslogik &mdash; das war auch nicht ihr Zweck.</td></tr>
+                    <tr><td>Webinare laufen über eine eigene, fertige Lösung (vimeo-webinare).</td><td>Sie hat keine Anmelde-/Buchungs-/Ticketlogik &mdash; das war auch nicht ihr Zweck.</td></tr>
                 </tbody>
             </table>
-            <p><strong>Konsequenz heute:</strong> Wer einen Workshop buchen möchte, schreibt eine E-Mail an die Geschäftsstelle. Bezahlung folgt per Rechnung. Das ist viel manueller Aufwand und unbequem für Teilnehmer:innen.</p>
+            <p><strong>Konsequenz heute:</strong> Jede Arbeitsgemeinschaft, die einen Workshop machen will, ist auf die Geschäftsstelle angewiesen, um in Backstage eine vollständige Veranstaltungs-Konfiguration anzulegen. Das skaliert nicht und bremst kleine Formate aus.</p>
             <?php $render_section_comments('section-ausgangslage'); ?>
         </div>
 

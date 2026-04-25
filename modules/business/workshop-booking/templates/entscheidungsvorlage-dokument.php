@@ -178,7 +178,7 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
     <div class="dgptm-wsb-evl-dokument">
 
         <div class="dgptm-wsb-evl-header">
-            <h2>Workshops online buchbar machen &mdash; Entscheidungsvorlage</h2>
+            <h2>Workshops und Webinare aus Backstage auslagern und über die Homepage buchbar machen</h2>
             <p class="dgptm-wsb-evl-subtitle">Was wird gebaut? Was muss noch entschieden werden?</p>
             <p class="dgptm-wsb-evl-meta">DGPTM | Stand: 25.04.2026 (erweitert um Tickets, Mitgliederbereich, Teilnahmebescheinigungen) | Empfänger:innen: Vorstand, Geschäftsstelle, Kursleitungen</p>
         </div>

@@ -43,6 +43,8 @@ class DGPTM_Stipendium_Vorsitz_Dashboard {
         add_action('wp_ajax_dgptm_stipendium_archivieren', [$this, 'ajax_archivieren']);
         add_action('wp_ajax_dgptm_stipendium_load_bewerbungen', [$this, 'ajax_load_bewerbungen']);
         add_action('wp_ajax_dgptm_stipendium_save_runde', [$this, 'ajax_save_runde']);
+        add_action('wp_ajax_dgptm_stipendium_laufende',   [$this, 'ajax_laufende']);
+        add_action('wp_ajax_dgptm_stipendium_erinnern',   [$this, 'ajax_erinnern']);
     }
 
     /**
@@ -462,6 +464,15 @@ class DGPTM_Stipendium_Vorsitz_Dashboard {
             }
         }
 
+        // Person ggf. in Stammdaten aufnehmen (idempotent ueber E-Mail)
+        $save_pool = !empty($_POST['save_pool']);
+        if ($save_pool && class_exists('DGPTM_Stipendium_Gutachter_Pool')) {
+            DGPTM_Stipendium_Gutachter_Pool::upsert([
+                'name'  => $gutachter_name,
+                'email' => $gutachter_email,
+            ]);
+        }
+
         // Einladungs-Mail senden
         $frist_datum = date_i18n('d.m.Y', strtotime("+{$frist_tage} days"));
         $mail_sent = DGPTM_Stipendium_Mail_Templates::send_einladung([
@@ -606,6 +617,135 @@ class DGPTM_Stipendium_Vorsitz_Dashboard {
     }
 
     /* ──────────────────────────────────────────
+     * AJAX: Uebersicht laufende Gutachten
+     * ────────────────────────────────────────── */
+
+    public function ajax_laufende() {
+        check_ajax_referer(self::NONCE_ACTION, 'nonce');
+        if (!$this->user_is_vorsitz()) {
+            wp_send_json_error('Keine Berechtigung.', 403);
+        }
+
+        global $wpdb;
+        $token_table = $wpdb->prefix . 'dgptm_stipendium_tokens';
+
+        $rows = $wpdb->get_results(
+            "SELECT id, token, stipendium_id, gutachter_name, gutachter_email,
+                    bewertung_status, created_at, expires_at
+             FROM {$token_table}
+             WHERE bewertung_status IN ('ausstehend', 'entwurf')
+             ORDER BY expires_at ASC
+             LIMIT 200",
+            ARRAY_A
+        ) ?: [];
+
+        $now = time();
+        $items = [];
+        foreach ($rows as $r) {
+            $exp_ts  = strtotime($r['expires_at']);
+            $tage_offen = floor(($now - strtotime($r['created_at'])) / DAY_IN_SECONDS);
+            $tage_rest  = ceil(($exp_ts - $now) / DAY_IN_SECONDS);
+            $ueberfaellig = $tage_rest < 0;
+
+            $bewerber_name = $this->resolve_bewerber_name($r['stipendium_id']);
+
+            $items[] = [
+                'id'             => (int) $r['id'],
+                'stipendium_id'  => $r['stipendium_id'],
+                'bewerber_name'  => $bewerber_name,
+                'gutachter_name' => $r['gutachter_name'],
+                'gutachter_email'=> $r['gutachter_email'],
+                'status'         => $r['bewertung_status'],
+                'tage_offen'     => max(0, (int) $tage_offen),
+                'tage_rest'      => (int) $tage_rest,
+                'frist'          => date_i18n('d.m.Y', $exp_ts),
+                'ueberfaellig'   => $ueberfaellig,
+            ];
+        }
+
+        wp_send_json_success(['items' => $items]);
+    }
+
+    /**
+     * Erinnerungs-Mail an Gutachter:in (gleicher Token) senden.
+     */
+    public function ajax_erinnern() {
+        check_ajax_referer(self::NONCE_ACTION, 'nonce');
+        if (!$this->user_is_vorsitz()) {
+            wp_send_json_error('Keine Berechtigung.', 403);
+        }
+
+        $token_id = (int) ($_POST['token_id'] ?? 0);
+        if ($token_id <= 0) wp_send_json_error('Ungueltige Token-ID.');
+
+        global $wpdb;
+        $token_table = $wpdb->prefix . 'dgptm_stipendium_tokens';
+        $row = $wpdb->get_row(
+            $wpdb->prepare("SELECT * FROM {$token_table} WHERE id = %d LIMIT 1", $token_id),
+            ARRAY_A
+        );
+        if (!$row) wp_send_json_error('Token nicht gefunden.');
+        if ($row['bewertung_status'] === 'abgeschlossen') {
+            wp_send_json_error('Bewertung wurde bereits abgeschlossen.');
+        }
+
+        $bewerber_name = $this->resolve_bewerber_name($row['stipendium_id']);
+        $stipendientyp = '';
+        $runde = '';
+        if (strpos($row['stipendium_id'], 'MAN_') === 0 && class_exists('DGPTM_Stipendium_Bewerbung_Manuell')) {
+            $b = DGPTM_Stipendium_Bewerbung_Manuell::get_by_id($row['stipendium_id']);
+            $stipendientyp = $b['Stipendientyp'] ?? '';
+            $runde         = $b['Runde'] ?? '';
+        } elseif ($this->zoho) {
+            $b = $this->zoho->get_stipendium($row['stipendium_id']);
+            if (!is_wp_error($b)) {
+                $data = $b['data'][0] ?? $b;
+                $stipendientyp = $data['Stipendientyp'] ?? '';
+                $runde         = $data['Runde'] ?? '';
+            }
+        }
+
+        $url = $this->token_manager
+            ? $this->token_manager->get_gutachten_url($row['token'])
+            : home_url('/karriere/stipendien/stipendium-gutachten/?token=' . $row['token']);
+
+        $sent = DGPTM_Stipendium_Mail_Templates::send_einladung([
+            'gutachter_name'  => $row['gutachter_name'],
+            'gutachter_email' => $row['gutachter_email'],
+            'bewerber_name'   => $bewerber_name,
+            'stipendientyp'   => $stipendientyp,
+            'runde'           => $runde,
+            'frist'           => date_i18n('d.m.Y', strtotime($row['expires_at'])),
+            'gutachten_url'   => $url,
+        ]);
+
+        if (!$sent) wp_send_json_error('Mail konnte nicht gesendet werden.');
+        wp_send_json_success(['message' => 'Erinnerung an ' . $row['gutachter_name'] . ' gesendet.']);
+    }
+
+    /**
+     * Hilfs-Cache: Bewerber-Name fuer eine Stipendium-ID.
+     */
+    private function resolve_bewerber_name($stipendium_id) {
+        static $cache = [];
+        if (isset($cache[$stipendium_id])) return $cache[$stipendium_id];
+
+        $name = $stipendium_id;
+        if (strpos($stipendium_id, 'MAN_') === 0 && class_exists('DGPTM_Stipendium_Bewerbung_Manuell')) {
+            $b = DGPTM_Stipendium_Bewerbung_Manuell::get_by_id($stipendium_id);
+            if ($b) $name = $b['Bewerber']['name'] ?? $b['Name'] ?? $stipendium_id;
+        } elseif ($this->zoho) {
+            $b = $this->zoho->get_stipendium($stipendium_id);
+            if (!is_wp_error($b)) {
+                $data = $b['data'][0] ?? $b;
+                $name = $data['Bewerber']['name'] ?? $data['Name'] ?? $stipendium_id;
+            }
+        }
+        $cache[$stipendium_id] = $name;
+        return $name;
+    }
+
+    /* ──────────────────────────────────────────
      * AJAX: Stipendiums-Runde anlegen / aktualisieren
      * ────────────────────────────────────────── */
 
@@ -685,13 +825,26 @@ class DGPTM_Stipendium_Vorsitz_Dashboard {
      * ────────────────────────────────────────── */
 
     /**
-     * Liefert distincte Gutachter aus allen bisherigen Token-Eintraegen,
-     * damit der Vorsitzende sie schnell erneut einladen kann.
+     * Liefert die Gutachter-Stammdaten fuer das Pool-Dropdown.
+     * Faellt auf bisherige Token-Eintraege zurueck, falls Pool leer ist.
      */
     private function get_gutachter_pool() {
+        if (class_exists('DGPTM_Stipendium_Gutachter_Pool')) {
+            $pool = DGPTM_Stipendium_Gutachter_Pool::list_active();
+            if (!empty($pool)) {
+                return array_map(function ($g) {
+                    return [
+                        'gutachter_name'  => $g['name'],
+                        'gutachter_email' => $g['email'],
+                        'fachgebiet'      => $g['fachgebiet'] ?? '',
+                    ];
+                }, $pool);
+            }
+        }
+
         global $wpdb;
         $table = $wpdb->prefix . 'dgptm_stipendium_tokens';
-        $rows = $wpdb->get_results(
+        return $wpdb->get_results(
             "SELECT gutachter_name, gutachter_email, MAX(created_at) AS letzter_einsatz
              FROM {$table}
              GROUP BY gutachter_email
@@ -699,7 +852,6 @@ class DGPTM_Stipendium_Vorsitz_Dashboard {
              LIMIT 50",
             ARRAY_A
         ) ?: [];
-        return $rows;
     }
 
     /* ──────────────────────────────────────────

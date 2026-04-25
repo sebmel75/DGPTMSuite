@@ -120,9 +120,9 @@
      */
     function manualButtons(item) {
         if (!item.is_manual) return '';
-        return '<button class="dgptm-vorsitz-btn dgptm-vorsitz-btn--sm dgptm-vorsitz-btn--outline" '
+        return '<button class="dgptm-fe-btn dgptm-fe-btn-small" '
             + 'data-action="manuell-edit" data-id="' + item.id + '">Bearbeiten</button>'
-            + '<button class="dgptm-vorsitz-btn dgptm-vorsitz-btn--sm dgptm-vorsitz-btn--danger" '
+            + '<button class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-btn-danger" '
             + 'data-action="manuell-delete" data-id="' + item.id + '">Löschen</button>';
     }
 
@@ -135,9 +135,9 @@
             + cardHeader(item)
             + (datum ? '<div class="dgptm-vorsitz-card-meta">Eingang: ' + datum + '</div>' : '')
             + '<div class="dgptm-vorsitz-card-actions">'
-            + '<button class="dgptm-vorsitz-btn dgptm-vorsitz-btn--sm dgptm-vorsitz-btn--primary" '
+            + '<button class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-btn-primary" '
             + 'data-action="freigeben" data-id="' + item.id + '">Freigeben</button>'
-            + '<button class="dgptm-vorsitz-btn dgptm-vorsitz-btn--sm dgptm-vorsitz-btn--danger" '
+            + '<button class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-btn-danger" '
             + 'data-action="ablehnen" data-id="' + item.id + '">Ablehnen</button>'
             + manualButtons(item)
             + '</div></div>';
@@ -166,7 +166,7 @@
             + '<div class="dgptm-vorsitz-card-meta">Gutachter: ' + item.gutachter_done + '/' + item.gutachter_total + ' zugewiesen</div>'
             + gutachterHtml
             + '<div class="dgptm-vorsitz-card-actions">'
-            + '<button class="dgptm-vorsitz-btn dgptm-vorsitz-btn--sm dgptm-vorsitz-btn--primary" '
+            + '<button class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-btn-primary" '
             + 'data-action="einladen" data-id="' + item.id + '" data-name="' + escAttr(item.name) + '">+ Gutachter einladen</button>'
             + manualButtons(item)
             + '</div></div>';
@@ -194,7 +194,7 @@
             + '<div class="dgptm-vorsitz-card-meta">' + item.gutachter_done + '/' + item.gutachter_total + ' Gutachten abgeschlossen</div>'
             + gutachterHtml
             + '<div class="dgptm-vorsitz-card-actions">'
-            + '<button class="dgptm-vorsitz-btn dgptm-vorsitz-btn--sm dgptm-vorsitz-btn--primary" '
+            + '<button class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-btn-primary" '
             + 'data-action="einladen" data-id="' + item.id + '" data-name="' + escAttr(item.name) + '">+ Weiteren Gutachter einladen</button>'
             + manualButtons(item)
             + '</div></div>';
@@ -229,7 +229,7 @@
                 + '<td>';
 
             if (!item.vergeben && item.foerderfaehig) {
-                html += '<button class="dgptm-vorsitz-btn dgptm-vorsitz-btn--xs dgptm-vorsitz-btn--primary" '
+                html += '<button class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-btn-primary" '
                     + 'data-action="vergeben" data-id="' + item.id + '">Vergeben</button>';
             }
 
@@ -295,6 +295,7 @@
         var name = $('#dgptm-einladung-name').val().trim();
         var email = $('#dgptm-einladung-email').val().trim();
         var frist = $('#dgptm-einladung-frist').val();
+        var savePool = $('#dgptm-einladung-save-pool').is(':checked') ? 1 : 0;
 
         if (!name || !email) {
             alert('Bitte Name und E-Mail ausfuellen.');
@@ -314,6 +315,7 @@
                 gutachter_name: name,
                 gutachter_email: email,
                 frist: frist,
+                save_pool: savePool,
                 runde: $('#dgptm-vorsitz-runde').val()
             },
             success: function(response) {
@@ -330,6 +332,175 @@
             },
             complete: function() {
                 sendBtn.text('Einladung senden').prop('disabled', false);
+            }
+        });
+    }
+
+    /* ──────────────────────────────────────────
+     * Laufende Gutachten — Uebersicht
+     * ────────────────────────────────────────── */
+
+    function loadLaufende() {
+        $.ajax({
+            url: ajaxUrl,
+            method: 'POST',
+            data: { action: 'dgptm_stipendium_laufende', nonce: nonce },
+            success: function(response) {
+                if (!response.success) return;
+                renderLaufende(response.data.items || []);
+            }
+        });
+    }
+
+    function renderLaufende(items) {
+        var $sec = $('#dgptm-section-laufende');
+        var $box = $('#dgptm-laufende-table');
+        if (!items.length) { $sec.hide(); return; }
+        $('#dgptm-count-laufende').text(items.length);
+
+        var html = '<table><thead><tr>'
+            + '<th>Bewerber:in</th><th>Gutachter:in</th><th>Status</th>'
+            + '<th>Frist</th><th>Tage offen</th><th>Aktion</th>'
+            + '</tr></thead><tbody>';
+
+        items.forEach(function(it) {
+            var rowCls = it.ueberfaellig ? 'dgptm-vorsitz-laufende-row--ueberfaellig' : '';
+            var statusCls = 'dgptm-vorsitz-laufende-status--' + it.status;
+            var statusLabel = it.status === 'entwurf' ? 'Entwurf' : 'ausstehend';
+            var fristTxt = it.frist;
+            if (it.ueberfaellig) fristTxt += ' (überfällig)';
+
+            html += '<tr class="' + rowCls + '">'
+                + '<td>' + escHtml(it.bewerber_name) + '</td>'
+                + '<td>' + escHtml(it.gutachter_name) + '<br><small style="color:#888;">' + escHtml(it.gutachter_email) + '</small></td>'
+                + '<td><span class="dgptm-vorsitz-laufende-status ' + statusCls + '">' + statusLabel + '</span></td>'
+                + '<td class="dgptm-vorsitz-frist">' + fristTxt + '</td>'
+                + '<td>' + it.tage_offen + ' Tage</td>'
+                + '<td><button class="dgptm-fe-btn dgptm-fe-btn-small" data-action="erinnern" data-token-id="' + it.id + '">Erinnern</button></td>'
+                + '</tr>';
+        });
+
+        html += '</tbody></table>';
+        $box.html(html);
+        $sec.show();
+    }
+
+    function sendErinnerung(tokenId) {
+        $.ajax({
+            url: ajaxUrl, method: 'POST',
+            data: { action: 'dgptm_stipendium_erinnern', nonce: nonce, token_id: tokenId },
+            success: function(response) {
+                alert(response.success
+                    ? (response.data?.message || 'Erinnerung gesendet.')
+                    : (response.data?.message || response.data || strings.fehler));
+            },
+            error: function() { alert(strings.fehler); }
+        });
+    }
+
+    /* ──────────────────────────────────────────
+     * Gutachter-Stammdaten — Modal
+     * ────────────────────────────────────────── */
+
+    function openGutachterModal() {
+        $('#dgptm-gutachter-modal').fadeIn(150);
+        loadGutachterList('');
+    }
+
+    function closeGutachterModal() { $('#dgptm-gutachter-modal').fadeOut(150); }
+
+    function loadGutachterList(search) {
+        var $list = $('#dgptm-gutachter-list');
+        $list.html('<p style="text-align:center;color:#888;">Wird geladen...</p>');
+        $.ajax({
+            url: ajaxUrl, method: 'POST',
+            data: { action: 'dgptm_stipendium_pool_list', nonce: nonce, search: search || '' },
+            success: function(response) {
+                if (!response.success) {
+                    $list.html('<p style="color:#d00;">' + (response.data || 'Fehler') + '</p>');
+                    return;
+                }
+                var items = response.data.items || [];
+                if (!items.length) {
+                    $list.html('<p style="text-align:center;color:#888;padding:20px;">Noch keine Gutachter:innen erfasst.</p>');
+                    return;
+                }
+                var html = '<table class="dgptm-vorsitz-gutachter-table"><thead><tr>'
+                    + '<th>Name</th><th>E-Mail</th><th>Fachgebiet</th><th>Mitglied</th><th>Status</th><th></th>'
+                    + '</tr></thead><tbody>';
+                items.forEach(function(g) {
+                    html += '<tr>'
+                        + '<td>' + escHtml(g.name) + '</td>'
+                        + '<td>' + escHtml(g.email) + '</td>'
+                        + '<td>' + escHtml(g.fachgebiet || '—') + '</td>'
+                        + '<td>' + (g.mitglied == 1 ? 'Ja' : '—') + '</td>'
+                        + '<td>' + (g.aktiv == 1 ? 'aktiv' : 'inaktiv') + '</td>'
+                        + '<td>'
+                        + '<button class="dgptm-fe-btn dgptm-fe-btn-small" data-action="pool-edit" data-id="' + g.id + '">Bearbeiten</button>'
+                        + (g.aktiv == 1
+                            ? ' <button class="dgptm-fe-btn dgptm-fe-btn-small dgptm-fe-btn-danger" data-action="pool-delete" data-id="' + g.id + '">Deaktivieren</button>'
+                            : '')
+                        + '</td></tr>';
+                });
+                html += '</tbody></table>';
+                $list.html(html);
+                $list.data('items', items);
+            }
+        });
+    }
+
+    function openGutachterForm(item) {
+        $('#dgptm-gutachter-form').show();
+        $('#dgptm-gutachter-form-id').val(item ? item.id : '');
+        $('#dgptm-gutachter-form-title').text(item ? 'Gutachter:in bearbeiten' : 'Neue:r Gutachter:in');
+        $('#dgptm-gutachter-form-name').val(item ? item.name : '');
+        $('#dgptm-gutachter-form-email').val(item ? item.email : '');
+        $('#dgptm-gutachter-form-fachgebiet').val(item ? (item.fachgebiet || '') : '');
+        $('#dgptm-gutachter-form-mitglied').val(item ? String(item.mitglied || 0) : '0');
+        $('#dgptm-gutachter-form-notizen').val(item ? (item.notizen || '') : '');
+    }
+
+    function closeGutachterForm() {
+        $('#dgptm-gutachter-form').hide();
+    }
+
+    function saveGutachter() {
+        var data = {
+            action:     'dgptm_stipendium_pool_save',
+            nonce:      nonce,
+            id:         $('#dgptm-gutachter-form-id').val() || 0,
+            name:       $('#dgptm-gutachter-form-name').val().trim(),
+            email:      $('#dgptm-gutachter-form-email').val().trim(),
+            fachgebiet: $('#dgptm-gutachter-form-fachgebiet').val().trim(),
+            mitglied:   $('#dgptm-gutachter-form-mitglied').val(),
+            notizen:    $('#dgptm-gutachter-form-notizen').val(),
+            aktiv:      1
+        };
+        if (!data.name || !data.email) { alert('Name und E-Mail sind Pflicht.'); return; }
+        $.ajax({
+            url: ajaxUrl, method: 'POST', data: data,
+            success: function(response) {
+                if (response.success) {
+                    closeGutachterForm();
+                    loadGutachterList($('#dgptm-gutachter-search').val());
+                } else {
+                    alert(response.data?.message || response.data || strings.fehler);
+                }
+            }
+        });
+    }
+
+    function deleteGutachter(id) {
+        if (!confirm('Diesen Gutachter-Eintrag deaktivieren? (Bestehende Tokens bleiben erhalten.)')) return;
+        $.ajax({
+            url: ajaxUrl, method: 'POST',
+            data: { action: 'dgptm_stipendium_pool_delete', nonce: nonce, id: id },
+            success: function(response) {
+                if (response.success) {
+                    loadGutachterList($('#dgptm-gutachter-search').val());
+                } else {
+                    alert(response.data?.message || response.data || strings.fehler);
+                }
             }
         });
     }
@@ -702,6 +873,7 @@
 
         // Initial laden
         loadBewerbungen();
+        loadLaufende();
 
         // Runde wechseln
         $('#dgptm-vorsitz-runde').on('change', loadBewerbungen);
@@ -737,6 +909,17 @@
                 case 'manuell-delete':
                     deleteManuell(id);
                     break;
+                case 'erinnern':
+                    sendErinnerung(btn.data('token-id'));
+                    break;
+                case 'pool-edit':
+                    var items = $('#dgptm-gutachter-list').data('items') || [];
+                    var match = items.find(function(g){ return String(g.id) === String(id); });
+                    if (match) openGutachterForm(match);
+                    break;
+                case 'pool-delete':
+                    deleteGutachter(id);
+                    break;
             }
         });
 
@@ -767,6 +950,19 @@
             // Runden-Bezeichnung leer lassen (neue Runde fuer bestehenden Typ)
         });
 
+        // Gutachter-Stammdaten-Modal
+        $('#dgptm-vorsitz-btn-gutachter').on('click', openGutachterModal);
+        $('#dgptm-gutachter-close').on('click', closeGutachterModal);
+        $('#dgptm-gutachter-new').on('click', function() { openGutachterForm(null); });
+        $('#dgptm-gutachter-form-save').on('click', saveGutachter);
+        $('#dgptm-gutachter-form-cancel').on('click', closeGutachterForm);
+        var gutachterSearchTimer;
+        $('#dgptm-gutachter-search').on('input', function() {
+            clearTimeout(gutachterSearchTimer);
+            var q = $(this).val();
+            gutachterSearchTimer = setTimeout(function() { loadGutachterList(q); }, 250);
+        });
+
         // Manuell-Modal
         $('#dgptm-vorsitz-btn-manuell-add').on('click', function() { openManuellModal(null); });
         $('#dgptm-manuell-close, #dgptm-manuell-cancel').on('click', closeManuellModal);
@@ -774,7 +970,7 @@
         $('#dgptm-manuell-orcid-btn').on('click', lookupOrcid);
 
         // Modals schliessen bei Klick ausserhalb
-        $('#dgptm-einladung-modal, #dgptm-manuell-modal, #dgptm-runde-modal').on('click', function(e) {
+        $('#dgptm-einladung-modal, #dgptm-manuell-modal, #dgptm-runde-modal, #dgptm-gutachter-modal').on('click', function(e) {
             if ($(e.target).hasClass('dgptm-vorsitz-modal-overlay')) {
                 $(this).fadeOut(200);
             }

@@ -94,6 +94,10 @@ if (!class_exists('DGPTM_Stipendium')) {
             require_once $this->plugin_path . 'includes/class-bewerbung-manuell.php';
             $this->bewerbung_manuell = new DGPTM_Stipendium_Bewerbung_Manuell();
 
+            // Gutachter-Stammdaten-Pool
+            require_once $this->plugin_path . 'includes/class-gutachter-pool.php';
+            new DGPTM_Stipendium_Gutachter_Pool();
+
             // Vorsitzenden-Dashboard
             require_once $this->plugin_path . 'includes/class-vorsitz-dashboard.php';
             $this->vorsitz_dashboard = new DGPTM_Stipendium_Vorsitz_Dashboard(

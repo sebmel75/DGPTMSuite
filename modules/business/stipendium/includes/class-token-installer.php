@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) exit;
 class DGPTM_Stipendium_Token_Installer {
 
     const DB_VERSION_KEY = 'dgptm_stipendium_token_db_version';
-    const DB_VERSION     = '1.1';
+    const DB_VERSION     = '1.2';
 
     /**
      * Tabelle erstellen oder aktualisieren.
@@ -75,9 +75,27 @@ class DGPTM_Stipendium_Token_Installer {
             KEY status (status)
         ) {$charset_collate};";
 
+        $gutachter_table = $wpdb->prefix . 'dgptm_stipendium_gutachter';
+        $sql_gutachter = "CREATE TABLE {$gutachter_table} (
+            id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            name VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            fachgebiet VARCHAR(255) DEFAULT '',
+            mitglied TINYINT(1) NOT NULL DEFAULT 0,
+            notizen TEXT,
+            aktiv TINYINT(1) NOT NULL DEFAULT 1,
+            created_by BIGINT(20) UNSIGNED NOT NULL DEFAULT 0,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT NULL,
+            PRIMARY KEY  (id),
+            UNIQUE KEY email (email),
+            KEY aktiv (aktiv)
+        ) {$charset_collate};";
+
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
         dbDelta($sql_tokens);
         dbDelta($sql_manual);
+        dbDelta($sql_gutachter);
 
         update_option(self::DB_VERSION_KEY, self::DB_VERSION);
     }
@@ -87,10 +105,12 @@ class DGPTM_Stipendium_Token_Installer {
      */
     public static function uninstall() {
         global $wpdb;
-        $token_table  = $wpdb->prefix . 'dgptm_stipendium_tokens';
-        $manual_table = $wpdb->prefix . 'dgptm_stipendium_manual';
+        $token_table     = $wpdb->prefix . 'dgptm_stipendium_tokens';
+        $manual_table    = $wpdb->prefix . 'dgptm_stipendium_manual';
+        $gutachter_table = $wpdb->prefix . 'dgptm_stipendium_gutachter';
         $wpdb->query("DROP TABLE IF EXISTS {$token_table}");
         $wpdb->query("DROP TABLE IF EXISTS {$manual_table}");
+        $wpdb->query("DROP TABLE IF EXISTS {$gutachter_table}");
         delete_option(self::DB_VERSION_KEY);
     }
 
@@ -108,5 +128,13 @@ class DGPTM_Stipendium_Token_Installer {
     public static function manual_table_name() {
         global $wpdb;
         return $wpdb->prefix . 'dgptm_stipendium_manual';
+    }
+
+    /**
+     * Tabellenname Gutachter-Stammdaten.
+     */
+    public static function gutachter_table_name() {
+        global $wpdb;
+        return $wpdb->prefix . 'dgptm_stipendium_gutachter';
     }
 }

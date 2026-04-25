@@ -66,6 +66,7 @@ class DGPTM_Workshop_Entscheidungsvorlage {
             'section-abhaengigkeiten'   => '8. Externe Dienste',
             'section-out-of-scope'      => '9. Was ist NICHT enthalten?',
             'section-offene-punkte'     => '10. Offene Fragen fuer dich',
+            'section-zertifikate'       => '11. Teilnahmezertifikate',
         ];
     }
 

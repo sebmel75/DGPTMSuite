@@ -102,7 +102,7 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
         <div class="dgptm-wsb-evl-header">
             <h2>Workshops online buchbar machen &mdash; Entscheidungsvorlage</h2>
             <p class="dgptm-wsb-evl-subtitle">Was wird gebaut? Was muss noch entschieden werden?</p>
-            <p class="dgptm-wsb-evl-meta">DGPTM | Stand: 22.04.2026 | Empfaenger:innen: Vorstand, Geschaeftsstelle, Kursleitungen</p>
+            <p class="dgptm-wsb-evl-meta">DGPTM | Stand: 25.04.2026 (erweitert um Tickets, Mitgliederbereich, Zertifikate) | Empfaenger:innen: Vorstand, Geschaeftsstelle, Kursleitungen</p>
         </div>
 
         <div class="dgptm-wsb-evl-highlight blue">
@@ -125,6 +125,10 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
                 <li>Die Bezahlung laeuft sicher ueber unseren bestehenden Zahlungsanbieter.</li>
                 <li>Die Anmeldung wird automatisch ins Mitglieder-System eingetragen.</li>
                 <li>Der/die Teilnehmer:in erhaelt sofort eine Bestaetigung mit Termin fuer den Kalender.</li>
+                <li>Mitglieder sehen alle ihre Tickets (auch aeltere und solche aus Zoho Backstage) im Mitgliederbereich an einer Stelle.</li>
+                <li>Jedes Ticket traegt einen QR-Code fuer die Einlasskontrolle am Workshop-Tag.</li>
+                <li>Nicht-Mitglieder bekommen einen persoenlichen Link per E-Mail &mdash; ohne Login.</li>
+                <li>Nach dem Workshop entsteht automatisch ein Teilnahme-Zertifikat als PDF.</li>
             </ul>
             <p><em>Hinweis:</em> Das Modul ist der erste Baustein. Spaeter sollen Webinare und Kongresse mit derselben Mechanik buchbar werden.</p>
             <?php $render_section_comments('section-ziel'); ?>
@@ -167,6 +171,29 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
                     <tr><td>12</td><td><strong>Wie wird das Modul gebaut?</strong></td><td>Mit austauschbaren Bausteinen (siehe Abschnitt 4), damit Webinar- und Kongress-Buchung spaeter denselben Kern nutzen koennen.</td><td>Spart bei den naechsten Modulen Zeit und Geld.</td></tr>
                 </tbody>
             </table>
+
+            <h4 style="margin-top:24px;">Tickets, QR-Code und Mitgliederbereich</h4>
+            <table class="dgptm-wsb-evl-table">
+                <thead><tr><th>#</th><th>Frage</th><th>Entscheidung</th><th>Warum</th></tr></thead>
+                <tbody>
+                    <tr><td>13</td><td><strong>Verbindung zu Zoho Backstage</strong></td><td>Wir pruefen, ob bereits in Backstage gepflegte Buchungen automatisch ins eigene Mitglieder-System gespiegelt werden koennen. Mitglieder sehen alle Tickets an einer Stelle &mdash; egal woher sie kommen.</td><td>Keine doppelte Pflege. Eine einheitliche Sicht fuer Teilnehmer:innen.</td></tr>
+                    <tr><td>14</td><td><strong>Ticketnummern</strong></td><td>Numerische Ticketnummern im gleichen Format wie Zoho Backstage (z.&thinsp;B. 8-stellige Zahlenfolge).</td><td>Damit beide Systeme kompatibel bleiben und Tickets eindeutig sind.</td></tr>
+                    <tr><td>15</td><td><strong>QR-Code auf jedem Ticket</strong></td><td>Jedes Ticket traegt einen QR-Code mit der Ticketnummer. Geschaeftsstelle/Kursleitung kann am Workshop-Tag mit dem Smartphone scannen und sofort pruefen, ob das Ticket gueltig ist.</td><td>Schneller, ehrlicher Einlass. Kein manuelles Listenabhaken.</td></tr>
+                    <tr><td>16</td><td><strong>Tickets im Mitgliederbereich</strong></td><td>Eingeloggte Mitglieder sehen auf der Seite &bdquo;Meine Tickets&ldquo; alle ihre Buchungen mit Termin, Status, QR-Code, Storno-Moeglichkeit und Zertifikat-Download.</td><td>Eine zentrale Anlaufstelle &mdash; entlastet die Geschaeftsstelle bei Standard-Anfragen.</td></tr>
+                    <tr><td>17</td><td><strong>Zugang fuer Nicht-Mitglieder</strong></td><td>Personen ohne WordPress-Konto bekommen einen persoenlichen Link per E-Mail. Damit koennen sie ihr Ticket einsehen, downloaden und ggf. stornieren &mdash; ohne Anmeldung. Der Link laeuft nach einer festgelegten Frist ab.</td><td>Kein Zwang zur Registrierung, trotzdem komfortabler Zugriff.</td></tr>
+                    <tr><td>18</td><td><strong>Auto-Zuordnung ueber E-Mail</strong></td><td>Bucht ein Mitglied ohne sich einzuloggen, erkennt das System die E-Mail-Adresse als bekannt und ordnet die Buchung automatisch dem Mitglieds-Kontakt zu. Es entsteht kein Doppel-Eintrag.</td><td>Keine Karteileichen, sauberer Datenbestand. Mitglied sieht das Ticket beim naechsten Login.</td></tr>
+                </tbody>
+            </table>
+
+            <h4 style="margin-top:24px;">Teilnahmezertifikate</h4>
+            <table class="dgptm-wsb-evl-table">
+                <thead><tr><th>#</th><th>Frage</th><th>Entscheidung</th><th>Warum</th></tr></thead>
+                <tbody>
+                    <tr><td>19</td><td><strong>Automatisches Zertifikat</strong></td><td>Sobald Geschaeftsstelle oder Kursleitung die Anwesenheit einer Person bestaetigt, erzeugt das System automatisch ein Teilnahme-Zertifikat als PDF. Es wird per E-Mail verschickt und ist im Mitgliederbereich abrufbar. Engine: Wiederverwendung der bestehenden Webinar-Loesung.</td><td>Spart der Geschaeftsstelle das manuelle Erstellen. Klarer Trigger (Anwesenheits-Bestaetigung) statt unklarer Zeit-Logik.</td></tr>
+                    <tr><td>20</td><td><strong>Layout konfigurierbar</strong></td><td>Geschaeftsstelle kann pro Workshop ein Standard-Layout zuweisen oder ein eigenes hinterlegen.</td><td>Flexibilitaet fuer Sonder-Veranstaltungen, ohne dass jedes Mal ein:e Programmierer:in benoetigt wird.</td></tr>
+                    <tr><td>21</td><td><strong>Externe Designer:innen</strong></td><td>Wer fuer die DGPTM Layouts gestaltet (z.&thinsp;B. Grafiker:innen), bekommt einen persoenlichen Link per E-Mail und kann das Zertifikat-Layout direkt im Browser bearbeiten &mdash; ohne WordPress-Zugang. Vorschau in Echtzeit.</td><td>Designer:innen brauchen keinen Account, kein VPN, keine Schulung. Geschaeftsstelle behaelt die Kontrolle ueber die Einladungen.</td></tr>
+                </tbody>
+            </table>
             <?php $render_section_comments('section-entscheidungen'); ?>
         </div>
 
@@ -184,6 +211,11 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
                     <tr><td><strong>E-Mails</strong></td><td>Versendet Bestaetigung, Warteliste, Storno &mdash; mit Termin-Anhang fuer den Kalender.</td></tr>
                     <tr><td><strong>Warteliste</strong></td><td>Ueberwacht freie Plaetze und benachrichtigt Nachruecker:innen automatisch.</td></tr>
                     <tr><td><strong>Webseite (Frontend)</strong></td><td>Was Nutzer:innen sehen: Workshop-Karten, Buchungsformular, Bestaetigungsseite.</td></tr>
+                    <tr><td><strong>Mitgliederbereich-Anzeige</strong></td><td>Zeigt eingeloggten Mitgliedern alle ihre Tickets gesammelt &mdash; aus dem eigenen Tool und aus Zoho Backstage.</td></tr>
+                    <tr><td><strong>QR-Code-Generator</strong></td><td>Erzeugt fuer jedes Ticket einen scanbaren Code mit der Ticketnummer.</td></tr>
+                    <tr><td><strong>Persoenliche-Link-Verwaltung</strong></td><td>Erzeugt und prueft die Zugangs-Links fuer Nicht-Mitglieder und externe Designer:innen.</td></tr>
+                    <tr><td><strong>Zertifikat-Generator</strong></td><td>Erzeugt das Teilnahme-PDF nach dem Workshop &mdash; nutzt die bestehende Vimeo-Webinare-Engine.</td></tr>
+                    <tr><td><strong>Backstage-Spiegelung</strong></td><td>Holt Buchungen, die direkt in Zoho Backstage entstanden sind, ins eigene Mitglieder-System (Konzept &mdash; siehe offene Fragen).</td></tr>
                 </tbody>
             </table>
             <p><em>Hintergrund:</em> Diese Trennung ermoeglicht es, einzelne Bausteine spaeter auszutauschen oder fuer Webinare und Kongresse wiederzuverwenden &mdash; ohne das ganze Modul anzufassen.</p>
@@ -198,8 +230,11 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
                 <li><strong>Ticket auswaehlen</strong> &mdash; Die Person waehlt ein Ticket (z.&thinsp;B. &bdquo;Vollpreis&ldquo;, &bdquo;Mitgliedspreis&ldquo;).</li>
                 <li><strong>Daten eintragen</strong> &mdash; Bei eingeloggten Mitgliedern automatisch vorausgefuellt. Gaeste tragen Vor-/Nachname und E-Mail ein.</li>
                 <li><strong>Bezahlen</strong> &mdash; Weiterleitung zur Bezahlseite von Stripe. Wer nicht zahlt, dessen Buchung verfaellt automatisch &mdash; der Platz wird wieder freigegeben.</li>
-                <li><strong>Bestaetigung</strong> &mdash; Sofort nach Zahlungseingang: Bestaetigungs-E-Mail mit Kalender-Anhang.</li>
+                <li><strong>Bestaetigung</strong> &mdash; Sofort nach Zahlungseingang: Bestaetigungs-E-Mail mit Kalender-Anhang und Ticket inklusive QR-Code.</li>
+                <li><strong>Eintrag im Mitgliederbereich</strong> &mdash; Eingeloggte Mitglieder sehen ihr neues Ticket sofort auf der Seite &bdquo;Meine Tickets&ldquo;. Gaeste/Nicht-Mitglieder erhalten einen persoenlichen Link per E-Mail zur Ticket-Verwaltung.</li>
+                <li><strong>E-Mail-Auto-Zuordnung</strong> &mdash; Wer ohne Login bucht, dessen E-Mail wird mit den bekannten Mitglieder-Adressen abgeglichen. Bei Treffer wird die Buchung automatisch dem Mitglieds-Kontakt zugeordnet &mdash; kein Doppel-Eintrag.</li>
                 <li><strong>Falls voll</strong> &mdash; Die Person landet automatisch auf der Warteliste. Wird ein Platz frei, erhaelt sie eine E-Mail mit 24-Stunden-Zahlungslink.</li>
+                <li><strong>Nach dem Workshop</strong> &mdash; Geschaeftsstelle/Kursleitung markiert Teilnehmer:innen als anwesend. Das System erstellt automatisch das Zertifikat-PDF und versendet es per E-Mail. Mitglieder finden es zusaetzlich im Mitgliederbereich.</li>
             </ol>
             <?php $render_section_comments('section-datenfluss'); ?>
         </div>
@@ -208,9 +243,10 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
         <div class="dgptm-wsb-evl-section" id="section-kompatibilitaet">
             <h3>6. Zusammenspiel mit bestehenden Funktionen</h3>
             <ul>
+                <li><strong>Zoho Backstage:</strong> Tickets, die direkt in Backstage angelegt wurden, werden ins eigene Mitglieder-System gespiegelt. Mitglieder sehen <em>alle</em> ihre Tickets im Mitgliederbereich an einer Stelle &mdash; egal aus welchem Tool. Wie genau die Spiegelung erfolgen soll (Echtzeit, Cron-Lauf, einmaliger Import), ist eine offene Frage (siehe Abschnitt 10).</li>
                 <li><strong>Edugrant-Foerderung:</strong> Wenn fuer einen Workshop eine Foerderung verfuegbar ist, erscheint auf der Buchungs-Karte ein Hinweis und ein Link zum Foerderantrag. Das vermeidet doppelte Erfassung.</li>
                 <li><strong>Webinar-Buchung (in Vorbereitung):</strong> Die Bausteine fuer Mitglieder-Erkennung und Anmelde-Datensaetze werden so gebaut, dass die Webinar-Buchung sie spaeter direkt mitnutzen kann &mdash; ohne Doppelarbeit.</li>
-                <li><strong>vimeo-webinare (live):</strong> Bleibt unveraendert. Das Workshop-Modul greift nicht in die laufende Webinar-Loesung ein.</li>
+                <li><strong>vimeo-webinare (live):</strong> Bleibt unveraendert. Wir nutzen aber dessen bestehende Zertifikat-Engine fuer das neue Workshop-Zertifikat &mdash; einmal gebaut, an zwei Stellen verwendet.</li>
             </ul>
             <?php $render_section_comments('section-kompatibilitaet'); ?>
         </div>
@@ -230,8 +266,20 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
                     <li><em>Warteliste</em> &mdash; Workshop ist voll</li>
                     <li><em>Nachruecker:in &ndash; Zahlung ausstehend</em> &mdash; 24-Stunden-Frist laeuft</li>
                     <li><em>Storniert</em> &mdash; Geld erstattet</li>
+                    <li><em>Anwesend</em> &mdash; bestaetigt teilgenommen, Zertifikat erstellt</li>
                 </ul>
                 <em>&rarr; Abstimmung mit Verantwortlichen fuer den Anmelde-Workflow noetig.</em>
+            </div>
+            <div class="dgptm-wsb-evl-highlight orange">
+                <strong>Ticketnummer</strong> &mdash; neues Feld fuer eine numerische, eindeutige Ticketnummer (Format identisch zu Zoho Backstage, z.&thinsp;B. 8-stellig). Wird beim Anlegen automatisch vergeben.
+                <em>&rarr; Format mit Backstage-Verantwortlichen abstimmen.</em>
+            </div>
+            <div class="dgptm-wsb-evl-highlight orange">
+                <strong>Zertifikat-Layout</strong> &mdash; optionales Feld am Workshop, das auf ein hinterlegtes Layout verweist. Leer = Standard-Layout.
+            </div>
+            <div class="dgptm-wsb-evl-highlight orange">
+                <strong>WordPress-seitig: Tabelle fuer persoenliche Links</strong> &mdash; speichert die Zugangs-Links fuer Nicht-Mitglieder und externe Designer:innen mit Ablaufdatum. Vorbild: bestehende Loesung im Stipendien-Modul (Gutachter:innen-Token).
+                <em>&rarr; rein technisch, keine Abstimmung mit Geschaeftsstelle noetig.</em>
             </div>
             <?php $render_section_comments('section-crm-erweiterungen'); ?>
         </div>
@@ -259,8 +307,8 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
                 <li>Gemeinsame Buchung mehrerer Personen mit nur einem Zahler &mdash; geht aktuell nur, wenn eine Person mehrere Tickets in <em>einer</em> Buchung kauft.</li>
                 <li>Variable Pflichtfelder pro Ticket-Typ (z.&thinsp;B. fuer manche Tickets zusaetzliche Angaben).</li>
                 <li>Webinar- und Kongress-Buchung &mdash; folgen als eigene Module, die diesen Kern wiederverwenden.</li>
-                <li>Automatische Uebernahme bestehender Buchungen aus alten Systemen.</li>
-                <li>Automatische Erstellung von Teilnahme-Zertifikaten &mdash; laeuft weiter ueber die bestehende Fortbildungs-Funktion.</li>
+                <li>Vollstaendige Migration alter Buchungen aus dem alten System &mdash; nur die kuenftigen und ggf. die noch aktiven Backstage-Buchungen werden abgebildet.</li>
+                <li>Anwesenheits-Erfassung per QR-Scanner-App: in V1 erfolgt das Scannen mit dem Smartphone-Browser auf einer einfachen Kontroll-Seite. Eine eigene App ist nicht geplant.</li>
             </ul>
             <?php $render_section_comments('section-out-of-scope'); ?>
         </div>
@@ -278,11 +326,69 @@ $render_section_comments = function ($section_id) use ($comments, $current_user_
                         <tr><td>3</td><td><strong>Wie sollen die neuen Anmelde-Status heissen?</strong></td><td>Vorschlag: &bdquo;Zahlung ausstehend&ldquo;, &bdquo;Warteliste&ldquo;, &bdquo;Nachruecker:in &ndash; Zahlung ausstehend&ldquo;, &bdquo;Storniert&ldquo;</td></tr>
                         <tr><td>4</td><td><strong>Edugrant-Foerderung:</strong> Nur Hinweis und Link &mdash; oder integrierter Antrag aus der Buchung heraus?</td><td>Vorschlag: erstmal nur Hinweis und Link.</td></tr>
                         <tr><td>5</td><td><strong>Welches Stripe-Konto wird verwendet?</strong></td><td>Vorhandenes DGPTM-Konto oder ein eigenes Sub-Konto fuer Workshops? &mdash; Buchhaltungs-Entscheidung.</td></tr>
-                        <tr><td>6</td><td><strong>Teilnahme-Zertifikat nach Workshop direkt aus diesem Modul?</strong></td><td>Vorschlag: nein, weiterhin ueber die bestehende Fortbildungs-Funktion.</td></tr>
+                        <tr><td>6</td><td><strong>Backstage-Spiegelung &mdash; wie genau?</strong></td><td>Vorschlag: regelmaessiger Abgleich (z.&thinsp;B. alle 15 Min) statt Echtzeit-Synchronisation. Einfacher, robuster, ausreichend.</td></tr>
+                        <tr><td>7</td><td><strong>Backstage-Migration</strong></td><td>Sollen alte Backstage-Buchungen einmalig importiert werden, oder nur kuenftige? Vorschlag: nur kuenftige und alle <em>noch aktiven</em> Backstage-Tickets.</td></tr>
+                        <tr><td>8</td><td><strong>Format der Ticketnummer</strong></td><td>Welches genaue Format hat die Backstage-Ticketnummer? (Stellenanzahl, Bereich) &mdash; muss mit Backstage-Verantwortlichen geklaert werden.</td></tr>
+                        <tr><td>9</td><td><strong>Gueltigkeit der persoenlichen Links</strong> (Nicht-Mitglieder)</td><td>Vorschlag: bis Workshop-Ende plus 30 Tage &mdash; lange genug fuer Zertifikat-Download, kurz genug fuer Datensparsamkeit.</td></tr>
+                        <tr><td>10</td><td><strong>Wer darf Designer:innen einladen?</strong></td><td>Vorschlag: nur Geschaeftsstelle. Kontrolle bleibt zentral.</td></tr>
+                        <tr><td>11</td><td><strong>Standard-Layout des Zertifikats</strong></td><td>Welches der vorhandenen Webinar-Layouts (classic, corporate, elegant, minimal) wird Standard? Oder ein neues, eigens fuer Workshops?</td></tr>
+                        <tr><td>12</td><td><strong>Wie wird Anwesenheit erfasst?</strong></td><td>Vorschlag: per QR-Code-Scan am Einlass <em>und</em> manuelle Nachpflege moeglich. Bei Online-Workshops: aus Zoom/Vimeo-Anwesenheitsdaten oder manuell.</td></tr>
                     </tbody>
                 </table>
             </div>
             <?php $render_section_comments('section-offene-punkte'); ?>
+        </div>
+
+        <!-- ───── Abschnitt 11 ───── -->
+        <div class="dgptm-wsb-evl-section" id="section-zertifikate">
+            <h3>11. Teilnahmezertifikate</h3>
+
+            <p>Nach jedem Workshop sollen Teilnehmer:innen automatisch ein Zertifikat als PDF erhalten. Das Modul nutzt dafuer die bereits vorhandene Engine aus den vimeo-webinaren &mdash; einmal gebaut, an zwei Stellen verwendet.</p>
+
+            <h4>Wann entsteht das Zertifikat?</h4>
+            <ol>
+                <li>Geschaeftsstelle oder Kursleitung markiert nach dem Workshop, wer anwesend war.</li>
+                <li>Das System erzeugt fuer jede:n Anwesende:n automatisch ein Zertifikat-PDF.</li>
+                <li>Das PDF wird per E-Mail verschickt.</li>
+                <li>Mitglieder finden das PDF zusaetzlich im Mitgliederbereich unter &bdquo;Meine Tickets&ldquo;.</li>
+                <li>Nicht-Mitglieder rufen es ueber ihren persoenlichen Link ab.</li>
+            </ol>
+
+            <h4>Was steht auf dem Zertifikat?</h4>
+            <ul>
+                <li>Name der Teilnehmer:in</li>
+                <li>Workshop-Titel und Datum</li>
+                <li>Ort/Format (Praesenz oder online)</li>
+                <li>Optionale Fortbildungspunkte und VNR-Nummer</li>
+                <li>Unterschrift, Logo, Wasserzeichen &mdash; je nach Layout</li>
+            </ul>
+
+            <h4>Layout pro Workshop</h4>
+            <p>Geschaeftsstelle kann pro Workshop entscheiden:</p>
+            <ul>
+                <li><strong>Standard-Layout</strong> &mdash; vordefiniertes DGPTM-Layout, Empfehlung fuer die meisten Workshops.</li>
+                <li><strong>Eigenes Layout</strong> &mdash; bei Sonder-Veranstaltungen (z.&thinsp;B. Jubilaeum, Kooperations-Workshops) kann ein gestaltetes Layout hinterlegt werden.</li>
+            </ul>
+
+            <h4>Externe Designer:innen ohne WordPress-Zugang</h4>
+            <div class="dgptm-wsb-evl-highlight blue">
+                <p><strong>Idee:</strong> Wer fuer die DGPTM Layouts gestaltet (z.&thinsp;B. eine externe Grafikerin), bekommt einen persoenlichen Link per E-Mail. Damit kann er/sie das Zertifikat-Layout im Browser bearbeiten &mdash; ohne sich in WordPress anzumelden.</p>
+                <p><strong>Konkret:</strong></p>
+                <ol>
+                    <li>Geschaeftsstelle traegt E-Mail-Adresse der Designerin in eine Einladungs-Maske ein und legt fest, fuer welchen Workshop das Layout gelten soll.</li>
+                    <li>Designerin erhaelt eine E-Mail mit persoenlichem Link.</li>
+                    <li>Sie oeffnet den Link, sieht den Layout-Editor, kann Hintergrundbild, Logo, Texte, Schriften aendern.</li>
+                    <li>Vorschau-PDF in Echtzeit, ohne Speichern.</li>
+                    <li>Speichern: das Layout ist sofort fuer den Workshop aktiv.</li>
+                    <li>Der Link laeuft nach festgelegter Frist ab (Vorschlag: 14 Tage), kann aber jederzeit von der Geschaeftsstelle widerrufen werden.</li>
+                </ol>
+                <p><strong>Sicherheit:</strong> Der Link ist nur fuer dieses eine Workshop-Layout gueltig. Designerin sieht keine Teilnehmer:innen-Daten, keine Buchungen, kein anderes Modul.</p>
+            </div>
+
+            <h4>Vorbild im Repo</h4>
+            <p>Die Token-Logik wird vom Stipendien-Modul (Gutachter:innen-Zugang) wiederverwendet. Die PDF-Engine kommt aus den vimeo-webinaren. Beides ist im Einsatz und bewaehrt &mdash; kein Neubau, sondern Wiederverwendung.</p>
+
+            <?php $render_section_comments('section-zertifikate'); ?>
         </div>
 
     </div><!-- /.dgptm-wsb-evl-dokument -->

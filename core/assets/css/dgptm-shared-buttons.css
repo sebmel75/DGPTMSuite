@@ -17,74 +17,102 @@
  *   <button class="dgptm-fe-btn dgptm-fe-btn-primary">Zugestimmt</button>  <!-- aktiv -->
  */
 
+/*
+ * !important wird hier bewusst verwendet, weil aktive WordPress-Themes
+ * (Astra, Twenty, etc.) und Page-Builder (Elementor, Loops & Logic)
+ * Buttons mit hoher Specificity einfaerben (oft rot / rund / klobig).
+ * Damit der dgptm-fe-btn-Stil plugin-weit konsistent durchgreift, muss
+ * er Theme-Defaults schlagen.
+ */
+
+button.dgptm-fe-btn,
+a.dgptm-fe-btn,
+input.dgptm-fe-btn,
 .dgptm-fe-btn {
-    display: inline-block;
-    padding: 8px 16px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    text-decoration: none;
-    background: #f0f0f1;
-    color: #50575e;
-    transition: background 0.2s, border-color 0.2s, color 0.2s;
-    font-family: inherit;
-    line-height: 1.4;
-    vertical-align: middle;
+    display: inline-block !important;
+    padding: 8px 16px !important;
+    border: 1px solid #ccc !important;
+    border-radius: 4px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    line-height: 1.4 !important;
+    cursor: pointer !important;
+    text-decoration: none !important;
+    background: #f0f0f1 !important;
+    color: #50575e !important;
+    transition: background 0.2s, border-color 0.2s, color 0.2s !important;
+    font-family: inherit !important;
+    vertical-align: middle !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    min-height: 0 !important;
+    width: auto !important;
+    height: auto !important;
 }
 
+button.dgptm-fe-btn:hover,
+a.dgptm-fe-btn:hover,
+input.dgptm-fe-btn:hover,
 .dgptm-fe-btn:hover {
-    background: #e0e0e0;
-    border-color: #999;
-    color: #1d2327;
-    text-decoration: none;
+    background: #e0e0e0 !important;
+    border-color: #999 !important;
+    color: #1d2327 !important;
+    text-decoration: none !important;
 }
 
 .dgptm-fe-btn:focus {
-    outline: 2px solid rgba(34, 113, 177, 0.4);
-    outline-offset: 1px;
+    outline: 2px solid rgba(34, 113, 177, 0.4) !important;
+    outline-offset: 1px !important;
 }
 
+button.dgptm-fe-btn-primary,
+a.dgptm-fe-btn-primary,
+input.dgptm-fe-btn-primary,
 .dgptm-fe-btn-primary {
-    background: #2271b1;
+    background: #2271b1 !important;
     color: #fff !important;
-    border-color: #2271b1;
+    border-color: #2271b1 !important;
 }
 
+button.dgptm-fe-btn-primary:hover,
+a.dgptm-fe-btn-primary:hover,
+input.dgptm-fe-btn-primary:hover,
 .dgptm-fe-btn-primary:hover {
-    background: #135e96;
-    border-color: #135e96;
-    color: #fff;
+    background: #135e96 !important;
+    border-color: #135e96 !important;
+    color: #fff !important;
 }
 
 .dgptm-fe-btn-secondary {
-    background: #f6f7f7;
-    color: #50575e;
+    background: #f6f7f7 !important;
+    color: #50575e !important;
+    border-color: #ccc !important;
 }
 
 .dgptm-fe-btn-small {
-    padding: 4px 10px;
-    font-size: 12px;
+    padding: 4px 10px !important;
+    font-size: 12px !important;
 }
 
 .dgptm-fe-btn-danger {
-    color: #dc3232;
-    border-color: #dc3232;
-    background: #fff;
+    color: #dc3232 !important;
+    border-color: #dc3232 !important;
+    background: #fff !important;
 }
 
 .dgptm-fe-btn-danger:hover {
-    background: #dc3232;
-    color: #fff;
+    background: #dc3232 !important;
+    color: #fff !important;
 }
 
 .dgptm-fe-btn:disabled,
 .dgptm-fe-btn[disabled] {
-    opacity: 0.6;
-    cursor: not-allowed;
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
 }
 
 .dgptm-fe-btn-icon {
-    padding: 6px 10px;
+    padding: 6px 10px !important;
 }

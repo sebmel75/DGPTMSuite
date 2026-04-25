@@ -2279,15 +2279,16 @@ require_once plugin_dir_path(__FILE__) . 'vnr-neubewertung.php';
 require_once plugin_dir_path(__FILE__) . 'fortbildung-csv-import.php';
 
 /* ============================================================
- * Einmalige Migration: alle Quiz-Einträge auf 0,5 Punkte setzen.
- * Hintergrund: in einer früheren Version wurden Quiz-Importe mit
- * 0 Punkten angelegt. Diese Routine korrigiert die Altdaten genau
- * einmal. Steuerung über Option-Flag, idempotent.
+ * Einmalige Migration: Quiz-Einträge auf korrekte Punktzahl setzen.
+ * Regel: pro User+Jahr bekommen die ersten 12 Quiz-Einträge
+ * 0,5 Punkte (= max 6 Punkte/Jahr), ab dem 13. wird 0 vergeben.
+ * Sortierung: chronologisch nach Feld 'date', bei Gleichheit nach post_date.
+ * Idempotent über Option-Flag, läuft auf admin_init genau einmal.
  * ============================================================ */
 
-if ( ! function_exists( 'fobi_quiz_points_migration_v1' ) ) {
-    function fobi_quiz_points_migration_v1() {
-        $option_key = 'fobi_quiz_points_migration_v1_done';
+if ( ! function_exists( 'fobi_quiz_points_migration_v2' ) ) {
+    function fobi_quiz_points_migration_v2() {
+        $option_key = 'fobi_quiz_points_migration_v2_done';
         if ( get_option( $option_key ) ) {
             return;
         }
@@ -2306,22 +2307,60 @@ if ( ! function_exists( 'fobi_quiz_points_migration_v1' ) ) {
             ),
         ) );
 
-        $migrated = 0;
+        // Gruppieren nach User + Jahr, jeweils mit Datum für die Sortierung.
+        $grouped = array();
         foreach ( $q->posts as $pid ) {
-            update_field( 'points', 0.5, $pid );
-            $migrated++;
+            $user_id = intval( get_post_meta( $pid, 'user', true ) );
+            $date    = (string) get_post_meta( $pid, 'date', true );
+            $year    = '';
+            if ( $date !== '' ) {
+                $ts = strtotime( $date );
+                if ( $ts ) {
+                    $year = date( 'Y', $ts );
+                }
+            }
+            if ( $year === '' ) {
+                $year = get_the_date( 'Y', $pid );
+            }
+            $key = $user_id . '|' . $year;
+            $grouped[ $key ][] = array(
+                'pid'       => $pid,
+                'date'      => $date !== '' ? $date : get_the_date( 'Y-m-d', $pid ),
+                'post_date' => get_post_field( 'post_date', $pid ),
+            );
+        }
+
+        $set_05 = 0;
+        $set_0  = 0;
+        foreach ( $grouped as $entries ) {
+            usort( $entries, function ( $a, $b ) {
+                $cmp = strcmp( $a['date'], $b['date'] );
+                if ( $cmp !== 0 ) return $cmp;
+                return strcmp( $a['post_date'], $b['post_date'] );
+            } );
+            foreach ( $entries as $i => $entry ) {
+                if ( $i < 12 ) {
+                    update_field( 'points', 0.5, $entry['pid'] );
+                    $set_05++;
+                } else {
+                    update_field( 'points', 0.0, $entry['pid'] );
+                    $set_0++;
+                }
+            }
         }
 
         update_option( $option_key, array(
-            'done_at'  => current_time( 'mysql' ),
-            'migrated' => $migrated,
+            'done_at' => current_time( 'mysql' ),
+            'set_05'  => $set_05,
+            'set_0'   => $set_0,
+            'groups'  => count( $grouped ),
         ) );
 
         if ( function_exists( 'error_log' ) ) {
-            error_log( '[DGPTM fortbildung] Quiz-Punkte-Migration abgeschlossen: ' . $migrated . ' Einträge auf 0,5 gesetzt.' );
+            error_log( '[DGPTM fortbildung] Quiz-Punkte-Migration v2 abgeschlossen: ' . $set_05 . ' Einträge auf 0,5; ' . $set_0 . ' Einträge auf 0; ' . count( $grouped ) . ' User-Jahr-Gruppen.' );
         }
     }
-    add_action( 'admin_init', 'fobi_quiz_points_migration_v1', 20 );
+    add_action( 'admin_init', 'fobi_quiz_points_migration_v2', 20 );
 }
 require_once plugin_dir_path(__FILE__) . 'doublettencheck.php';
 require_once plugin_dir_path(__FILE__) . 'erweiterte-suche.php';

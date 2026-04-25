@@ -405,7 +405,7 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                 <tbody>
                     <tr><td><strong>Stripe</strong> (Zahlungsanbieter)</td><td>Bezahlung und automatische Erstattung</td><td>aktiv, Konto vorhanden</td></tr>
                     <tr><td><strong>Zoho CRM</strong></td><td>Workshop-Daten lesen, Anmeldungen schreiben</td><td>aktiv, Zugriffsrechte vorhanden</td></tr>
-                    <tr><td><strong>EIV-Fobi</strong> (Fortbildungspunkte)</td><td>Aktuell kein direkter Anschluss &mdash; Fortbildungspunkte werden weiter manuell vergeben.</td><td>folgt in Version 2</td></tr>
+                    <tr><td><strong>EIV-Fobi</strong> (Fortbildungspunkte)</td><td>Direkter Anschluss zur automatischen Punkte-Meldung nach Workshop-Abschluss. EFN wird aus dem Zoho CRM uebergeben.</td><td>in V1 direkt mit angeschlossen</td></tr>
                 </tbody>
             </table>
             <?php $render_section_comments('section-abhaengigkeiten'); ?>

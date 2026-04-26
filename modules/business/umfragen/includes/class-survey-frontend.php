@@ -60,6 +60,10 @@ class DGPTM_Survey_Frontend {
             return '<p class="dgptm-survey-error">Umfrage nicht gefunden.</p>';
         }
 
+        // Frontend-Assets bereits hier laden, damit auch reine Status-Karten
+        // (closed, expired, already-done, login-required) das Card-Styling bekommen.
+        DGPTM_Umfragen::get_instance()->enqueue_frontend_assets();
+
         if ($survey->status !== 'active') {
             if ($survey->status === 'closed') {
                 return '<div class="dgptm-survey-closed"><p>Diese Umfrage ist geschlossen.</p></div>';

@@ -1682,6 +1682,32 @@ WICHTIG fuer category-Werte:
 - Bei Workshops mit aktiver Teilnahme (Referent, Dozent): active_workshop_* statt passive_workshop_*
 - Fuer DGPTM oder DGfK Jahrestagung verwende IMMER: \"category\": \"passive_dgptm_jahrestagung\"
 
+WICHTIG fuer DGPTM/DGfK Jahrestagung (Fokustagung Herz):
+- Programm laeuft ueblicherweise Freitag bis Sonntag
+- FREITAG hat KEIN wissenschaftliches Programm und gibt 0 Punkte
+- SAMSTAG: 4 Punkte bei nachgewiesener Anwesenheit
+- SONNTAG: 4 Punkte bei nachgewiesener Anwesenheit
+- ebcp_points = (Sa anwesend ? 4 : 0) + (So anwesend ? 4 : 0)
+- NIEMALS 8 Punkte pauschal vergeben, ohne die Tagesanwesenheit zu pruefen
+- Falls das Dokument nur einen Tag bescheinigt: nur dessen Punkte vergeben
+- Falls Sa+So bestaetigt: ebcp_points = 8 (max)
+- Wenn das Dokument einen einzelnen Tagesnachweis ist (z.B. nur Samstags-Bescheinigung):
+  start_date=end_date=Samstagsdatum, ebcp_points=4
+
+WICHTIG fuer mehrtaegige Kongresse mit Anwesenheits-Erfassung
+(z.B. DGTHG-Jahrestagung, EACTS, EACTAIC, ISMICS, ELSO):
+- Pruefe das Dokument SORGFAELTIG auf TAGESWEISE Anwesenheits-Stempel,
+  Unterschriften, Anwesenheits-Listen oder Tag-spezifische Punkte
+- Vergib Punkte NUR fuer Tage mit nachgewiesener Anwesenheit
+- Pro fehlendem Tag: 0 Punkte fuer diesen Tag
+- Beispiel: 3-Tages-Kongress, nur 2 Tage anwesend
+  -> Punkte fuer 2 Tage, der dritte Tag wird ignoriert
+- Falls das Dokument NICHT zwischen Tagen unterscheidet und nur die Gesamtsumme
+  ausweist (z.B. '8 Punkte gesamt'): cme_points/ebcp_points 1:1 uebernehmen,
+  KEINE Hochrechnung auf alle Tage
+- Bei Unsicherheit ueber Anwesenheits-Tage: confidence < 0.7 setzen, damit
+  die Geschaeftsstelle manuell prueft
+
 WICHTIG fuer end_date:
 - Wenn die Veranstaltung ueber mehrere Tage laeuft, gib das LETZTE Datum als end_date an
 - Beispiel: '21. bis 23. Februar 2026' -> start_date='2026-02-21', end_date='2026-02-23'
@@ -2002,6 +2028,8 @@ function fobi_ebcp_get_categories_description(){
     $lines .= "- Workshop = interaktive Veranstaltung (Hands-on, Simulation, Training)\n";
     $lines .= "- Kongress = grosse Fachtagung mit Vortraegen und vielen Teilnehmern\n";
     $lines .= "- DGPTM Jahrestagung oder 'Fokustagung Herz' im Titel -> IMMER passive_dgptm_jahrestagung\n";
+    $lines .= "  Punkte-Logik: Fr=0 (kein wissenschaftliches Programm), Sa=4, So=4. Max 8 nur bei Sa+So Anwesenheit.\n";
+    $lines .= "- Mehrtaegige Kongresse mit Anwesenheits-Stempeln: Punkte NUR fuer anwesende Tage\n";
     return $lines;
 }
 

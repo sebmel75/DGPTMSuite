@@ -2399,6 +2399,110 @@ if ( ! function_exists( 'fobi_quiz_points_migration_v3' ) ) {
     }
     add_action( 'admin_init', 'fobi_quiz_points_migration_v3', 20 );
 }
+
+/* ============================================================
+ * Einmalige Korrektur fuer KI-Fehlimporte vom 26.04.2026:
+ * Posts 42446/42445/42444 = DGPTM Jahrestagung 2026 (Fr/Sa/So)
+ * Posts 42442/42441/42440 = DGTHG Jahrestagung 2026 (3 Tage,
+ *                            User war nur 2 von 3 Tagen anwesend)
+ *
+ * Regel:
+ *  - DGPTM Jahrestagung: Punkte aus Wochentag des date-Feldes ableiten
+ *    (Freitag = 0, Samstag = 4, Sonntag = 4).
+ *  - DGTHG Jahrestagung: User-spezifisch - der Tag MIT spaetestem
+ *    date-Feld bekommt 0 Punkte (Annahme: nicht anwesend),
+ *    die anderen behalten Kongress-Punkte (4 = passive_kongress_national).
+ *    Geschaeftsstelle prueft im Admin und korrigiert ggf.
+ *
+ * Idempotent ueber Option-Flag.
+ * ============================================================ */
+
+if ( ! function_exists( 'fobi_correct_ki_import_2026_04_26' ) ) {
+    function fobi_correct_ki_import_2026_04_26() {
+        $option_key = 'fobi_correct_ki_import_2026_04_26_done';
+        if ( get_option( $option_key ) ) {
+            return;
+        }
+        if ( ! function_exists( 'update_field' ) ) {
+            return;
+        }
+
+        $log = array();
+
+        // ---- DGPTM Jahrestagung: Wochentag-basiert ----
+        $dgptm_ids = array( 42444, 42445, 42446 );
+        foreach ( $dgptm_ids as $pid ) {
+            $post = get_post( $pid );
+            if ( ! $post || $post->post_type !== 'fortbildung' ) {
+                $log[] = "DGPTM #{$pid}: nicht gefunden, uebersprungen";
+                continue;
+            }
+            $date = (string) get_post_meta( $pid, 'date', true );
+            $ts   = $date !== '' ? strtotime( $date ) : 0;
+            if ( ! $ts ) {
+                $log[] = "DGPTM #{$pid}: kein gueltiges date, uebersprungen";
+                continue;
+            }
+            $dow = (int) date( 'N', $ts ); // 1=Mo .. 7=So
+            if ( $dow === 5 ) {
+                $points = 0; $tag = 'Freitag (kein wissenschaftliches Programm)';
+            } elseif ( $dow === 6 ) {
+                $points = 4; $tag = 'Samstag';
+            } elseif ( $dow === 7 ) {
+                $points = 4; $tag = 'Sonntag';
+            } else {
+                $log[] = "DGPTM #{$pid}: Wochentag {$dow} unerwartet, uebersprungen";
+                continue;
+            }
+            update_field( 'points', $points, $pid );
+            $log[] = "DGPTM #{$pid} ({$date}, {$tag}): points={$points}";
+        }
+
+        // ---- DGTHG Jahrestagung: spaetester Tag bekommt 0 ----
+        $dgthg_ids = array( 42440, 42441, 42442 );
+        $dgthg_data = array();
+        foreach ( $dgthg_ids as $pid ) {
+            $post = get_post( $pid );
+            if ( ! $post || $post->post_type !== 'fortbildung' ) {
+                $log[] = "DGTHG #{$pid}: nicht gefunden, uebersprungen";
+                continue;
+            }
+            $date = (string) get_post_meta( $pid, 'date', true );
+            $ts   = $date !== '' ? strtotime( $date ) : 0;
+            $dgthg_data[] = array( 'pid' => $pid, 'date' => $date, 'ts' => $ts );
+        }
+        if ( ! empty( $dgthg_data ) ) {
+            usort( $dgthg_data, function ( $a, $b ) {
+                return $a['ts'] <=> $b['ts'];
+            } );
+            $count = count( $dgthg_data );
+            foreach ( $dgthg_data as $i => $entry ) {
+                if ( $i === $count - 1 ) {
+                    // Letzter Tag: nicht anwesend -> 0 Punkte
+                    update_field( 'points', 0, $entry['pid'] );
+                    $log[] = "DGTHG #{$entry['pid']} ({$entry['date']}, letzter Tag): points=0 (nicht anwesend, Annahme - manuell pruefen)";
+                } else {
+                    // Anwesend: passive_kongress_national = 4 Punkte
+                    update_field( 'points', 4, $entry['pid'] );
+                    $log[] = "DGTHG #{$entry['pid']} ({$entry['date']}): points=4";
+                }
+            }
+        }
+
+        update_option( $option_key, array(
+            'done_at' => current_time( 'mysql' ),
+            'log'     => $log,
+        ) );
+
+        if ( function_exists( 'error_log' ) ) {
+            foreach ( $log as $line ) {
+                error_log( '[DGPTM fortbildung] KI-Korrektur 26.04.2026: ' . $line );
+            }
+        }
+    }
+    add_action( 'admin_init', 'fobi_correct_ki_import_2026_04_26', 25 );
+}
+
 require_once plugin_dir_path(__FILE__) . 'doublettencheck.php';
 require_once plugin_dir_path(__FILE__) . 'erweiterte-suche.php';
 require_once plugin_dir_path(__FILE__) . 'FortbildungStatistikAdon.php';

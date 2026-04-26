@@ -1685,14 +1685,17 @@ WICHTIG fuer category-Werte:
 WICHTIG fuer DGPTM/DGfK Jahrestagung (Fokustagung Herz):
 - Programm laeuft ueblicherweise Freitag bis Sonntag
 - FREITAG hat KEIN wissenschaftliches Programm und gibt 0 Punkte
-- SAMSTAG: 4 Punkte bei nachgewiesener Anwesenheit
-- SONNTAG: 4 Punkte bei nachgewiesener Anwesenheit
-- ebcp_points = (Sa anwesend ? 4 : 0) + (So anwesend ? 4 : 0)
+- Standard-Punkte (wenn Bescheinigung KEINE eigene Punktzahl ausweist):
+  SAMSTAG: 4 Punkte bei nachgewiesener Anwesenheit
+  SONNTAG: 4 Punkte bei nachgewiesener Anwesenheit
+  ebcp_points = (Sa anwesend ? 4 : 0) + (So anwesend ? 4 : 0)
+- Wenn die Bescheinigung explizit EBCP-Punkte ausweist: diese 1:1 vergeben
+  (Bescheinigung ist Authoritaet, Standard-Regel wird ueberschrieben).
+- HARTE OBERGRENZE: Niemals mehr Punkte als auf der Bescheinigung stehen.
 - NIEMALS 8 Punkte pauschal vergeben, ohne die Tagesanwesenheit zu pruefen
 - Falls das Dokument nur einen Tag bescheinigt: nur dessen Punkte vergeben
-- Falls Sa+So bestaetigt: ebcp_points = 8 (max)
 - Wenn das Dokument einen einzelnen Tagesnachweis ist (z.B. nur Samstags-Bescheinigung):
-  start_date=end_date=Samstagsdatum, ebcp_points=4
+  start_date=end_date=Samstagsdatum, ebcp_points=4 (oder ausgewiesene Punkte)
 
 WICHTIG fuer mehrtaegige Kongresse mit Anwesenheits-Erfassung
 (z.B. DGTHG-Jahrestagung, EACTS, EACTAIC, ISMICS, ELSO):
@@ -1702,9 +1705,13 @@ WICHTIG fuer mehrtaegige Kongresse mit Anwesenheits-Erfassung
 - Pro fehlendem Tag: 0 Punkte fuer diesen Tag
 - Beispiel: 3-Tages-Kongress, nur 2 Tage anwesend
   -> Punkte fuer 2 Tage, der dritte Tag wird ignoriert
-- Falls das Dokument NICHT zwischen Tagen unterscheidet und nur die Gesamtsumme
-  ausweist (z.B. '8 Punkte gesamt'): cme_points/ebcp_points 1:1 uebernehmen,
-  KEINE Hochrechnung auf alle Tage
+- Wenn die Bescheinigung Punkte TAGESWEISE ausweist:
+  Pro anwesendem Tag die jeweiligen Punkte vergeben, fehlende Tage = 0.
+- Wenn die Bescheinigung NUR EINE GESAMTSUMME ausweist (z.B. '8 Punkte gesamt'):
+  Diese Summe 1:1 uebernehmen — Bescheinigung ist Authoritaet, KEINE
+  rechnerische Reduktion durch fehlende Anwesenheits-Tage.
+- HARTE OBERGRENZE: Vergebene Punkte duerfen nie hoeher sein als die
+  auf der Bescheinigung ausgewiesene Summe.
 - Bei Unsicherheit ueber Anwesenheits-Tage: confidence < 0.7 setzen, damit
   die Geschaeftsstelle manuell prueft
 
@@ -1717,8 +1724,13 @@ WICHTIG fuer end_date:
 WICHTIG fuer cme_points:
 Falls das Dokument explizit CME/Fortbildungspunkte ausweist (z.B. '4 Punkte (A) 6 Punkte (B)'), gib die SUMME der Punkte zurueck.
 
-WICHTIG fuer ebcp_points:
-Falls das Dokument explizit EBCP-Punkte/Credits vergibt (z.B. 'EBCP Credits: 3', 'EBCP Points: 4'), diese Zahl 1:1 uebernehmen. EBCP-Punkte haben VORRANG vor der Matrix-Berechnung!
+WICHTIG fuer ebcp_points (Bescheinigung ist die maßgebliche Quelle):
+- Falls das Dokument explizit EBCP-Punkte/Credits vergibt (z.B. 'EBCP Credits: 3', 'EBCP Points: 4', 'EBCP-Punkte: 6'), diese Zahl 1:1 uebernehmen.
+- EBCP-Punkte aus dem Dokument haben VORRANG vor der Matrix-Berechnung.
+- HARTE OBERGRENZE: Niemals mehr Punkte vergeben, als auf der Bescheinigung stehen.
+- Bei mehrtaegigen Veranstaltungen, wenn die Bescheinigung Punkte TAGESWEISE ausweist und der User nicht an allen Tagen anwesend war: nur die Punkte der anwesenden Tage summieren.
+- Bei mehrtaegigen Veranstaltungen, wenn nur eine GESAMTSUMME ohne Tagesaufteilung ausgewiesen ist: diese Summe 1:1 uebernehmen (die Bescheinigung gilt als Authoritaet).
+- Wenn die Bescheinigung KEINE konkrete Punktzahl ausweist: Matrix-Regeln aus der Kategorienliste anwenden, entsprechend Anwesenheits-Tagen.
 
 WICHTIG fuer national vs. international:
 - Ein Workshop/Kongress ist INTERNATIONAL wenn: englischer Titel, internationale Organisation (EBCP, AMSECT, EACTS, ECC etc.), Teilnehmer aus mehreren Laendern, EBCP-Punkte vergeben werden

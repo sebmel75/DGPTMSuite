@@ -125,9 +125,11 @@ class DGPTM_Survey_Installer {
 
     /**
      * Fallback: ensure new columns exist via ALTER TABLE
-     * (dbDelta sometimes fails to add columns to existing tables)
+     * (dbDelta sometimes fails to add columns to existing tables).
+     * Public, damit ensure_tables() das auch ohne Versions-Mismatch
+     * direkt aufrufen kann.
      */
-    private static function ensure_columns() {
+    public static function ensure_columns() {
         global $wpdb;
 
         $has = function ($table, $col) use ($wpdb) {

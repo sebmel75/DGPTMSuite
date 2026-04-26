@@ -137,6 +137,10 @@ if (!class_exists('DGPTM_Umfragen')) {
             if (get_option('dgptm_umfragen_db_version') !== DGPTM_UMFRAGEN_VERSION) {
                 DGPTM_Survey_Installer::install();
             }
+            // Idempotenter Fallback: sicherstellen, dass auch nachtraeglich
+            // hinzugefuegte Spalten (end_date, expired_message) existieren -
+            // unabhaengig von der gespeicherten Version-Nummer.
+            DGPTM_Survey_Installer::ensure_columns();
         }
 
         public function register_admin_menu() {

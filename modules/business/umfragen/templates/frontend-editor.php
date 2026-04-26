@@ -138,7 +138,19 @@ $status_labels = [
                     }
                     ?>
                     <input type="datetime-local" name="end_date" value="<?php echo esc_attr($end_date_value); ?>">
-                    <small>Nach diesem Zeitpunkt sind keine Antworten mehr moeglich. Leer = unbegrenzt.</small>
+                    <small>
+                        Nach diesem Zeitpunkt sind keine Antworten mehr möglich. Leer = unbegrenzt.
+                        <?php if ($survey && !empty($survey->end_date) && $survey->end_date !== '0000-00-00 00:00:00') : ?>
+                            <br>
+                            <strong>Aktuell gespeichert:</strong>
+                            <?php echo esc_html(date_i18n('d.m.Y, H:i', strtotime($survey->end_date))); ?> Uhr
+                            <?php if (class_exists('DGPTM_Survey_Frontend') && DGPTM_Survey_Frontend::is_expired($survey)) : ?>
+                                — <span style="color:#16a34a;font-weight:600;">Umfrage ist abgelaufen.</span>
+                            <?php endif; ?>
+                        <?php elseif ($survey) : ?>
+                            <br><em>Aktuell kein Enddatum gespeichert.</em>
+                        <?php endif; ?>
+                    </small>
                 </div>
                 <div class="dgptm-fe-field">
                     <label>Meldung nach Enddatum (optional)</label>

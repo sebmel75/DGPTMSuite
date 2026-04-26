@@ -171,7 +171,9 @@
                     allow_save_resume: $form.find('[name="allow_save_resume"]').is(':checked') ? 1 : 0,
                     allow_post_edit: $form.find('[name="allow_post_edit"]').is(':checked') ? 1 : 0,
                     completion_text: $form.find('[name="completion_text"]').val() || '',
-                    shared_with: $form.find('[name="shared_with"]').val() || ''
+                    shared_with: $form.find('[name="shared_with"]').val() || '',
+                    end_date: $form.find('[name="end_date"]').val() || '',
+                    expired_message: $form.find('[name="expired_message"]').val() || ''
                 };
 
                 $.post(dgptmUmfragen.ajaxUrl, data, function(resp) {

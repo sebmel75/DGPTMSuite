@@ -70,8 +70,12 @@ class DGPTM_Survey_Frontend {
             // Draft but admin can preview
         }
 
-        // Enddatum-Check: nach Erreichen wird Karten-Meldung statt Formular gezeigt
-        if (self::is_expired($survey) && !current_user_can('manage_options')) {
+        // Enddatum-Check: nach Erreichen wird Karten-Meldung statt Formular gezeigt.
+        // Gilt auch fuer Admins — sonst sieht der Admin nach Ablauf weiter das
+        // Formular bzw. (falls schon ausgefuellt) die "bereits ausgefuellt"-Karte
+        // statt der erwarteten Ablauf-Meldung. Fuer Preview vor Ablauf einfach
+        // Enddatum kurz verschieben oder leer lassen.
+        if (self::is_expired($survey)) {
             return self::render_expired_card($survey);
         }
 

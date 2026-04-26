@@ -93,7 +93,7 @@ class DGPTM_Survey_Frontend {
                 // Edit-Prompt: Bestaetigungsseite mit "Antworten bearbeiten"-Button
                 return $this->render_edit_prompt($survey, $own);
             } else {
-                return '<div class="dgptm-survey-already-done"><p>Sie haben diese Umfrage bereits ausgefuellt. Vielen Dank fuer Ihre Teilnahme!</p></div>';
+                return self::render_already_done_card($survey);
             }
         } else {
             // Check for resume token (in_progress response)
@@ -796,6 +796,23 @@ class DGPTM_Survey_Frontend {
     }
 
     /**
+     * Rendert die Karten-Meldung "Bereits ausgefuellt".
+     */
+    public static function render_already_done_card($survey) {
+        ob_start();
+        ?>
+        <div class="dgptm-survey-status-card dgptm-survey-already-done-card">
+            <div class="dgptm-survey-status-icon" aria-hidden="true">&#10003;</div>
+            <h3 class="dgptm-survey-status-title"><?php echo esc_html($survey->title); ?></h3>
+            <div class="dgptm-survey-status-body">
+                <p>Sie haben diese Umfrage bereits ausgefuellt. Vielen Dank fuer Ihre Teilnahme!</p>
+            </div>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    /**
      * Rendert die Karten-Meldung nach Erreichen des Enddatums.
      */
     public static function render_expired_card($survey) {
@@ -814,12 +831,12 @@ class DGPTM_Survey_Frontend {
 
         ob_start();
         ?>
-        <div class="dgptm-survey-expired-card">
-            <div class="dgptm-survey-expired-icon" aria-hidden="true">&#9203;</div>
-            <h3 class="dgptm-survey-expired-title"><?php echo esc_html($survey->title); ?></h3>
-            <div class="dgptm-survey-expired-body"><?php echo $message; ?></div>
+        <div class="dgptm-survey-status-card dgptm-survey-expired-card">
+            <div class="dgptm-survey-status-icon" aria-hidden="true">&#9203;</div>
+            <h3 class="dgptm-survey-status-title"><?php echo esc_html($survey->title); ?></h3>
+            <div class="dgptm-survey-status-body"><?php echo $message; ?></div>
             <?php if ($end_label) : ?>
-                <p class="dgptm-survey-expired-meta">Endete am <?php echo esc_html($end_label); ?>.</p>
+                <p class="dgptm-survey-status-meta">Endete am <?php echo esc_html($end_label); ?>.</p>
             <?php endif; ?>
         </div>
         <?php

@@ -674,8 +674,9 @@ select + .dgptm-other-text-input {
     color: var(--dgptm-gray-600);
 }
 
-/* Expired card – nach Erreichen des Enddatums */
-.dgptm-survey-expired-card {
+/* Status cards – einheitliche Kartendarstellung fuer Umfrage-Zustaende
+   (abgelaufen, bereits ausgefuellt, etc.) */
+.dgptm-survey-status-card {
     background: #fff;
     border: 1px solid var(--dgptm-gray-200);
     border-radius: var(--dgptm-radius);
@@ -686,31 +687,36 @@ select + .dgptm-other-text-input {
     max-width: 640px;
     margin: 24px auto;
 }
-.dgptm-survey-expired-icon {
+.dgptm-survey-status-icon {
     font-size: 48px;
     line-height: 1;
     margin-bottom: 16px;
     color: var(--dgptm-primary);
 }
-.dgptm-survey-expired-title {
+.dgptm-survey-status-title {
     margin: 0 0 12px;
     font-size: 20px;
     font-weight: 600;
     color: var(--dgptm-gray-900);
 }
-.dgptm-survey-expired-body {
+.dgptm-survey-status-body {
     font-size: 15px;
     line-height: 1.6;
     color: var(--dgptm-gray-700);
     margin-bottom: 8px;
 }
-.dgptm-survey-expired-body p { margin: 0 0 8px; }
-.dgptm-survey-expired-body p:last-child { margin-bottom: 0; }
-.dgptm-survey-expired-meta {
+.dgptm-survey-status-body p { margin: 0 0 8px; }
+.dgptm-survey-status-body p:last-child { margin-bottom: 0; }
+.dgptm-survey-status-meta {
     margin: 16px 0 0;
     font-size: 13px;
     color: var(--dgptm-gray-500);
     font-style: italic;
+}
+
+/* Variante: bereits ausgefuellt – Haekchen-Farbe gruen */
+.dgptm-survey-already-done-card .dgptm-survey-status-icon {
+    color: #16a34a;
 }
 
 .dgptm-survey-error {

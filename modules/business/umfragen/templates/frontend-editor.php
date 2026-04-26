@@ -125,6 +125,28 @@ $status_labels = [
                 <small>Individueller Text nach dem Absenden. Leer = Standardtext.</small>
             </div>
 
+            <div class="dgptm-fe-row">
+                <div class="dgptm-fe-field">
+                    <label>Enddatum (optional)</label>
+                    <?php
+                    $end_date_value = '';
+                    if ($survey && !empty($survey->end_date) && $survey->end_date !== '0000-00-00 00:00:00') {
+                        $ts = strtotime($survey->end_date);
+                        if ($ts) {
+                            $end_date_value = date('Y-m-d\TH:i', $ts);
+                        }
+                    }
+                    ?>
+                    <input type="datetime-local" name="end_date" value="<?php echo esc_attr($end_date_value); ?>">
+                    <small>Nach diesem Zeitpunkt sind keine Antworten mehr moeglich. Leer = unbegrenzt.</small>
+                </div>
+                <div class="dgptm-fe-field">
+                    <label>Meldung nach Enddatum (optional)</label>
+                    <textarea name="expired_message" rows="2" placeholder="Diese Umfrage ist abgeschlossen. Vielen Dank fuer das Interesse."><?php echo esc_textarea($survey ? ($survey->expired_message ?? '') : ''); ?></textarea>
+                    <small>Wird Teilnehmer:innen statt des Formulars angezeigt. Leer = Standardmeldung.</small>
+                </div>
+            </div>
+
             <div class="dgptm-fe-field">
                 <label>Geteilt mit</label>
                 <input type="hidden" name="shared_with" id="dgptm-fe-shared-with" value="<?php echo esc_attr($survey ? $survey->shared_with : ''); ?>">

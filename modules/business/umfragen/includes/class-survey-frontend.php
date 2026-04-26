@@ -70,6 +70,11 @@ class DGPTM_Survey_Frontend {
             // Draft but admin can preview
         }
 
+        // Enddatum-Check: nach Erreichen wird Karten-Meldung statt Formular gezeigt
+        if (self::is_expired($survey) && !current_user_can('manage_options')) {
+            return self::render_expired_card($survey);
+        }
+
         // Access check
         if ($survey->access_mode === 'logged_in' && !is_user_logged_in()) {
             return '<div class="dgptm-survey-login-required"><p>Bitte melden Sie sich an, um an dieser Umfrage teilzunehmen.</p></div>';
@@ -313,6 +318,11 @@ class DGPTM_Survey_Frontend {
 
         if (!$survey) {
             wp_send_json_error(['message' => 'Umfrage nicht verfuegbar']);
+        }
+
+        // Enddatum-Check: nach Erreichen keine neuen Antworten mehr
+        if (self::is_expired($survey)) {
+            wp_send_json_error(['message' => 'Diese Umfrage ist beendet. Antworten werden nicht mehr angenommen.']);
         }
 
         // Duplicate check — mit Edit-Bypass
@@ -769,5 +779,50 @@ class DGPTM_Survey_Frontend {
             $ip = $_SERVER['REMOTE_ADDR'];
         }
         return sanitize_text_field($ip);
+    }
+
+    /**
+     * Prueft, ob das Enddatum einer Umfrage erreicht/ueberschritten ist.
+     */
+    public static function is_expired($survey) {
+        if (!$survey || empty($survey->end_date) || $survey->end_date === '0000-00-00 00:00:00') {
+            return false;
+        }
+        $end_ts = strtotime($survey->end_date);
+        if (!$end_ts) {
+            return false;
+        }
+        return current_time('timestamp') >= $end_ts;
+    }
+
+    /**
+     * Rendert die Karten-Meldung nach Erreichen des Enddatums.
+     */
+    public static function render_expired_card($survey) {
+        $message = '';
+        if (!empty($survey->expired_message)) {
+            $message = wp_kses_post($survey->expired_message);
+        } else {
+            $message = '<p>Diese Umfrage ist beendet. Vielen Dank fuer das Interesse.</p>';
+        }
+
+        $end_label = '';
+        $end_ts = strtotime($survey->end_date);
+        if ($end_ts) {
+            $end_label = date_i18n('d.m.Y, H:i', $end_ts) . ' Uhr';
+        }
+
+        ob_start();
+        ?>
+        <div class="dgptm-survey-expired-card">
+            <div class="dgptm-survey-expired-icon" aria-hidden="true">&#9203;</div>
+            <h3 class="dgptm-survey-expired-title"><?php echo esc_html($survey->title); ?></h3>
+            <div class="dgptm-survey-expired-body"><?php echo $message; ?></div>
+            <?php if ($end_label) : ?>
+                <p class="dgptm-survey-expired-meta">Endete am <?php echo esc_html($end_label); ?>.</p>
+            <?php endif; ?>
+        </div>
+        <?php
+        return ob_get_clean();
     }
 }

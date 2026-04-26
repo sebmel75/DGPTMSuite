@@ -168,6 +168,17 @@ class DGPTM_Survey_Admin {
             wp_send_json_success(['message' => 'Status aktualisiert.', 'survey_id' => $survey_id]);
         }
 
+        // Enddatum: Wert aus Form (datetime-local liefert "Y-m-d\TH:i" oder "Y-m-d\TH:i:s")
+        $end_date_raw = trim((string) ($_POST['end_date'] ?? ''));
+        $end_date_val = null;
+        if ($end_date_raw !== '') {
+            $end_date_raw = str_replace('T', ' ', $end_date_raw);
+            $ts = strtotime($end_date_raw);
+            if ($ts) {
+                $end_date_val = date('Y-m-d H:i:s', $ts);
+            }
+        }
+
         $data = [
             'title'           => sanitize_text_field($_POST['title'] ?? ''),
             'slug'            => sanitize_title($_POST['slug'] ?? ''),
@@ -180,6 +191,8 @@ class DGPTM_Survey_Admin {
             'allow_post_edit' => absint($_POST['allow_post_edit'] ?? 0),
             'completion_text' => wp_kses_post(wp_unslash($_POST['completion_text'] ?? '')),
             'shared_with'    => self::sanitize_shared_with($_POST['shared_with'] ?? ''),
+            'end_date'        => $end_date_val,
+            'expired_message' => wp_kses_post(wp_unslash($_POST['expired_message'] ?? '')),
             'updated_at'      => current_time('mysql'),
         ];
 

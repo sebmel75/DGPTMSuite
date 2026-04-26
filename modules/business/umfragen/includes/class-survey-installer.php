@@ -39,6 +39,8 @@ class DGPTM_Survey_Installer {
             created_at DATETIME NOT NULL,
             updated_at DATETIME NOT NULL,
             closed_at DATETIME DEFAULT NULL,
+            end_date DATETIME DEFAULT NULL,
+            expired_message TEXT DEFAULT NULL,
             PRIMARY KEY (id),
             UNIQUE KEY slug (slug),
             KEY status (status),
@@ -155,6 +157,15 @@ class DGPTM_Survey_Installer {
         if (!$has($surveys, 'survey_token')) {
             $wpdb->query("ALTER TABLE $surveys ADD COLUMN survey_token VARCHAR(64) DEFAULT NULL");
             $wpdb->query("ALTER TABLE $surveys ADD KEY survey_token (survey_token)");
+        }
+
+        if (!$has($surveys, 'end_date')) {
+            $wpdb->query("ALTER TABLE $surveys ADD COLUMN end_date DATETIME DEFAULT NULL");
+            $wpdb->query("ALTER TABLE $surveys ADD KEY end_date (end_date)");
+        }
+
+        if (!$has($surveys, 'expired_message')) {
+            $wpdb->query("ALTER TABLE $surveys ADD COLUMN expired_message TEXT DEFAULT NULL");
         }
 
         if (!$has($questions, 'parent_question_id')) {

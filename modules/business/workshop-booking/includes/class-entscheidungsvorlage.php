@@ -43,13 +43,13 @@ class DGPTM_Workshop_Entscheidungsvorlage {
             'dgptm-wsb-evl',
             $this->plugin_url . 'assets/css/entscheidungsvorlage.css',
             [],
-            '0.2.1'
+            '0.2.2'
         );
         wp_register_script(
             'dgptm-wsb-evl',
             $this->plugin_url . 'assets/js/entscheidungsvorlage.js',
             ['jquery'],
-            '0.2.1',
+            '0.2.2',
             true
         );
     }
@@ -492,6 +492,21 @@ class DGPTM_Workshop_Entscheidungsvorlage {
       <ul>
         <li>Rechnungserstellung läuft <em>direkt</em> in Zoho Books &mdash; kein Umweg über das CRM. Im CRM erscheint der Books-Status nur gespiegelt.</li>
         <li>Aufgabenteilung Modul ⇄ CRM explizit gemacht: Logik (Storno, Bescheinigungen, Verlegung, Books) aus dem Modul; Anmelde-Status und Teilnahmeverwaltung bleiben im CRM, Homepage zeigt nur das Nötigste.</li>
+      </ul>
+      <p><strong>Zweite Runde 30.04.2026</strong> &mdash; Zeilen-Kommentare aus dem Review eingearbeitet:</p>
+      <ul>
+        <li>V1-Scope: Workshops <em>und</em> Webinare; Kongresse/Sachkundekurse bleiben raus (Vorschlag&nbsp;1).</li>
+        <li>Stripe deckt Kreditkarte, SEPA, Apple&nbsp;Pay <em>und PayPal</em> ab (Vorschlag&nbsp;3, Abschnitt&nbsp;8).</li>
+        <li>Sammelbuchung mit optionaler Sammel-Rechnung an einen Zahler (Vorschlag&nbsp;4, offene Frage&nbsp;13).</li>
+        <li>Pflichtfelder erweitert um Rechnungsadresse + Studierendenstatus (perspektivisch Arbeitgeber); Studierendenstatus wird nie automatisch übernommen (Vorschlag&nbsp;5/18).</li>
+        <li>Storno-Frist <strong>Default 42 Tage (6 Wochen, AGB-konform)</strong>, einstellbar 28&ndash;42 Tage (Vorschlag&nbsp;9, offene Frage&nbsp;1).</li>
+        <li>Rabattcodes in V1 nicht aktiv; bei Bedarf zentral aus Modul/CRM, nicht aus Stripe (Vorschlag&nbsp;11).</li>
+        <li>Teilnahmebescheinigung erst nach Veranstaltungsende und nur bei bestätigter Anwesenheit; Anwesenheits-Pflege im CRM (Vorschlag&nbsp;19).</li>
+        <li>Vimeo bleibt für On-Demand-Videos &mdash; Live-Übertragung läuft separat (z.&thinsp;B. Zoho Meetings) (Vorschlag&nbsp;23).</li>
+        <li>Konsolidierte Status-Liste (8 Werte) im Abschnitt&nbsp;7 + offene Frage&nbsp;3.</li>
+        <li>EduGrant-Felder am CRM-Veranstaltungs-Datensatz (Verfügbarkeit, Höhe, Plätze) &mdash; Buchungs-Karte zeigt nur, wenn gesetzt und Plätze frei (offene Frage&nbsp;4, Abschnitt&nbsp;7).</li>
+        <li>Layout der Teilnahmebescheinigung wird im Implementierungsverlauf entwickelt (offene Frage&nbsp;10).</li>
+        <li><strong>Anwesenheit über QR-Code:</strong> Ticket-PDF mit QR im Mail-Anhang; zusätzlich automatische Sammel-Liste an die im CRM hinterlegte verantwortliche Person (z.&thinsp;B. Kursleitung). Manuelle Nachpflege bleibt möglich (offene Frage&nbsp;11; neues CRM-Feld in Abschnitt&nbsp;7; neue Bausteine "Ticket-PDF" und "Anwesenheits-Liste" in Abschnitt&nbsp;4).</li>
       </ul>
       <p>Bitte schaut noch einmal rüber. Stand: ' . (int) $approval_count . ' Freigabe' . ($approval_count !== 1 ? 'n' : '') . ', ' . (int) $comment_count . ' Kommentar' . ($comment_count !== 1 ? 'e' : '') . ' (inkl. eingearbeitete).</p>
     </td>

@@ -264,15 +264,15 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
             <table class="dgptm-wsb-evl-table">
                 <thead><tr><th>#</th><th>Frage</th><th>Vorschlag</th><th>Begründung</th></tr></thead>
                 <tbody>
-                    <tr><td>1</td><td><strong>Wie gross soll das Modul sein?</strong></td><td>Erst nur Workshops. Bausteine werden so gebaut, dass Webinare/Kongresse später daran andocken können.</td><td>Schritt für Schritt &mdash; kein Mammut-Projekt, aber zukunftsfähig.</td></tr>
+                    <tr><td>1</td><td><strong>Wie gross soll das Modul sein?</strong></td><td><strong>V1: Workshops und Webinare.</strong> Kongresse und Sachkundekurse bleiben in Zoho Backstage. Bausteine werden so gebaut, dass Kongresse später ohne Neubau andocken können.</td><td>Schritt für Schritt &mdash; kein Mammut-Projekt, aber zukunftsfähig.</td></tr>
                     <?php $render_row_actions('entscheidung-row-1'); ?>
                     <tr><td>2</td><td><strong>Müssen Buchende eingeloggt sein?</strong></td><td>Beides: Mitglieder buchen mit einem Klick. Gäste füllen ein kurzes Formular aus.</td><td>Maximal einfach für Mitglieder, gleichzeitig offen für Externe.</td></tr>
                     <?php $render_row_actions('entscheidung-row-2'); ?>
-                    <tr><td>3</td><td><strong>Wie wird bezahlt?</strong></td><td>Über Stripe (gleicher Anbieter wie heute). Die Bezahlseite läuft direkt bei Stripe &mdash; wir berühren keine Kreditkartendaten. Workshops laufen über ein <strong>eigenes Stripe-Unterkonto</strong>, getrennt vom DGPTM-Hauptkonto.</td><td>Sicher (internationaler Sicherheitsstandard), Apple Pay und SEPA-Lastschrift automatisch dabei. Eigenes Unterkonto für Workshops sorgt für klare buchhalterische Trennung.</td></tr>
+                    <tr><td>3</td><td><strong>Wie wird bezahlt?</strong></td><td>Über Stripe (gleicher Anbieter wie heute). Die Bezahlseite läuft direkt bei Stripe &mdash; wir berühren keine Kreditkartendaten. Workshops laufen über ein <strong>eigenes Stripe-Unterkonto</strong>, getrennt vom DGPTM-Hauptkonto.</td><td>Sicher (internationaler Sicherheitsstandard). Kreditkarte, SEPA-Lastschrift, Apple&nbsp;Pay und <strong>PayPal</strong> sind über Stripe direkt mit abgedeckt &mdash; keine zusätzliche PayPal-Anbindung. Eigenes Unterkonto für Workshops sorgt für klare buchhalterische Trennung.</td></tr>
                     <?php $render_row_actions('entscheidung-row-3'); ?>
-                    <tr><td>4</td><td><strong>Was, wenn jemand mehrere Plätze bucht?</strong></td><td>Pro Person ein eigener Eintrag mit eigenen Kontaktdaten.</td><td>Damit jede:r Teilnehmer:in eine eigene Bestätigung und ggf. Fortbildungspunkte erhält.</td></tr>
+                    <tr><td>4</td><td><strong>Was, wenn jemand mehrere Plätze bucht?</strong></td><td><strong>Gruppenbuchung mit Sammel-Rechnung.</strong> Pro Teilnehmer:in ein eigener Datensatz mit eigenen Kontaktdaten und eigener Teilnahmebescheinigung. <strong>Optional kann eine Sammel-Rechnung an einen Zahler ausgestellt werden</strong> (mit Kostenstelle/Auftragsnummer-Feld) &mdash; statt einzelner Rechnungen pro Person. Heute fehlt diese Sammel-Rechnungs-Option und wird mit V1 nachgezogen.</td><td>Damit jede:r Teilnehmer:in eine eigene Bestätigung und FoBi-Punkte erhält, Klinik/Arbeitgeber aber nur eine Rechnung verbuchen muss.</td></tr>
                     <?php $render_row_actions('entscheidung-row-4'); ?>
-                    <tr><td>5</td><td><strong>Welche Daten werden erfasst?</strong></td><td>Pflicht: Vor- und Nachname, E-Mail. Adresse nur, wenn benötigt. Bei bekannten Mitgliedern werden vorhandene Daten automatisch eingeblendet.</td><td>So wenig wie möglich, so viel wie nötig.</td></tr>
+                    <tr><td>5</td><td><strong>Welche Daten werden erfasst?</strong></td><td>Pflicht: <strong>Vorname, Nachname, E-Mail-Adresse, Rechnungsadresse, Studierendenstatus</strong> (bei reduzierten Tickets). Perspektivisch: Arbeitgeber. Bei bekannten Mitgliedern werden vorhandene Daten aus dem CRM vorausgefüllt &mdash; die Person muss sie aktiv prüfen und bestätigen. <strong>Studierendenstatus wird nicht automatisch übernommen</strong>, sondern bei jeder Buchung neu bestätigt.</td><td>Pflichtfelder decken Rechnung und FoBi-Erfassung ab. Verarbeitung weiter über das CRM, Anzeige auf der Homepage bewusst schmal.</td></tr>
                     <?php $render_row_actions('entscheidung-row-5'); ?>
                     <tr><td>6</td><td><strong>Wie erkennt das System Bestandsmitglieder?</strong></td><td>Es prüft alle bekannten E-Mail-Adressen. Findet es niemanden, wird ein neuer Kontakt angelegt.</td><td>Keine Doppel-Einträge, keine Karteileichen.</td></tr>
                     <?php $render_row_actions('entscheidung-row-6'); ?>
@@ -280,11 +280,11 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                     <?php $render_row_actions('entscheidung-row-7'); ?>
                     <tr><td>8</td><td><strong>Was, wenn ein Workshop voll ist?</strong></td><td>Automatische Warteliste. Wird ein Platz frei, hat die nächste Person 24 Stunden Zeit zum Buchen.</td><td>Faire Reihenfolge ohne dauerhafte Sperre.</td></tr>
                     <?php $render_row_actions('entscheidung-row-8'); ?>
-                    <tr><td>9</td><td><strong>Storno durch Teilnehmer:in?</strong></td><td>Bis zu einer Frist (Vorschlag: 14 Tage vor dem Workshop) selbst möglich, Geld kommt automatisch zurück. Danach nur über die Geschäftsstelle.</td><td>Entlastet die Geschäftsstelle, bleibt im Rahmen unserer AGB.</td></tr>
+                    <tr><td>9</td><td><strong>Storno durch Teilnehmer:in?</strong></td><td>Selbst-Storno bis zur Frist möglich &mdash; <strong>Default 6 Wochen vor dem Workshop</strong> (AGB-konform), pro Workshop einstellbar zwischen 28 und 42 Tagen. Erstattung läuft automatisch über Stripe abzüglich <strong>Stornogebühr 10&nbsp;% / max. 35&nbsp;€</strong> (siehe Abschnitt 7). Danach nur über die Geschäftsstelle (Härtefall/Kulanz).</td><td>Bleibt im Rahmen unserer AGB; gibt Kursleitungen Planungssicherheit; entlastet die Geschäftsstelle bei Standard-Stornos.</td></tr>
                     <?php $render_row_actions('entscheidung-row-9'); ?>
                     <tr><td>10</td><td><strong>Welche E-Mails verschickt das System?</strong></td><td>Bestätigung, Warteliste-Info, Nachrück-Einladung, Storno-Bestätigung &mdash; sofort und automatisch. Erinnerungen und Werbung weiter über das bestehende Marketing-Tool.</td><td>Wichtige Mails sofort. Marketing-Inhalte bleiben flexibel.</td></tr>
                     <?php $render_row_actions('entscheidung-row-10'); ?>
-                    <tr><td>11</td><td><strong>Rabattcodes?</strong></td><td>Direkt über Stripe verwaltet &mdash; keine extra Pflege in unserem System.</td><td>Spart Aufwand. Es gibt nur eine Stelle, an der Codes gepflegt werden.</td></tr>
+                    <tr><td>11</td><td><strong>Rabattcodes?</strong></td><td><strong>In V1 nicht aktiv.</strong> Bei Webinaren und Einzel-Workshops vorerst nicht erforderlich. Grundsätzlich vorbereitet: Pflege erfolgt zentral im Modul/CRM (nicht bei Stripe), damit Codes auch für andere Aktionen wiederverwendbar sind.</td><td>Kein Aufwand für ein Feature, das wir aktuell nicht einsetzen. Keine Abhängigkeit von Stripe-Code-Verwaltung.</td></tr>
                     <?php $render_row_actions('entscheidung-row-11'); ?>
                     <tr><td>12</td><td><strong>Wie wird das Modul gebaut?</strong></td><td>Mit austauschbaren Bausteinen (siehe Abschnitt 4), damit Webinar- und Kongress-Buchung später denselben Kern nutzen können.</td><td>Spart bei den nächsten Modulen Zeit und Geld.</td></tr>
                     <?php $render_row_actions('entscheidung-row-12'); ?>
@@ -307,7 +307,7 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                     <?php $render_row_actions('entscheidung-row-16'); ?>
                     <tr><td>17</td><td><strong>Zugang für Nicht-Mitglieder</strong></td><td>Personen ohne WordPress-Konto bekommen einen persönlichen Link per E-Mail. Damit können sie ihr Ticket einsehen, downloaden und ggf. stornieren &mdash; ohne Anmeldung. Der Link läuft nach einer festgelegten Frist ab.</td><td>Kein Zwang zur Registrierung, trotzdem komfortabler Zugriff.</td></tr>
                     <?php $render_row_actions('entscheidung-row-17'); ?>
-                    <tr><td>18</td><td><strong>Auto-Zuordnung über E-Mail</strong></td><td>Bucht ein Mitglied ohne sich einzuloggen, erkennt das System die E-Mail-Adresse als bekannt und ordnet die Buchung automatisch dem Mitglieds-Kontakt zu. Es entsteht kein Doppel-Eintrag.</td><td>Keine Karteileichen, sauberer Datenbestand. Mitglied sieht das Ticket beim nächsten Login.</td></tr>
+                    <tr><td>18</td><td><strong>Auto-Zuordnung über E-Mail</strong></td><td>Bucht ein Mitglied ohne sich einzuloggen, erkennt das System die E-Mail-Adresse als bekannt und ordnet die Buchung automatisch dem Mitglieds-Kontakt zu. Es entsteht kein Doppel-Eintrag. <strong>Vor Abschluss der Buchung werden vorhandene Stamm- und Rechnungsdaten zur Bestätigung/Aktualisierung angezeigt</strong> &mdash; geänderte Daten fließen direkt in den CRM-Datensatz zurück. <strong>Studierendenstatus</strong> wird dabei nie automatisch übernommen, sondern muss bei jeder Buchung aktiv neu bestätigt werden.</td><td>Keine Karteileichen, sauberer Datenbestand. CRM-Daten werden bei jeder Buchung verifiziert und ggf. korrigiert. Studierendenrabatte können nicht versehentlich weiterlaufen.</td></tr>
                     <?php $render_row_actions('entscheidung-row-18'); ?>
                 </tbody>
             </table>
@@ -316,7 +316,7 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
             <table class="dgptm-wsb-evl-table">
                 <thead><tr><th>#</th><th>Frage</th><th>Vorschlag</th><th>Begründung</th></tr></thead>
                 <tbody>
-                    <tr><td>19</td><td><strong>Automatische Teilnahmebescheinigung</strong></td><td>Sobald Geschäftsstelle oder Kursleitung die Anwesenheit einer Person bestätigt, erzeugt das System automatisch eine Teilnahmebescheinigung als PDF. Es wird per E-Mail verschickt und ist im Mitgliederbereich abrufbar. Engine: Wiederverwendung der bestehenden Webinar-Lösung.</td><td>Spart der Geschäftsstelle das manuelle Erstellen. Klarer Trigger (Anwesenheits-Bestätigung) statt unklarer Zeit-Logik.</td></tr>
+                    <tr><td>19</td><td><strong>Automatische Teilnahmebescheinigung</strong></td><td>Versand <strong>erst nach Ende der Veranstaltung und nur, wenn Anwesenheit bestätigt ist</strong>. Anwesenheit/Teilnahmeverwaltung läuft weiterhin über das Zoho CRM (Geschäftsstelle/Kursleitung markiert anwesend). Sobald gesetzt, erzeugt das System automatisch das PDF, verschickt es per E-Mail und stellt es im Mitgliederbereich bereit. Engine: bestehende Vimeo-Webinare-Lösung.</td><td>Kein verfrühter Versand. Klarer Trigger (Anwesenheit + Workshop-Ende). Verwaltung bleibt dort, wo die Geschäftsstelle ohnehin arbeitet (CRM).</td></tr>
                     <?php $render_row_actions('entscheidung-row-19'); ?>
                     <tr><td>20</td><td><strong>Layout konfigurierbar</strong></td><td>Geschäftsstelle kann pro Workshop ein Standard-Layout zuweisen oder ein eigenes hinterlegen.</td><td>Flexibilität für Sonder-Veranstaltungen, ohne dass jedes Mal ein:e Programmierer:in benötigt wird.</td></tr>
                     <?php $render_row_actions('entscheidung-row-20'); ?>
@@ -331,7 +331,7 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                 <tbody>
                     <tr><td>22</td><td><strong>Variable Pflichtfelder pro Ticket-Typ</strong></td><td>Pro Ticket-Typ können zusätzliche Pflichtfelder definiert werden (z.&thinsp;B. für Sponsorenkarten Firmenname und USt-ID, für Ehrenamts-Tickets Bestätigung der Funktion). Verwaltung im CRM am Workshop-Datensatz.</td><td>Vermeidet Sammelmails, hebt Sonderbedingungen direkt im Buchungsfluss ab.</td></tr>
                     <?php $render_row_actions('entscheidung-row-22'); ?>
-                    <tr><td>23</td><td><strong>Webinar-Modul direkt verbunden</strong></td><td>Das bestehende vimeo-webinare-Modul wird von Anfang an angebunden. Webinar-Anmeldungen laufen über denselben Buchungs-Kern (Tickets, Zahlung, QR, Mitgliederbereich, Teilnahmebescheinigung). Keine spätere Migration nötig.</td><td>Eine Buchungs-Logik für Workshops und Webinare. Spart Doppelbau und reduziert Wartungsaufwand.</td></tr>
+                    <tr><td>23</td><td><strong>Webinar-Modul direkt verbunden</strong></td><td>Das bestehende vimeo-webinare-Modul wird von Anfang an angebunden. Webinar-Anmeldungen laufen über denselben Buchungs-Kern (Tickets, Zahlung, QR, Mitgliederbereich, Teilnahmebescheinigung). <strong>Wichtig &mdash; Werkzeugteilung:</strong> Live-Übertragung des Webinars läuft über das Live-Konferenz-Tool (z.&thinsp;B. Zoho Meetings). <strong>Vimeo</strong> ist die Plattform für die <em>nachträgliche</em> On-Demand-Bereitstellung der Aufzeichnung &mdash; aktuell die preislich und qualitativ beste Lösung. Keine spätere Migration nötig.</td><td>Eine Buchungs-Logik für Workshops und Webinare. Saubere Trennung Live (Konferenz-Tool) vs. On-Demand (Vimeo).</td></tr>
                     <?php $render_row_actions('entscheidung-row-23'); ?>
                 </tbody>
             </table>
@@ -356,6 +356,8 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                     <tr><td><strong>Webseite (Frontend)</strong></td><td>Was Nutzer:innen sehen: Workshop-Karten, Buchungsformular, Bestätigungsseite.</td></tr>
                     <tr><td><strong>Mitgliederbereich-Anzeige</strong></td><td>Zeigt eingeloggten Mitgliedern alle ihre Tickets gesammelt &mdash; aus dem eigenen Tool und aus Zoho Backstage.</td></tr>
                     <tr><td><strong>QR-Code-Generator</strong></td><td>Erzeugt für jedes Ticket einen scanbaren Code mit der Ticketnummer.</td></tr>
+                    <tr><td><strong>Ticket-PDF</strong></td><td>Erzeugt das Ticket als PDF (mit QR-Code, Workshop-Daten, Teilnehmer:in) und hängt es der Bestätigungsmail an &mdash; so kann das Ticket auf dem Smartphone gezeigt oder ausgedruckt werden.</td></tr>
+                    <tr><td><strong>Anwesenheits-Liste an Verantwortliche</strong></td><td>Schickt der im CRM hinterlegten verantwortlichen Person (z.&thinsp;B. Kursleitung) vor dem Workshop automatisch eine Sammel-Liste mit allen Tickets/QR-Codes &mdash; als Backup für die Anwesenheits-Erfassung neben dem Live-Scan.</td></tr>
                     <tr><td><strong>Ticketprüfung (Webtool)</strong></td><td>Mobile-Webseite, mit der Geschäftsstelle/Kursleitung am Workshop-Tag Tickets prüft &mdash; per QR-Scan im Browser oder direkter Eingabe der Ticketnummer. Keine App-Installation nötig.</td></tr>
                     <tr><td><strong>Persönliche-Link-Verwaltung</strong></td><td>Erzeugt und prüft die Zugangs-Links für Nicht-Mitglieder und externe Designer:innen.</td></tr>
                     <tr><td><strong>Bescheinigungs-Generator</strong></td><td>Erzeugt das Teilnahme-PDF nach dem Workshop &mdash; nutzt die bestehende Vimeo-Webinare-Engine.</td></tr>
@@ -415,8 +417,11 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                 </ul>
             </div>
             <div class="dgptm-wsb-evl-highlight orange">
-                <strong>Veranstaltungs-Stammdaten</strong> &mdash; neues Feld &bdquo;Storno-Frist (Tage)&ldquo;, Standardwert z.&thinsp;B. 14 Tage. So kann pro Workshop entschieden werden, wie lange Teilnehmer:innen selbst stornieren dürfen.
+                <strong>Veranstaltungs-Stammdaten</strong> &mdash; neues Feld &bdquo;Storno-Frist (Tage)&ldquo;, Standardwert <strong>42 Tage (6 Wochen, AGB-konform)</strong>, pro Workshop frei einstellbar (empfohlen 28&ndash;42 Tage). Bei Präsenz-Workshops eher länger zur Planungssicherheit.
                 <em>&rarr; Abstimmung mit Geschäftsstelle nötig.</em>
+            </div>
+            <div class="dgptm-wsb-evl-highlight orange">
+                <strong>EduGrant-Felder am Workshop</strong> &mdash; Vorbedingung für die Anzeige des EduGrant-Hinweises auf der Buchungs-Karte: am Veranstaltungs-Datensatz im CRM werden gepflegt, ob EduGrant verfügbar ist, in welcher Höhe und für wie viele Teilnehmer:innen. Die Buchungs-Karte zeigt EduGrant nur, wenn diese Felder gesetzt sind und Plätze verfügbar sind.
             </div>
             <div class="dgptm-wsb-evl-highlight orange">
                 <strong>Stornogebühr</strong> &mdash; bei Selbst-Storno innerhalb der Frist wird automatisch eine Stornogebühr einbehalten:
@@ -427,15 +432,16 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                 Beispiel: bei 200&nbsp;€ Ticketpreis = 20&nbsp;€ Gebühr; bei 500&nbsp;€ Ticketpreis = 35&nbsp;€ Gebühr (Deckel). Die Erstattung erfolgt automatisch über Stripe abzüglich dieser Gebühr; die Gebühr erscheint als separater Posten in Zoho Books.
             </div>
             <div class="dgptm-wsb-evl-highlight orange">
-                <strong>Anmelde-Status</strong> &mdash; neue Status-Werte für die Teilnehmer:innen-Liste:
+                <strong>Anmelde-Status</strong> &mdash; konsolidierte Status-Werte für die Teilnehmer:innen-Liste (Pflege im CRM):
                 <ul>
-                    <li><em>Zahlung ausstehend</em> &mdash; während die Person noch auf der Bezahlseite ist</li>
+                    <li><em>Zahlung ausstehend</em> &mdash; Person ist noch auf der Bezahlseite</li>
                     <li><em>Angemeldet</em> &mdash; Zahlung erfolgt, Ticket gültig, Workshop steht noch bevor</li>
                     <li><em>Warteliste</em> &mdash; Workshop ist voll</li>
                     <li><em>Nachrücker:in &ndash; Zahlung ausstehend</em> &mdash; 24-Stunden-Frist läuft</li>
+                    <li><em>Abgebrochen</em> &mdash; Nachrücker:in hat das Angebot nicht genutzt (Frist verstrichen)</li>
                     <li><em>Storniert</em> &mdash; Geld (abzüglich Stornogebühr) erstattet</li>
-                    <li><em>Angemeldet, nicht teilgenommen</em> &mdash; Workshop ist vorbei, Person war nicht da; keine Teilnahmebescheinigung, keine FoBi-Punkte</li>
-                    <li><em>Anwesend</em> &mdash; bestätigt teilgenommen, Teilnahmebescheinigung erstellt</li>
+                    <li><em>Teilgenommen</em> &mdash; Anwesenheit bestätigt, Teilnahmebescheinigung erstellt</li>
+                    <li><em>Nicht teilgenommen</em> &mdash; Workshop vorbei, Person war nicht da; keine Bescheinigung, keine FoBi-Punkte</li>
                 </ul>
                 <em>&rarr; Abstimmung mit Verantwortlichen für den Anmelde-Workflow nötig.</em>
             </div>
@@ -445,6 +451,9 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
             <div class="dgptm-wsb-evl-highlight orange">
                 <strong>Ticketnummer</strong> &mdash; neues Feld für eine numerische, eindeutige Ticketnummer (Format identisch zu Zoho Backstage, z.&thinsp;B. 8-stellig). Wird beim Anlegen automatisch vergeben.
                 <em>&rarr; Format mit Backstage-Verantwortlichen abstimmen.</em>
+            </div>
+            <div class="dgptm-wsb-evl-highlight orange">
+                <strong>Verantwortliche Person für Anwesenheit</strong> &mdash; neues Feld am Veranstaltungs-Datensatz: Verlinkung zu einer Person (z.&thinsp;B. Kursleitung). Sie erhält vor dem Workshop automatisch die <em>Teilnehmer:innen-Liste mit QR-Codes und Ticketnummern</em> per Mail &mdash; als Backup für Anwesenheits-Erfassung neben dem Live-Scan.
             </div>
             <div class="dgptm-wsb-evl-highlight orange">
                 <strong>Layout der Teilnahmebescheinigung</strong> &mdash; optionales Feld am Workshop, das auf ein hinterlegtes Layout verweist. Leer = Standard-Layout.
@@ -485,18 +494,18 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
         <!-- ───── Abschnitt 10 ───── -->
         <div class="dgptm-wsb-evl-section" id="section-offene-punkte">
             <h3>10. Offene Fragen für dich</h3>
-            <p>Diese Punkte brauchen eine Entscheidung, bevor wir mit der Umsetzung starten. Hinterlass deine Meinung bitte als Kommentar in diesem Abschnitt.</p>
+            <p>Diese Punkte brauchen eine Entscheidung, bevor wir mit der Umsetzung starten. Hinterlass deine Meinung bitte als Kommentar in diesem Abschnitt. Punkte mit <span style="color:#16a34a;font-weight:600;">[geklärt 30.04.2026]</span> sind mit dem aktuellen Review entschieden.</p>
             <div class="dgptm-wsb-evl-highlight blue">
                 <table class="dgptm-wsb-evl-table" style="background:transparent;">
-                    <thead><tr><th>#</th><th>Frage</th><th>Vorschlag</th></tr></thead>
+                    <thead><tr><th>#</th><th>Frage</th><th>Vorschlag / Stand</th></tr></thead>
                     <tbody>
-                        <tr><td>1</td><td><strong>Wie lange dürfen Teilnehmer:innen selbst stornieren?</strong></td><td>14 Tage einheitlich, pro Workshop änderbar</td></tr>
+                        <tr><td>1</td><td><strong>Wie lange dürfen Teilnehmer:innen selbst stornieren?</strong></td><td><span style="color:#16a34a;font-weight:600;">[geklärt 30.04.2026]</span> Default <strong>42 Tage (6 Wochen)</strong>, AGB-konform; pro Workshop einstellbar zwischen 28 und 42 Tagen.</td></tr>
                         <?php $render_row_actions('offen-row-1', 3); ?>
                         <tr><td>2</td><td><strong>Was passiert, wenn nach der Frist storniert wird?</strong></td><td>Vorschlag: keine Erstattung. Härtefälle nach Kulanz &mdash; muss mit AGB abgestimmt werden.</td></tr>
                         <?php $render_row_actions('offen-row-2', 3); ?>
-                        <tr><td>3</td><td><strong>Wie sollen die neuen Anmelde-Status heissen?</strong></td><td>Vorschlag: &bdquo;Zahlung ausstehend&ldquo;, &bdquo;Warteliste&ldquo;, &bdquo;Nachrücker:in &ndash; Zahlung ausstehend&ldquo;, &bdquo;Storniert&ldquo;</td></tr>
+                        <tr><td>3</td><td><strong>Wie sollen die Anmelde-Status heissen?</strong></td><td><span style="color:#16a34a;font-weight:600;">[geklärt 30.04.2026]</span> Zahlung ausstehend, Angemeldet, Warteliste, Nachrücker:in &ndash; Zahlung ausstehend, Abgebrochen, Storniert, Teilgenommen, Nicht teilgenommen (siehe Abschnitt 7).</td></tr>
                         <?php $render_row_actions('offen-row-3', 3); ?>
-                        <tr><td>4</td><td><strong>Edugrant-Förderung:</strong> Nur Hinweis und Link &mdash; oder integrierter Antrag aus der Buchung heraus?</td><td>Vorschlag: erstmal nur Hinweis und Link.</td></tr>
+                        <tr><td>4</td><td><strong>Edugrant-Förderung:</strong> Nur Hinweis und Link &mdash; oder integrierter Antrag aus der Buchung heraus?</td><td>Vorschlag: erstmal nur Hinweis und Link. <span style="color:#16a34a;font-weight:600;">[geklärt 30.04.2026]</span> Verfügbarkeit, Höhe und Anzahl Förderplätze werden im CRM am Veranstaltungs-Datensatz gepflegt; Buchungs-Karte zeigt EduGrant nur, wenn dort gesetzt und Plätze frei.</td></tr>
                         <?php $render_row_actions('offen-row-4', 3); ?>
                         <tr><td>5</td><td><strong>Backstage-Spiegelung &mdash; wie genau?</strong></td><td>Vorschlag: regelmäßiger Abgleich (z.&thinsp;B. alle 15 Min) statt Echtzeit-Synchronisation. Einfacher, robuster, ausreichend.</td></tr>
                         <?php $render_row_actions('offen-row-5', 3); ?>
@@ -508,13 +517,20 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                         <?php $render_row_actions('offen-row-8', 3); ?>
                         <tr><td>9</td><td><strong>Wer darf Designer:innen einladen?</strong></td><td>Vorschlag: nur Geschäftsstelle. Kontrolle bleibt zentral.</td></tr>
                         <?php $render_row_actions('offen-row-9', 3); ?>
-                        <tr><td>10</td><td><strong>Standard-Layout der Teilnahmebescheinigung</strong></td><td>Welches der vorhandenen Webinar-Layouts (classic, corporate, elegant, minimal) wird Standard? Oder ein neues, eigens für Workshops?</td></tr>
+                        <tr><td>10</td><td><strong>Standard-Layout der Teilnahmebescheinigung</strong></td><td><span style="color:#16a34a;font-weight:600;">[geklärt 30.04.2026]</span> Wird im Rahmen dieses Projekts zusammen mit der Geschäftsstelle entwickelt &mdash; folgt im Implementierungsverlauf.</td></tr>
                         <?php $render_row_actions('offen-row-10', 3); ?>
-                        <tr><td>11</td><td><strong>Wie wird Anwesenheit erfasst?</strong></td><td>Vorschlag: per QR-Code-Scan am Einlass <em>und</em> manuelle Nachpflege möglich. Bei Online-Workshops: aus Zoom/Vimeo-Anwesenheitsdaten oder manuell.</td></tr>
+                        <tr><td>11</td><td><strong>Wie wird Anwesenheit erfasst?</strong></td><td><span style="color:#16a34a;font-weight:600;">[geklärt 30.04.2026]</span> <strong>Primär über QR-Code-Scan</strong> der Tickets durch die verantwortliche Person vor Ort. Workflow:
+                            <ul style="margin:6px 0 0 18px;">
+                                <li>Jedes Ticket wird der Bestätigungsmail als Anhang (PDF) mit QR-Code beigelegt &mdash; Teilnehmer:in kann das Ticket auf dem Smartphone vorzeigen oder ausdrucken.</li>
+                                <li>Zusätzlich erhält die im CRM hinterlegte <strong>verantwortliche Person</strong> (z.&thinsp;B. Kursleitung) vor dem Workshop eine Sammel-Liste mit allen QR-Codes/Ticketnummern für Backup-/Listen-Abhakung.</li>
+                                <li>Manuelle Nachpflege bleibt jederzeit möglich (z.&thinsp;B. wenn jemand sein Ticket vergessen hat).</li>
+                                <li>Bei Online-Workshops: aus Live-Tool-Anwesenheitsdaten (z.&thinsp;B. Zoho Meetings) oder manuell.</li>
+                            </ul>
+                        </td></tr>
                         <?php $render_row_actions('offen-row-11', 3); ?>
                         <tr><td>12</td><td><strong>Online-Tool oder eigene App für Anwesenheits-Erfassung?</strong></td><td>Vorschlag: in V1 als Web-Tool (Smartphone-Browser, kein App-Store-Eintrag). Eine native App für iOS/Android nur, wenn sich der Web-Weg im Echtbetrieb als unzureichend erweist.</td></tr>
                         <?php $render_row_actions('offen-row-12', 3); ?>
-                        <tr><td>13</td><td><strong>Gemeinsame Buchung mehrerer Personen mit einem Zahler:</strong> notwendig?</td><td>Heute deckt das System ab: eine Person bucht und bezahlt mehrere Tickets in einer Buchung &mdash; jede:r Teilnehmer:in bekommt eigene Daten und Teilnahmebescheinigung. Brauchen wir zusätzlich getrennte Zahler:innen pro Ticket? Vorschlag: nein, ist bisher nie aufgetreten.</td></tr>
+                        <tr><td>13</td><td><strong>Sammel-Rechnung bei Mehrfach-Tickets</strong></td><td><span style="color:#16a34a;font-weight:600;">[geklärt 30.04.2026]</span> <strong>Ja, in V1 nachziehen.</strong> Heute wird trotz Sammel-Buchung pro TN eine eigene Rechnung erzeugt &mdash; das soll umstellbar sein. Mit V1: Buchende Person kann zwischen <em>einzelnen Rechnungen pro TN</em> oder <em>einer Sammel-Rechnung an einen Zahler</em> (mit Kostenstelle/Auftragsnummer) wählen. TN-Daten und Bescheinigungen bleiben pro Person.</td></tr>
                         <?php $render_row_actions('offen-row-13', 3); ?>
                         <tr><td>14</td><td><strong>Rechnungserstellung über Zoho Books</strong></td><td>Welche Rechnungs-Vorlage wird verwendet? Eigener Nummernkreis für Workshop-/Webinar-Rechnungen oder gemeinsamer mit Mitgliedsbeiträgen? Wie werden Edugrant-Förderungen abgebildet (volle Rechnung an Teilnehmer:in &amp; Förder-Buchung intern, oder reduzierte Rechnung)? &mdash; Klärung mit Geschäftsstelle.</td></tr>
                         <?php $render_row_actions('offen-row-14', 3); ?>

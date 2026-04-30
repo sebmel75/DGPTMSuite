@@ -2,7 +2,7 @@
     "id": "workshop-booking",
     "name": "DGPTM - Workshop Buchung",
     "description": "Buchung von Workshops aus Zoho CRM (DGfK_Events) mit Stripe-Zahlung und Warteliste. Erste Phase: Entscheidungsvorlage-Shortcodes zur internen Abstimmung.",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "author": "Sebastian Melzer",
     "main_file": "dgptm-workshop-booking.php",
     "dependencies": [],

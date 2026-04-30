@@ -162,6 +162,23 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
         <?php endif; ?>
     </div>
 
+    <?php if (current_user_can('manage_options')) : ?>
+        <div class="dgptm-wsb-evl-admin-bar" style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:12px 16px;margin:12px 0;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+            <div style="font-size:13px;color:#9a3412;">
+                <strong>Admin:</strong> Alle Kommentare eingearbeitet? Beteiligte mit einer Mail informieren.
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <label style="font-size:13px;color:#9a3412;display:flex;gap:6px;align-items:center;">
+                    <input type="checkbox" id="dgptm-wsb-evl-mark-read-toggle" checked>
+                    Kommentare als &bdquo;eingearbeitet&ldquo; markieren
+                </label>
+                <button type="button" class="dgptm-fe-btn dgptm-fe-btn-primary dgptm-fe-btn-small" id="dgptm-wsb-evl-implemented">
+                    Beteiligte benachrichtigen
+                </button>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <?php if (!empty($approvals)) : ?>
     <div class="dgptm-wsb-evl-approvals-list">
         <?php foreach ($approvals as $a) : ?>
@@ -195,7 +212,10 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
         <!-- ───── Abschnitt 1 ───── -->
         <div class="dgptm-wsb-evl-section" id="section-ziel">
             <h3>1. Worum geht es?</h3>
-            <p>Bisher läuft die Buchung <em>aller</em> Veranstaltungen über <strong>Zoho Backstage</strong>. Für große Formate (Kongresse, Sachkundekurse) ist das passend &mdash; für kleine Workshops verursacht es überproportionalen Einrichtungs- und Wartungsaufwand pro Veranstaltung. Wir wollen kleinere Workshops daher direkt über die DGPTM-Webseite buchbar machen.</p>
+            <p>Bisher läuft die Buchung <em>aller</em> Veranstaltungen über <strong>Zoho Backstage</strong>. Für große Formate (Kongresse, Sachkundekurse) ist das passend &mdash; für kleine Workshops und Webinare verursacht es überproportionalen Einrichtungs- und Wartungsaufwand pro Veranstaltung. Wir wollen diese Formate daher direkt über die DGPTM-Webseite buchbar machen.</p>
+            <div class="dgptm-wsb-evl-highlight blue">
+                <strong>Geltungsbereich V1 (festgelegt 29.04.2026):</strong> Workshops und Webinare. <strong>Kongresse und Sachkundekurse bleiben bis auf Weiteres in Zoho Backstage</strong> &mdash; sie sind nicht Teil dieses Moduls.
+            </div>
             <p><strong>Hauptmotivation:</strong></p>
             <ul>
                 <li><strong>Entkopplung kleinerer Veranstaltungen von Zoho Backstage</strong> &mdash; reduziert den hohen Einrichtungs- und Wartungsaufwand, der dort pro Workshop aktuell anfällt.</li>
@@ -209,12 +229,13 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                 <li>Die Bezahlung läuft sicher über unseren bestehenden Zahlungsanbieter.</li>
                 <li>Die Anmeldung wird automatisch ins Zoho CRM eingetragen.</li>
                 <li>Der/die Teilnehmer:in erhält sofort eine Bestätigung mit Termin für den Kalender.</li>
+                <li>Die Geschäftsstelle erhält automatisch eine Mail, sobald eine AG einen neuen Kurs einträgt &mdash; analog zum Workflow bei Kursen für die Zertifizierung.</li>
                 <li>Mitglieder sehen alle ihre Tickets (auch ältere und solche aus Zoho Backstage) im Mitgliederbereich an einer Stelle.</li>
                 <li>Jedes Ticket trägt einen QR-Code für die Einlasskontrolle am Workshop-Tag.</li>
                 <li>Nicht-Mitglieder bekommen einen persönlichen Link per E-Mail &mdash; ohne Login.</li>
                 <li>Nach dem Workshop entsteht automatisch ein Teilnahmebescheinigung als PDF.</li>
             </ul>
-            <p><em>Hinweis:</em> Das Modul ist der erste Baustein. Später sollen Webinare und Kongresse mit derselben Mechanik buchbar werden.</p>
+            <p><em>Hinweis:</em> Das Modul ist der erste Baustein. Eine Erweiterung auf Kongresse und Sachkundekurse ist <em>nicht</em> Teil dieser Vorlage und würde nach erfolgreichem V1-Betrieb separat geplant.</p>
             <?php $render_section_comments('section-ziel'); ?>
         </div>
 
@@ -267,6 +288,8 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                     <?php $render_row_actions('entscheidung-row-11'); ?>
                     <tr><td>12</td><td><strong>Wie wird das Modul gebaut?</strong></td><td>Mit austauschbaren Bausteinen (siehe Abschnitt 4), damit Webinar- und Kongress-Buchung später denselben Kern nutzen können.</td><td>Spart bei den nächsten Modulen Zeit und Geld.</td></tr>
                     <?php $render_row_actions('entscheidung-row-12'); ?>
+                    <tr><td>12a</td><td><strong>Mehrsprachigkeit (DE/EN)</strong></td><td>Frontend, Buchungsformular, Bestätigungsmails und Teilnahmebescheinigung sind von Anfang an zweisprachig vorbereitet (Deutsch und Englisch). Pro Workshop wird eine Sprache gewählt; bei englischsprachigen Veranstaltungen (z.&thinsp;B. International Webinar) erhalten Teilnehmer:innen automatisch englische Texte.</td><td>Vermeidet späteren Komplett-Umbau. Internationale Webinare und englischsprachige Workshops sind so direkt am Start unterstützt.</td></tr>
+                    <?php $render_row_actions('entscheidung-row-12a'); ?>
                 </tbody>
             </table>
 
@@ -325,8 +348,10 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                     <tr><td><strong>Workshops lesen</strong></td><td>Holt aktive Workshops aus dem Zoho CRM auf die Webseite.</td></tr>
                     <tr><td><strong>Buchung prüfen</strong></td><td>Prüft, ob noch Plätze frei sind, und legt die Anmeldung an.</td></tr>
                     <tr><td><strong>Bezahlung</strong></td><td>Schickt die Person zur Stripe-Bezahlseite und nimmt das Ergebnis entgegen.</td></tr>
+                    <tr><td><strong>Rechnung (Zoho Books)</strong></td><td>Erstellt nach erfolgreicher Zahlung automatisch eine Rechnung in Zoho Books und hängt sie der Bestätigungsmail an. Vorgang und Vorlagen sind noch mit der Geschäftsstelle abzustimmen (siehe offene Frage 14).</td></tr>
                     <tr><td><strong>Zoho CRM schreiben</strong></td><td>Trägt die Anmeldung in unsere Teilnehmer:innen-Liste ein.</td></tr>
-                    <tr><td><strong>E-Mails</strong></td><td>Versendet Bestätigung, Warteliste, Storno &mdash; mit Termin-Anhang für den Kalender.</td></tr>
+                    <tr><td><strong>E-Mails</strong></td><td>Versendet Bestätigung, Warteliste, Storno, Termin-Verlegung &mdash; mit Termin-Anhang für den Kalender.</td></tr>
+                    <tr><td><strong>Termin-Verlegung</strong></td><td>Wenn Geschäftsstelle/Kursleitung einen Workshop verlegen muss: Geänderter Termin im CRM ergibt automatisch (1) Update aller Tickets, (2) Mail an alle Teilnehmer:innen mit neuem Termin und neuem Kalender-Anhang, (3) Möglichkeit zum Storno mit voller Erstattung innerhalb einer festgelegten Frist.</td></tr>
                     <tr><td><strong>Warteliste</strong></td><td>Überwacht freie Plätze und benachrichtigt Nachrücker:innen automatisch.</td></tr>
                     <tr><td><strong>Webseite (Frontend)</strong></td><td>Was Nutzer:innen sehen: Workshop-Karten, Buchungsformular, Bestätigungsseite.</td></tr>
                     <tr><td><strong>Mitgliederbereich-Anzeige</strong></td><td>Zeigt eingeloggten Mitgliedern alle ihre Tickets gesammelt &mdash; aus dem eigenen Tool und aus Zoho Backstage.</td></tr>
@@ -347,7 +372,7 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
             <ol class="dgptm-wsb-evl-steps-list">
                 <li><strong>Workshop entdecken</strong> &mdash; Auf der Webseite werden alle kommenden Workshops als Karten gezeigt. Die Inhalte kommen direkt aus dem Zoho CRM.</li>
                 <li><strong>Ticket auswählen</strong> &mdash; Die Person wählt ein Ticket (z.&thinsp;B. &bdquo;Vollpreis&ldquo;, &bdquo;Mitgliedspreis&ldquo;).</li>
-                <li><strong>Daten eintragen</strong> &mdash; Bei eingeloggten Mitgliedern automatisch vorausgefüllt. Gäste tragen Vor-/Nachname und E-Mail ein.</li>
+                <li><strong>Daten eintragen / Daten prüfen</strong> &mdash; Bei eingeloggten Mitgliedern werden hinterlegte Stammdaten vorausgefüllt; die Person prüft sie und korrigiert ggf. Gäste tragen Vor-/Nachname und E-Mail neu ein. So bleibt der Datenbestand sauber, ohne dass jemand die Felder leer ausfüllen muss.</li>
                 <li><strong>Bezahlen</strong> &mdash; Weiterleitung zur Bezahlseite von Stripe. Wer nicht zahlt, dessen Buchung verfällt automatisch &mdash; der Platz wird wieder freigegeben.</li>
                 <li><strong>Bestätigung</strong> &mdash; Sofort nach Zahlungseingang: Bestätigungs-E-Mail mit Kalender-Anhang und Ticket inklusive QR-Code.</li>
                 <li><strong>Eintrag im Mitgliederbereich</strong> &mdash; Eingeloggte Mitglieder sehen ihr neues Ticket sofort auf der Seite &bdquo;Meine Tickets&ldquo;. Gäste/Nicht-Mitglieder erhalten einen persönlichen Link per E-Mail zur Ticket-Verwaltung.</li>
@@ -363,9 +388,16 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
             <h3>6. Zusammenspiel mit bestehenden Funktionen</h3>
             <ul>
                 <li><strong>Zoho Backstage:</strong> Tickets, die direkt in Backstage angelegt wurden, werden ins eigene Zoho CRM gespiegelt. Mitglieder sehen <em>alle</em> ihre Tickets im Mitgliederbereich an einer Stelle &mdash; egal aus welchem Tool. Wie genau die Spiegelung erfolgen soll (Echtzeit, Cron-Lauf, einmaliger Import), ist eine offene Frage (siehe Abschnitt 10).</li>
-                <li><strong>Edugrant-Förderung:</strong> Wenn für einen Workshop eine Förderung verfügbar ist, erscheint auf der Buchungs-Karte ein Hinweis und ein Link zum Förderantrag. Das vermeidet doppelte Erfassung.</li>
+                <li><strong>Edugrant-Förderung:</strong> Wenn für einen Workshop eine Förderung verfügbar ist, erscheint auf der Buchungs-Karte
+                    <ul style="margin-top:6px;">
+                        <li>ein <strong>klar erklärender Text</strong>, wofür die Förderung gedacht ist und wer sie nutzen kann (z.&thinsp;B. Auszubildende in der Kardiotechnik, junge Perfusionist:innen),</li>
+                        <li>ein Link zum Förderantrag &mdash; <strong>jeder Antrag wird weiterhin durch die Geschäftsstelle/den Vorstand geprüft und bestätigt</strong>, bevor der Förderplatz vergeben wird,</li>
+                        <li>ein <strong>limitierbares Förderplatz-Kontingent pro Workshop</strong> (z.&thinsp;B. 3 Edugrant-Plätze von insgesamt 20 Plätzen). Sind die Plätze vergeben, ist der Förderhinweis auf der Buchungs-Karte automatisch ausgeblendet.</li>
+                    </ul>
+                </li>
+                <li><strong>Rechnungserstellung:</strong> Nach erfolgreicher Zahlung erstellt das System automatisch eine Rechnung in Zoho Books und schickt sie der Bestätigungsmail bei. Rechnungs-Vorlage, Nummernkreis und Logik bei Edugrant-Förderung (z.&thinsp;B. Anteilsabrechnung) werden mit der Geschäftsstelle abgestimmt &mdash; siehe offene Fragen, Punkt 14.</li>
                 <li><strong>vimeo-webinare:</strong> Wird von Anfang an direkt eingebunden. Webinar-Anmeldungen laufen über denselben Buchungs-Kern (Tickets, Zahlung, QR, Mitgliederbereich, Teilnahmebescheinigung). Die bestehende Engine für die Teilnahmebescheinigung wird gemeinsam genutzt.</li>
-                <li><strong>Kongresse und Sachkundekurse:</strong> Laufen unverändert weiter über Zoho Backstage. Tickets daraus werden über die Backstage-Spiegelung (Punkt 13) im Mitgliederbereich angezeigt.</li>
+                <li><strong>Kongresse und Sachkundekurse:</strong> Laufen unverändert weiter über Zoho Backstage und sind <strong>nicht Bestandteil dieses Moduls</strong>. Tickets daraus werden lediglich über die Backstage-Spiegelung (Punkt 13) im Mitgliederbereich angezeigt.</li>
             </ul>
             <?php $render_section_comments('section-kompatibilitaet'); ?>
         </div>
@@ -379,15 +411,28 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                 <em>&rarr; Abstimmung mit Geschäftsstelle nötig.</em>
             </div>
             <div class="dgptm-wsb-evl-highlight orange">
+                <strong>Stornogebühr</strong> &mdash; bei Selbst-Storno innerhalb der Frist wird automatisch eine Stornogebühr einbehalten:
+                <ul>
+                    <li><strong>10&nbsp;% des Ticketpreises</strong>,</li>
+                    <li><strong>maximal 35&nbsp;€ pro Ticket</strong>.</li>
+                </ul>
+                Beispiel: bei 200&nbsp;€ Ticketpreis = 20&nbsp;€ Gebühr; bei 500&nbsp;€ Ticketpreis = 35&nbsp;€ Gebühr (Deckel). Die Erstattung erfolgt automatisch über Stripe abzüglich dieser Gebühr; die Gebühr erscheint als separater Posten in Zoho Books.
+            </div>
+            <div class="dgptm-wsb-evl-highlight orange">
                 <strong>Anmelde-Status</strong> &mdash; neue Status-Werte für die Teilnehmer:innen-Liste:
                 <ul>
                     <li><em>Zahlung ausstehend</em> &mdash; während die Person noch auf der Bezahlseite ist</li>
+                    <li><em>Angemeldet</em> &mdash; Zahlung erfolgt, Ticket gültig, Workshop steht noch bevor</li>
                     <li><em>Warteliste</em> &mdash; Workshop ist voll</li>
                     <li><em>Nachrücker:in &ndash; Zahlung ausstehend</em> &mdash; 24-Stunden-Frist läuft</li>
-                    <li><em>Storniert</em> &mdash; Geld erstattet</li>
+                    <li><em>Storniert</em> &mdash; Geld (abzüglich Stornogebühr) erstattet</li>
+                    <li><em>Angemeldet, nicht teilgenommen</em> &mdash; Workshop ist vorbei, Person war nicht da; keine Teilnahmebescheinigung, keine FoBi-Punkte</li>
                     <li><em>Anwesend</em> &mdash; bestätigt teilgenommen, Teilnahmebescheinigung erstellt</li>
                 </ul>
                 <em>&rarr; Abstimmung mit Verantwortlichen für den Anmelde-Workflow nötig.</em>
+            </div>
+            <div class="dgptm-wsb-evl-highlight orange">
+                <strong>Teilnahmebescheinigung bei mehrtägigen Veranstaltungen</strong> &mdash; offen: Wird pro Tag eine eigene Bescheinigung erzeugt, oder eine Sammel-Bescheinigung für alle besuchten Tage? Wie wird Anwesenheit bei Teilteilnahme (z.&thinsp;B. nur Tag&nbsp;1 von 3) abgebildet? Vorschlag zur Diskussion: <em>eine</em> Bescheinigung mit ausgewiesenen Anwesenheitstagen und entsprechend reduzierter Punktzahl. Klärung mit Geschäftsstelle und Kursleitungen &mdash; siehe offene Fragen, Punkt 15.
             </div>
             <div class="dgptm-wsb-evl-highlight orange">
                 <strong>Ticketnummer</strong> &mdash; neues Feld für eine numerische, eindeutige Ticketnummer (Format identisch zu Zoho Backstage, z.&thinsp;B. 8-stellig). Wird beim Anlegen automatisch vergeben.
@@ -409,8 +454,9 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
             <table class="dgptm-wsb-evl-table">
                 <thead><tr><th>Dienst</th><th>Wofür</th><th>Stand</th></tr></thead>
                 <tbody>
-                    <tr><td><strong>Stripe</strong> (Zahlungsanbieter)</td><td>Bezahlung und automatische Erstattung</td><td>aktiv, Konto vorhanden</td></tr>
+                    <tr><td><strong>Stripe</strong> (Zahlungsanbieter)</td><td>Bezahlung und automatische Erstattung. Eigenes Stripe-Unterkonto für Workshops/Webinare. Apple&nbsp;Pay, SEPA-Lastschrift und <strong>PayPal</strong> sind über Stripe direkt mit abgedeckt &mdash; keine zusätzliche PayPal-Anbindung nötig.</td><td>aktiv, Konto vorhanden</td></tr>
                     <tr><td><strong>Zoho CRM</strong></td><td>Workshop-Daten lesen, Anmeldungen schreiben</td><td>aktiv, Zugriffsrechte vorhanden</td></tr>
+                    <tr><td><strong>Zoho Books</strong></td><td>Automatische Rechnungserstellung nach Zahlung; Anhang an Bestätigungsmail. Vorlage und Nummernkreis werden mit der Geschäftsstelle abgestimmt.</td><td>aktiv, anzubinden</td></tr>
                     <tr><td><strong>EIV-Fobi</strong> (Fortbildungspunkte)</td><td>Direkter Anschluss zur automatischen Punkte-Meldung nach Workshop-Abschluss. EFN wird aus dem Zoho CRM übergeben.</td><td>in V1 direkt mit angeschlossen</td></tr>
                 </tbody>
             </table>
@@ -462,6 +508,12 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                         <?php $render_row_actions('offen-row-12', 3); ?>
                         <tr><td>13</td><td><strong>Gemeinsame Buchung mehrerer Personen mit einem Zahler:</strong> notwendig?</td><td>Heute deckt das System ab: eine Person bucht und bezahlt mehrere Tickets in einer Buchung &mdash; jede:r Teilnehmer:in bekommt eigene Daten und Teilnahmebescheinigung. Brauchen wir zusätzlich getrennte Zahler:innen pro Ticket? Vorschlag: nein, ist bisher nie aufgetreten.</td></tr>
                         <?php $render_row_actions('offen-row-13', 3); ?>
+                        <tr><td>14</td><td><strong>Rechnungserstellung über Zoho Books</strong></td><td>Welche Rechnungs-Vorlage wird verwendet? Eigener Nummernkreis für Workshop-/Webinar-Rechnungen oder gemeinsamer mit Mitgliedsbeiträgen? Wie werden Edugrant-Förderungen abgebildet (volle Rechnung an Teilnehmer:in &amp; Förder-Buchung intern, oder reduzierte Rechnung)? &mdash; Klärung mit Geschäftsstelle.</td></tr>
+                        <?php $render_row_actions('offen-row-14', 3); ?>
+                        <tr><td>15</td><td><strong>Teilnahmebescheinigung bei mehrtägigen Veranstaltungen</strong></td><td>Eine Sammel-Bescheinigung mit ausgewiesenen Tagen oder pro Tag eine eigene? Wie werden Tageweise-Anwesenheiten und FoBi-Punkte verrechnet? Vorschlag: eine Bescheinigung mit Tagesübersicht und entsprechend gerechneten Punkten.</td></tr>
+                        <?php $render_row_actions('offen-row-15', 3); ?>
+                        <tr><td>16</td><td><strong>Termin-Verlegung &mdash; Storno-Recht?</strong></td><td>Wird ein Workshop verlegt: Sollen alle Teilnehmer:innen das Recht auf vollständige Erstattung (ohne Stornogebühr) bekommen, wenn sie zum neuen Termin nicht können? Vorschlag: ja, mit einer Frist von 14 Tagen ab Verlegungs-Mail.</td></tr>
+                        <?php $render_row_actions('offen-row-16', 3); ?>
                     </tbody>
                 </table>
             </div>

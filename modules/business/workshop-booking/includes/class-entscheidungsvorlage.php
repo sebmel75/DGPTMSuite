@@ -35,6 +35,7 @@ class DGPTM_Workshop_Entscheidungsvorlage {
         add_action('wp_ajax_dgptm_wsb_evl_mark_read',      [$this, 'ajax_mark_comments_read']);
         add_action('wp_ajax_dgptm_wsb_evl_export',         [$this, 'ajax_export_comments']);
         add_action('wp_ajax_dgptm_wsb_evl_toggle_row',     [$this, 'ajax_toggle_row_approval']);
+        add_action('wp_ajax_dgptm_wsb_evl_implemented',    [$this, 'ajax_send_implementation_notice']);
     }
 
     public function register_assets() {
@@ -42,13 +43,13 @@ class DGPTM_Workshop_Entscheidungsvorlage {
             'dgptm-wsb-evl',
             $this->plugin_url . 'assets/css/entscheidungsvorlage.css',
             [],
-            '0.1.0'
+            '0.2.0'
         );
         wp_register_script(
             'dgptm-wsb-evl',
             $this->plugin_url . 'assets/js/entscheidungsvorlage.js',
             ['jquery'],
-            '0.1.0',
+            '0.2.0',
             true
         );
     }
@@ -336,6 +337,153 @@ class DGPTM_Workshop_Entscheidungsvorlage {
     }
 
     /* ──────────────────────────────────────────────
+     * AJAX — Abschluss-Mail "Kommentare eingearbeitet" (Admin)
+     * ────────────────────────────────────────────── */
+
+    public function ajax_send_implementation_notice() {
+        check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Nur Administratoren.', 403);
+        }
+
+        $mark_read = !empty($_POST['mark_read']);
+        $admin     = wp_get_current_user();
+        $comments  = $this->get_comments();
+        $approvals = $this->get_approvals();
+
+        // Beteiligte sammeln (Kommentator:innen + Freigabe-Erteiler:innen)
+        $participant_ids = [];
+        foreach ($comments as $c) {
+            $participant_ids[(int) $c['user_id']] = true;
+        }
+        foreach ($approvals as $a) {
+            $participant_ids[(int) $a['user_id']] = true;
+        }
+        unset($participant_ids[$admin->ID]);
+
+        if (empty($participant_ids)) {
+            wp_send_json_error('Keine Beteiligten gefunden.');
+        }
+
+        $recipients = [];
+        foreach (array_keys($participant_ids) as $uid) {
+            $u = get_userdata($uid);
+            if ($u && !empty($u->user_email)) {
+                $recipients[] = ['email' => $u->user_email, 'name' => $u->display_name];
+            }
+        }
+        if (empty($recipients)) {
+            wp_send_json_error('Keine E-Mail-Adressen verfügbar.');
+        }
+
+        // Optional: alle offenen Kommentare als eingearbeitet markieren
+        $marked = 0;
+        if ($mark_read) {
+            foreach ($comments as &$c) {
+                if (empty($c['status']) || $c['status'] !== 'eingearbeitet') {
+                    $c['status']  = 'eingearbeitet';
+                    $c['read_at'] = current_time('mysql');
+                    $marked++;
+                }
+            }
+            unset($c);
+            update_option(self::OPT_COMMENTS, $comments, false);
+        }
+
+        $subject = 'DGPTM Entscheidungsgrundlage: Kommentare eingearbeitet — bitte gegenlesen';
+        $body    = $this->build_implementation_html($admin, count($comments), count($approvals), $marked);
+        $headers = ['Content-Type: text/html; charset=UTF-8'];
+        foreach ($recipients as $r) {
+            $headers[] = 'Bcc: ' . $r['email'];
+        }
+
+        $sent = wp_mail('nichtantworten@dgptm.de', $subject, $body, $headers);
+
+        if (!$sent) {
+            wp_send_json_error('Mail konnte nicht versendet werden (wp_mail false).');
+        }
+
+        wp_send_json_success([
+            'recipients' => count($recipients),
+            'marked'     => $marked,
+        ]);
+    }
+
+    private function build_implementation_html($admin, $comment_count, $approval_count, $marked) {
+        $admin_name = esc_html($admin->display_name);
+        $date       = date_i18n('d.m.Y, H:i');
+        $url        = esc_url(home_url('/veranstaltungen/entscheidungsgrundlage/'));
+        $marked_txt = $marked > 0
+            ? '<li>Alle ' . (int) $marked . ' offenen Kommentare wurden als <em>eingearbeitet</em> markiert.</li>'
+            : '';
+
+        return '<!DOCTYPE html>
+<html lang="de">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:24px 0;">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+
+  <tr>
+    <td style="background:#003366;padding:20px 30px;">
+      <table width="100%"><tr>
+        <td style="color:#ffffff;font-size:20px;font-weight:700;">DGPTM</td>
+        <td align="right" style="color:#8bb8e8;font-size:13px;">Workshop-Buchung Entscheidungsgrundlage</td>
+      </tr></table>
+    </td>
+  </tr>
+
+  <tr>
+    <td style="padding:28px 30px 12px;">
+      <h2 style="margin:0;font-size:18px;color:#1a1a1a;">Kommentare eingearbeitet</h2>
+      <p style="margin:6px 0 0;font-size:14px;color:#6b7280;">' . $admin_name . ' — ' . $date . '</p>
+    </td>
+  </tr>
+
+  <tr>
+    <td style="padding:8px 30px 8px;font-size:15px;line-height:1.6;color:#1a1a1a;">
+      <p>Moin,</p>
+      <p>Die Kommentare zur Entscheidungsgrundlage <strong>Workshops und Webinare buchbar machen</strong> wurden eingearbeitet. Die Vorlage wurde unter anderem ergänzt um:</p>
+      <ul>
+        <li>Klarstellung Geltungsbereich V1 (Workshops/Webinare; Kongresse und Sachkundekurse bleiben außen vor)</li>
+        <li>Mehrsprachigkeit (DE/EN) als Kernanforderung &mdash; für International Webinar &amp; Co.</li>
+        <li>Bausteine <em>Rechnung (Zoho Books)</em> und <em>Termin-Verlegung</em></li>
+        <li>EduGrant: erklärender Text, Geschäftsstellen-Prüfung und limitierbares Förderplatz-Kontingent</li>
+        <li>Stornogebühr 10&nbsp;% (max.&nbsp;35&nbsp;€), Status <em>Angemeldet, nicht teilgenommen</em></li>
+        <li>PayPal über Stripe statt eigener Anbindung</li>
+        <li>Mail an Geschäftsstelle bei Kurs-Eintrag (analog Zertifizierungs-Workflow)</li>
+        <li>Drei neue offene Fragen (Rechnungsworkflow, mehrtägige TBs, Verlegungs-Stornorecht)</li>
+        ' . $marked_txt . '
+      </ul>
+      <p>Bitte schaut noch einmal rüber. Stand: ' . (int) $approval_count . ' Freigabe' . ($approval_count !== 1 ? 'n' : '') . ', ' . (int) $comment_count . ' Kommentar' . ($comment_count !== 1 ? 'e' : '') . ' (inkl. eingearbeitete).</p>
+    </td>
+  </tr>
+
+  <tr>
+    <td align="center" style="padding:12px 30px 28px;">
+      <a href="' . $url . '" style="display:inline-block;background:#003366;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">Zur Entscheidungsgrundlage</a>
+    </td>
+  </tr>
+
+  <tr>
+    <td style="background:#f9fafb;padding:16px 30px;border-top:1px solid #e5e7eb;">
+      <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">
+        Diese Nachricht wurde automatisch gesendet, weil du am Freigabe-Prozess beteiligt bist.<br>
+        Deutsche Gesellschaft für Perfusiologie und Technische Medizin e.V.
+      </p>
+    </td>
+  </tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>';
+    }
+
+    /* ──────────────────────────────────────────────
      * E-Mail — Beteiligte benachrichtigen
      * ────────────────────────────────────────────── */
 
@@ -425,7 +573,7 @@ class DGPTM_Workshop_Entscheidungsvorlage {
 
   <tr>
     <td align="center" style="padding:0 30px 28px;">
-      <a href="' . esc_url(home_url('/mitgliederbereich/')) . '" style="display:inline-block;background:#003366;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">Im Mitgliederbereich ansehen</a>
+      <a href="' . esc_url(home_url('/veranstaltungen/entscheidungsgrundlage/')) . '" style="display:inline-block;background:#003366;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">Zur Entscheidungsgrundlage</a>
     </td>
   </tr>
 

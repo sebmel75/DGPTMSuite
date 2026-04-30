@@ -186,6 +186,42 @@
         $btn.toggleClass('open');
     });
 
+    /* Admin: Beteiligte über abgeschlossene Implementierung benachrichtigen */
+    $(document).on('click', '#dgptm-wsb-evl-implemented', function () {
+        var $btn = $(this);
+        var markRead = $('#dgptm-wsb-evl-mark-read-toggle').is(':checked');
+
+        var msg = 'Mail an alle Beteiligten verschicken?';
+        if (markRead) {
+            msg += '\n\nAlle offenen Kommentare werden zusätzlich als "eingearbeitet" markiert.';
+        }
+        if (!confirm(msg)) return;
+
+        $btn.prop('disabled', true).text('Wird versendet...');
+
+        $.post(config.ajaxUrl, {
+            action:    'dgptm_wsb_evl_implemented',
+            nonce:     config.nonce,
+            mark_read: markRead ? 1 : 0
+        }, function (res) {
+            if (res.success) {
+                var info = 'Mail an ' + res.data.recipients + ' Beteiligte versendet.';
+                if (res.data.marked > 0) {
+                    info += '\n' + res.data.marked + ' Kommentare als eingearbeitet markiert.';
+                }
+                alert(info);
+                if (res.data.marked > 0) location.reload();
+                else $btn.prop('disabled', false).text('Beteiligte benachrichtigen');
+            } else {
+                alert(res.data || 'Fehler beim Versand.');
+                $btn.prop('disabled', false).text('Beteiligte benachrichtigen');
+            }
+        }).fail(function () {
+            alert('Verbindungsfehler. Bitte erneut versuchen.');
+            $btn.prop('disabled', false).text('Beteiligte benachrichtigen');
+        });
+    });
+
     /* Freigabe zurückziehen */
     $(document).on('click', '#dgptm-wsb-evl-revoke', function () {
         if (!confirm('Freigabe wirklich zurückziehen?')) return;

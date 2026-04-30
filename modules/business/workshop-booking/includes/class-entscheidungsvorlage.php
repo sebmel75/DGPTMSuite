@@ -43,13 +43,13 @@ class DGPTM_Workshop_Entscheidungsvorlage {
             'dgptm-wsb-evl',
             $this->plugin_url . 'assets/css/entscheidungsvorlage.css',
             [],
-            '0.2.2'
+            '0.2.3'
         );
         wp_register_script(
             'dgptm-wsb-evl',
             $this->plugin_url . 'assets/js/entscheidungsvorlage.js',
             ['jquery'],
-            '0.2.2',
+            '0.2.3',
             true
         );
     }
@@ -493,6 +493,16 @@ class DGPTM_Workshop_Entscheidungsvorlage {
         <li>Rechnungserstellung läuft <em>direkt</em> in Zoho Books &mdash; kein Umweg über das CRM. Im CRM erscheint der Books-Status nur gespiegelt.</li>
         <li>Aufgabenteilung Modul ⇄ CRM explizit gemacht: Logik (Storno, Bescheinigungen, Verlegung, Books) aus dem Modul; Anmelde-Status und Teilnahmeverwaltung bleiben im CRM, Homepage zeigt nur das Nötigste.</li>
       </ul>
+      <p><strong>Dritte Runde 30.04.2026</strong> &mdash; Kommentare manoack:</p>
+      <ul>
+        <li><strong>Studierenden-Nachweis</strong> bei reduzierten Tickets: Upload der Immatrikulationsbescheinigung im Buchungsformular, Prüfung durch die Geschäftsstelle (Vorschlag&nbsp;5 + neue offene Frage&nbsp;17).</li>
+        <li><strong>Reminder-Mails</strong> 7&nbsp;Tage und 1&nbsp;Tag vor Workshop-Start kommen direkt aus dem Modul (Vorschlag&nbsp;10).</li>
+        <li><strong>Teilnahmebescheinigung</strong> ist im Mitgliederbereich erst nach bestätigter Anwesenheit und Veranstaltungsende downloadbar (Vorschlag&nbsp;16).</li>
+        <li><strong>Anwesenheits-Schwelle</strong> ergänzt: Online-Default ≥&nbsp;80&nbsp;% Anwesenheitsdauer, pro Workshop einstellbar; geringfügig früheres Gehen bleibt unkritisch &mdash; Final-Klärung in offener Frage&nbsp;18 (Vorschlag&nbsp;19).</li>
+        <li><strong>On-Demand-Aufzeichnung</strong>: Aufzeichnung kommt automatisch nach Vimeo, Mail an alle Buchenden mit Video-Link, Nachholung mit Anti-Skip-Tracking ergibt nachträgliche Bescheinigung (Vorschlag&nbsp;23, neuer Baustein "Aufzeichnungs-Verteiler" in Abschnitt&nbsp;4).</li>
+        <li><strong>Anwesenheit bei Online-Webinaren mit 100+ TN</strong>: automatisch durch das System aus den Live-Tool-Anwesenheitsdaten, Kursleitung kann nachträglich korrigieren (offene Frage&nbsp;11).</li>
+      </ul>
+
       <p><strong>Zweite Runde 30.04.2026</strong> &mdash; Zeilen-Kommentare aus dem Review eingearbeitet:</p>
       <ul>
         <li>V1-Scope: Workshops <em>und</em> Webinare; Kongresse/Sachkundekurse bleiben raus (Vorschlag&nbsp;1).</li>

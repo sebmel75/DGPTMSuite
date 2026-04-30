@@ -36,6 +36,7 @@ class DGPTM_Workshop_Entscheidungsvorlage {
         add_action('wp_ajax_dgptm_wsb_evl_export',         [$this, 'ajax_export_comments']);
         add_action('wp_ajax_dgptm_wsb_evl_toggle_row',     [$this, 'ajax_toggle_row_approval']);
         add_action('wp_ajax_dgptm_wsb_evl_implemented',    [$this, 'ajax_send_implementation_notice']);
+        add_action('wp_ajax_dgptm_wsb_evl_preview',        [$this, 'ajax_send_preview_mail']);
     }
 
     public function register_assets() {
@@ -43,13 +44,13 @@ class DGPTM_Workshop_Entscheidungsvorlage {
             'dgptm-wsb-evl',
             $this->plugin_url . 'assets/css/entscheidungsvorlage.css',
             [],
-            '0.2.5'
+            '0.2.6'
         );
         wp_register_script(
             'dgptm-wsb-evl',
             $this->plugin_url . 'assets/js/entscheidungsvorlage.js',
             ['jquery'],
-            '0.2.5',
+            '0.2.6',
             true
         );
     }
@@ -567,6 +568,44 @@ class DGPTM_Workshop_Entscheidungsvorlage {
 </table>
 </body>
 </html>';
+    }
+
+    /* ──────────────────────────────────────────────
+     * AJAX — Vorschau-Mail an Admin selbst (Admin-only)
+     * Schickt die gleiche HTML-Mail wie ajax_send_implementation_notice,
+     * aber ausschließlich an die Adresse des aktuell eingeloggten Admins
+     * — markiert KEINE Kommentare als eingearbeitet, informiert
+     * KEINE anderen Beteiligten.
+     * ────────────────────────────────────────────── */
+
+    public function ajax_send_preview_mail() {
+        check_ajax_referer(self::NONCE_ACTION, 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Nur Administratoren.', 403);
+        }
+
+        $admin = wp_get_current_user();
+        if (empty($admin->user_email)) {
+            wp_send_json_error('Keine Mail-Adresse fuer den aktuellen Account hinterlegt.');
+        }
+
+        $comment_count  = count($this->get_comments());
+        $approval_count = count($this->get_approvals());
+
+        $subject = 'DGPTM Entscheidungsgrundlage: Vorschau aktueller Stand';
+        $body    = $this->build_implementation_html($admin, $comment_count, $approval_count, 0);
+        $headers = ['Content-Type: text/html; charset=UTF-8'];
+
+        $sent = wp_mail($admin->user_email, $subject, $body, $headers);
+
+        if (!$sent) {
+            wp_send_json_error('Mail konnte nicht versendet werden (wp_mail false).');
+        }
+
+        wp_send_json_success([
+            'recipient' => $admin->user_email,
+        ]);
     }
 
     /* ──────────────────────────────────────────────

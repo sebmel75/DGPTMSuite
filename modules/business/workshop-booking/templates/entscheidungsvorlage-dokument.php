@@ -172,6 +172,9 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                     <input type="checkbox" id="dgptm-wsb-evl-mark-read-toggle" checked>
                     Kommentare als &bdquo;eingearbeitet&ldquo; markieren
                 </label>
+                <button type="button" class="dgptm-fe-btn dgptm-fe-btn-small" id="dgptm-wsb-evl-preview" title="Schickt die Mail nur an dich – kein Massenversand, keine Markierung.">
+                    Vorschau an mich
+                </button>
                 <button type="button" class="dgptm-fe-btn dgptm-fe-btn-primary dgptm-fe-btn-small" id="dgptm-wsb-evl-implemented">
                     Beteiligte benachrichtigen
                 </button>

@@ -186,6 +186,27 @@
         $btn.toggleClass('open');
     });
 
+    /* Admin: Vorschau-Mail nur an mich selbst (kein Massenversand) */
+    $(document).on('click', '#dgptm-wsb-evl-preview', function () {
+        var $btn = $(this);
+        $btn.prop('disabled', true).text('Wird gesendet...');
+
+        $.post(config.ajaxUrl, {
+            action: 'dgptm_wsb_evl_preview',
+            nonce:  config.nonce
+        }, function (res) {
+            if (res.success) {
+                alert('Vorschau-Mail an ' + res.data.recipient + ' versendet.');
+            } else {
+                alert(res.data || 'Fehler beim Versand.');
+            }
+        }).fail(function () {
+            alert('Verbindungsfehler. Bitte erneut versuchen.');
+        }).always(function () {
+            $btn.prop('disabled', false).text('Vorschau an mich');
+        });
+    });
+
     /* Admin: Beteiligte über abgeschlossene Implementierung benachrichtigen */
     $(document).on('click', '#dgptm-wsb-evl-implemented', function () {
         var $btn = $(this);

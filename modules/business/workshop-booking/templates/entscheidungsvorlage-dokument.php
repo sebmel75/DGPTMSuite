@@ -320,10 +320,10 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                     <strong>Was zählt als &bdquo;anwesend&ldquo;?</strong>
                         <ul style="margin:6px 0 0 18px;">
                             <li><strong>Präsenz:</strong> Einlass-Scan + (optional) Ausgangs-Scan; geringfügiges früheres Gehen (z.&thinsp;B. ≤&nbsp;10&nbsp;%) bleibt unkritisch &mdash; Kursleitung entscheidet im Zweifel und kann manuell &bdquo;anwesend&ldquo; setzen oder entziehen.</li>
-                            <li><strong>Online (Live):</strong> Anwesenheitsdauer aus dem Live-Tool (z.&thinsp;B. Zoho Meetings) &mdash; Default-Schwelle <strong>≥&nbsp;80&nbsp;% der Veranstaltungsdauer</strong>. Pro Workshop einstellbar.</li>
+                            <li><strong>Online (Live):</strong> Anwesenheitsdauer aus dem Live-Tool (z.&thinsp;B. Zoho Meetings) &mdash; Schwelle <strong>frei pro Workshop konfigurierbar</strong> (z.&thinsp;B. 50&nbsp;%, 80&nbsp;%, 100&nbsp;%) am CRM-Veranstaltungs-Datensatz.</li>
                             <li><strong>Online (On-Demand-Nachholung):</strong> via Anti-Skip-Tracking der Vimeo-Webinare-Engine &mdash; vollständige Wiedergabe (siehe Vorschlag&nbsp;23).</li>
                         </ul>
-                        Final geklärt wird die Schwelle in offener Frage&nbsp;18.</td><td>Kein verfrühter Versand. Klarer Trigger (Anwesenheit + Workshop-Ende). Verwaltung bleibt dort, wo die Geschäftsstelle ohnehin arbeitet (CRM).</td></tr>
+                        Schwelle pro Workshop einstellbar (siehe Frage&nbsp;18, geklärt).</td><td>Kein verfrühter Versand. Klarer Trigger (Anwesenheit + Workshop-Ende). Verwaltung bleibt dort, wo die Geschäftsstelle ohnehin arbeitet (CRM).</td></tr>
                     <?php $render_row_actions('entscheidung-row-19'); ?>
                     <tr><td>20</td><td><strong>Layout konfigurierbar</strong></td><td>Geschäftsstelle kann pro Workshop ein Standard-Layout zuweisen oder ein eigenes hinterlegen.</td><td>Flexibilität für Sonder-Veranstaltungen, ohne dass jedes Mal ein:e Programmierer:in benötigt wird.</td></tr>
                     <?php $render_row_actions('entscheidung-row-20'); ?>
@@ -472,6 +472,9 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                 <strong>Verantwortliche Person für Anwesenheit</strong> &mdash; neues Feld am Veranstaltungs-Datensatz: Verlinkung zu einer Person (z.&thinsp;B. Kursleitung). Sie erhält vor dem Workshop automatisch die <em>Teilnehmer:innen-Liste mit QR-Codes und Ticketnummern</em> per Mail &mdash; als Backup für Anwesenheits-Erfassung neben dem Live-Scan.
             </div>
             <div class="dgptm-wsb-evl-highlight orange">
+                <strong>Anwesenheits-Schwelle (%)</strong> &mdash; neues Feld am Veranstaltungs-Datensatz: Mindest-Anwesenheitsanteil, ab dem eine Online-Teilnahme als &bdquo;anwesend&ldquo; gilt (z.&thinsp;B. 80&nbsp;%). Frei pro Workshop konfigurierbar &mdash; bei FoBi-/VNR-Veranstaltungen ggf. strenger setzen.
+            </div>
+            <div class="dgptm-wsb-evl-highlight orange">
                 <strong>Layout der Teilnahmebescheinigung</strong> &mdash; optionales Feld am Workshop, das auf ein hinterlegtes Layout verweist. Leer = Standard-Layout.
             </div>
             <div class="dgptm-wsb-evl-highlight orange">
@@ -553,9 +556,9 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                         <?php $render_row_actions('offen-row-15', 3); ?>
                         <tr><td>16</td><td><strong>Termin-Verlegung &mdash; Storno-Recht?</strong></td><td>Wird ein Workshop verlegt: Sollen alle Teilnehmer:innen das Recht auf vollständige Erstattung (ohne Stornogebühr) bekommen, wenn sie zum neuen Termin nicht können? Vorschlag: ja, mit einer Frist von 14 Tagen ab Verlegungs-Mail.</td></tr>
                         <?php $render_row_actions('offen-row-16', 3); ?>
-                        <tr><td>17</td><td><strong>Studierenden-Nachweis bei reduzierten Tickets</strong></td><td>Wie genau wird der Studierendenstatus belegt? Vorschlag: Pflicht-Upload Immatrikulationsbescheinigung im Buchungsformular, Prüfung durch Geschäftsstelle, bei Ablehnung Differenz-Nachforderung. Alternative: Selbstdeklaration mit Stichprobenkontrolle. Welche Variante?</td></tr>
+                        <tr><td>17</td><td><strong>Studierenden-Nachweis bei reduzierten Tickets</strong></td><td><span style="color:#16a34a;font-weight:600;">[geklärt 30.04.2026]</span> Pflicht-Upload Immatrikulationsbescheinigung im Buchungsformular, Prüfung durch Geschäftsstelle, bei Ablehnung Differenz-Nachforderung &mdash; siehe Vorschlag&nbsp;5.</td></tr>
                         <?php $render_row_actions('offen-row-17', 3); ?>
-                        <tr><td>18</td><td><strong>Anwesenheits-Schwelle für Bescheinigung</strong></td><td>Ab welcher Anwesenheitsdauer gilt eine Online-Teilnahme als &bdquo;anwesend&ldquo;? Vorschlag: ≥&nbsp;80&nbsp;% der Veranstaltungsdauer als Default, pro Workshop einstellbar. Bei FoBi-/VNR-Veranstaltungen ggf. strenger. Wer entscheidet bei Grenzfällen (System-Default oder Kursleitung)?</td></tr>
+                        <tr><td>18</td><td><strong>Anwesenheits-Schwelle für Bescheinigung</strong></td><td><span style="color:#16a34a;font-weight:600;">[geklärt 30.04.2026]</span> <strong>Frei pro Workshop konfigurierbar</strong> &mdash; am Veranstaltungs-Datensatz im CRM wird die Mindest-Anwesenheitsschwelle gesetzt (z.&thinsp;B. 50&nbsp;%, 80&nbsp;%, 100&nbsp;%). Keine starre Vorgabe. Kursleitung/Geschäftsstelle kann Grenzfälle weiterhin manuell anpassen.</td></tr>
                         <?php $render_row_actions('offen-row-18', 3); ?>
                     </tbody>
                 </table>

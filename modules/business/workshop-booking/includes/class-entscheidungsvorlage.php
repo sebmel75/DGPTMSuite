@@ -43,13 +43,13 @@ class DGPTM_Workshop_Entscheidungsvorlage {
             'dgptm-wsb-evl',
             $this->plugin_url . 'assets/css/entscheidungsvorlage.css',
             [],
-            '0.2.3'
+            '0.2.4'
         );
         wp_register_script(
             'dgptm-wsb-evl',
             $this->plugin_url . 'assets/js/entscheidungsvorlage.js',
             ['jquery'],
-            '0.2.3',
+            '0.2.4',
             true
         );
     }
@@ -493,6 +493,12 @@ class DGPTM_Workshop_Entscheidungsvorlage {
         <li>Rechnungserstellung läuft <em>direkt</em> in Zoho Books &mdash; kein Umweg über das CRM. Im CRM erscheint der Books-Status nur gespiegelt.</li>
         <li>Aufgabenteilung Modul ⇄ CRM explizit gemacht: Logik (Storno, Bescheinigungen, Verlegung, Books) aus dem Modul; Anmelde-Status und Teilnahmeverwaltung bleiben im CRM, Homepage zeigt nur das Nötigste.</li>
       </ul>
+      <p><strong>Vierte Runde 30.04.2026</strong> &mdash; Antworten Sebastian:</p>
+      <ul>
+        <li><strong>Frage 17 (Studi-Nachweis)</strong> &mdash; geklärt: Antwort steht in Vorschlag&nbsp;5 (Pflicht-Upload, Prüfung durch Geschäftsstelle).</li>
+        <li><strong>Frage 18 (Anwesenheits-Schwelle)</strong> &mdash; geklärt: <strong>frei pro Workshop konfigurierbar</strong>; neues CRM-Feld &bdquo;Anwesenheits-Schwelle (%)&ldquo; am Veranstaltungs-Datensatz (siehe Abschnitt&nbsp;7).</li>
+      </ul>
+
       <p><strong>Dritte Runde 30.04.2026</strong> &mdash; Kommentare manoack:</p>
       <ul>
         <li><strong>Studierenden-Nachweis</strong> bei reduzierten Tickets: Upload der Immatrikulationsbescheinigung im Buchungsformular, Prüfung durch die Geschäftsstelle (Vorschlag&nbsp;5 + neue offene Frage&nbsp;17).</li>

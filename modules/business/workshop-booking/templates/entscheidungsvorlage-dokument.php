@@ -348,7 +348,7 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                     <tr><td><strong>Workshops lesen</strong></td><td>Holt aktive Workshops aus dem Zoho CRM auf die Webseite.</td></tr>
                     <tr><td><strong>Buchung prüfen</strong></td><td>Prüft, ob noch Plätze frei sind, und legt die Anmeldung an.</td></tr>
                     <tr><td><strong>Bezahlung</strong></td><td>Schickt die Person zur Stripe-Bezahlseite und nimmt das Ergebnis entgegen.</td></tr>
-                    <tr><td><strong>Rechnung (Zoho Books)</strong></td><td>Erstellt nach erfolgreicher Zahlung automatisch eine Rechnung in Zoho Books und hängt sie der Bestätigungsmail an. Vorgang und Vorlagen sind noch mit der Geschäftsstelle abzustimmen (siehe offene Frage 14).</td></tr>
+                    <tr><td><strong>Rechnung (Zoho Books)</strong></td><td>Erstellt nach erfolgreicher Zahlung die Rechnung <strong>direkt in Zoho Books</strong> &mdash; kein Umweg über das Zoho CRM. Die fertige Rechnung wird der Bestätigungsmail angehängt. Im CRM-Datensatz der Buchung wird der Rechnungs-/Zahlungs-Status nur gespiegelt angezeigt (Single Source = Books). Vorgang und Vorlagen sind mit der Geschäftsstelle abzustimmen (siehe offene Frage 14).</td></tr>
                     <tr><td><strong>Zoho CRM schreiben</strong></td><td>Trägt die Anmeldung in unsere Teilnehmer:innen-Liste ein.</td></tr>
                     <tr><td><strong>E-Mails</strong></td><td>Versendet Bestätigung, Warteliste, Storno, Termin-Verlegung &mdash; mit Termin-Anhang für den Kalender.</td></tr>
                     <tr><td><strong>Termin-Verlegung</strong></td><td>Wenn Geschäftsstelle/Kursleitung einen Workshop verlegen muss: Geänderter Termin im CRM ergibt automatisch (1) Update aller Tickets, (2) Mail an alle Teilnehmer:innen mit neuem Termin und neuem Kalender-Anhang, (3) Möglichkeit zum Storno mit voller Erstattung innerhalb einer festgelegten Frist.</td></tr>
@@ -395,7 +395,7 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                         <li>ein <strong>limitierbares Förderplatz-Kontingent pro Workshop</strong> (z.&thinsp;B. 3 Edugrant-Plätze von insgesamt 20 Plätzen). Sind die Plätze vergeben, ist der Förderhinweis auf der Buchungs-Karte automatisch ausgeblendet.</li>
                     </ul>
                 </li>
-                <li><strong>Rechnungserstellung:</strong> Nach erfolgreicher Zahlung erstellt das System automatisch eine Rechnung in Zoho Books und schickt sie der Bestätigungsmail bei. Rechnungs-Vorlage, Nummernkreis und Logik bei Edugrant-Förderung (z.&thinsp;B. Anteilsabrechnung) werden mit der Geschäftsstelle abgestimmt &mdash; siehe offene Fragen, Punkt 14.</li>
+                <li><strong>Rechnungserstellung:</strong> Nach erfolgreicher Zahlung erstellt das Modul die Rechnung <strong>direkt in Zoho Books</strong> &mdash; nicht über das Zoho CRM. Im CRM wird lediglich der Rechnungs-/Zahlungs-Status angezeigt (gespiegelt aus Books). Die Rechnung wird der Bestätigungsmail beigefügt. Rechnungs-Vorlage, Nummernkreis und Logik bei Edugrant-Förderung (z.&thinsp;B. Anteilsabrechnung) werden mit der Geschäftsstelle abgestimmt &mdash; siehe offene Fragen, Punkt 14.</li>
                 <li><strong>vimeo-webinare:</strong> Wird von Anfang an direkt eingebunden. Webinar-Anmeldungen laufen über denselben Buchungs-Kern (Tickets, Zahlung, QR, Mitgliederbereich, Teilnahmebescheinigung). Die bestehende Engine für die Teilnahmebescheinigung wird gemeinsam genutzt.</li>
                 <li><strong>Kongresse und Sachkundekurse:</strong> Laufen unverändert weiter über Zoho Backstage und sind <strong>nicht Bestandteil dieses Moduls</strong>. Tickets daraus werden lediglich über die Backstage-Spiegelung (Punkt 13) im Mitgliederbereich angezeigt.</li>
             </ul>
@@ -406,6 +406,14 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
         <div class="dgptm-wsb-evl-section" id="section-crm-erweiterungen">
             <h3>7. Anpassungen im Zoho CRM</h3>
             <p>Damit das Modul funktioniert, sind ein paar kleine Anpassungen im internen Zoho CRM nötig. Diese müssen mit der Geschäftsstelle abgestimmt werden.</p>
+
+            <div class="dgptm-wsb-evl-highlight blue">
+                <strong>Aufgabenteilung Modul ⇄ CRM (festgelegt 30.04.2026):</strong>
+                <ul style="margin:6px 0 0 18px;">
+                    <li><strong>Logik kommt aus diesem Modul</strong> &mdash; Stornogebühren-Berechnung, automatische Erstattung, Trigger zur Teilnahmebescheinigung, Mehrtagigkeits-Logik, Termin-Verlegung, Rechnungserstellung (direkt in Zoho Books).</li>
+                    <li><strong>Anmelde-Status und Teilnahmeverwaltung bleiben im CRM</strong> &mdash; Geschäftsstelle/Kursleitung pflegt Status und Anwesenheit weiterhin am CRM-Datensatz. Die Homepage hält die angezeigten Daten bewusst <em>schmal</em> (nur was Mitglied/Gast sehen muss) und spiegelt den CRM-Status read-only.</li>
+                </ul>
+            </div>
             <div class="dgptm-wsb-evl-highlight orange">
                 <strong>Veranstaltungs-Stammdaten</strong> &mdash; neues Feld &bdquo;Storno-Frist (Tage)&ldquo;, Standardwert z.&thinsp;B. 14 Tage. So kann pro Workshop entschieden werden, wie lange Teilnehmer:innen selbst stornieren dürfen.
                 <em>&rarr; Abstimmung mit Geschäftsstelle nötig.</em>
@@ -456,7 +464,7 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                 <tbody>
                     <tr><td><strong>Stripe</strong> (Zahlungsanbieter)</td><td>Bezahlung und automatische Erstattung. Eigenes Stripe-Unterkonto für Workshops/Webinare. Apple&nbsp;Pay, SEPA-Lastschrift und <strong>PayPal</strong> sind über Stripe direkt mit abgedeckt &mdash; keine zusätzliche PayPal-Anbindung nötig.</td><td>aktiv, Konto vorhanden</td></tr>
                     <tr><td><strong>Zoho CRM</strong></td><td>Workshop-Daten lesen, Anmeldungen schreiben</td><td>aktiv, Zugriffsrechte vorhanden</td></tr>
-                    <tr><td><strong>Zoho Books</strong></td><td>Automatische Rechnungserstellung nach Zahlung; Anhang an Bestätigungsmail. Vorlage und Nummernkreis werden mit der Geschäftsstelle abgestimmt.</td><td>aktiv, anzubinden</td></tr>
+                    <tr><td><strong>Zoho Books</strong></td><td>Direkte Anbindung &mdash; das Modul legt die Rechnung <strong>direkt in Books</strong> an, nicht über das CRM. Anhang an Bestätigungsmail. Im CRM wird der Books-Status nur read-only gespiegelt. Vorlage und Nummernkreis werden mit der Geschäftsstelle abgestimmt.</td><td>aktiv, anzubinden</td></tr>
                     <tr><td><strong>EIV-Fobi</strong> (Fortbildungspunkte)</td><td>Direkter Anschluss zur automatischen Punkte-Meldung nach Workshop-Abschluss. EFN wird aus dem Zoho CRM übergeben.</td><td>in V1 direkt mit angeschlossen</td></tr>
                 </tbody>
             </table>

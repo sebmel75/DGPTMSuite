@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DGPTM Workshop Buchung
  * Description: Buchung von Workshops aus Zoho CRM mit Stripe-Zahlung und Warteliste
- * Version: 0.2.0
+ * Version: 0.2.1
  */
 if (!defined('ABSPATH')) exit;
 

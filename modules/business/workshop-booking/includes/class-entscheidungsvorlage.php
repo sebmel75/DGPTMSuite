@@ -43,13 +43,13 @@ class DGPTM_Workshop_Entscheidungsvorlage {
             'dgptm-wsb-evl',
             $this->plugin_url . 'assets/css/entscheidungsvorlage.css',
             [],
-            '0.2.0'
+            '0.2.1'
         );
         wp_register_script(
             'dgptm-wsb-evl',
             $this->plugin_url . 'assets/js/entscheidungsvorlage.js',
             ['jquery'],
-            '0.2.0',
+            '0.2.1',
             true
         );
     }
@@ -138,6 +138,8 @@ class DGPTM_Workshop_Entscheidungsvorlage {
         }
 
         echo "\n" . esc_html('=== KOMMENTARE (' . count($comments) . ') ===') . "\n";
+
+        // 1) Sektion-Kommentare (mit Section-ID aus get_sections())
         foreach ($sections as $sid => $label) {
             $sc = array_filter($comments, function ($c) use ($sid) { return $c['section'] === $sid; });
             if (empty($sc)) continue;
@@ -146,6 +148,35 @@ class DGPTM_Workshop_Entscheidungsvorlage {
                 $status = !empty($c['status']) ? ' [' . $c['status'] . ']' : '';
                 echo '  [' . esc_html($c['timestamp']) . '] ' . esc_html($c['user_name']) . $status . ":\n";
                 echo '  ' . esc_html($c['text']) . "\n\n";
+            }
+        }
+
+        // 2) Zeilen-Kommentare (alles, was nicht in $sections vorkommt)
+        $section_keys = array_keys($sections);
+        $row_comments = array_filter($comments, function ($c) use ($section_keys) {
+            return !in_array($c['section'], $section_keys, true);
+        });
+
+        if (!empty($row_comments)) {
+            // Nach Gruppe sortieren (entscheidung-row-* / offen-row-* / sonstige)
+            $groups = [];
+            foreach ($row_comments as $c) {
+                $group = $this->get_section_group($c['section']);
+                $groups[$group][] = $c;
+            }
+
+            foreach ($groups as $group_label => $cs) {
+                echo "\n--- " . esc_html($group_label) . " ---\n";
+                // Innerhalb der Gruppe nach row-id sortieren, damit Zeile 1 vor Zeile 12 steht
+                usort($cs, function ($a, $b) {
+                    return strnatcmp($a['section'], $b['section']);
+                });
+                foreach ($cs as $c) {
+                    $status = !empty($c['status']) ? ' [' . $c['status'] . ']' : '';
+                    $row_label = $this->get_section_label($c['section']);
+                    echo '  [' . esc_html($c['timestamp']) . '] ' . esc_html($c['user_name']) . $status . ' — ' . esc_html($row_label) . ":\n";
+                    echo '  ' . esc_html($c['text']) . "\n\n";
+                }
             }
         }
 
@@ -457,6 +488,11 @@ class DGPTM_Workshop_Entscheidungsvorlage {
         <li>Drei neue offene Fragen (Rechnungsworkflow, mehrtägige TBs, Verlegungs-Stornorecht)</li>
         ' . $marked_txt . '
       </ul>
+      <p><strong>Nachschärfung 30.04.2026</strong> (Kommentare Sebastian):</p>
+      <ul>
+        <li>Rechnungserstellung läuft <em>direkt</em> in Zoho Books &mdash; kein Umweg über das CRM. Im CRM erscheint der Books-Status nur gespiegelt.</li>
+        <li>Aufgabenteilung Modul ⇄ CRM explizit gemacht: Logik (Storno, Bescheinigungen, Verlegung, Books) aus dem Modul; Anmelde-Status und Teilnahmeverwaltung bleiben im CRM, Homepage zeigt nur das Nötigste.</li>
+      </ul>
       <p>Bitte schaut noch einmal rüber. Stand: ' . (int) $approval_count . ' Freigabe' . ($approval_count !== 1 ? 'n' : '') . ', ' . (int) $comment_count . ' Kommentar' . ($comment_count !== 1 ? 'e' : '') . ' (inkl. eingearbeitete).</p>
     </td>
   </tr>
@@ -519,9 +555,39 @@ class DGPTM_Workshop_Entscheidungsvorlage {
         wp_mail('nichtantworten@dgptm.de', $subject, $body, $headers);
     }
 
+    /**
+     * Zeilen-Kommentare (z. B. "entscheidung-row-12", "offen-row-5") in
+     * lesbare Beschriftungen auflösen. Sektionen werden direkt aus
+     * get_sections() bedient, alles andere bekommt einen Präfix-Mapping.
+     */
     private function get_section_label($section_id) {
         $sections = $this->get_sections();
-        return $sections[$section_id] ?? $section_id;
+        if (isset($sections[$section_id])) {
+            return $sections[$section_id];
+        }
+
+        if (preg_match('/^entscheidung-row-(\w+)$/', $section_id, $m)) {
+            return '3. Fragestellungen — Vorschlag #' . $m[1];
+        }
+        if (preg_match('/^offen-row-(\w+)$/', $section_id, $m)) {
+            return '10. Offene Fragen — Frage #' . $m[1];
+        }
+
+        return $section_id;
+    }
+
+    /**
+     * Liefert eine Gruppen-Überschrift für unbekannte Section-Slugs
+     * (vor allem Zeilen-IDs), damit der Export sie sammeln kann.
+     */
+    private function get_section_group($section_id) {
+        if (strpos($section_id, 'entscheidung-row-') === 0) {
+            return '3. Fragestellungen zur Entscheidung — Zeilen-Kommentare';
+        }
+        if (strpos($section_id, 'offen-row-') === 0) {
+            return '10. Offene Fragen — Zeilen-Kommentare';
+        }
+        return 'Sonstige Zeilen-Kommentare';
     }
 
     private function build_notification_html($author, $comment, $dokument_name) {

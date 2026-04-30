@@ -280,7 +280,12 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                     <?php $render_row_actions('entscheidung-row-7'); ?>
                     <tr><td>8</td><td><strong>Was, wenn ein Workshop voll ist?</strong></td><td>Automatische Warteliste. Wird ein Platz frei, hat die nächste Person 24 Stunden Zeit zum Buchen.</td><td>Faire Reihenfolge ohne dauerhafte Sperre.</td></tr>
                     <?php $render_row_actions('entscheidung-row-8'); ?>
-                    <tr><td>9</td><td><strong>Storno durch Teilnehmer:in?</strong></td><td>Selbst-Storno bis zur Frist möglich &mdash; <strong>Default 6 Wochen vor dem Workshop</strong> (AGB-konform), pro Workshop einstellbar zwischen 28 und 42 Tagen. Erstattung läuft automatisch über Stripe abzüglich <strong>Stornogebühr 10&nbsp;% / max. 35&nbsp;€</strong> (siehe Abschnitt 7). Danach nur über die Geschäftsstelle (Härtefall/Kulanz).</td><td>Bleibt im Rahmen unserer AGB; gibt Kursleitungen Planungssicherheit; entlastet die Geschäftsstelle bei Standard-Stornos.</td></tr>
+                    <tr><td>9</td><td><strong>Storno durch Teilnehmer:in?</strong></td><td><strong>Zwei Optionen, AGB-konform (AGB §6):</strong>
+                        <ol style="margin:6px 0 0 18px;">
+                            <li><strong>Stornierung</strong> bis zur Frist (Default <strong>6 Wochen</strong> vor dem Workshop, pro Workshop 28&ndash;42 Tage). Erstattung automatisch über Stripe abzüglich <strong>Stornogebühr 10&nbsp;% / max. 35&nbsp;€</strong>. Nach Frist: keine Erstattung (Härtefall nur über die Geschäftsstelle).</li>
+                            <li><strong>Übertragung auf Ersatzteilnehmer:in</strong> bis zum Ablauf des <strong>drittletzten Werktages</strong> vor Veranstaltungsbeginn. Ersatzteilnehmer:in legt eigene Buchung an; das ursprüngliche Ticket wird storniert. Bearbeitungsgebühr <strong>20&nbsp;% / max. 70&nbsp;€</strong>. Falls eine Warteliste existiert, wird der freiwerdende Platz <em>vorrangig</em> aus der Warteliste vergeben &mdash; danach steht die Übertragung offen.</li>
+                        </ol>
+                    </td><td>Spiegelt §6 der AGB 1:1; gibt Kursleitungen Planungssicherheit; entlastet die Geschäftsstelle bei Standard-Stornos und Übertragungen.</td></tr>
                     <?php $render_row_actions('entscheidung-row-9'); ?>
                     <tr><td>10</td><td><strong>Welche E-Mails verschickt das System?</strong></td><td>Sofort/automatisch: Buchungs-Bestätigung (mit Ticket-PDF), Warteliste-Info, Nachrück-Einladung, Storno-Bestätigung, Termin-Verlegung. <strong>Reminder direkt aus dem Modul:</strong> automatischer Reminder <strong>7 Tage und 1 Tag vor Workshop-Start</strong> mit Termin-Anhang und Ticket-Link. Werbung/Marketing-Inhalte weiter über das bestehende Marketing-Tool.</td><td>Wichtige Mails und Reminder kommen aus einer Quelle &mdash; Erinnerung erhöht erfahrungsgemäß die Anwesenheits-Quote. Marketing-Inhalte bleiben flexibel.</td></tr>
                     <?php $render_row_actions('entscheidung-row-10'); ?>
@@ -299,7 +304,7 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                 <tbody>
                     <tr><td>13</td><td><strong>Verbindung zu Zoho Backstage</strong></td><td>Wir prüfen, ob bereits in Backstage gepflegte Buchungen automatisch ins eigene Zoho CRM gespiegelt werden können. Mitglieder sehen alle Tickets an einer Stelle &mdash; unabhängig von der Quelle (Backstage oder Homepage).</td><td>Keine doppelte Pflege. Eine einheitliche Sicht für Teilnehmer:innen.</td></tr>
                     <?php $render_row_actions('entscheidung-row-13'); ?>
-                    <tr><td>14</td><td><strong>Ticketnummern</strong></td><td>Numerische Ticketnummern im gleichen Format wie Zoho Backstage (z.&thinsp;B. 8-stellige Zahlenfolge).</td><td>Damit beide Systeme kompatibel bleiben und Tickets eindeutig sind.</td></tr>
+                    <tr><td>14</td><td><strong>Ticketnummern</strong></td><td>Gleiches Format wie Zoho Backstage, <strong>beginnend mit Präfix &bdquo;99999&ldquo;</strong> (Modul-Tickets sind so eindeutig von Backstage-Tickets unterscheidbar; QR-Scan funktioniert in beiden Systemen). Vergabe automatisch beim Anlegen.</td><td>Eindeutigkeit durch Präfix; Backstage-Kompatibilität durch identisches Format und Stellenzahl.</td></tr>
                     <?php $render_row_actions('entscheidung-row-14'); ?>
                     <tr><td>15</td><td><strong>QR-Code auf jedem Ticket</strong></td><td>Jedes Ticket trägt einen QR-Code mit der Ticketnummer. Geschäftsstelle/Kursleitung kann am Workshop-Tag mit dem Smartphone scannen und sofort prüfen, ob das Ticket gültig ist.</td><td>Schneller, ehrlicher Einlass. Kein manuelles Listenabhaken.</td></tr>
                     <?php $render_row_actions('entscheidung-row-15'); ?>
@@ -445,7 +450,10 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                     <li><strong>10&nbsp;% des Ticketpreises</strong>,</li>
                     <li><strong>maximal 35&nbsp;€ pro Ticket</strong>.</li>
                 </ul>
-                Beispiel: bei 200&nbsp;€ Ticketpreis = 20&nbsp;€ Gebühr; bei 500&nbsp;€ Ticketpreis = 35&nbsp;€ Gebühr (Deckel). Die Erstattung erfolgt automatisch über Stripe abzüglich dieser Gebühr; die Gebühr erscheint als separater Posten in Zoho Books.
+                Beispiel: bei 200&nbsp;€ Ticketpreis = 20&nbsp;€ Gebühr; bei 500&nbsp;€ Ticketpreis = 35&nbsp;€ Gebühr (Deckel). Erstattung automatisch über Stripe abzüglich Gebühr; Gebühr als separater Posten in Zoho Books.
+            </div>
+            <div class="dgptm-wsb-evl-highlight orange">
+                <strong>Übertragung auf Ersatzteilnehmer:in</strong> (AGB §6 Abs.&nbsp;2) &mdash; alternative Stornofunktion bis zum drittletzten Werktag vor Veranstaltungsbeginn. Ersatzteilnehmer:in macht eine eigene Buchung; das ursprüngliche Ticket wird storniert; Bearbeitungsgebühr <strong>20&nbsp;% / max. 70&nbsp;€</strong>. Bei Workshops mit Warteliste: freiwerdende Plätze gehen <em>vorrangig</em> an Wartelisten-Einträge.
             </div>
             <div class="dgptm-wsb-evl-highlight orange">
                 <strong>Anmelde-Status</strong> &mdash; konsolidierte Status-Werte für die Teilnehmer:innen-Liste (Pflege im CRM):
@@ -507,6 +515,24 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                 <li><strong>Kongresse und Sachkundekurse:</strong> Laufen unverändert weiter über Zoho Backstage &mdash; keine Buchungslogik in diesem Modul. Tickets erscheinen aber im Mitgliederbereich (Backstage-Spiegelung).</li>
                 <li><strong>Fortbildungspunkte-Erfassung im Buchungsformular für Nicht-Mitglieder/Ärzt:innen:</strong> Aktuell nicht geplant. Für DGPTM-Mitglieder ist die EFN über Zoho CRM bereits hinterlegt und wird automatisch genutzt.</li>
             </ul>
+
+            <h4 style="margin-top:24px;">AGB-Abgleich (Stand: Februar 2024)</h4>
+            <p>Das Modul setzt die geltenden Teilnahmebedingungen technisch sauber um:</p>
+            <table class="dgptm-wsb-evl-table">
+                <thead><tr><th>AGB-Punkt</th><th>Umsetzung im Modul</th></tr></thead>
+                <tbody>
+                    <tr><td>§1 Anmeldung &amp; Vertragsschluss (Online-Anmeldetool, Anmeldebestätigung als Vertrags-Schluss)</td><td>Buchungsformular auf der Webseite; Bestätigungsmail nach erfolgreicher Zahlung als Vertrags-Schluss.</td></tr>
+                    <tr><td>§1 Abs.&nbsp;3: Einzelanmeldung pro Person, keine Gruppenanmeldungen</td><td>Pro Teilnehmer:in eine eigene Buchung (Vorschlag&nbsp;4). Eine zahlende Person kann mehrere Tickets in einer Bestellung bündeln; jede:r TN behält eigenen Datensatz und eigene Bescheinigung. Optional: Sammel-Rechnung an Zahler.</td></tr>
+                    <tr><td>§2 Rechnungsstellung mit Anmeldebestätigung</td><td>Rechnung wird direkt nach Zahlung in Zoho Books erzeugt und der Bestätigungsmail beigefügt.</td></tr>
+                    <tr><td>§3 Fortbildungspunkte (Anmeldung bei Ärztekammer/EBCP, Anzeige auf Veranstaltungs-Webseite)</td><td>EIV-Fobi-Anschluss + EFN aus dem CRM; Punkte-Anzeige auf der Workshop-Karte.</td></tr>
+                    <tr><td>§4 Änderungen/Verlegung durch Veranstalter (unverzügliche Information)</td><td>Baustein "Termin-Verlegung" sendet automatisch Mail an alle Teilnehmer:innen mit neuem Termin und Kalender-Anhang.</td></tr>
+                    <tr><td>§6 Abs.&nbsp;1: Stornierung bis 6 Wochen vor Beginn, Gebühr 10&nbsp;% / max. 35&nbsp;€; danach volle Gebühr fällig</td><td>Selbst-Storno-Funktion mit automatischer Stripe-Erstattung abzüglich Gebühr; nach Frist gesperrt (Härtefall über Geschäftsstelle).</td></tr>
+                    <tr><td>§6 Abs.&nbsp;2: Übertragung auf Ersatzteilnehmer bis drittletzten Werktag, Bearbeitungsgebühr 20&nbsp;% / max. 70&nbsp;€</td><td>Übertragungs-Funktion (Vorschlag&nbsp;9, Option 2). Ersatzteilnehmer:in macht eigene Anmeldung, Original-Ticket wird storniert; Wartelisten-Vorrang.</td></tr>
+                    <tr><td>§6 Abs.&nbsp;3: Storno/Übertragung schriftlich erforderlich</td><td>Online-Stornierung erzeugt automatisch eine schriftliche Bestätigung per Mail; alle Vorgänge sind protokolliert.</td></tr>
+                    <tr><td>§7 Datenschutz, Einwilligung zur EFN-Übermittlung</td><td>Pflicht-Häkchen im Buchungsformular: Datenschutz-Hinweis und EFN-Übermittlung; Speicherung am CRM-Datensatz.</td></tr>
+                    <tr><td>§10 Höhere Gewalt</td><td>Im Verlegungs-/Absage-Workflow vorgesehen; Erstattung erfolgt nicht automatisch (Geschäftsstelle entscheidet im Einzelfall).</td></tr>
+                </tbody>
+            </table>
             <?php $render_section_comments('section-out-of-scope'); ?>
         </div>
 
@@ -520,21 +546,21 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                     <tbody>
                         <tr><td>1</td><td><strong>Wie lange dürfen Teilnehmer:innen selbst stornieren?</strong></td><td><span style="color:#16a34a;font-weight:600;">[geklärt 30.04.2026]</span> Default <strong>42 Tage (6 Wochen)</strong>, AGB-konform; pro Workshop einstellbar zwischen 28 und 42 Tagen.</td></tr>
                         <?php $render_row_actions('offen-row-1', 3); ?>
-                        <tr><td>2</td><td><strong>Was passiert, wenn nach der Frist storniert wird?</strong></td><td>Vorschlag: keine Erstattung. Härtefälle nach Kulanz &mdash; muss mit AGB abgestimmt werden.</td></tr>
+                        <tr><td>2</td><td><strong>Was passiert, wenn nach der Frist storniert wird?</strong></td><td><span style="color:#16a34a;font-weight:600;">[geklärt 30.04.2026]</span> Gemäß AGB §6 Abs.&nbsp;1 keine Erstattung &mdash; volle Teilnahmegebühr ist zu entrichten. Härtefälle gehen über die Geschäftsstelle (Kulanz). Alternative: Übertragung auf Ersatzteilnehmer:in bis 3 Werktage vor Beginn (siehe Vorschlag&nbsp;9).</td></tr>
                         <?php $render_row_actions('offen-row-2', 3); ?>
                         <tr><td>3</td><td><strong>Wie sollen die Anmelde-Status heissen?</strong></td><td><span style="color:#16a34a;font-weight:600;">[geklärt 30.04.2026]</span> Zahlung ausstehend, Angemeldet, Warteliste, Nachrücker:in &ndash; Zahlung ausstehend, Abgebrochen, Storniert, Teilgenommen, Nicht teilgenommen (siehe Abschnitt 7).</td></tr>
                         <?php $render_row_actions('offen-row-3', 3); ?>
                         <tr><td>4</td><td><strong>Edugrant-Förderung:</strong> Nur Hinweis und Link &mdash; oder integrierter Antrag aus der Buchung heraus?</td><td>Vorschlag: erstmal nur Hinweis und Link. <span style="color:#16a34a;font-weight:600;">[geklärt 30.04.2026]</span> Verfügbarkeit, Höhe und Anzahl Förderplätze werden im CRM am Veranstaltungs-Datensatz gepflegt; Buchungs-Karte zeigt EduGrant nur, wenn dort gesetzt und Plätze frei.</td></tr>
                         <?php $render_row_actions('offen-row-4', 3); ?>
-                        <tr><td>5</td><td><strong>Backstage-Spiegelung &mdash; wie genau?</strong></td><td>Vorschlag: regelmäßiger Abgleich (z.&thinsp;B. alle 15 Min) statt Echtzeit-Synchronisation. Einfacher, robuster, ausreichend.</td></tr>
+                        <tr><td>5</td><td><strong>Backstage-Spiegelung &mdash; wie genau?</strong></td><td><span style="color:#16a34a;font-weight:600;">[geklärt 30.04.2026]</span> Regelmäßiger Abgleich alle 15&nbsp;Min via Cron statt Echtzeit-Synchronisation &mdash; einfacher, robuster, ausreichend.</td></tr>
                         <?php $render_row_actions('offen-row-5', 3); ?>
-                        <tr><td>6</td><td><strong>Backstage-Migration</strong></td><td>Sollen alte Backstage-Buchungen einmalig importiert werden, oder nur künftige? Vorschlag: nur künftige und alle <em>noch aktiven</em> Backstage-Tickets.</td></tr>
+                        <tr><td>6</td><td><strong>Backstage-Migration</strong></td><td><span style="color:#16a34a;font-weight:600;">[geklärt 30.04.2026]</span> Nur künftige Buchungen und alle <em>noch aktiven</em> Backstage-Tickets werden gespiegelt &mdash; keine Massenmigration historischer Daten.</td></tr>
                         <?php $render_row_actions('offen-row-6', 3); ?>
-                        <tr><td>7</td><td><strong>Format der Ticketnummer</strong></td><td>Welches genaue Format hat die Backstage-Ticketnummer? (Stellenanzahl, Bereich) &mdash; muss mit Backstage-Verantwortlichen geklärt werden.</td></tr>
+                        <tr><td>7</td><td><strong>Format der Ticketnummer</strong></td><td><span style="color:#16a34a;font-weight:600;">[geklärt 30.04.2026]</span> Gleiches Format wie Backstage, <strong>beginnend mit Präfix &bdquo;99999&ldquo;</strong> &mdash; so sind Modul-Tickets eindeutig von Backstage-Tickets unterscheidbar.</td></tr>
                         <?php $render_row_actions('offen-row-7', 3); ?>
-                        <tr><td>8</td><td><strong>Gültigkeit der persönlichen Links</strong> (Nicht-Mitglieder)</td><td>Vorschlag: bis Workshop-Ende plus 30 Tage &mdash; lange genug für Download der Teilnahmebescheinigung, kurz genug für Datensparsamkeit.</td></tr>
+                        <tr><td>8</td><td><strong>Gültigkeit der persönlichen Links</strong> (Nicht-Mitglieder)</td><td><span style="color:#16a34a;font-weight:600;">[geklärt 30.04.2026]</span> Bis Workshop-Ende plus 30 Tage.</td></tr>
                         <?php $render_row_actions('offen-row-8', 3); ?>
-                        <tr><td>9</td><td><strong>Wer darf Designer:innen einladen?</strong></td><td>Vorschlag: nur Geschäftsstelle. Kontrolle bleibt zentral.</td></tr>
+                        <tr><td>9</td><td><strong>Wer darf Designer:innen einladen?</strong></td><td><span style="color:#16a34a;font-weight:600;">[geklärt 30.04.2026]</span> Nur Geschäftsstelle. Kontrolle bleibt zentral.</td></tr>
                         <?php $render_row_actions('offen-row-9', 3); ?>
                         <tr><td>10</td><td><strong>Standard-Layout der Teilnahmebescheinigung</strong></td><td><span style="color:#16a34a;font-weight:600;">[geklärt 30.04.2026]</span> Wird im Rahmen dieses Projekts zusammen mit der Geschäftsstelle entwickelt &mdash; folgt im Implementierungsverlauf.</td></tr>
                         <?php $render_row_actions('offen-row-10', 3); ?>
@@ -546,15 +572,21 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                             </ul>
                         </td></tr>
                         <?php $render_row_actions('offen-row-11', 3); ?>
-                        <tr><td>12</td><td><strong>Online-Tool oder eigene App für Anwesenheits-Erfassung?</strong></td><td>Vorschlag: in V1 als Web-Tool (Smartphone-Browser, kein App-Store-Eintrag). Eine native App für iOS/Android nur, wenn sich der Web-Weg im Echtbetrieb als unzureichend erweist.</td></tr>
+                        <tr><td>12</td><td><strong>Online-Tool oder eigene App für Anwesenheits-Erfassung?</strong></td><td><span style="color:#16a34a;font-weight:600;">[geklärt 30.04.2026]</span> V1 als Web-Tool (Smartphone-Browser, kein App-Store-Eintrag). Eine native App nur, wenn sich der Web-Weg im Echtbetrieb als unzureichend erweist.</td></tr>
                         <?php $render_row_actions('offen-row-12', 3); ?>
                         <tr><td>13</td><td><strong>Sammel-Rechnung bei Mehrfach-Tickets</strong></td><td><span style="color:#16a34a;font-weight:600;">[geklärt 30.04.2026]</span> <strong>Ja, in V1 nachziehen.</strong> Heute wird trotz Sammel-Buchung pro TN eine eigene Rechnung erzeugt &mdash; das soll umstellbar sein. Mit V1: Buchende Person kann zwischen <em>einzelnen Rechnungen pro TN</em> oder <em>einer Sammel-Rechnung an einen Zahler</em> (mit Kostenstelle/Auftragsnummer) wählen. TN-Daten und Bescheinigungen bleiben pro Person.</td></tr>
                         <?php $render_row_actions('offen-row-13', 3); ?>
-                        <tr><td>14</td><td><strong>Rechnungserstellung über Zoho Books</strong></td><td>Welche Rechnungs-Vorlage wird verwendet? Eigener Nummernkreis für Workshop-/Webinar-Rechnungen oder gemeinsamer mit Mitgliedsbeiträgen? Wie werden Edugrant-Förderungen abgebildet (volle Rechnung an Teilnehmer:in &amp; Förder-Buchung intern, oder reduzierte Rechnung)? &mdash; Klärung mit Geschäftsstelle.</td></tr>
+                        <tr><td>14</td><td><strong>Rechnungserstellung über Zoho Books</strong></td><td><span style="color:#16a34a;font-weight:600;">[geklärt 30.04.2026]</span>
+                            <ul style="margin:6px 0 0 18px;">
+                                <li><strong>Vorlage:</strong> frei in Zoho Books definierbar (pro Workshop oder pro Workshop-Typ).</li>
+                                <li><strong>Nummernkreis:</strong> nicht anfassen &mdash; kommt direkt aus Zoho Books (Books-eigener Zähler).</li>
+                                <li><strong>EduGrant:</strong> komplett unabhängig von der Rechnung &mdash; Teilnehmer:in erhält die volle Rechnung; die Förderung wird intern als separate Buchung verbucht.</li>
+                            </ul>
+                        </td></tr>
                         <?php $render_row_actions('offen-row-14', 3); ?>
-                        <tr><td>15</td><td><strong>Teilnahmebescheinigung bei mehrtägigen Veranstaltungen</strong></td><td>Eine Sammel-Bescheinigung mit ausgewiesenen Tagen oder pro Tag eine eigene? Wie werden Tageweise-Anwesenheiten und FoBi-Punkte verrechnet? Vorschlag: eine Bescheinigung mit Tagesübersicht und entsprechend gerechneten Punkten.</td></tr>
+                        <tr><td>15</td><td><strong>Teilnahmebescheinigung bei mehrtägigen Veranstaltungen</strong></td><td><span style="color:#16a34a;font-weight:600;">[geklärt 30.04.2026]</span> <strong>Eine Sammelbescheinigung nach Veranstaltungsende mit Tagesübersicht</strong> &mdash; ausgewiesen werden die anwesenden Tage und entsprechend errechnete FoBi-Punkte.</td></tr>
                         <?php $render_row_actions('offen-row-15', 3); ?>
-                        <tr><td>16</td><td><strong>Termin-Verlegung &mdash; Storno-Recht?</strong></td><td>Wird ein Workshop verlegt: Sollen alle Teilnehmer:innen das Recht auf vollständige Erstattung (ohne Stornogebühr) bekommen, wenn sie zum neuen Termin nicht können? Vorschlag: ja, mit einer Frist von 14 Tagen ab Verlegungs-Mail.</td></tr>
+                        <tr><td>16</td><td><strong>Termin-Verlegung &mdash; Storno-Recht?</strong></td><td><span style="color:#16a34a;font-weight:600;">[geklärt 30.04.2026]</span> AGB §4 ist maßgeblich &mdash; der Veranstalter darf zeitlich verlegen; Teilnehmer:innen werden unverzüglich informiert. Standard-Storno-Bedingungen (§6: 6 Wochen / 10&nbsp;%-Gebühr) bleiben anwendbar; alternativ Übertragung auf Ersatzteilnehmer:in (siehe Vorschlag&nbsp;9). Sonderkulanz im Einzelfall über die Geschäftsstelle. Bei Absage durch den Veranstalter (§4 Abs.&nbsp;3) volle Erstattung; bei höherer Gewalt (§10) ist der Veranstalter von Erstattungs-Pflichten befreit.</td></tr>
                         <?php $render_row_actions('offen-row-16', 3); ?>
                         <tr><td>17</td><td><strong>Studierenden-Nachweis bei reduzierten Tickets</strong></td><td><span style="color:#16a34a;font-weight:600;">[geklärt 30.04.2026]</span> Pflicht-Upload Immatrikulationsbescheinigung im Buchungsformular, Prüfung durch Geschäftsstelle, bei Ablehnung Differenz-Nachforderung &mdash; siehe Vorschlag&nbsp;5.</td></tr>
                         <?php $render_row_actions('offen-row-17', 3); ?>

@@ -43,13 +43,13 @@ class DGPTM_Workshop_Entscheidungsvorlage {
             'dgptm-wsb-evl',
             $this->plugin_url . 'assets/css/entscheidungsvorlage.css',
             [],
-            '0.2.4'
+            '0.2.5'
         );
         wp_register_script(
             'dgptm-wsb-evl',
             $this->plugin_url . 'assets/js/entscheidungsvorlage.js',
             ['jquery'],
-            '0.2.4',
+            '0.2.5',
             true
         );
     }
@@ -493,6 +493,25 @@ class DGPTM_Workshop_Entscheidungsvorlage {
         <li>Rechnungserstellung läuft <em>direkt</em> in Zoho Books &mdash; kein Umweg über das CRM. Im CRM erscheint der Books-Status nur gespiegelt.</li>
         <li>Aufgabenteilung Modul ⇄ CRM explizit gemacht: Logik (Storno, Bescheinigungen, Verlegung, Books) aus dem Modul; Anmelde-Status und Teilnahmeverwaltung bleiben im CRM, Homepage zeigt nur das Nötigste.</li>
       </ul>
+      <p><strong>Fünfte Runde 30.04.2026</strong> &mdash; AGB-Abschluss durch Sebastian:</p>
+      <ul>
+        <li><strong>Frage 2 (Storno nach Frist)</strong> &mdash; AGB §6: keine Erstattung; Härtefall über Geschäftsstelle. Alternativ Übertragung auf Ersatzteilnehmer:in.</li>
+        <li><strong>Frage 5 (Backstage-Spiegelung)</strong> &mdash; alle 15&nbsp;Min via Cron (kein Echtzeit-Sync).</li>
+        <li><strong>Frage 6 (Backstage-Migration)</strong> &mdash; nur künftige Buchungen + aktive Backstage-Tickets.</li>
+        <li><strong>Frage 7 (Ticketnummer)</strong> &mdash; Backstage-Format mit Präfix &bdquo;99999&ldquo; für Modul-Tickets.</li>
+        <li><strong>Frage 8 (Link-Gültigkeit)</strong> &mdash; Workshop-Ende plus 30 Tage.</li>
+        <li><strong>Frage 9 (Designer-Einlader)</strong> &mdash; nur Geschäftsstelle.</li>
+        <li><strong>Frage 12 (App vs. Web)</strong> &mdash; V1 als Web-Tool.</li>
+        <li><strong>Frage 14 (Books-Workflow)</strong> &mdash; Vorlage frei definierbar; Nummernkreis aus Books (nicht anfassen); EduGrant unabhängig &mdash; volle Rechnung an TN, Förderung als separate Buchung intern.</li>
+        <li><strong>Frage 15 (mehrtägige TBs)</strong> &mdash; eine Sammelbescheinigung nach Veranstaltungsende mit Tagesübersicht.</li>
+        <li><strong>Frage 16 (Verlegungs-Stornorecht)</strong> &mdash; AGB §4 + §6 maßgeblich, kein automatisches Sonder-Stornorecht; Sonderkulanz im Einzelfall über Geschäftsstelle.</li>
+      </ul>
+      <p><strong>Neu im Modul (AGB-Konformität):</strong></p>
+      <ul>
+        <li><strong>Übertragung auf Ersatzteilnehmer:in</strong> als zweite Storno-Option (AGB §6 Abs.&nbsp;2): bis 3 Werktage vor Beginn, Bearbeitungsgebühr 20&nbsp;% / max. 70&nbsp;€; Wartelisten-Vorrang &mdash; siehe Vorschlag&nbsp;9 und Abschnitt&nbsp;7.</li>
+        <li><strong>AGB-Abgleich-Tabelle</strong> in Abschnitt&nbsp;9: zeigt punktweise, welche AGB-Bestimmung wo im Modul abgebildet wird.</li>
+      </ul>
+
       <p><strong>Vierte Runde 30.04.2026</strong> &mdash; Antworten Sebastian:</p>
       <ul>
         <li><strong>Frage 17 (Studi-Nachweis)</strong> &mdash; geklärt: Antwort steht in Vorschlag&nbsp;5 (Pflicht-Upload, Prüfung durch Geschäftsstelle).</li>

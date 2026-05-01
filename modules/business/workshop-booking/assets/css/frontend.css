@@ -1,0 +1,189 @@
+/**
+ * DGPTM Workshop-Booking — Frontend-CSS.
+ * Designsprache aus modules/business/umfragen/assets/css/frontend.css.
+ * Kein Page-Builder-Inheritance (Elementor/Astra werden nicht uebernommen).
+ */
+
+.dgptm-wsb-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin: 24px 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.dgptm-wsb-empty {
+    grid-column: 1 / -1;
+    padding: 32px;
+    text-align: center;
+    color: #6b7280;
+    font-size: 15px;
+}
+
+.dgptm-wsb-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.dgptm-wsb-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+}
+
+.dgptm-wsb-card header { display: flex; flex-direction: column; gap: 6px; }
+
+.dgptm-wsb-card-type {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #4f46e5;
+    font-weight: 600;
+}
+
+.dgptm-wsb-card h3 {
+    margin: 0;
+    font-size: 17px;
+    color: #111827;
+    line-height: 1.3;
+}
+
+.dgptm-wsb-card-date {
+    margin: 0;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.dgptm-wsb-card-book {
+    margin-top: auto;
+    align-self: flex-start;
+    background: #4f46e5;
+    color: #ffffff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.dgptm-wsb-card-book:hover { background: #4338ca; }
+.dgptm-wsb-card-book:focus { outline: 2px solid #4f46e5; outline-offset: 2px; }
+
+/* Buchungs-Dialog */
+.dgptm-wsb-dialog {
+    border: none;
+    border-radius: 12px;
+    padding: 0;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    max-width: 480px;
+    width: 90%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.dgptm-wsb-dialog::backdrop {
+    background: rgba(0,0,0,0.4);
+}
+
+.dgptm-wsb-dialog form { padding: 28px 30px; }
+.dgptm-wsb-dialog h3 {
+    margin: 0 0 16px;
+    font-size: 18px;
+    color: #111827;
+}
+
+.dgptm-wsb-attendee {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.dgptm-wsb-attendee label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+}
+
+.dgptm-wsb-attendee input {
+    padding: 10px 14px;
+    border: 1.5px solid #e5e7eb;
+    background: #f9fafb;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #111827;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dgptm-wsb-attendee input:focus {
+    outline: none;
+    border-color: #4f46e5;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+}
+
+.dgptm-wsb-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.dgptm-wsb-actions button {
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: background 0.2s ease;
+}
+
+.dgptm-wsb-cancel { background: #f3f4f6; color: #374151; }
+.dgptm-wsb-cancel:hover { background: #e5e7eb; }
+
+.dgptm-wsb-submit { background: #4f46e5; color: #ffffff; }
+.dgptm-wsb-submit:hover { background: #4338ca; }
+.dgptm-wsb-submit:disabled { background: #a5b4fc; cursor: not-allowed; }
+
+.dgptm-wsb-feedback {
+    margin: 12px 0 0;
+    font-size: 13px;
+    color: #ef4444;
+    min-height: 18px;
+}
+
+/* Bestaetigungsseite */
+.dgptm-wsb-success {
+    background: #ecfdf5;
+    border: 1px solid #10b981;
+    border-radius: 12px;
+    padding: 24px;
+    margin: 24px 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.dgptm-wsb-success h2 {
+    margin: 0 0 12px;
+    color: #065f46;
+    font-size: 20px;
+}
+
+.dgptm-wsb-success p {
+    margin: 0 0 8px;
+    color: #047857;
+    line-height: 1.6;
+}
+
+.dgptm-wsb-success a {
+    color: #047857;
+    text-decoration: underline;
+}

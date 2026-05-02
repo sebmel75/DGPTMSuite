@@ -17,6 +17,7 @@ Vor V1-Go-Live müssen in Zoho CRM folgende Felder/Picklist-Werte existieren. Di
 | `Last_Sync_At` | Date/Time | leer | wird vom Sync_Coordinator gesetzt |
 | `Ticket_Type` | Single Line | leer | z.B. „Vollpreis", „Mitgliedspreis", „Studi" |
 | `Price_EUR` | Decimal | 0 | Ticket-Preis pro TN |
+| `Ticket_Nummer` | Single Line | leer | **Phase 2** — Modul-Tickets bekommen Präfix `99999`; Format identisch zu Backstage; **unique constraint empfohlen** |
 
 ### Anmelde-Status (Picklist `Anmelde_Status`)
 
@@ -82,7 +83,32 @@ Im Stripe-Dashboard unter **Developers → Webhooks → Add endpoint**:
   - `charge.refunded`
 - Webhook-Secret in `dgptm_wsb_stripe_webhook_secret` eintragen
 
-## 5. Cron-Jobs
+## 5. Composer-Dependencies (Phase 2)
+
+Das Modul benötigt für Ticket-PDF und QR-Code zwei Composer-Pakete:
+
+```bash
+cd wp-content/plugins/dgptm-plugin-suite/modules/business/workshop-booking
+composer install --no-dev --optimize-autoloader
+```
+
+Dies installiert:
+- `dompdf/dompdf:^2.0` — Ticket-PDF-Erzeugung
+- `endroid/qr-code:^4.8` — QR-Code-Generierung
+
+**Ohne `vendor/`-Ordner**: Buchungsfluss + Sync laufen weiter, aber Ticket-PDFs werden nicht mehr versandt (graceful Fallback mit `error_log`-Eintrag). Die Mail enthält dann nur ICS, keine Ticket-PDF.
+
+## 6. Phase-2-Shortcodes
+
+Zusätzliche Seiten anlegen:
+
+| Pfad | Shortcode | Zweck |
+|---|---|---|
+| `/mein-ticket/` | `[dgptm_workshop_ticket]` | Token-Zugang für Nicht-WP-User; zeigt Ticket-Daten + PDF-Download |
+
+Inline-PDF-Download: `/mein-ticket/?dgptm_wsb_pdf=<token>` — wird automatisch von der Seite verarbeitet.
+
+## 8. Cron-Jobs
 
 WordPress-Cron läuft per Default auf jeder Seitenanfrage. Empfohlen für Produktion: System-Cron alle Minute auf `wp-cron.php`. Die beiden Modul-Crons laufen alle 15 Minuten:
 
@@ -91,7 +117,7 @@ WordPress-Cron läuft per Default auf jeder Seitenanfrage. Empfohlen für Produk
 
 Status prüfen via WP-CLI: `wp cron event list | grep dgptm_wsb`.
 
-## 6. AGB-Audit-Trail
+## 9. AGB-Audit-Trail
 
 Die Tabelle `wp_dgptm_workshop_sync_log` ist append-only und dient als Audit-Trail (AGB §6 Abs. 3 Schriftform). Sie darf NICHT gelöscht werden ohne Rücksprache.
 

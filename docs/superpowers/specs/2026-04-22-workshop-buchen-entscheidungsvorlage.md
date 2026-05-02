@@ -663,5 +663,16 @@ Das EVL-Dokument (`templates/entscheidungsvorlage-dokument.php` + zugehörige `c
   - Mitgliederbereich zeigt Backstage-Tickets read-only mit Hinweis „Verwaltung über Backstage"
   - Drei neue WP-Tabellen für Phase 1: `wp_dgptm_workshop_sync_log`, `wp_dgptm_workshop_drift_alerts`, `wp_dgptm_workshop_pending_bookings`
   - Pflichtfelder am `Veranstal_X_Contacts`: `Quelle`, `Anmelde_Status`, `Zahlungsstatus`, `Stripe_Charge_ID`, `Stripe_Session_ID`, `Books_Invoice_ID`, `Last_Sync_At`
+- **02.05.2026** — Phase 2 implementiert (`feat/workshop-booking-phase-1` aufbauend, neuer Branch `feat/workshop-booking-phase-2`):
+  - Ticketnummer-Generator (`class-ticket-number.php`): Präfix `99999` + laufende Nummer; eindeutige Unterscheidung von Backstage-Tickets bei kompatiblem Format
+  - QR-Code (`class-qr-generator.php`): Wrapper um `endroid/qr-code` (Composer); graceful Fallback wenn Library fehlt
+  - Ticket-PDF (`class-ticket-pdf.php`): A4 mit DGPTM-Header (`#003366`), QR-Code rechts, Ticketnummer prominent; via `dompdf/dompdf` (Composer)
+  - Token-Layer für Externe (`class-token-installer.php`, `class-token-store.php`): Tabelle `wp_dgptm_workshop_tokens` mit Scope `booking` (Nicht-Mitglieder, gültig bis Workshop-Ende + 30 Tage) und `layout` (Designer:innen, 14 Tage). Pattern aus `stipendium/class-gutachter-token.php`.
+  - Stripe-Webhook erweitert: nach `checkout.session.completed` zweiter Sync_Intent für Ticketnummer-Schreibung; Mail mit Ticket-PDF im Anhang
+  - Booking_Service erweitert: Freitickets bekommen sofort Ticketnummer + Mail mit PDF
+  - Mail_Sender erweitert: Ticket-PDF und Token-Link für Nicht-WP-User automatisch in Bestätigungs-Mail
+  - Neuer Shortcode `[dgptm_workshop_ticket]`: Token-Login für Externe (URL `/mein-ticket/?dgptm_wsb_token=…`); inline PDF-Download über `?dgptm_wsb_pdf=…`
+  - composer.json mit `dompdf/dompdf:^2.0` + `endroid/qr-code:^4.8` (parallel zu `vimeo-webinare`)
+  - **Phase-2-Bibliotheken sind Composer-only**: `vendor/` ist gitignored, vor Deploy `composer install` im Modulordner ausführen
 
-*Dokument Stand: 30.04.2026 nachmittags, Sebastian Melzer — DGPTM IT-Verantwortung.*
+*Dokument Stand: 02.05.2026, Sebastian Melzer — DGPTM IT-Verantwortung.*

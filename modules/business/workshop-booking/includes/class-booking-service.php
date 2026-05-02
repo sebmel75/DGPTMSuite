@@ -103,6 +103,19 @@ class DGPTM_WSB_Booking_Service {
                     'Freiticket: keine Stripe-Session noetig'
                 );
                 DGPTM_WSB_Sync_Coordinator::apply_intent($intent);
+
+                // Phase 2: Ticketnummer fuer Freiticket
+                $ticket_number = DGPTM_WSB_Ticket_Number::generate_next();
+                if ($ticket_number) {
+                    $tn_intent = new DGPTM_WSB_Sync_Intent(
+                        $cid, null, null,
+                        DGPTM_WSB_Sync_Intent::SOURCE_BOOKING_INIT,
+                        ['extra_fields' => [DGPTM_WSB_Ticket_Number::FIELD_NAME => $ticket_number]],
+                        'ticket_number_assigned: ' . $ticket_number . ' (Freiticket)'
+                    );
+                    DGPTM_WSB_Sync_Coordinator::apply_intent($tn_intent);
+                }
+
                 DGPTM_WSB_Pending_Bookings_Store::delete_by_contact($cid);
                 DGPTM_WSB_Mail_Sender::send_confirmation($cid, $event);
             }

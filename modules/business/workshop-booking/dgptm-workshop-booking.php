@@ -34,6 +34,14 @@ if (!class_exists('DGPTM_Workshop_Booking')) {
         }
 
         private function load_components() {
+            // Composer-Autoload (Phase 2: dompdf + endroid/qr-code) — optional, da
+            // vendor/ nicht im Repo. Wenn fehlend: Buchungsfluss laeuft weiter,
+            // QR/PDF werden geskippt und im sync_log dokumentiert.
+            $autoload = $this->plugin_path . 'vendor/autoload.php';
+            if (file_exists($autoload)) {
+                require_once $autoload;
+            }
+
             // Installer zuerst — DB-Tabellen muessen vor allen anderen Komponenten existieren
             require_once $this->plugin_path . 'includes/class-installer.php';
             DGPTM_WSB_Installer::maybe_install();
@@ -76,6 +84,15 @@ if (!class_exists('DGPTM_Workshop_Booking')) {
             require_once $this->plugin_path . 'includes/class-books-status-reader.php';
             require_once $this->plugin_path . 'includes/class-reconciliation-cron.php';
             require_once $this->plugin_path . 'includes/class-pending-cleanup-cron.php';
+
+            // Phase 2: Tickets + QR + PDF + Token
+            require_once $this->plugin_path . 'includes/class-ticket-number.php';
+            require_once $this->plugin_path . 'includes/class-qr-generator.php';
+            require_once $this->plugin_path . 'includes/class-ticket-pdf.php';
+            require_once $this->plugin_path . 'includes/class-token-installer.php';
+            require_once $this->plugin_path . 'includes/class-token-store.php';
+
+            DGPTM_WSB_Token_Installer::maybe_install();
 
             // Phase 1: Frontend
             require_once $this->plugin_path . 'includes/class-shortcodes.php';

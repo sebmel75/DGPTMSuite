@@ -109,6 +109,26 @@ class DGPTM_WSB_Stripe_Webhook {
             if ($result->success && $result->error_code !== DGPTM_WSB_Sync_Result::ERR_SOURCE_SKIPPED) {
                 $event_id = isset($session['metadata']['event_id']) ? $session['metadata']['event_id'] : '';
                 $event    = $event_id ? DGPTM_WSB_Event_Source::fetch_one($event_id) : null;
+
+                // Phase 2: Ticketnummer generieren + im CRM speichern (zweiter Sync_Intent,
+                // ohne Blueprint-Aenderung — nur extra_fields-Update).
+                $ticket_number = DGPTM_WSB_Ticket_Number::generate_next();
+                if ($ticket_number) {
+                    $tn_intent = new DGPTM_WSB_Sync_Intent(
+                        $cid,
+                        null, // Blueprint nicht aendern
+                        null, // Zahlungsstatus nicht aendern
+                        DGPTM_WSB_Sync_Intent::SOURCE_STRIPE_WEBHOOK,
+                        [
+                            'extra_fields' => [
+                                DGPTM_WSB_Ticket_Number::FIELD_NAME => $ticket_number,
+                            ],
+                        ],
+                        'ticket_number_assigned: ' . $ticket_number
+                    );
+                    DGPTM_WSB_Sync_Coordinator::apply_intent($tn_intent);
+                }
+
                 DGPTM_WSB_Mail_Sender::send_confirmation($cid, $event);
                 DGPTM_WSB_Pending_Bookings_Store::delete_by_contact($cid);
             }

@@ -102,7 +102,10 @@ class DGPTM_WSB_Shortcodes {
         $event_name    = is_array($event) && isset($event['Name']) ? $event['Name'] : '—';
         $event_from    = is_array($event) && isset($event['From_Date']) ? date_i18n('d.m.Y', strtotime($event['From_Date'])) : '';
 
-        $pdf_url = add_query_arg(['dgptm_wsb_pdf' => $token], home_url('/mein-ticket/'));
+        $pdf_url = add_query_arg(['dgptm_wsb_pdf' => $token], DGPTM_WSB_Token_Store::build_booking_url($token));
+        // Token-Param doppelt vermeiden: build_booking_url setzt schon dgptm_wsb_token,
+        // wir ueberschreiben es bewusst mit dgptm_wsb_pdf — beide Pfade erwartet die Seite.
+        $pdf_url = remove_query_arg('dgptm_wsb_token', $pdf_url);
 
         ob_start();
         ?>

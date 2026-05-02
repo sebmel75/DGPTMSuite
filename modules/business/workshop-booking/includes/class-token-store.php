@@ -126,18 +126,17 @@ class DGPTM_WSB_Token_Store {
 
     /**
      * Baut die oeffentliche URL fuer einen Booking-Token.
+     *
+     * Standard: /veranstaltungen/ticket/. Ueberschreibbar via Filter
+     * 'dgptm_wsb_ticket_page_url' fuer abweichende Permalink-Strukturen.
      */
     public static function build_booking_url($token) {
-        return add_query_arg(
-            ['dgptm_wsb_token' => $token],
-            home_url('/mein-ticket/')
-        );
+        $base = apply_filters('dgptm_wsb_ticket_page_url', home_url('/veranstaltungen/ticket/'));
+        return add_query_arg(['dgptm_wsb_token' => $token], $base);
     }
 
     public static function build_layout_url($token) {
-        return add_query_arg(
-            ['dgptm_wsb_layout_token' => $token],
-            home_url('/bescheinigungs-layout/')
-        );
+        $base = apply_filters('dgptm_wsb_layout_page_url', home_url('/veranstaltungen/bescheinigungs-layout/'));
+        return add_query_arg(['dgptm_wsb_layout_token' => $token], $base);
     }
 }

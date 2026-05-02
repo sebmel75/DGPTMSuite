@@ -671,7 +671,7 @@ Das EVL-Dokument (`templates/entscheidungsvorlage-dokument.php` + zugehörige `c
   - Stripe-Webhook erweitert: nach `checkout.session.completed` zweiter Sync_Intent für Ticketnummer-Schreibung; Mail mit Ticket-PDF im Anhang
   - Booking_Service erweitert: Freitickets bekommen sofort Ticketnummer + Mail mit PDF
   - Mail_Sender erweitert: Ticket-PDF und Token-Link für Nicht-WP-User automatisch in Bestätigungs-Mail
-  - Neuer Shortcode `[dgptm_workshop_ticket]`: Token-Login für Externe (URL `/mein-ticket/?dgptm_wsb_token=…`); inline PDF-Download über `?dgptm_wsb_pdf=…`
+  - Neuer Shortcode `[dgptm_workshop_ticket]`: Token-Login für Externe (URL `/veranstaltungen/ticket/?dgptm_wsb_token=…`); inline PDF-Download über `?dgptm_wsb_pdf=…`
   - composer.json mit `dompdf/dompdf:^2.0` + `endroid/qr-code:^4.8` (parallel zu `vimeo-webinare`)
   - **Phase-2-Bibliotheken sind Composer-only**: `vendor/` ist gitignored, vor Deploy `composer install` im Modulordner ausführen
 

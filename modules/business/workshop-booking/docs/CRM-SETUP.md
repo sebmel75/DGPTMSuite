@@ -104,9 +104,9 @@ Zusätzliche Seiten anlegen:
 
 | Pfad | Shortcode | Zweck |
 |---|---|---|
-| `/mein-ticket/` | `[dgptm_workshop_ticket]` | Token-Zugang für Nicht-WP-User; zeigt Ticket-Daten + PDF-Download |
+| `/veranstaltungen/ticket/` | `[dgptm_workshop_ticket]` | Token-Zugang für Nicht-WP-User; zeigt Ticket-Daten + PDF-Download |
 
-Inline-PDF-Download: `/mein-ticket/?dgptm_wsb_pdf=<token>` — wird automatisch von der Seite verarbeitet.
+Inline-PDF-Download: `/veranstaltungen/ticket/?dgptm_wsb_pdf=<token>` — wird automatisch von der Seite verarbeitet.
 
 ## 8. Cron-Jobs
 

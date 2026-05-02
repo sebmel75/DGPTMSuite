@@ -72,8 +72,34 @@ class DGPTM_WSB_Shortcodes {
     }
 
     /**
+     * Demo-Token (read-only): zeigt Beispiel-Ticket ohne CRM-Lookup.
+     * Wird zu Demonstrations-Zwecken auf Production verwendet.
+     * Kein DB-Eintrag, kein record_usage(), keine PII.
+     */
+    const DEMO_TOKEN = 'dgptm-demo-ticket-2026';
+
+    /**
+     * Liefert Demo-Ticket-Daten (Erika Mustermann, ECMO-Refresher).
+     * Identisch zum Beispiel im Musterticket der Entscheidungsvorlage.
+     */
+    private static function demo_ticket_data() {
+        return [
+            'is_demo'        => true,
+            'ticket_number'  => '999990000000000042',
+            'first_name'     => 'Erika',
+            'last_name'      => 'Mustermann',
+            'event_name'     => 'Workshop ECMO/ECLS Refresher',
+            'event_from'     => '15.10.2026',
+            'event_location' => 'DGPTM-Geschäftsstelle, Hannover',
+            'status'         => 'Angemeldet',
+        ];
+    }
+
+    /**
      * [dgptm_workshop_ticket] — Token-basierter Ticket-Zugang fuer Nicht-Mitglieder.
-     * URL: /mein-ticket/?dgptm_wsb_token=<token>
+     * URL: /veranstaltungen/ticket/?dgptm_wsb_token=<token>
+     *
+     * Demo-Modus: Token = self::DEMO_TOKEN → zeigt Beispiel-Daten ohne CRM-Lookup.
      */
     public function render_token_ticket($atts) {
         wp_enqueue_style('dgptm-wsb-frontend');
@@ -83,24 +109,34 @@ class DGPTM_WSB_Shortcodes {
             return '<div class="dgptm-wsb-token-error">Ungültiger oder fehlender Zugangslink.</div>';
         }
 
-        $row = DGPTM_WSB_Token_Store::find_valid($token, DGPTM_WSB_Token_Store::SCOPE_BOOKING);
-        if (!$row) {
-            return '<div class="dgptm-wsb-token-error">Dieser Link ist abgelaufen oder wurde widerrufen. Bitte wende dich an die <a href="mailto:geschaeftsstelle@dgptm.de">Geschäftsstelle</a>.</div>';
+        // Demo-Modus
+        if ($token === self::DEMO_TOKEN) {
+            $demo = self::demo_ticket_data();
+            $ticket_number = $demo['ticket_number'];
+            $status        = $demo['status'];
+            $event_name    = $demo['event_name'];
+            $event_from    = $demo['event_from'];
+            $is_demo       = true;
+        } else {
+            $row = DGPTM_WSB_Token_Store::find_valid($token, DGPTM_WSB_Token_Store::SCOPE_BOOKING);
+            if (!$row) {
+                return '<div class="dgptm-wsb-token-error">Dieser Link ist abgelaufen oder wurde widerrufen. Bitte wende dich an die <a href="mailto:geschaeftsstelle@dgptm.de">Geschäftsstelle</a>.</div>';
+            }
+            DGPTM_WSB_Token_Store::record_usage($token);
+
+            $contact = DGPTM_WSB_Veranstal_X_Contacts::fetch($row['veranstal_x_contact_id']);
+            if (!$contact) {
+                return '<div class="dgptm-wsb-token-error">Buchung konnte nicht geladen werden.</div>';
+            }
+
+            $ticket_number = isset($contact[DGPTM_WSB_Ticket_Number::FIELD_NAME]) ? $contact[DGPTM_WSB_Ticket_Number::FIELD_NAME] : '';
+            $status        = isset($contact[DGPTM_WSB_Veranstal_X_Contacts::FIELD_BLUEPRINT]) ? $contact[DGPTM_WSB_Veranstal_X_Contacts::FIELD_BLUEPRINT] : '';
+            $event_id      = isset($contact['Event_Name']['id']) ? $contact['Event_Name']['id'] : '';
+            $event         = $event_id ? DGPTM_WSB_Event_Source::fetch_one($event_id) : null;
+            $event_name    = is_array($event) && isset($event['Name']) ? $event['Name'] : '—';
+            $event_from    = is_array($event) && isset($event['From_Date']) ? date_i18n('d.m.Y', strtotime($event['From_Date'])) : '';
+            $is_demo       = false;
         }
-
-        DGPTM_WSB_Token_Store::record_usage($token);
-
-        $contact = DGPTM_WSB_Veranstal_X_Contacts::fetch($row['veranstal_x_contact_id']);
-        if (!$contact) {
-            return '<div class="dgptm-wsb-token-error">Buchung konnte nicht geladen werden.</div>';
-        }
-
-        $ticket_number = isset($contact[DGPTM_WSB_Ticket_Number::FIELD_NAME]) ? $contact[DGPTM_WSB_Ticket_Number::FIELD_NAME] : '';
-        $status        = isset($contact[DGPTM_WSB_Veranstal_X_Contacts::FIELD_BLUEPRINT]) ? $contact[DGPTM_WSB_Veranstal_X_Contacts::FIELD_BLUEPRINT] : '';
-        $event_id      = isset($contact['Event_Name']['id']) ? $contact['Event_Name']['id'] : '';
-        $event         = $event_id ? DGPTM_WSB_Event_Source::fetch_one($event_id) : null;
-        $event_name    = is_array($event) && isset($event['Name']) ? $event['Name'] : '—';
-        $event_from    = is_array($event) && isset($event['From_Date']) ? date_i18n('d.m.Y', strtotime($event['From_Date'])) : '';
 
         $pdf_url = add_query_arg(['dgptm_wsb_pdf' => $token], DGPTM_WSB_Token_Store::build_booking_url($token));
         // Token-Param doppelt vermeiden: build_booking_url setzt schon dgptm_wsb_token,
@@ -110,6 +146,11 @@ class DGPTM_WSB_Shortcodes {
         ob_start();
         ?>
         <div class="dgptm-wsb-token-ticket">
+            <?php if (!empty($is_demo)) : ?>
+                <div style="background:#fef3c7;border:1px solid #fbbf24;color:#92400e;padding:10px 14px;border-radius:8px;margin-bottom:18px;font-size:13px;">
+                    <strong>Demo-Vorschau:</strong> Dieses Ticket dient nur zur Anschauung. Die Daten sind frei erfunden, der QR-Code zeigt die Beispiel-Ticketnummer.
+                </div>
+            <?php endif; ?>
             <h2>Dein Ticket</h2>
             <p class="dgptm-wsb-token-event"><strong><?php echo esc_html($event_name); ?></strong>
                 <?php if ($event_from) : ?> &mdash; <?php echo esc_html($event_from); endif; ?>
@@ -138,7 +179,32 @@ class DGPTM_WSB_Shortcodes {
         if (empty($_GET['dgptm_wsb_pdf'])) return;
 
         $token = sanitize_text_field(wp_unslash($_GET['dgptm_wsb_pdf']));
-        $row   = DGPTM_WSB_Token_Store::find_valid($token, DGPTM_WSB_Token_Store::SCOPE_BOOKING);
+
+        // Demo-Modus: rendert Beispiel-PDF ohne CRM-Lookup
+        if ($token === self::DEMO_TOKEN) {
+            $demo = self::demo_ticket_data();
+            $pdf = DGPTM_WSB_Ticket_PDF::render([
+                'ticket_number'  => $demo['ticket_number'],
+                'first_name'     => $demo['first_name'],
+                'last_name'      => $demo['last_name'],
+                'event_name'     => $demo['event_name'],
+                'event_from'     => $demo['event_from'],
+                'event_location' => $demo['event_location'],
+                'event_type'     => 'Workshop',
+            ]);
+            if (!$pdf) {
+                wp_die('PDF-Engine nicht verfuegbar (composer install fehlt?).', 'Fehler', ['response' => 500]);
+            }
+            $filename = 'DGPTM-Veranstaltungsticket-Demo.pdf';
+            nocache_headers();
+            header('Content-Type: application/pdf');
+            header('Content-Disposition: inline; filename="' . $filename . '"');
+            header('Content-Length: ' . strlen($pdf));
+            echo $pdf;
+            exit;
+        }
+
+        $row = DGPTM_WSB_Token_Store::find_valid($token, DGPTM_WSB_Token_Store::SCOPE_BOOKING);
         if (!$row) {
             wp_die('Ungültiger oder abgelaufener Zugangslink.', 'Zugriff verweigert', ['response' => 403]);
         }

@@ -200,7 +200,81 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
         <div class="dgptm-wsb-evl-header">
             <h2>Workshops und Webinare aus Backstage auslagern und über die Homepage buchbar machen</h2>
             <p class="dgptm-wsb-evl-subtitle">Was wird gebaut? Was muss noch entschieden werden?</p>
-            <p class="dgptm-wsb-evl-meta">DGPTM | Stand: 25.04.2026 (erweitert um Tickets, Mitgliederbereich, Teilnahmebescheinigungen) | Empfänger:innen: Vorstand, Geschäftsstelle, Kursleitungen</p>
+            <p class="dgptm-wsb-evl-meta">DGPTM | Stand: 02.05.2026 (Phase 1 + 2 implementiert: Buchungsfluss, Tickets, QR, PDF) | Empfänger:innen: Vorstand, Geschäftsstelle, Kursleitungen</p>
+        </div>
+
+        <!-- ═══ Musterticket-Vorschau (Phase 2 implementiert) ═══ -->
+        <div class="dgptm-wsb-evl-mustertyicket-wrapper" style="margin:24px 0;">
+            <p style="font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">So sieht ein Ticket aus, das nach Bezahlung automatisch versendet wird:</p>
+            <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:0;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08);max-width:640px;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;">
+                <div style="background:#003366;color:#ffffff;padding:18px 24px;">
+                    <div style="font-size:18px;font-weight:700;">DGPTM Workshop-Ticket</div>
+                    <div style="font-size:12px;color:#8bb8e8;margin-top:2px;">Deutsche Gesellschaft für Perfusiologie und Technische Medizin e.V.</div>
+                </div>
+                <div style="padding:24px;display:flex;gap:24px;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:240px;">
+                        <div style="margin-bottom:14px;">
+                            <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Veranstaltung</div>
+                            <div style="font-size:15px;color:#111827;font-weight:600;margin-top:2px;">Workshop ECMO/ECLS Refresher</div>
+                        </div>
+                        <div style="margin-bottom:14px;">
+                            <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Termin</div>
+                            <div style="font-size:15px;color:#111827;font-weight:600;margin-top:2px;">15.10.2026, 09:00 Uhr</div>
+                        </div>
+                        <div style="margin-bottom:14px;">
+                            <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Ort</div>
+                            <div style="font-size:15px;color:#111827;font-weight:600;margin-top:2px;">DGPTM-Geschäftsstelle, Hannover</div>
+                        </div>
+                        <div style="margin-bottom:14px;">
+                            <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Teilnehmer:in</div>
+                            <div style="font-size:15px;color:#111827;font-weight:600;margin-top:2px;">Erika Mustermann</div>
+                        </div>
+                        <div style="background:#f0f5fa;border-left:4px solid #003366;border-radius:0 6px 6px 0;padding:12px 16px;margin-top:14px;">
+                            <div style="font-size:10px;color:#003366;text-transform:uppercase;letter-spacing:0.05em;">Ticketnummer</div>
+                            <div style="font-size:22px;font-family:Courier,monospace;color:#003366;letter-spacing:0.05em;font-weight:700;margin-top:2px;">99999042</div>
+                        </div>
+                    </div>
+                    <div style="width:160px;text-align:center;flex-shrink:0;">
+                        <!-- Statisches QR-Pattern als reine SVG-Darstellung (kein echter Scan-Code, nur Anschauungs-Zweck) -->
+                        <svg width="160" height="160" viewBox="0 0 25 25" xmlns="http://www.w3.org/2000/svg" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;padding:8px;box-sizing:content-box;">
+                            <rect width="25" height="25" fill="#ffffff"/>
+                            <g fill="#000000">
+                                <!-- Eck-Marker oben links -->
+                                <rect x="0" y="0" width="7" height="7"/>
+                                <rect x="1" y="1" width="5" height="5" fill="#ffffff"/>
+                                <rect x="2" y="2" width="3" height="3"/>
+                                <!-- Eck-Marker oben rechts -->
+                                <rect x="18" y="0" width="7" height="7"/>
+                                <rect x="19" y="1" width="5" height="5" fill="#ffffff"/>
+                                <rect x="20" y="2" width="3" height="3"/>
+                                <!-- Eck-Marker unten links -->
+                                <rect x="0" y="18" width="7" height="7"/>
+                                <rect x="1" y="19" width="5" height="5" fill="#ffffff"/>
+                                <rect x="2" y="20" width="3" height="3"/>
+                                <!-- Pseudo-Daten-Module -->
+                                <rect x="8" y="0" width="1" height="1"/><rect x="10" y="0" width="1" height="1"/><rect x="12" y="0" width="1" height="1"/><rect x="14" y="0" width="1" height="1"/><rect x="16" y="0" width="1" height="1"/>
+                                <rect x="8" y="2" width="1" height="1"/><rect x="11" y="2" width="1" height="1"/><rect x="13" y="2" width="1" height="1"/><rect x="15" y="2" width="1" height="1"/>
+                                <rect x="9" y="4" width="1" height="1"/><rect x="11" y="4" width="1" height="1"/><rect x="14" y="4" width="1" height="1"/><rect x="16" y="4" width="1" height="1"/>
+                                <rect x="8" y="6" width="1" height="1"/><rect x="10" y="6" width="1" height="1"/><rect x="12" y="6" width="1" height="1"/><rect x="13" y="6" width="1" height="1"/><rect x="15" y="6" width="1" height="1"/><rect x="17" y="6" width="1" height="1"/>
+                                <rect x="0" y="8" width="1" height="1"/><rect x="2" y="8" width="1" height="1"/><rect x="4" y="8" width="1" height="1"/><rect x="9" y="8" width="1" height="1"/><rect x="12" y="8" width="1" height="1"/><rect x="14" y="8" width="1" height="1"/><rect x="16" y="8" width="1" height="1"/><rect x="19" y="8" width="1" height="1"/><rect x="21" y="8" width="1" height="1"/><rect x="23" y="8" width="1" height="1"/>
+                                <rect x="1" y="10" width="1" height="1"/><rect x="3" y="10" width="1" height="1"/><rect x="6" y="10" width="1" height="1"/><rect x="8" y="10" width="1" height="1"/><rect x="11" y="10" width="1" height="1"/><rect x="13" y="10" width="1" height="1"/><rect x="15" y="10" width="1" height="1"/><rect x="18" y="10" width="1" height="1"/><rect x="20" y="10" width="1" height="1"/><rect x="22" y="10" width="1" height="1"/>
+                                <rect x="0" y="12" width="1" height="1"/><rect x="2" y="12" width="1" height="1"/><rect x="5" y="12" width="1" height="1"/><rect x="9" y="12" width="1" height="1"/><rect x="12" y="12" width="1" height="1"/><rect x="14" y="12" width="1" height="1"/><rect x="17" y="12" width="1" height="1"/><rect x="19" y="12" width="1" height="1"/><rect x="21" y="12" width="1" height="1"/><rect x="24" y="12" width="1" height="1"/>
+                                <rect x="1" y="14" width="1" height="1"/><rect x="4" y="14" width="1" height="1"/><rect x="7" y="14" width="1" height="1"/><rect x="10" y="14" width="1" height="1"/><rect x="13" y="14" width="1" height="1"/><rect x="16" y="14" width="1" height="1"/><rect x="18" y="14" width="1" height="1"/><rect x="20" y="14" width="1" height="1"/><rect x="23" y="14" width="1" height="1"/>
+                                <rect x="2" y="16" width="1" height="1"/><rect x="5" y="16" width="1" height="1"/><rect x="8" y="16" width="1" height="1"/><rect x="11" y="16" width="1" height="1"/><rect x="14" y="16" width="1" height="1"/><rect x="15" y="16" width="1" height="1"/><rect x="17" y="16" width="1" height="1"/><rect x="19" y="16" width="1" height="1"/><rect x="22" y="16" width="1" height="1"/>
+                                <rect x="8" y="18" width="1" height="1"/><rect x="10" y="18" width="1" height="1"/><rect x="12" y="18" width="1" height="1"/><rect x="14" y="18" width="1" height="1"/><rect x="16" y="18" width="1" height="1"/>
+                                <rect x="9" y="20" width="1" height="1"/><rect x="11" y="20" width="1" height="1"/><rect x="13" y="20" width="1" height="1"/><rect x="15" y="20" width="1" height="1"/><rect x="17" y="20" width="1" height="1"/>
+                                <rect x="8" y="22" width="1" height="1"/><rect x="11" y="22" width="1" height="1"/><rect x="14" y="22" width="1" height="1"/><rect x="16" y="22" width="1" height="1"/>
+                                <rect x="10" y="24" width="1" height="1"/><rect x="12" y="24" width="1" height="1"/><rect x="15" y="24" width="1" height="1"/>
+                            </g>
+                        </svg>
+                        <div style="margin-top:8px;font-size:10px;color:#6b7280;">QR-Code für Einlass-Scan</div>
+                    </div>
+                </div>
+                <div style="background:#f9fafb;padding:14px 24px;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af;text-align:center;">
+                    Bitte beim Einlass auf dem Smartphone zeigen oder ausgedruckt vorlegen
+                </div>
+            </div>
+            <p style="font-size:12px;color:#9ca3af;margin-top:8px;font-style:italic;">Beispiel-Ansicht. Reale Tickets enthalten einen scanbaren QR-Code mit der individuellen Ticketnummer (Format <strong style="color:#003366;">99999xxx</strong>) und werden als PDF an die Buchungs-Mail angehängt.</p>
         </div>
 
         <div class="dgptm-wsb-evl-highlight blue">

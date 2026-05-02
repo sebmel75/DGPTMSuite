@@ -44,6 +44,9 @@ jobs:
           if [ -f modules/media/vimeo-webinare/composer.json ]; then
             composer validate --working-dir=modules/media/vimeo-webinare --strict --no-check-publish
           fi
+          if [ -f modules/business/workshop-booking/composer.json ]; then
+            composer validate --working-dir=modules/business/workshop-booking --strict --no-check-publish
+          fi
 
       - name: PHP Syntax Check
         run: |
@@ -97,6 +100,21 @@ jobs:
             echo "No composer.json in vimeo-webinare module, skipping."
           fi
 
+      - name: Install Composer Dependencies (workshop-booking)
+        run: |
+          if [ -f modules/business/workshop-booking/composer.json ]; then
+            echo "Installing composer deps for workshop-booking…"
+            composer install \
+              --no-dev \
+              --no-progress \
+              --no-interaction \
+              --optimize-autoloader \
+              --working-dir=modules/business/workshop-booking
+            echo "✓ vendor/ generated at modules/business/workshop-booking/vendor"
+          else
+            echo "No composer.json in workshop-booking module, skipping."
+          fi
+
       - name: Create Deployment Package
         run: |
           echo "Creating deployment package..."
@@ -113,8 +131,10 @@ jobs:
                     --exclude='composer.lock' \
                     ./ ./deploy-package/
           echo "Package created"
-          echo "Vendor present?:"
+          echo "Vendor present in vimeo-webinare?:"
           ls -la ./deploy-package/modules/media/vimeo-webinare/ 2>/dev/null | grep -E "vendor|composer" || true
+          echo "Vendor present in workshop-booking?:"
+          ls -la ./deploy-package/modules/business/workshop-booking/ 2>/dev/null | grep -E "vendor|composer" || true
 
       - name: Install sshpass
         run: sudo apt-get install -y sshpass

@@ -1,12 +1,12 @@
 {
     "id": "workshop-booking",
     "name": "DGPTM - Workshop Buchung",
-    "description": "Buchung von Workshops aus Zoho CRM (DGfK_Events) mit Stripe-Zahlung und Warteliste. Erste Phase: Entscheidungsvorlage-Shortcodes zur internen Abstimmung.",
-    "version": "0.2.6",
+    "description": "Buchung von Workshops und Webinaren aus Zoho CRM mit Stripe-Zahlung, Status-Sync-Coordinator und AGB-konformer Reconciliation. Phase 1: Buchungsfluss + Sync-Coordinator.",
+    "version": "0.3.0",
     "author": "Sebastian Melzer",
     "main_file": "dgptm-workshop-booking.php",
-    "dependencies": [],
-    "optional_dependencies": ["crm-abruf"],
+    "dependencies": ["crm-abruf"],
+    "optional_dependencies": ["mitglieder-dashboard", "vimeo-webinare", "stipendium", "zoho-books-integration"],
     "wp_dependencies": {
         "plugins": []
     },
@@ -18,8 +18,8 @@
     "critical": false,
     "flags": ["development"],
     "comment": {
-        "text": "v0.1: Nur Entscheidungsvorlage-Shortcodes fuer interne Freigabe. Buchungsflow folgt nach Freigabe der Protagonisten.",
-        "timestamp": 1745318400,
+        "text": "v0.3.0 Phase 1: Buchungs-Flow + Sync-Coordinator. Tickets/QR/Books/Mitgliederbereich folgen in spaeteren Phasen.",
+        "timestamp": 1745928000,
         "user_id": 1
     }
 }

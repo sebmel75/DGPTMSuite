@@ -1,0 +1,17 @@
+{
+    "name": "dgptm/workshop-booking",
+    "description": "Phase 2 Bibliotheken: PDF-Erzeugung (Tickets, Bescheinigungen) und QR-Code-Generierung.",
+    "type": "wordpress-plugin-module",
+    "license": "proprietary",
+    "require": {
+        "php": ">=7.4",
+        "dompdf/dompdf": "^2.0",
+        "endroid/qr-code": "^4.8"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {}
+    }
+}

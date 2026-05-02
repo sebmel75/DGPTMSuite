@@ -143,30 +143,118 @@ class DGPTM_WSB_Shortcodes {
         // wir ueberschreiben es bewusst mit dgptm_wsb_pdf — beide Pfade erwartet die Seite.
         $pdf_url = remove_query_arg('dgptm_wsb_token', $pdf_url);
 
+        // Echter QR-Code wenn endroid verfuegbar; sonst SVG-Pseudo-QR (Musterticket-Stil)
+        $qr_data_uri = $ticket_number ? DGPTM_WSB_QR_Generator::as_data_uri($ticket_number, 320) : null;
+
+        // Zusatzfelder fuer Demo-Modus (werden im Layout angezeigt)
+        $first_name = !empty($is_demo) ? 'Erika' : '';
+        $last_name  = !empty($is_demo) ? 'Mustermann' : '';
+        $event_loc  = !empty($is_demo) ? 'DGPTM-Geschäftsstelle, Hannover' : '';
+        $logo_url   = apply_filters('dgptm_wsb_ticket_logo_url', DGPTM_WSB_Ticket_PDF::LOGO_URL);
+
         ob_start();
         ?>
-        <div class="dgptm-wsb-token-ticket">
-            <?php if (!empty($is_demo)) : ?>
-                <div style="background:#fef3c7;border:1px solid #fbbf24;color:#92400e;padding:10px 14px;border-radius:8px;margin-bottom:18px;font-size:13px;">
-                    <strong>Demo-Vorschau:</strong> Dieses Ticket dient nur zur Anschauung. Die Daten sind frei erfunden, der QR-Code zeigt die Beispiel-Ticketnummer.
+        <?php if (!empty($is_demo)) : ?>
+            <div class="dgptm-wsb-demo-banner">
+                <strong>Demo-Vorschau:</strong> Dieses Ticket dient nur zur Anschauung. Die Daten sind frei erfunden.
+            </div>
+        <?php endif; ?>
+
+        <div class="dgptm-wsb-ticket-card">
+            <div class="dgptm-wsb-ticket-header">
+                <table style="width:100%;border-collapse:collapse;">
+                    <tr>
+                        <td style="vertical-align:middle;">
+                            <div class="dgptm-wsb-ticket-title">Veranstaltungsticket</div>
+                            <div class="dgptm-wsb-ticket-subtitle">Deutsche Gesellschaft für Perfusiologie und Technische Medizin e.V.</div>
+                        </td>
+                        <td style="vertical-align:middle;text-align:right;width:160px;">
+                            <img src="<?php echo esc_url($logo_url); ?>" alt="DGPTM" class="dgptm-wsb-ticket-logo">
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="dgptm-wsb-ticket-body">
+                <div class="dgptm-wsb-ticket-data">
+                    <?php if ($event_name) : ?>
+                        <div class="dgptm-wsb-ticket-field">
+                            <div class="dgptm-wsb-ticket-field-label">Veranstaltung</div>
+                            <div class="dgptm-wsb-ticket-field-value"><?php echo esc_html($event_name); ?></div>
+                        </div>
+                    <?php endif; ?>
+                    <?php if ($event_from) : ?>
+                        <div class="dgptm-wsb-ticket-field">
+                            <div class="dgptm-wsb-ticket-field-label">Termin</div>
+                            <div class="dgptm-wsb-ticket-field-value"><?php echo esc_html($event_from); ?></div>
+                        </div>
+                    <?php endif; ?>
+                    <?php if ($event_loc) : ?>
+                        <div class="dgptm-wsb-ticket-field">
+                            <div class="dgptm-wsb-ticket-field-label">Ort</div>
+                            <div class="dgptm-wsb-ticket-field-value"><?php echo esc_html($event_loc); ?></div>
+                        </div>
+                    <?php endif; ?>
+                    <?php if ($first_name || $last_name) : ?>
+                        <div class="dgptm-wsb-ticket-field">
+                            <div class="dgptm-wsb-ticket-field-label">Teilnehmer:in</div>
+                            <div class="dgptm-wsb-ticket-field-value"><?php echo esc_html(trim($first_name . ' ' . $last_name)); ?></div>
+                        </div>
+                    <?php endif; ?>
+                    <div class="dgptm-wsb-ticket-field">
+                        <div class="dgptm-wsb-ticket-field-label">Status</div>
+                        <div class="dgptm-wsb-ticket-field-value"><?php echo esc_html($status ?: 'unbekannt'); ?></div>
+                    </div>
+                    <?php if ($ticket_number) : ?>
+                        <div class="dgptm-wsb-ticket-number-box">
+                            <div class="dgptm-wsb-ticket-number-label">Ticketnummer</div>
+                            <div class="dgptm-wsb-ticket-number-value"><?php echo esc_html($ticket_number); ?></div>
+                        </div>
+                    <?php endif; ?>
                 </div>
-            <?php endif; ?>
-            <h2>Dein Ticket</h2>
-            <p class="dgptm-wsb-token-event"><strong><?php echo esc_html($event_name); ?></strong>
-                <?php if ($event_from) : ?> &mdash; <?php echo esc_html($event_from); endif; ?>
-            </p>
-            <?php if ($ticket_number) : ?>
-                <div class="dgptm-wsb-token-number">
-                    <span class="label">Ticketnummer</span>
-                    <span class="value"><?php echo esc_html($ticket_number); ?></span>
+                <div class="dgptm-wsb-ticket-qr">
+                    <?php if ($qr_data_uri) : ?>
+                        <img src="<?php echo esc_attr($qr_data_uri); ?>" alt="QR-Code Ticket <?php echo esc_attr($ticket_number); ?>" class="dgptm-wsb-ticket-qr-img">
+                    <?php else : ?>
+                        <?php // Fallback: dekoratives SVG-Muster wenn endroid noch nicht installiert ?>
+                        <svg width="160" height="160" viewBox="0 0 25 25" xmlns="http://www.w3.org/2000/svg" class="dgptm-wsb-ticket-qr-img" style="background:#ffffff;">
+                            <rect width="25" height="25" fill="#ffffff"/>
+                            <g fill="#000000">
+                                <rect x="0" y="0" width="7" height="7"/><rect x="1" y="1" width="5" height="5" fill="#ffffff"/><rect x="2" y="2" width="3" height="3"/>
+                                <rect x="18" y="0" width="7" height="7"/><rect x="19" y="1" width="5" height="5" fill="#ffffff"/><rect x="20" y="2" width="3" height="3"/>
+                                <rect x="0" y="18" width="7" height="7"/><rect x="1" y="19" width="5" height="5" fill="#ffffff"/><rect x="2" y="20" width="3" height="3"/>
+                                <rect x="8" y="0" width="1" height="1"/><rect x="10" y="0" width="1" height="1"/><rect x="12" y="0" width="1" height="1"/><rect x="14" y="0" width="1" height="1"/><rect x="16" y="0" width="1" height="1"/>
+                                <rect x="8" y="2" width="1" height="1"/><rect x="11" y="2" width="1" height="1"/><rect x="13" y="2" width="1" height="1"/><rect x="15" y="2" width="1" height="1"/>
+                                <rect x="9" y="4" width="1" height="1"/><rect x="11" y="4" width="1" height="1"/><rect x="14" y="4" width="1" height="1"/><rect x="16" y="4" width="1" height="1"/>
+                                <rect x="8" y="6" width="1" height="1"/><rect x="10" y="6" width="1" height="1"/><rect x="12" y="6" width="1" height="1"/><rect x="13" y="6" width="1" height="1"/><rect x="15" y="6" width="1" height="1"/><rect x="17" y="6" width="1" height="1"/>
+                                <rect x="0" y="8" width="1" height="1"/><rect x="2" y="8" width="1" height="1"/><rect x="4" y="8" width="1" height="1"/><rect x="9" y="8" width="1" height="1"/><rect x="12" y="8" width="1" height="1"/><rect x="14" y="8" width="1" height="1"/><rect x="16" y="8" width="1" height="1"/><rect x="19" y="8" width="1" height="1"/><rect x="21" y="8" width="1" height="1"/><rect x="23" y="8" width="1" height="1"/>
+                                <rect x="1" y="10" width="1" height="1"/><rect x="3" y="10" width="1" height="1"/><rect x="6" y="10" width="1" height="1"/><rect x="8" y="10" width="1" height="1"/><rect x="11" y="10" width="1" height="1"/><rect x="13" y="10" width="1" height="1"/><rect x="15" y="10" width="1" height="1"/><rect x="18" y="10" width="1" height="1"/><rect x="20" y="10" width="1" height="1"/><rect x="22" y="10" width="1" height="1"/>
+                                <rect x="0" y="12" width="1" height="1"/><rect x="2" y="12" width="1" height="1"/><rect x="5" y="12" width="1" height="1"/><rect x="9" y="12" width="1" height="1"/><rect x="12" y="12" width="1" height="1"/><rect x="14" y="12" width="1" height="1"/><rect x="17" y="12" width="1" height="1"/><rect x="19" y="12" width="1" height="1"/><rect x="21" y="12" width="1" height="1"/><rect x="24" y="12" width="1" height="1"/>
+                                <rect x="1" y="14" width="1" height="1"/><rect x="4" y="14" width="1" height="1"/><rect x="7" y="14" width="1" height="1"/><rect x="10" y="14" width="1" height="1"/><rect x="13" y="14" width="1" height="1"/><rect x="16" y="14" width="1" height="1"/><rect x="18" y="14" width="1" height="1"/><rect x="20" y="14" width="1" height="1"/><rect x="23" y="14" width="1" height="1"/>
+                                <rect x="2" y="16" width="1" height="1"/><rect x="5" y="16" width="1" height="1"/><rect x="8" y="16" width="1" height="1"/><rect x="11" y="16" width="1" height="1"/><rect x="14" y="16" width="1" height="1"/><rect x="15" y="16" width="1" height="1"/><rect x="17" y="16" width="1" height="1"/><rect x="19" y="16" width="1" height="1"/><rect x="22" y="16" width="1" height="1"/>
+                                <rect x="8" y="18" width="1" height="1"/><rect x="10" y="18" width="1" height="1"/><rect x="12" y="18" width="1" height="1"/><rect x="14" y="18" width="1" height="1"/><rect x="16" y="18" width="1" height="1"/>
+                                <rect x="9" y="20" width="1" height="1"/><rect x="11" y="20" width="1" height="1"/><rect x="13" y="20" width="1" height="1"/><rect x="15" y="20" width="1" height="1"/><rect x="17" y="20" width="1" height="1"/>
+                                <rect x="8" y="22" width="1" height="1"/><rect x="11" y="22" width="1" height="1"/><rect x="14" y="22" width="1" height="1"/><rect x="16" y="22" width="1" height="1"/>
+                                <rect x="10" y="24" width="1" height="1"/><rect x="12" y="24" width="1" height="1"/><rect x="15" y="24" width="1" height="1"/>
+                            </g>
+                        </svg>
+                        <p style="font-size:11px;color:#9ca3af;margin-top:4px;font-style:italic;">QR-Engine noch nicht installiert</p>
+                    <?php endif; ?>
+                    <div class="dgptm-wsb-ticket-qr-caption">QR-Code für Einlass-Scan</div>
                 </div>
-            <?php endif; ?>
-            <p class="dgptm-wsb-token-status">Status: <strong><?php echo esc_html($status ?: 'unbekannt'); ?></strong></p>
-            <?php if ($ticket_number) : ?>
-                <p><a class="dgptm-wsb-token-pdf-btn" href="<?php echo esc_url($pdf_url); ?>">Ticket-PDF herunterladen</a></p>
-            <?php endif; ?>
-            <p class="dgptm-wsb-token-hint">Bei Fragen wende dich bitte an die <a href="mailto:geschaeftsstelle@dgptm.de">Geschäftsstelle</a>.</p>
+            </div>
+
+            <div class="dgptm-wsb-ticket-footer">
+                Bitte beim Einlass auf dem Smartphone zeigen oder ausgedruckt vorlegen
+            </div>
         </div>
+
+        <?php if ($ticket_number) : ?>
+            <p class="dgptm-wsb-ticket-actions">
+                <a class="dgptm-wsb-token-pdf-btn" href="<?php echo esc_url($pdf_url); ?>">Ticket-PDF herunterladen</a>
+            </p>
+        <?php endif; ?>
+        <p class="dgptm-wsb-token-hint">Bei Fragen wende dich bitte an die <a href="mailto:geschaeftsstelle@dgptm.de">Geschäftsstelle</a>.</p>
         <?php
         return ob_get_clean();
     }

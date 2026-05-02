@@ -4,7 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Quick Reference
 
-**Stack:** WordPress 5.8+ / PHP 7.4+ | **Version:** 3.0.0 | **Modules:** 67 across 8 categories
+**Stack:** WordPress 5.8+ / PHP 8.4 (Production) | **Version:** 3.0.0 | **Modules:** 67 across 8 categories
+
+> ⚠️ **PHP-Version-Hinweis (verbindlich):**
+> - **Production-Server perfusiologie.de läuft PHP 8.4** — nicht 7.4!
+> - Der Wert `requires_php: 7.4` in vielen `module.json` ist eine **Mindest**-Anforderung für Abwärtskompatibilität, nicht der Produktions-Wert.
+> - **GitHub-Actions-Workflow (`.github/workflows/deploy.yml`) muss auf `php-version: '8.4'` gesetzt sein** — sonst schlägt `composer install` für Module fehl, deren Dependencies PHP 8.0+ erfordern (z.B. `endroid/qr-code:^4.8`).
+> - Neue Module dürfen ohne Bedenken PHP-8.0+-Features (Match-Expressions, Enums, readonly, named-args) nutzen.
+> - Keine PHP-7.4-Annahmen in Code-Reviews, Plan-Dokumenten oder Skill-Aufrufen.
 
 **Key Paths:**
 - Entry point: `dgptm-master.php`

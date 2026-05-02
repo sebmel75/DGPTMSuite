@@ -10,7 +10,7 @@
     "wp_dependencies": {
         "plugins": []
     },
-    "requires_php": "7.4",
+    "requires_php": "8.1",
     "requires_wp": "5.8",
     "category": "business",
     "icon": "dashicons-tickets-alt",

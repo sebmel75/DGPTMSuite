@@ -36,7 +36,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '7.4'
+          php-version: '8.4'
           tools: php-parallel-lint, composer
 
       - name: Validate Module composer.json
@@ -82,7 +82,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '7.4'
+          php-version: '8.4'
           tools: composer
 
       - name: Install Composer Dependencies (vimeo-webinare)

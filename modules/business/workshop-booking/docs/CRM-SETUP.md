@@ -17,7 +17,7 @@ Vor V1-Go-Live müssen in Zoho CRM folgende Felder/Picklist-Werte existieren. Di
 | `Last_Sync_At` | Date/Time | leer | wird vom Sync_Coordinator gesetzt |
 | `Ticket_Type` | Single Line | leer | z.B. „Vollpreis", „Mitgliedspreis", „Studi" |
 | `Price_EUR` | Decimal | 0 | Ticket-Preis pro TN |
-| `Ticket_Nummer` | Single Line | leer | **Phase 2** — Modul-Tickets bekommen Präfix `99999`; Format identisch zu Backstage; **unique constraint empfohlen** |
+| `Ticket_Nummer` | Single Line (max. 18) | leer | **Phase 2** — Modul-Tickets bekommen 18-stellige Nummer mit Präfix `99999` + 13-stelliger laufender Nummer (Beispiel `999990000000000042`). Format identisch zu Zoho Backstage; **unique constraint empfohlen** |
 
 ### Anmelde-Status (Picklist `Anmelde_Status`)
 

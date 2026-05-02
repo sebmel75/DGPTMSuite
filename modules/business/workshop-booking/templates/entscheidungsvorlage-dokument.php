@@ -208,8 +208,17 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
             <p style="font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">So sieht ein Ticket aus, das nach Bezahlung automatisch versendet wird:</p>
             <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:0;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08);max-width:640px;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;">
                 <div style="background:#003366;color:#ffffff;padding:18px 24px;">
-                    <div style="font-size:18px;font-weight:700;">DGPTM Workshop-Ticket</div>
-                    <div style="font-size:12px;color:#8bb8e8;margin-top:2px;">Deutsche Gesellschaft für Perfusiologie und Technische Medizin e.V.</div>
+                    <table style="width:100%;border-collapse:collapse;">
+                        <tr>
+                            <td style="vertical-align:middle;">
+                                <div style="font-size:18px;font-weight:700;">Veranstaltungsticket</div>
+                                <div style="font-size:12px;color:#8bb8e8;margin-top:2px;">Deutsche Gesellschaft für Perfusiologie und Technische Medizin e.V.</div>
+                            </td>
+                            <td style="vertical-align:middle;text-align:right;width:160px;">
+                                <img src="https://perfusiologie.de/nichtwordpress/DGPTM_Logo_kurz_horizontal_rgb_weiss_300_250106.png" alt="DGPTM" style="max-width:140px;height:auto;">
+                            </td>
+                        </tr>
+                    </table>
                 </div>
                 <div style="padding:24px;display:flex;gap:24px;flex-wrap:wrap;">
                     <div style="flex:1;min-width:240px;">
@@ -231,7 +240,7 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                         </div>
                         <div style="background:#f0f5fa;border-left:4px solid #003366;border-radius:0 6px 6px 0;padding:12px 16px;margin-top:14px;">
                             <div style="font-size:10px;color:#003366;text-transform:uppercase;letter-spacing:0.05em;">Ticketnummer</div>
-                            <div style="font-size:22px;font-family:Courier,monospace;color:#003366;letter-spacing:0.05em;font-weight:700;margin-top:2px;">99999042</div>
+                            <div style="font-size:16px;font-family:Courier,monospace;color:#003366;letter-spacing:0.04em;font-weight:700;margin-top:2px;word-break:break-all;">999990000000000042</div>
                         </div>
                     </div>
                     <div style="width:160px;text-align:center;flex-shrink:0;">
@@ -274,7 +283,7 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                     Bitte beim Einlass auf dem Smartphone zeigen oder ausgedruckt vorlegen
                 </div>
             </div>
-            <p style="font-size:12px;color:#9ca3af;margin-top:8px;font-style:italic;">Beispiel-Ansicht. Reale Tickets enthalten einen scanbaren QR-Code mit der individuellen Ticketnummer (Format <strong style="color:#003366;">99999xxx</strong>) und werden als PDF an die Buchungs-Mail angehängt.</p>
+            <p style="font-size:12px;color:#9ca3af;margin-top:8px;font-style:italic;">Beispiel-Ansicht. Reale Tickets enthalten einen scanbaren QR-Code mit der individuellen Ticketnummer (Format <strong style="color:#003366;">99999&hellip; (18-stellig, identisch zu Zoho Backstage)</strong>) und werden als PDF an die Buchungs-Mail angehängt.</p>
         </div>
 
         <div class="dgptm-wsb-evl-highlight blue">

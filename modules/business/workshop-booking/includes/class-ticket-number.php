@@ -2,11 +2,11 @@
 /**
  * Ticketnummer-Generator.
  *
- * Format: identisch zu Zoho Backstage (8-stellig), beginnend mit Praefix "99999"
+ * Format: identisch zu Zoho Backstage (18-stellig), beginnend mit Praefix "99999"
  * fuer Modul-Tickets — so sind diese eindeutig von Backstage-Tickets unterscheidbar,
  * waehrend QR-Scanner beide Formate gleich behandeln koennen.
  *
- * Beispiel: 99999321 (Praefix 99999 + 3-stellige laufende Nummer)
+ * Beispiel: 999990000000000001 (Praefix 99999 + 13-stellige laufende Nummer)
  *
  * Spec EVL §3 Vorschlag 14 + offene Frage 7.
  */
@@ -14,9 +14,10 @@ if (!defined('ABSPATH')) exit;
 
 class DGPTM_WSB_Ticket_Number {
 
-    const PREFIX = '99999';
-    const TOTAL_LENGTH = 8; // 5 Stellen Praefix + 3 Stellen laufende Nummer (initial)
-    const FIELD_NAME = 'Ticket_Nummer';
+    const PREFIX       = '99999';
+    const TOTAL_LENGTH = 18;                                       // identisch zu Backstage
+    const SUFFIX_LENGTH = self::TOTAL_LENGTH - 5;                  // 13 Stellen laufende Nummer
+    const FIELD_NAME   = 'Ticket_Nummer';
 
     /**
      * Erzeugt die naechste freie Ticketnummer.
@@ -26,19 +27,18 @@ class DGPTM_WSB_Ticket_Number {
      * wir uns auf die Zoho-CRM-Eindeutigkeitspruefung des Feldes
      * (Ticket_Nummer sollte unique constraint haben).
      *
-     * @return string|null Ticketnummer oder null bei Fehler
+     * @return string|null Ticketnummer (18-stellig) oder null bei Fehler
      */
     public static function generate_next() {
         $highest = self::get_highest_modul_ticket();
         if ($highest === null) {
-            // Erstes Modul-Ticket ueberhaupt
-            return self::PREFIX . '001';
+            // Erstes Modul-Ticket: Praefix + 13 Nullen + 1
+            return self::PREFIX . str_pad('1', self::SUFFIX_LENGTH, '0', STR_PAD_LEFT);
         }
-        // Numerischen Anteil hochzaehlen
-        $suffix_len = strlen($highest) - strlen(self::PREFIX);
-        $suffix     = substr($highest, strlen(self::PREFIX));
-        $next       = (int) $suffix + 1;
-        $next_str   = str_pad((string) $next, max($suffix_len, 3), '0', STR_PAD_LEFT);
+        // Suffix extrahieren und hochzaehlen (auch bei legacy-kuerzeren Nummern robust)
+        $suffix   = substr($highest, strlen(self::PREFIX));
+        $next     = (int) $suffix + 1;
+        $next_str = str_pad((string) $next, self::SUFFIX_LENGTH, '0', STR_PAD_LEFT);
         return self::PREFIX . $next_str;
     }
 

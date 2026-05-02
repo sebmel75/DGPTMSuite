@@ -51,6 +51,8 @@ class DGPTM_WSB_Ticket_PDF {
         }
     }
 
+    const LOGO_URL = 'https://perfusiologie.de/nichtwordpress/DGPTM_Logo_kurz_horizontal_rgb_weiss_300_250106.png';
+
     /**
      * Baut das HTML fuer das Ticket-PDF.
      */
@@ -62,21 +64,26 @@ class DGPTM_WSB_Ticket_PDF {
         $event_name    = isset($ticket['event_name'])    ? $ticket['event_name']    : '';
         $event_from    = isset($ticket['event_from'])    ? $ticket['event_from']    : '';
         $event_loc     = isset($ticket['event_location']) ? $ticket['event_location'] : '';
-        $event_type    = isset($ticket['event_type'])    ? $ticket['event_type']    : 'Workshop';
 
         $qr_uri = DGPTM_WSB_QR_Generator::as_data_uri($ticket_number, 320);
         $qr_img = $qr_uri
                 ? '<img src="' . esc_attr($qr_uri) . '" alt="QR-Code Ticket ' . esc_attr($ticket_number) . '" style="width:180px;height:180px;">'
                 : '<div style="width:180px;height:180px;border:2px dashed #999;display:flex;align-items:center;justify-content:center;color:#999;font-size:11px;">QR nicht verfügbar</div>';
 
+        $logo = apply_filters('dgptm_wsb_ticket_logo_url', self::LOGO_URL);
+
         return '<!DOCTYPE html>
-<html lang="de"><head><meta charset="UTF-8"><title>DGPTM Ticket ' . esc_html($ticket_number) . '</title>
+<html lang="de"><head><meta charset="UTF-8"><title>DGPTM Veranstaltungsticket ' . esc_html($ticket_number) . '</title>
 <style>
   @page { margin: 30mm 20mm 20mm 20mm; }
   body { font-family: Helvetica, Arial, sans-serif; color: #1a1a1a; font-size: 12pt; }
   .header { background: #003366; color: #ffffff; padding: 20px 25px; border-radius: 8px; margin-bottom: 24px; }
-  .header h1 { margin: 0; font-size: 20pt; }
-  .header p { margin: 4px 0 0; font-size: 10pt; color: #8bb8e8; }
+  .header table { width: 100%; }
+  .header td { vertical-align: middle; }
+  .header .title-cell h1 { margin: 0; font-size: 20pt; }
+  .header .title-cell p { margin: 4px 0 0; font-size: 10pt; color: #8bb8e8; }
+  .header .logo-cell { text-align: right; width: 200px; }
+  .header .logo-cell img { max-width: 180px; height: auto; }
   .ticket-box { display: table; width: 100%; }
   .ticket-data, .ticket-qr { display: table-cell; vertical-align: top; }
   .ticket-data { padding-right: 20px; }
@@ -86,13 +93,22 @@ class DGPTM_WSB_Ticket_PDF {
   .field-value { font-size: 13pt; color: #111827; font-weight: 600; }
   .ticket-number-box { background: #f0f5fa; border-left: 4px solid #003366; padding: 14px 18px; margin: 18px 0; border-radius: 0 6px 6px 0; }
   .ticket-number-box .label { font-size: 10pt; color: #003366; }
-  .ticket-number-box .value { font-size: 22pt; font-family: Courier, monospace; color: #003366; letter-spacing: 0.05em; }
+  .ticket-number-box .value { font-size: 16pt; font-family: Courier, monospace; color: #003366; letter-spacing: 0.04em; word-break: break-all; }
   .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 9pt; color: #6b7280; text-align: center; line-height: 1.5; }
 </style></head>
 <body>
   <div class="header">
-    <h1>DGPTM ' . esc_html($event_type) . '-Ticket</h1>
-    <p>Deutsche Gesellschaft für Perfusiologie und Technische Medizin e.V.</p>
+    <table>
+      <tr>
+        <td class="title-cell">
+          <h1>Veranstaltungsticket</h1>
+          <p>Deutsche Gesellschaft für Perfusiologie und Technische Medizin e.V.</p>
+        </td>
+        <td class="logo-cell">
+          <img src="' . esc_url($logo) . '" alt="DGPTM">
+        </td>
+      </tr>
+    </table>
   </div>
 
   <div class="ticket-box">

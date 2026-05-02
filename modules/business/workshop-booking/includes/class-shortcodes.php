@@ -86,6 +86,7 @@ class DGPTM_WSB_Shortcodes {
         return [
             'is_demo'        => true,
             'ticket_number'  => '999990000000000042',
+            'ticket_type'    => 'Mitgliedspreis',
             'first_name'     => 'Erika',
             'last_name'      => 'Mustermann',
             'event_name'     => 'Workshop ECMO/ECLS Refresher',
@@ -113,6 +114,7 @@ class DGPTM_WSB_Shortcodes {
         if ($token === self::DEMO_TOKEN) {
             $demo = self::demo_ticket_data();
             $ticket_number = $demo['ticket_number'];
+            $ticket_type   = $demo['ticket_type'];
             $status        = $demo['status'];
             $event_name    = $demo['event_name'];
             $event_from    = $demo['event_from'];
@@ -130,6 +132,7 @@ class DGPTM_WSB_Shortcodes {
             }
 
             $ticket_number = isset($contact[DGPTM_WSB_Ticket_Number::FIELD_NAME]) ? $contact[DGPTM_WSB_Ticket_Number::FIELD_NAME] : '';
+            $ticket_type   = isset($contact['Ticket_Type']) ? $contact['Ticket_Type'] : '';
             $status        = isset($contact[DGPTM_WSB_Veranstal_X_Contacts::FIELD_BLUEPRINT]) ? $contact[DGPTM_WSB_Veranstal_X_Contacts::FIELD_BLUEPRINT] : '';
             $event_id      = isset($contact['Event_Name']['id']) ? $contact['Event_Name']['id'] : '';
             $event         = $event_id ? DGPTM_WSB_Event_Source::fetch_one($event_id) : null;
@@ -166,7 +169,6 @@ class DGPTM_WSB_Shortcodes {
                     <tr>
                         <td style="vertical-align:middle;">
                             <div class="dgptm-wsb-ticket-title">Veranstaltungsticket</div>
-                            <div class="dgptm-wsb-ticket-subtitle">Deutsche Gesellschaft für Perfusiologie und Technische Medizin e.V.</div>
                         </td>
                         <td style="vertical-align:middle;text-align:right;width:160px;">
                             <img src="<?php echo esc_url($logo_url); ?>" alt="DGPTM" class="dgptm-wsb-ticket-logo">
@@ -199,6 +201,12 @@ class DGPTM_WSB_Shortcodes {
                         <div class="dgptm-wsb-ticket-field">
                             <div class="dgptm-wsb-ticket-field-label">Teilnehmer:in</div>
                             <div class="dgptm-wsb-ticket-field-value"><?php echo esc_html(trim($first_name . ' ' . $last_name)); ?></div>
+                        </div>
+                    <?php endif; ?>
+                    <?php if (!empty($ticket_type)) : ?>
+                        <div class="dgptm-wsb-ticket-field">
+                            <div class="dgptm-wsb-ticket-field-label">Ticketart</div>
+                            <div class="dgptm-wsb-ticket-field-value"><?php echo esc_html($ticket_type); ?></div>
                         </div>
                     <?php endif; ?>
                     <div class="dgptm-wsb-ticket-field">
@@ -245,7 +253,9 @@ class DGPTM_WSB_Shortcodes {
             </div>
 
             <div class="dgptm-wsb-ticket-footer">
-                Bitte beim Einlass auf dem Smartphone zeigen oder ausgedruckt vorlegen
+                Bitte beim Einlass auf dem Smartphone zeigen oder ausgedruckt vorlegen.<br>
+                Es gelten die <a href="<?php echo esc_url(apply_filters('dgptm_wsb_agb_url', DGPTM_WSB_Ticket_PDF::AGB_URL)); ?>">AGB der DGPTM</a>.<br>
+                <strong>Deutsche Gesellschaft für Perfusiologie und Technische Medizin e.V.</strong>
             </div>
         </div>
 
@@ -273,12 +283,12 @@ class DGPTM_WSB_Shortcodes {
             $demo = self::demo_ticket_data();
             $pdf = DGPTM_WSB_Ticket_PDF::render([
                 'ticket_number'  => $demo['ticket_number'],
+                'ticket_type'    => $demo['ticket_type'],
                 'first_name'     => $demo['first_name'],
                 'last_name'      => $demo['last_name'],
                 'event_name'     => $demo['event_name'],
                 'event_from'     => $demo['event_from'],
                 'event_location' => $demo['event_location'],
-                'event_type'     => 'Workshop',
             ]);
             if (!$pdf) {
                 wp_die('PDF-Engine nicht verfuegbar (composer install fehlt?).', 'Fehler', ['response' => 500]);
@@ -312,6 +322,7 @@ class DGPTM_WSB_Shortcodes {
 
         $pdf = DGPTM_WSB_Ticket_PDF::render([
             'ticket_number'  => $ticket_number,
+            'ticket_type'    => isset($contact['Ticket_Type']) ? $contact['Ticket_Type'] : '',
             'first_name'     => isset($contact['Contact_Name']['First_Name']) ? $contact['Contact_Name']['First_Name'] : '',
             'last_name'      => isset($contact['Contact_Name']['Last_Name'])  ? $contact['Contact_Name']['Last_Name']  : '',
             'event_name'     => is_array($event) && isset($event['Name'])      ? $event['Name']      : 'Workshop',

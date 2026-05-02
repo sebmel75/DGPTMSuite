@@ -40,6 +40,7 @@ class DGPTM_WSB_Mail_Sender {
 
         $ticket_number = isset($contact[DGPTM_WSB_Ticket_Number::FIELD_NAME])
                        ? $contact[DGPTM_WSB_Ticket_Number::FIELD_NAME] : '';
+        $ticket_type   = isset($contact['Ticket_Type']) ? $contact['Ticket_Type'] : '';
 
         // Token-Link fuer Nicht-WP-User (Phase 2)
         $token_url = self::maybe_create_token_url($veranstal_x_contact_id, $email, $event);
@@ -56,12 +57,12 @@ class DGPTM_WSB_Mail_Sender {
         // Phase 2: Ticket-PDF
         $pdf_path = self::create_temp_ticket_pdf([
             'ticket_number'  => $ticket_number,
+            'ticket_type'    => $ticket_type,
             'first_name'     => $first_name,
             'last_name'      => $last_name,
             'event_name'     => $event_name,
             'event_from'     => $event_from,
             'event_location' => $event_loc,
-            'event_type'     => $event_type,
         ]);
         if ($pdf_path) $attachments[] = $pdf_path;
 

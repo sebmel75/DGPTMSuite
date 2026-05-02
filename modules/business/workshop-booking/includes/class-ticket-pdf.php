@@ -52,12 +52,14 @@ class DGPTM_WSB_Ticket_PDF {
     }
 
     const LOGO_URL = 'https://perfusiologie.de/nichtwordpress/DGPTM_Logo_kurz_horizontal_rgb_weiss_300_250106.png';
+    const AGB_URL  = 'https://perfusiologie.de/agb';
 
     /**
      * Baut das HTML fuer das Ticket-PDF.
      */
     private static function build_html(array $ticket) {
         $ticket_number = isset($ticket['ticket_number']) ? $ticket['ticket_number'] : '';
+        $ticket_type   = isset($ticket['ticket_type'])   ? $ticket['ticket_type']   : '';
         $first_name    = isset($ticket['first_name'])    ? $ticket['first_name']    : '';
         $last_name     = isset($ticket['last_name'])     ? $ticket['last_name']     : '';
         $full_name     = trim($first_name . ' ' . $last_name);
@@ -70,7 +72,8 @@ class DGPTM_WSB_Ticket_PDF {
                 ? '<img src="' . esc_attr($qr_uri) . '" alt="QR-Code Ticket ' . esc_attr($ticket_number) . '" style="width:180px;height:180px;">'
                 : '<div style="width:180px;height:180px;border:2px dashed #999;display:flex;align-items:center;justify-content:center;color:#999;font-size:11px;">QR nicht verfügbar</div>';
 
-        $logo = apply_filters('dgptm_wsb_ticket_logo_url', self::LOGO_URL);
+        $logo    = apply_filters('dgptm_wsb_ticket_logo_url', self::LOGO_URL);
+        $agb_url = apply_filters('dgptm_wsb_agb_url',         self::AGB_URL);
 
         return '<!DOCTYPE html>
 <html lang="de"><head><meta charset="UTF-8"><title>DGPTM Veranstaltungsticket ' . esc_html($ticket_number) . '</title>
@@ -81,7 +84,6 @@ class DGPTM_WSB_Ticket_PDF {
   .header table { width: 100%; }
   .header td { vertical-align: middle; }
   .header .title-cell h1 { margin: 0; font-size: 20pt; }
-  .header .title-cell p { margin: 4px 0 0; font-size: 10pt; color: #8bb8e8; }
   .header .logo-cell { text-align: right; width: 200px; }
   .header .logo-cell img { max-width: 180px; height: auto; }
   .ticket-box { display: table; width: 100%; }
@@ -94,7 +96,9 @@ class DGPTM_WSB_Ticket_PDF {
   .ticket-number-box { background: #f0f5fa; border-left: 4px solid #003366; padding: 14px 18px; margin: 18px 0; border-radius: 0 6px 6px 0; }
   .ticket-number-box .label { font-size: 10pt; color: #003366; }
   .ticket-number-box .value { font-size: 16pt; font-family: Courier, monospace; color: #003366; letter-spacing: 0.04em; word-break: break-all; }
-  .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 9pt; color: #6b7280; text-align: center; line-height: 1.5; }
+  .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 9pt; color: #6b7280; text-align: center; line-height: 1.6; }
+  .footer .org { font-weight: 600; color: #1a1a1a; }
+  .footer a { color: #003366; }
 </style></head>
 <body>
   <div class="header">
@@ -102,7 +106,6 @@ class DGPTM_WSB_Ticket_PDF {
       <tr>
         <td class="title-cell">
           <h1>Veranstaltungsticket</h1>
-          <p>Deutsche Gesellschaft für Perfusiologie und Technische Medizin e.V.</p>
         </td>
         <td class="logo-cell">
           <img src="' . esc_url($logo) . '" alt="DGPTM">
@@ -126,6 +129,7 @@ class DGPTM_WSB_Ticket_PDF {
         <div class="field-label">Teilnehmer:in</div>
         <div class="field-value">' . esc_html($full_name) . '</div>
       </div>
+      ' . ($ticket_type ? '<div class="field"><div class="field-label">Ticketart</div><div class="field-value">' . esc_html($ticket_type) . '</div></div>' : '') . '
       <div class="ticket-number-box">
         <div class="label">Ticketnummer</div>
         <div class="value">' . esc_html($ticket_number) . '</div>
@@ -139,7 +143,8 @@ class DGPTM_WSB_Ticket_PDF {
 
   <div class="footer">
     Bitte zeige dieses Ticket beim Einlass auf deinem Smartphone oder als Ausdruck vor.<br>
-    Bei Fragen: <a href="mailto:geschaeftsstelle@dgptm.de">geschaeftsstelle@dgptm.de</a>
+    Bei Fragen: <a href="mailto:geschaeftsstelle@dgptm.de">geschaeftsstelle@dgptm.de</a> &middot; Es gelten die <a href="' . esc_url($agb_url) . '">AGB der DGPTM</a>.<br>
+    <span class="org">Deutsche Gesellschaft für Perfusiologie und Technische Medizin e.V.</span>
   </div>
 </body></html>';
     }

@@ -80,8 +80,11 @@ if (!defined('ABSPATH')) exit;
 
   <tr>
     <td style="background:#f9fafb;padding:16px 30px;border-top:1px solid #e5e7eb;">
+      <p style="margin:0 0 6px;font-size:12px;color:#9ca3af;text-align:center;">
+        Es gelten die <a href="https://perfusiologie.de/agb" style="color:#003366;">AGB der DGPTM</a>.
+      </p>
       <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">
-        Deutsche Gesellschaft für Perfusiologie und Technische Medizin e.V.<br>
+        <strong style="color:#1a1a1a;">Deutsche Gesellschaft für Perfusiologie und Technische Medizin e.V.</strong><br>
         Diese Nachricht wurde automatisch erstellt.
       </p>
     </td>

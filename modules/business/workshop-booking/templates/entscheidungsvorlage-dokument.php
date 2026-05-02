@@ -212,7 +212,6 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                         <tr>
                             <td style="vertical-align:middle;">
                                 <div style="font-size:18px;font-weight:700;">Veranstaltungsticket</div>
-                                <div style="font-size:12px;color:#8bb8e8;margin-top:2px;">Deutsche Gesellschaft für Perfusiologie und Technische Medizin e.V.</div>
                             </td>
                             <td style="vertical-align:middle;text-align:right;width:160px;">
                                 <img src="https://perfusiologie.de/nichtwordpress/DGPTM_Logo_kurz_horizontal_rgb_weiss_300_250106.png" alt="DGPTM" style="max-width:140px;height:auto;">
@@ -237,6 +236,10 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                         <div style="margin-bottom:14px;">
                             <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Teilnehmer:in</div>
                             <div style="font-size:15px;color:#111827;font-weight:600;margin-top:2px;">Erika Mustermann</div>
+                        </div>
+                        <div style="margin-bottom:14px;">
+                            <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Ticketart</div>
+                            <div style="font-size:15px;color:#111827;font-weight:600;margin-top:2px;">Mitgliedspreis</div>
                         </div>
                         <div style="background:#f0f5fa;border-left:4px solid #003366;border-radius:0 6px 6px 0;padding:12px 16px;margin-top:14px;">
                             <div style="font-size:10px;color:#003366;text-transform:uppercase;letter-spacing:0.05em;">Ticketnummer</div>
@@ -279,8 +282,10 @@ $render_row_actions = function ($row_id, $colspan = 4) use ($comments, $row_appr
                         <div style="margin-top:8px;font-size:10px;color:#6b7280;">QR-Code für Einlass-Scan</div>
                     </div>
                 </div>
-                <div style="background:#f9fafb;padding:14px 24px;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af;text-align:center;">
-                    Bitte beim Einlass auf dem Smartphone zeigen oder ausgedruckt vorlegen
+                <div style="background:#f9fafb;padding:14px 24px;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af;text-align:center;line-height:1.6;">
+                    Bitte beim Einlass auf dem Smartphone zeigen oder ausgedruckt vorlegen.<br>
+                    Es gelten die <a href="https://perfusiologie.de/agb" style="color:#003366;">AGB der DGPTM</a>.<br>
+                    <strong style="color:#1a1a1a;">Deutsche Gesellschaft für Perfusiologie und Technische Medizin e.V.</strong>
                 </div>
             </div>
             <p style="font-size:12px;color:#9ca3af;margin-top:8px;font-style:italic;">Beispiel-Ansicht. Reale Tickets enthalten einen scanbaren QR-Code mit der individuellen Ticketnummer (Format <strong style="color:#003366;">99999&hellip; (18-stellig, identisch zu Zoho Backstage)</strong>) und werden als PDF an die Buchungs-Mail angehängt.</p>

@@ -561,6 +561,7 @@ Siehe Abschnitt 4a.5 für Details.
 - EFN-Erfassung im Buchungsformular für Nicht-Mitglieder/Ärzt:innen (für Mitglieder: aus CRM)
 - Massenmigration historischer Backstage-Buchungen (nur künftige + aktive)
 - Conditional-Field-Logik darüber hinaus, was am Ticket-Typ konfigurierbar ist (z. B. dynamische Pflichtfelder mit Abhängigkeiten)
+- **Wallet-Integration (Apple Wallet + Google Wallet)** → V1.5, siehe Phase 10 (Abschnitt 11) und Detail-Beschreibung im Anhang A
 
 ## 10. Offene Punkte (alle 18 EVL-Fragen)
 
@@ -596,10 +597,12 @@ Siehe Abschnitt 4a.5 für Details.
 | Phase 7 — Books-Anbindung + Sammel-Rechnung | — | **1,5 PT** |
 | Phase 8 — Mehrsprachigkeit DE/EN | — | **1,5 PT** |
 | Phase 9 — Anwesenheitsscanner-Erweiterung um Workshop-Tickets | — | **1 PT** |
+| Phase 10 — Wallet-Integration (Apple Wallet + Google Wallet) | — | **7 PT** *(V1.5)* |
 | Frontend (Shortcodes, Templates, Designsprache aus Umfragen-Modul, Smart-Form) | 1,5 PT | **2 PT** |
 | Warteliste, Reminder 7d/1d, Webhook-Edge-Cases | 1,5 PT | **1,5 PT** |
 | Test auf Staging + Anpassungen | 1 PT | **2 PT** |
-| **Summe** | **~7 PT** | **~25,5 PT (≈ 5 Wochen bei voller Auslastung)** |
+| **Summe V1** | **~7 PT** | **~25,5 PT (≈ 5 Wochen bei voller Auslastung)** |
+| **Summe V1.5 (inkl. Wallet)** | — | **~32,5 PT** |
 
 Begründung der Erweiterung: Tickets, QR, Mitgliederbereich, Bescheinigungen, Webinar-Integration, Termin-Verlegung, Books, Mehrsprachigkeit waren in der Erst-Spec nicht enthalten — sie sind in den Review-Runden 2–5 dazugekommen.
 
@@ -674,5 +677,74 @@ Das EVL-Dokument (`templates/entscheidungsvorlage-dokument.php` + zugehörige `c
   - Neuer Shortcode `[dgptm_workshop_ticket]`: Token-Login für Externe (URL `/veranstaltungen/ticket/?dgptm_wsb_token=…`); inline PDF-Download über `?dgptm_wsb_pdf=…`
   - composer.json mit `dompdf/dompdf:^2.0` + `endroid/qr-code:^4.8` (parallel zu `vimeo-webinare`)
   - **Phase-2-Bibliotheken sind Composer-only**: `vendor/` ist gitignored, vor Deploy `composer install` im Modulordner ausführen
+- **02.05.2026 (nachmittags)** — PHP-Version-Korrektur, Logo-/Titel-Anpassung, Demo-Modus, Wallet-Eintrag:
+  - Production-Server läuft auf **PHP 8.4** (nicht 7.4 wie in vielen `module.json`-Mindestanforderungen). Workflow + composer.json darauf angepasst.
+  - Ticketnummer auf 18 Stellen mit Präfix `99999` + 13-stelliger Laufnummer
+  - Ticket-Header: Logo (weiß, transparent) rechts, Titel **„Veranstaltungsticket"** (generisch für Workshops + Webinare + spätere Kongresse)
+  - Footer: Vereinsname + AGB-Hinweis (`https://perfusiologie.de/agb`, filterbar via `dgptm_wsb_agb_url`)
+  - Neues Feld **„Ticketart"** (aus `Veranstal_X_Contacts.Ticket_Type`) sichtbar zwischen Teilnehmer:in und Ticketnummer
+  - Demo-Modus: konstanter Token `dgptm-demo-ticket-2026` rendert Beispiel-Ticket ohne CRM-Lookup
+  - **Wallet-Integration als Phase 10 / V1.5** ergänzt (siehe Anhang A)
 
-*Dokument Stand: 02.05.2026, Sebastian Melzer — DGPTM IT-Verantwortung.*
+---
+
+## Anhang A — Wallet-Integration (Phase 10, V1.5)
+
+Apple Wallet (`.pkpass`) und Google Wallet ermöglichen, dass Teilnehmer:innen das Ticket direkt auf dem Smartphone in der Wallet-App speichern (mit QR-Code, Termin-Reminder, Auto-Update bei Termin-Verlegung).
+
+### A.1 Apple Wallet
+
+**Format:** `.pkpass` — ZIP mit `pass.json`, `manifest.json` (SHA1-Hashes), `signature` (PKCS7), Bilder (`logo`, `icon`, `strip` je 1×/2×).
+
+**Voraussetzungen:**
+- Apple Developer Program: 99 USD/Jahr
+- Pass-Type-ID-Zertifikat: **jährlich erneuern** — sonst werden alle ausgegebenen Passes ungültig
+- WWDR-Zwischenzertifikat von Apple
+- Pass-Update-Webservice-Endpoints (für Termin-Verlegung)
+
+**PHP-Library:** `webspicer/passkit` oder `thenoonew/pkpass-php` (Composer-Dependency).
+
+### A.2 Google Wallet
+
+**Format:** JWT-signierte „Save-to-Wallet"-Links (kein Datei-Download).
+
+**Voraussetzungen:**
+- Google Cloud Project (kostenlos)
+- Service-Account mit Wallet-API-Zugriff
+- JWT-Erzeugung via `google/auth` + `firebase/php-jwt`
+
+**Workflow:** Pass-Definition über Wallet-API anlegen → JWT mit Pass-Referenz erzeugen → Link `https://pay.google.com/gp/v/save/<JWT>` an User → Klick öffnet Wallet-Hinzufüge-Dialog.
+
+### A.3 Aufwand & Zeitplan
+
+| Teilphase | Inhalt | Aufwand |
+|---|---|---|
+| 10a | Apple Wallet (`.pkpass`-Generator, Cert-Setup, Test-Pass) | 3 PT |
+| 10b | Google Wallet (Service-Account, JWT-Erzeugung, Test-Pass) | 2 PT |
+| 10c | Wallet-Update-Service (Pass-Aktualisierung bei Termin-Verlegung) | 2 PT |
+| **Summe** | | **7 PT** |
+
+**Plus laufend:** Apple-Cert-Erneuerung jährlich (~0,5 PT/Jahr; Wiedervorlage in Geschäftsstellen-Kalender, sonst Ticket-Bricks).
+
+### A.4 Trigger und Voraussetzung
+
+- **Kein V1-Blocker** — V1 läuft mit PDF + QR-Code (Smartphone-Browser oder Ausdruck) ausreichend
+- **V1.5 nach erfolgreichem V1-Betrieb** sinnvoll, sobald die Geschäftsstelle den Ticket-Workflow stabil etabliert hat
+- **Kombiniert mit Phase 6 Termin-Verlegung** denkbar, weil Wallet-Pass-Update den gleichen Trigger nutzt
+- Optional: nur Apple Wallet zuerst (höhere Verbreitung in DE), Google Wallet später nachziehen
+
+### A.5 Zusätzliche CRM-Felder
+
+| Feld | Modul | Zweck |
+|---|---|---|
+| `Apple_Pass_Serial` | `Veranstal_X_Contacts` | Eindeutige Serial pro Pass für Update-Service |
+| `Apple_Pass_Auth_Token` | `Veranstal_X_Contacts` | Auth-Token für Wallet-Update-Service-Calls |
+| `Google_Pass_Object_ID` | `Veranstal_X_Contacts` | Google Wallet Object-ID |
+
+### A.6 UI-Änderungen
+
+- Bestätigungs-Mail: zwei Buttons „Zu Apple Wallet hinzufügen" + „Zu Google Wallet hinzufügen" (passgenau auf Geräte-Erkennung — iOS zeigt nur Apple, Android nur Google)
+- Token-Ticket-Seite: gleiche Buttons unter dem PDF-Download
+- Mitgliederbereich „Meine Tickets" (Phase 3): Wallet-Buttons pro Ticket
+
+*Dokument Stand: 02.05.2026 nachmittags, Sebastian Melzer — DGPTM IT-Verantwortung.*
